@@ -34,6 +34,8 @@
 #include<chrono>
 #include<unordered_map>
 
+#include<InputManager.h>
+
 using namespace std;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -234,6 +236,8 @@ private:
 	VkImageView colourImageView;
 
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	float lastModelRotation = 0.0f;
 
 	bool framebufferResized = false;
 
@@ -846,10 +850,16 @@ private:
 		static auto startTime = chrono::high_resolution_clock::now();
 
 		auto currentTime = chrono::high_resolution_clock::now();
+
 		float time = chrono::duration<float, chrono::seconds::period>(currentTime - startTime).count();
 
+		float rotation;
+
+		rotation = lastModelRotation - dir::getHorizontalAxis() * 0.1f;
+		lastModelRotation = rotation;
+
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
