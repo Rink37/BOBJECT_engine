@@ -21,3 +21,7 @@ public:
 	void addKeybind(char);
 	void getKeyStates();
 };
+
+namespace dir {
+	int getHorizontalAxis();
+};

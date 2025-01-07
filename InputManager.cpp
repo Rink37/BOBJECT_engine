@@ -28,3 +28,13 @@ void bindSet::getKeyStates() {
 	}
 	Sleep(100);
 }
+
+int dir::getHorizontalAxis() {
+	if (GetAsyncKeyState((int)'A') & 0x8000) {
+		return -1;
+	}
+	else if (GetAsyncKeyState((int)'D') & 0x8000) {
+		return 1;
+	} 
+	return 0;
+}
