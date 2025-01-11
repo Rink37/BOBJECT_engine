@@ -35,6 +35,7 @@
 #include<unordered_map>
 
 #include<InputManager.h>
+#include<WindowsFileManager.h>
 
 using namespace std;
 
@@ -108,6 +109,7 @@ static vector<char> readFile(const string& filename) {
 
 struct Vertex {
 	glm::vec3 pos;
+	glm::vec3 normal;
 	glm::vec3 color;
 	glm::vec2 texCoord;
 
@@ -130,7 +132,7 @@ struct Vertex {
 		attributeDescriptions[1].binding = 0;
 		attributeDescriptions[1].location = 1;
 		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[1].offset = offsetof(Vertex, color);
+		attributeDescriptions[1].offset = offsetof(Vertex, normal);
 
 		attributeDescriptions[2].binding = 0;
 		attributeDescriptions[2].location = 2;
@@ -149,7 +151,7 @@ namespace std {
 	template<> struct hash<Vertex> {
 		size_t operator()(Vertex const& vertex) const {
 			return ((hash<glm::vec3>()(vertex.pos) ^
-				(hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+				(hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
 				(hash<glm::vec2>()(vertex.texCoord) << 1);
 		}
 	};
@@ -210,6 +212,7 @@ private:
 
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
+
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 
@@ -312,7 +315,6 @@ private:
 		}
 
 		vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-
 		vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 		
 		vkDestroyBuffer(device, indexBuffer, nullptr);
@@ -349,7 +351,8 @@ private:
 		vector<tinyobj::material_t> materials;
 		string warn, err;
 
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
+		string testMODEL_PATH = winFile::OpenFileDialog();
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, testMODEL_PATH.c_str())) {
 			throw runtime_error(warn + err);
 		}
 
@@ -359,13 +362,16 @@ private:
 			for (const auto& index : shape.mesh.indices) {
 				Vertex vertex{};
 
-				//vertices.push_back(vertex);
-				//indices.push_back(indices.size());
-
 				vertex.pos = {
 					attrib.vertices[3 * index.vertex_index + 0], 
 					attrib.vertices[3 * index.vertex_index + 1],
 					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				vertex.normal = {
+					attrib.normals[3* index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
 				};
 
 				vertex.texCoord = {
@@ -855,7 +861,7 @@ private:
 
 		float rotation;
 
-		rotation = lastModelRotation - dir::getHorizontalAxis() * 0.1f;
+		rotation = lastModelRotation - dir::getHorizontalAxis() * 0.075f;
 		lastModelRotation = rotation;
 
 		UniformBufferObject ubo{};
@@ -922,7 +928,7 @@ private:
 
 		void* data;
 		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, indices.data(), (size_t)bufferSize);
+			memcpy(data, indices.data(), (size_t)bufferSize);
 		vkUnmapMemory(device, stagingBufferMemory);
 
 		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
@@ -1081,8 +1087,8 @@ private:
 	}
 
 	void createGraphicsPipeline() {
-		auto vertShaderCode = readFile("C:/Users/robda/Documents/VulkanRenderer/shaders/vert.spv");
-		auto fragShaderCode = readFile("C:/Users/robda/Documents/VulkanRenderer/shaders/frag.spv");
+		auto vertShaderCode = readFile("C:/Users/robda/Documents/VulkanRenderer/shaders/BFvert.spv");
+		auto fragShaderCode = readFile("C:/Users/robda/Documents/VulkanRenderer/shaders/BFfrag.spv");
 
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
