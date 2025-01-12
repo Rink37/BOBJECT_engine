@@ -38,3 +38,41 @@ int dir::getHorizontalAxis() {
 	} 
 	return 0;
 }
+
+int dir::getForwardAxis() {
+	if (GetAsyncKeyState((int)'S') & 0x8000) {
+		return -1;
+	}
+	else if (GetAsyncKeyState((int)'W') & 0x8000) {
+		return 1;
+	}
+	return 0;
+}
+
+int dir::getVerticalAxis() {
+	if (GetAsyncKeyState(VK_LCONTROL) & 0x8000) {
+		return -1;
+	}
+	else if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
+		return 1;
+	}
+	return 0;
+}
+
+bool keycommands::reloadModel() {
+	if (GetAsyncKeyState((int)'R') & 0x8000) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+bool keycommands::addModel() {
+	if (GetAsyncKeyState((int)'T') & 0x8000) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}

@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef INPUT_MANAGER
+#define INPUT_MANAGER
+
 #include <iostream>
 #include<vector>
 #include "windows.h"
@@ -24,4 +27,13 @@ public:
 
 namespace dir {
 	int getHorizontalAxis();
+	int getVerticalAxis();
+	int getForwardAxis();
 };
+
+namespace keycommands {
+	bool reloadModel();
+	bool addModel();
+};
+
+#endif
