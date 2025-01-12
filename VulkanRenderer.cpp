@@ -36,6 +36,7 @@
 
 #include<InputManager.h>
 #include<WindowsFileManager.h>
+#include<CameraController.h>
 
 using namespace std;
 
@@ -239,6 +240,8 @@ private:
 	VkImageView colourImageView;
 
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	Camera camera; 
 
 	float lastModelRotation = 0.0f;
 
@@ -859,15 +862,17 @@ private:
 
 		//float time = chrono::duration<float, chrono::seconds::period>(currentTime - startTime).count();
 
-		float rotation;
+		float rotation = 0.0f;
+		camera.updateCamera();
 
-		rotation = lastModelRotation - dir::getHorizontalAxis() * 0.075f;
-		lastModelRotation = rotation;
+		//rotation = lastModelRotation - dir::getHorizontalAxis() * 0.075f;
+		//lastModelRotation = rotation;
 
 		UniformBufferObject ubo{};
 		ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+		//ubo.view = glm::lookAt(camera.pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = camera.view;
+		ubo.proj = glm::perspective(glm::radians(camera.fov), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
@@ -1357,7 +1362,7 @@ private:
 		renderPassInfo.renderArea.extent = swapChainExtent;
 
 		array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+		clearValues[0].color = { {0.0f, 0.2f, 0.5f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
