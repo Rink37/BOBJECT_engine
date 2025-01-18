@@ -12,18 +12,42 @@
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtx/hash.hpp>
 
+#include<algorithm>
+
 #include "math.h"
 
 class Camera {
 public:
-	glm::vec3 pos = glm::vec3(2.0f, 2.0f, 2.0f);
+	glm::vec3 pos;
+	glm::vec3 initCenter;
+	glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
 	glm::mat4 view;
+	float defaultDistance = 10.0f;
+	float distance = 5.0f;
+	float initxrot;
+	float inityrot;
+	float xrot = 45.0f;
+	float yrot = 0.0f;
+	double initXpos, initYpos;
+	double activeXpos, activeYpos;
 	float fov = 45.0f;
-	float velocity = 0.005f;
+	float defaultVelocity = 0.01f;
+	float velocity;
 	float radius = glm::length(pos);
-	float defaultscale = pow(glm::length(pos), 2);
+	double defaultscale = pow(glm::length(pos), 2);
+	bool isPanning = false;
+	bool isRotating = false;
 
-	void updateCamera();
+	void updateCamera(GLFWwindow* window);
+
+	static Camera& getInstance() {
+		static Camera instance;
+		return instance;
+	}
+
+	static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+		getInstance().distance = std::clamp(static_cast<float>(getInstance().distance - yoffset), 1.0f, 100.0f);
+	};
 };
 
 #endif
