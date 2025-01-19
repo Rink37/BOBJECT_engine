@@ -234,6 +234,43 @@ struct StaticObject {
 	}
 };
 
+struct UIObject {
+
+	vector<Vertex> vertices;
+	vector<uint32_t> indices = { 0, 1, 2, 2, 3, 0 };
+
+	VkImageView textureImageView;
+
+	VkImage textureImage;
+	VkDeviceMemory textureImageMemory;
+
+	VkBuffer vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
+
+	VkBuffer indexBuffer;
+	VkDeviceMemory indexBufferMemory;
+
+	VkDescriptorPool descriptorPool;
+	vector<VkDescriptorSet> descriptorSets;
+
+	void createVertices() { 
+		Vertex vertex;
+		vertex.pos = { -1.0f, -1.0f, 1.0f };
+		vertex.normal = { 0.0f, 0.0f, 0.0f };
+		vertex.texCoord = { 1.0f, 0.0f };
+		vertices.push_back(vertex);  
+		vertex.pos = { 1.0f, -1.0f, 1.0f };
+		vertex.texCoord = { 0.0f, 0.0f };
+		vertices.push_back(vertex);
+		vertex.pos = { 1.0f, 1.0f, 1.0f };
+		vertex.texCoord = {0.0f, 1.0f};
+		vertices.push_back(vertex);
+		vertex.pos = { -1.0f, 1.0f, 1.0f };
+		vertex.texCoord = {1.0f, 1.0f};
+		vertices.push_back(vertex);
+	}
+};
+
 class Application {
 public:
 	void run() {
@@ -267,6 +304,7 @@ private:
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkPipelineLayout pipelineLayout;
 
+	VkPipeline UIPipeline; // LEAVING HERE - NEED TO FIND OUT HOW TO RENDER DIFFERENT OBJECTS USING DIFFERENT SHADERS IN THE SAME SCENE
 	VkPipeline flatGraphicsPipeline;
 	VkPipeline bfGraphicsPipeline;
 	vector<VkPipeline*> GraphicsPipelines = { &flatGraphicsPipeline, &bfGraphicsPipeline };
@@ -287,14 +325,8 @@ private:
 	vector<VkDeviceMemory> uniformBuffersMemory;
 	vector<void*> uniformBuffersMapped;
 
-	//VkDescriptorPool descriptorPool;
-	//vector<VkDescriptorSet> descriptorSets;
-
 	uint32_t mipLevels;
-	//VkImage textureImage;
-	//VkDeviceMemory textureImageMemory;
 
-	//VkImageView textureImageView;
 	VkSampler textureSampler;
 
 	VkImage depthImage;
@@ -308,6 +340,8 @@ private:
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
 	Camera camera;
+
+	UIObject testUI;
 
 	float lastModelRotation = 0.0f;
 
@@ -329,7 +363,6 @@ private:
 	}
 
 	void initVulkan() {
-		KeyInput::setupKeyInputs(window);
 		glfwSetScrollCallback(window, camera.scrollCallback);
 		createInstance();
 		setupDebugMessenger();
@@ -349,6 +382,15 @@ private:
 		//createTextureImageView();
 		createTextureSampler();
 		createUniformBuffers();
+		KeyInput::setupKeyInputs(window);
+		testUI.createVertices();
+
+		createVertexBuffer(testUI);
+		createIndexBuffer(testUI);
+		createTextureImage(testUI);
+		createTextureImageView(testUI);
+		createDescriptorPool(testUI);
+		createDescriptorSets(testUI);
 		//createDescriptorPool();
 		//createDescriptorSets();
 		createCommandBuffers();
@@ -437,6 +479,19 @@ private:
 
 			vkDestroyImageView(device, staticObjects[i].textureImageView, nullptr);
 		}
+
+		vkDestroyDescriptorPool(device, testUI.descriptorPool, nullptr);
+
+		vkDestroyBuffer(device, testUI.indexBuffer, nullptr);
+		vkFreeMemory(device, testUI.indexBufferMemory, nullptr);
+
+		vkDestroyBuffer(device, testUI.vertexBuffer, nullptr);
+		vkFreeMemory(device, testUI.vertexBufferMemory, nullptr);
+
+		vkDestroyImage(device, testUI.textureImage, nullptr);
+		vkFreeMemory(device, testUI.textureImageMemory, nullptr);
+
+		vkDestroyImageView(device, testUI.textureImageView, nullptr);
 		
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
@@ -476,7 +531,7 @@ private:
 		return VK_SAMPLE_COUNT_1_BIT;
 	}
 
-	void createTextureImage(StaticObject& object) {
+	void createTextureImage(auto& object) {
 		int texWidth, texHeight, texChannels;
 		//string TEXTURE_PATH = winFile::OpenFileDialog();
 		string TEXTURE_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\webcam_frame.jpeg";
@@ -594,7 +649,7 @@ private:
 		endSingleTimeCommands(commandBuffer);
 	}
 
-	void createTextureImageView(StaticObject& object) {
+	void createTextureImageView(auto& object) {
 		object.textureImageView = createImageView(object.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 	}
 
@@ -960,7 +1015,7 @@ private:
 		vkBindBufferMemory(device, buffer, bufferMemory, 0);
 	}
 
-	void createVertexBuffer(StaticObject& object) {
+	void createVertexBuffer(auto& object) {
 		// copies mesh vertex data into GPU memory
 
 		VkDeviceSize bufferSize = sizeof(object.vertices[0]) * object.vertices.size();
@@ -982,7 +1037,7 @@ private:
 		vkFreeMemory(device, stagingBufferMemory, nullptr);
 	}
 
-	void createIndexBuffer(StaticObject& object) {
+	void createIndexBuffer(auto& object) {
 		// copies mesh index data into GPU memory
 
 		VkDeviceSize bufferSize = sizeof(object.indices[0]) * object.indices.size();
@@ -1018,7 +1073,7 @@ private:
 		}
 	}
 
-	void createDescriptorPool(StaticObject& object) {
+	void createDescriptorPool(auto& object) {
 		array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
@@ -1036,7 +1091,8 @@ private:
 		}
 	}
 
-	void createDescriptorSets(StaticObject& object) {
+
+	void createDescriptorSets(auto& object) {
 		vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1158,11 +1214,17 @@ private:
 		auto flatVertShaderCode = readFile("C:/Users/robda/Documents/VulkanRenderer/shaders/vert.spv");
 		auto flatFragShaderCode = readFile("C:/Users/robda/Documents/VulkanRenderer/shaders/frag.spv");
 
+		auto UIVertShaderCode = readFile("C:/Users/robda/Documents/VulkanRenderer/shaders/UIvert.spv");
+		auto UIFragShaderCode = readFile("C:/Users/robda/Documents/VulkanRenderer/shaders/UIfrag.spv");
+
 		VkShaderModule bfVertShaderModule = createShaderModule(bfVertShaderCode);
 		VkShaderModule bfFragShaderModule = createShaderModule(bfFragShaderCode);
 
 		VkShaderModule flatVertShaderModule = createShaderModule(flatVertShaderCode);
 		VkShaderModule flatFragShaderModule = createShaderModule(flatFragShaderCode);
+
+		VkShaderModule UIVertShaderModule = createShaderModule(UIVertShaderCode);
+		VkShaderModule UIFragShaderModule = createShaderModule(UIFragShaderCode);
 
 		VkPipelineShaderStageCreateInfo bfVertShaderStageInfo{};
 		bfVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1188,15 +1250,27 @@ private:
 		flatFragShaderStageInfo.module = flatFragShaderModule;
 		flatFragShaderStageInfo.pName = "main";
 
+		VkPipelineShaderStageCreateInfo UIVertShaderStageInfo{};
+		UIVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		UIVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		UIVertShaderStageInfo.module = UIVertShaderModule;
+		UIVertShaderStageInfo.pName = "main";
+
+		VkPipelineShaderStageCreateInfo UIFragShaderStageInfo{};
+		UIFragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		UIFragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		UIFragShaderStageInfo.module = UIFragShaderModule;
+		UIFragShaderStageInfo.pName = "main";
+
 		VkPipelineShaderStageCreateInfo bfShaderStages[] = { bfVertShaderStageInfo, bfFragShaderStageInfo };
 		VkPipelineShaderStageCreateInfo flatShaderStages[] = { flatVertShaderStageInfo, flatFragShaderStageInfo };
+		VkPipelineShaderStageCreateInfo UIShaderStages[] = { UIVertShaderStageInfo, UIFragShaderStageInfo };
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
 		auto bindingDescription = Vertex::getBindingDescription();
 		auto attributeDescriptions = Vertex::getAttributeDescriptions();
-
 
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
 		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
@@ -1310,6 +1384,27 @@ private:
 		flatPipelineInfo.pDepthStencilState = &depthStencil;
 
 		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &flatPipelineInfo, nullptr, &flatGraphicsPipeline) != VK_SUCCESS) {
+			throw runtime_error("failed to create graphics pipeline!");
+		}
+
+		VkGraphicsPipelineCreateInfo UIPipelineInfo{};
+		UIPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		UIPipelineInfo.stageCount = 2;
+		UIPipelineInfo.pStages = UIShaderStages;
+		UIPipelineInfo.pVertexInputState = &vertexInputInfo;
+		UIPipelineInfo.pInputAssemblyState = &inputAssembly;
+		UIPipelineInfo.pViewportState = &viewportState;
+		UIPipelineInfo.pRasterizationState = &rasterizer;
+		UIPipelineInfo.pMultisampleState = &multisampling;
+		UIPipelineInfo.pColorBlendState = &colorBlending;
+		UIPipelineInfo.pDynamicState = &dynamicState;
+		UIPipelineInfo.layout = pipelineLayout;
+		UIPipelineInfo.renderPass = renderPass;
+		UIPipelineInfo.subpass = 0;
+		UIPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+		UIPipelineInfo.pDepthStencilState = &depthStencil;
+
+		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &UIPipelineInfo, nullptr, &UIPipeline) != VK_SUCCESS) {
 			throw runtime_error("failed to create graphics pipeline!");
 		}
 
