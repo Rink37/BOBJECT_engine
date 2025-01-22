@@ -37,6 +37,7 @@
 #include<InputManager.h>
 #include<WindowsFileManager.h>
 #include<CameraController.h>
+#include<UIelements.h>
 
 using namespace std;
 
@@ -47,6 +48,10 @@ const uint32_t HEIGHT = 600;
 
 //const string MODEL_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\models\\Boat.obj";
 //const string TEXTURE_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\webcam_frame.jpeg";
+
+const string LOAD_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\LoadButton.png";
+const string RENDERED_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\RenderedButton.png";
+const string UNRENDERED_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\UnrenderedButton.png";
 
 uint32_t currentFrame = 0;
 
@@ -170,11 +175,14 @@ struct UniformBufferObject {
 
 struct StaticObject {
 
+	string texPath = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\webcam_frame.jpeg";
+
 	vector<Vertex> vertices;
 	vector<uint32_t> indices;
 
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
+	void* vBuffer;
 
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
@@ -186,6 +194,9 @@ struct StaticObject {
 
 	VkImage textureImage; 
 	VkDeviceMemory textureImageMemory; 
+
+	int texWidth;
+	int texHeight;
 
 	void loadModel() {
 		tinyobj::attrib_t attrib;
@@ -236,8 +247,10 @@ struct StaticObject {
 
 struct UIObject {
 
+	string texPath = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\webcam_frame.jpeg";
+
 	vector<Vertex> vertices;
-	vector<uint32_t> indices = { 0, 1, 2, 2, 3, 0 };
+	vector<uint32_t> indices = { 0, 3, 2, 2, 1, 0 };
 
 	VkImageView textureImageView;
 
@@ -246,6 +259,7 @@ struct UIObject {
 
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
+	void* vBuffer;
 
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
@@ -253,21 +267,81 @@ struct UIObject {
 	VkDescriptorPool descriptorPool;
 	vector<VkDescriptorSet> descriptorSets;
 
-	void createVertices() { 
+	int texHeight;
+	int texWidth;
+
+	float sizex;
+	float sizey;
+
+	float anchorX, anchorY; //Independent of image size
+
+	int xoffset = 1;
+	int yoffset = -1;
+
+	float xpos, ypos;
+
+	float offset = 0.02f; //Represents x offset, we scale y by x;
+
+	float imageSize = 0.15f; //represents the scaling of the horizontal image axis
+
+	bool isAbsolute = false;
+
+	float absHeight; 
+	float absWidth; 
+
+	void setAnchor(float x, float y) {
+		anchorX = x;
+		anchorY = y;
+	}
+
+	void setOffsets(int x, int y) {
+		xoffset = x;
+		yoffset = y;
+	}
+
+	void updateAbsScale() {
+		absHeight = static_cast<float>(texHeight) * imageSize;
+		absWidth = static_cast<float>(texWidth) * imageSize;
+	}
+
+	void createVertices(int windowWidth, int windowHeight) { 
+		vertices.clear();
+
 		Vertex vertex;
-		vertex.pos = { -1.0f, -1.0f, 1.0f };
+
+		if (!isAbsolute) {
+			sizex = imageSize;
+			sizey = (imageSize * windowWidth * static_cast<float>(texHeight) / static_cast<float>(texWidth)) / (static_cast<float>(windowHeight));
+		}
+		else {
+			sizex = absWidth / static_cast<float>(windowWidth);
+			sizey = absHeight / static_cast<float>(windowHeight);
+		}
+
+		xpos = (sizex + offset) * static_cast<float>(xoffset);
+		ypos = (sizey + offset * static_cast<float>(windowWidth) / static_cast<float>(windowHeight)) * static_cast<float>(yoffset);
+
+		vertex.pos = { -sizex + anchorX + xpos, -sizey - anchorY - ypos, 0.0f };
 		vertex.normal = { 0.0f, 0.0f, 0.0f };
-		vertex.texCoord = { 1.0f, 0.0f };
-		vertices.push_back(vertex);  
-		vertex.pos = { 1.0f, -1.0f, 1.0f };
 		vertex.texCoord = { 0.0f, 0.0f };
+		vertices.push_back(vertex);  
+		vertex.pos = { sizex + anchorX + xpos, -sizey - anchorY - ypos, 0.0f };
+		vertex.texCoord = { 1.0f, 0.0f };
 		vertices.push_back(vertex);
-		vertex.pos = { 1.0f, 1.0f, 1.0f };
-		vertex.texCoord = {0.0f, 1.0f};
-		vertices.push_back(vertex);
-		vertex.pos = { -1.0f, 1.0f, 1.0f };
+		vertex.pos = { sizex + anchorX + xpos, sizey - anchorY - ypos, 0.0f };
 		vertex.texCoord = {1.0f, 1.0f};
 		vertices.push_back(vertex);
+		vertex.pos = { -sizex + anchorX + xpos, sizey - anchorY - ypos, 0.0f };
+		vertex.texCoord = {0.0f, 1.0f};
+		vertices.push_back(vertex);
+	}
+
+	void setButtonExtent(Button& button, int windowWidth, int windowHeight) {
+		float Bxpos = (anchorX + xpos + 1)/2*static_cast<float>(windowWidth);
+		float Bypos = -(anchorY + ypos - 1)/2 * static_cast<float>(windowHeight);
+		float xsize = sizex * static_cast<float>(windowWidth);
+		float ysize = sizey * static_cast<float>(windowHeight);
+		button.update(Bxpos, Bypos, xsize, ysize);
 	}
 };
 
@@ -341,7 +415,17 @@ private:
 
 	Camera camera;
 
-	UIObject testUI;
+	vector<UIObject> UIobjects;
+
+	Button LB;
+
+	Button Rendered;
+	Button Unrendered;
+
+	int windowWidth = WIDTH;
+	int windowHeight = HEIGHT;
+
+	double mouseX, mouseY;
 
 	float lastModelRotation = 0.0f;
 
@@ -353,12 +437,15 @@ private:
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		window = glfwCreateWindow(WIDTH, HEIGHT, "BOBJECT_engine", nullptr, nullptr);
+
 		glfwSetWindowUserPointer(window, this);
 		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	}
 
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 		auto app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+		app->windowWidth = width;
+		app->windowHeight = height;
 		app->framebufferResized = true;
 	}
 
@@ -378,36 +465,82 @@ private:
 		createColourResources();
 		createDepthResources();
 		createFramebuffers(); 
-		//createTextureImage();
-		//createTextureImageView();
 		createTextureSampler();
 		createUniformBuffers();
 		KeyInput::setupKeyInputs(window);
-		testUI.createVertices();
-
-		createVertexBuffer(testUI);
-		createIndexBuffer(testUI);
-		createTextureImage(testUI);
-		createTextureImageView(testUI);
-		createDescriptorPool(testUI);
-		createDescriptorSets(testUI);
-		//createDescriptorPool();
-		//createDescriptorSets();
+		createCanvas();
 		createCommandBuffers();
 		createSyncObjects();
+	}
+
+	void createCanvas() {
+
+		UIObject loadButton;
+
+		UIObject renderedButton;
+		UIObject unrenderedButton;
+
+		renderedButton.texPath = RENDERED_BUTTON_PATH;
+		unrenderedButton.texPath = UNRENDERED_BUTTON_PATH;
+		loadButton.texPath = LOAD_BUTTON_PATH;
+
+		loadButton.setAnchor(-1.0f, 1.0f);
+		loadButton.setOffsets(1, -1);
+		loadButton.imageSize = 0.2f;
+		loadButton.isAbsolute = true;
+		createButton(loadButton, LB);
+
+		renderedButton.setAnchor(1.0f, 1.0f);
+		renderedButton.setOffsets(-1, -1);
+		renderedButton.imageSize = 0.2f;
+		renderedButton.isAbsolute = true;
+		createButton(renderedButton, Rendered);
+
+		unrenderedButton.setAnchor(0.82f, 1.0f);
+		unrenderedButton.setOffsets(-1, -1);
+		unrenderedButton.imageSize = 0.2f;
+		unrenderedButton.isAbsolute = true;
+		
+		createButton(unrenderedButton, Unrendered);
+
+		UIobjects.push_back(loadButton);
+		UIobjects.push_back(renderedButton);
+		UIobjects.push_back(unrenderedButton);
+	}
+
+	void createButton(UIObject& uiImage, Button& button) {
+		createTextureImage(uiImage);
+		createTextureImageView(uiImage);
+
+		if (uiImage.isAbsolute){
+			uiImage.updateAbsScale();
+		}
+		
+		uiImage.createVertices(windowWidth, windowHeight);
+		uiImage.setButtonExtent(button, windowWidth, windowHeight);
+
+		createUIVertexBuffer(uiImage);
+		createIndexBuffer(uiImage);
+		createDescriptorPool(uiImage);
+		createDescriptorSets(uiImage);
 	}
 
 	void mainLoop() {
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
+			glfwGetCursorPos(window, &mouseX, &mouseY);
+			int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
 			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L)) {
 				loadStaticObject();
 			}
-			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_1)) {
+			if (Rendered.isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
 				pipelineindex = 1;
 			}
-			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_0)) {
+			if (Unrendered.isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
 				pipelineindex = 0;
+			}
+			if (LB.isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
+				loadStaticObject();
 			}
 			drawFrame();
 		}
@@ -454,6 +587,8 @@ private:
 
 		vkDestroyPipeline(device, flatGraphicsPipeline, nullptr);
 		vkDestroyPipeline(device, bfGraphicsPipeline, nullptr);
+		vkDestroyPipeline(device, UIPipeline, nullptr);
+
 		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 		vkDestroyRenderPass(device, renderPass, nullptr);
 
@@ -480,18 +615,20 @@ private:
 			vkDestroyImageView(device, staticObjects[i].textureImageView, nullptr);
 		}
 
-		vkDestroyDescriptorPool(device, testUI.descriptorPool, nullptr);
+		for (uint32_t i = 0; i != UIobjects.size(); i++) {
+			vkDestroyDescriptorPool(device, UIobjects[i].descriptorPool, nullptr);
 
-		vkDestroyBuffer(device, testUI.indexBuffer, nullptr);
-		vkFreeMemory(device, testUI.indexBufferMemory, nullptr);
+			vkDestroyBuffer(device, UIobjects[i].indexBuffer, nullptr);
+			vkFreeMemory(device, UIobjects[i].indexBufferMemory, nullptr);
 
-		vkDestroyBuffer(device, testUI.vertexBuffer, nullptr);
-		vkFreeMemory(device, testUI.vertexBufferMemory, nullptr);
+			vkDestroyBuffer(device, UIobjects[i].vertexBuffer, nullptr);
+			vkFreeMemory(device, UIobjects[i].vertexBufferMemory, nullptr);
 
-		vkDestroyImage(device, testUI.textureImage, nullptr);
-		vkFreeMemory(device, testUI.textureImageMemory, nullptr);
+			vkDestroyImage(device, UIobjects[i].textureImage, nullptr);
+			vkFreeMemory(device, UIobjects[i].textureImageMemory, nullptr);
 
-		vkDestroyImageView(device, testUI.textureImageView, nullptr);
+			vkDestroyImageView(device, UIobjects[i].textureImageView, nullptr);
+		}
 		
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
@@ -534,9 +671,12 @@ private:
 	void createTextureImage(auto& object) {
 		int texWidth, texHeight, texChannels;
 		//string TEXTURE_PATH = winFile::OpenFileDialog();
-		string TEXTURE_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\webcam_frame.jpeg";
+		string TEXTURE_PATH = object.texPath;
 		stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+		object.texWidth = texWidth;
+		object.texHeight = texHeight;
 
 		if (!pixels) {
 			throw runtime_error("failed to load texture image!");
@@ -966,6 +1106,16 @@ private:
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
 			framebufferResized = false;
+
+			for (uint32_t i = 0; i != UIobjects.size(); i++) {
+				UIobjects[i].createVertices(windowWidth, windowHeight);
+
+				updateUIVertexBuffer(UIobjects[i]);
+			}
+			UIobjects[0].setButtonExtent(LB, windowWidth, windowHeight);
+			UIobjects[1].setButtonExtent(Rendered, windowWidth, windowHeight);
+			UIobjects[2].setButtonExtent(Unrendered, windowWidth, windowHeight);
+
 			recreateSwapChain();
 			return;
 		}
@@ -986,7 +1136,7 @@ private:
 		ubo.proj = glm::perspective(glm::radians(camera.fov), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
-		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
 
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
@@ -1035,6 +1185,35 @@ private:
 
 		vkDestroyBuffer(device, stagingBuffer, nullptr);
 		vkFreeMemory(device, stagingBufferMemory, nullptr);
+	}
+
+	void createUIVertexBuffer(UIObject& object) {
+		// copies mesh vertex data into GPU memory
+
+		VkDeviceSize bufferSize = sizeof(object.vertices[0]) * object.vertices.size();
+
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, object.vertices.data(), (size_t)bufferSize);
+		vkUnmapMemory(device, stagingBufferMemory);
+
+		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, object.vertexBuffer, object.vertexBufferMemory);
+
+		copyBuffer(stagingBuffer, object.vertexBuffer, bufferSize);
+
+		vkMapMemory(device, object.vertexBufferMemory, 0, bufferSize, 0, &object.vBuffer);
+
+		vkDestroyBuffer(device, stagingBuffer, nullptr);
+		vkFreeMemory(device, stagingBufferMemory, nullptr);
+	}
+
+	void updateUIVertexBuffer(UIObject& object) {
+		VkDeviceSize bufferSize = sizeof(object.vertices[0]) * object.vertices.size();
+		memcpy(object.vBuffer, object.vertices.data(), (size_t)bufferSize);
 	}
 
 	void createIndexBuffer(auto& object) {
@@ -1415,6 +1594,8 @@ private:
 		vkDestroyShaderModule(device, flatFragShaderModule, nullptr);
 		vkDestroyShaderModule(device, flatVertShaderModule, nullptr);
 
+		vkDestroyShaderModule(device, UIFragShaderModule, nullptr);
+		vkDestroyShaderModule(device, UIVertShaderModule, nullptr);
 	}
 
 	void createRenderPass() {
@@ -1546,7 +1727,7 @@ private:
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = 0;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 		beginInfo.pInheritanceInfo = nullptr;
 
 		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
@@ -1562,7 +1743,7 @@ private:
 		renderPassInfo.renderArea.extent = swapChainExtent;
 
 		array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { {0.0f, 0.2f, 0.5f, 1.0f} };
+		clearValues[0].color = { {0.812f, 0.537f, 0.514f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -1570,8 +1751,6 @@ private:
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *GraphicsPipelines[pipelineindex]);
-		
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
@@ -1586,6 +1765,23 @@ private:
 		scissor.extent = swapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, UIPipeline);
+
+		for (uint32_t i = 0; i != UIobjects.size(); i++) {
+			VkBuffer vertexBuffers[] = { UIobjects[i].vertexBuffer};
+			VkDeviceSize offsets[] = { 0 };
+
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+			vkCmdBindIndexBuffer(commandBuffer, UIobjects[i].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &UIobjects[i].descriptorSets[currentFrame], 0, nullptr);
+
+			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(UIobjects[i].indices.size()), 1, 0, 0, 0);
+		}
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *GraphicsPipelines[pipelineindex]);
+		
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 
 			VkBuffer vertexBuffers[] = { staticObjects[i].vertexBuffer };
