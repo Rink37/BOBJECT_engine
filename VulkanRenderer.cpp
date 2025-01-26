@@ -38,7 +38,10 @@
 #include<WindowsFileManager.h>
 #include<CameraController.h>
 #include<UIelements.h>
+#include <opencv2/opencv.hpp>
+#include "Webcam_feeder.h"
 
+using namespace cv;
 using namespace std;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -195,6 +198,8 @@ struct StaticObject {
 	VkImage textureImage; 
 	VkDeviceMemory textureImageMemory; 
 
+	uint32_t mipLevels;
+
 	int texWidth;
 	int texHeight;
 
@@ -253,7 +258,6 @@ struct UIObject {
 	vector<uint32_t> indices = { 0, 3, 2, 2, 1, 0 };
 
 	VkImageView textureImageView;
-
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;
 
@@ -266,6 +270,8 @@ struct UIObject {
 
 	VkDescriptorPool descriptorPool;
 	vector<VkDescriptorSet> descriptorSets;
+
+	uint32_t mipLevels; 
 
 	int texHeight;
 	int texWidth;
@@ -378,7 +384,7 @@ private:
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkPipelineLayout pipelineLayout;
 
-	VkPipeline UIPipeline; // LEAVING HERE - NEED TO FIND OUT HOW TO RENDER DIFFERENT OBJECTS USING DIFFERENT SHADERS IN THE SAME SCENE
+	VkPipeline UIPipeline;
 	VkPipeline flatGraphicsPipeline;
 	VkPipeline bfGraphicsPipeline;
 	vector<VkPipeline*> GraphicsPipelines = { &flatGraphicsPipeline, &bfGraphicsPipeline };
@@ -399,6 +405,10 @@ private:
 	vector<VkDeviceMemory> uniformBuffersMemory;
 	vector<void*> uniformBuffersMapped;
 
+	VkBuffer textureBuffer;
+	VkDeviceMemory textureBufferMemory;
+	void* tBuffer;
+
 	uint32_t mipLevels;
 
 	VkSampler textureSampler;
@@ -414,6 +424,9 @@ private:
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
 	Camera camera;
+	Webcam webCam;
+
+	uint32_t webHeight, webWidth, webChannels;
 
 	vector<UIObject> UIobjects;
 
@@ -430,6 +443,7 @@ private:
 	float lastModelRotation = 0.0f;
 
 	bool framebufferResized = false;
+	bool webcamObjectView = false;
 
 	void initWindow() {
 		glfwInit();
@@ -506,6 +520,35 @@ private:
 		UIobjects.push_back(loadButton);
 		UIobjects.push_back(renderedButton);
 		UIobjects.push_back(unrenderedButton);
+
+		UIObject webcamView;
+		webcamView.setAnchor(1.0f, 0.5f);
+		webcamView.setOffsets(-1, -1);
+		webcamView.imageSize = 0.2f;
+		//webcamView.isAbsolute = true;
+
+		//webCam.getFramerate();
+
+		createWebcamImage();
+
+		webcamView.texHeight = webHeight;
+		webcamView.texWidth = webWidth;
+
+		createObjectWebcamImage(webcamView);
+		createWebcamTextureImageView(webcamView);
+
+		if (webcamView.isAbsolute) {
+			webcamView.updateAbsScale();
+		}
+
+		webcamView.createVertices(windowWidth, windowHeight);
+
+		createUIVertexBuffer(webcamView);
+		createIndexBuffer(webcamView);
+		createDescriptorPool(webcamView);
+		createDescriptorSets(webcamView);
+
+		UIobjects.push_back(webcamView);
 	}
 
 	void createButton(UIObject& uiImage, Button& button) {
@@ -526,12 +569,27 @@ private:
 	}
 
 	void mainLoop() {
+		
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 			glfwGetCursorPos(window, &mouseX, &mouseY);
+			updateWebcam();
+			updateWebcamImage(UIobjects[3]);
 			int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
 			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L)) {
 				loadStaticObject();
+			}
+			if (webcamObjectView) {
+				for (int i = 0; i != staticObjects.size(); i++) {
+					updateWebcamImage(staticObjects[i]);
+				}
+			}
+			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_0)) {
+				for (int i = 0; i != staticObjects.size(); i++) {
+					createObjectWebcamImage(staticObjects[i]);
+					createWebcamTextureImageView(staticObjects[i]);
+				}
+				webcamObjectView = true;
 			}
 			if (Rendered.isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
 				pipelineindex = 1;
@@ -629,6 +687,9 @@ private:
 
 			vkDestroyImageView(device, UIobjects[i].textureImageView, nullptr);
 		}
+
+		vkDestroyBuffer(device, textureBuffer, nullptr);
+		vkFreeMemory(device, textureBufferMemory, nullptr);
 		
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
@@ -697,7 +758,7 @@ private:
 		stbi_image_free(pixels);
 
 		createImage(texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, object.textureImage, object.textureImageMemory);
-
+		
 		transitionImageLayout(object.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 		copyBufferToImage(stagingBuffer, object.textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
@@ -705,6 +766,70 @@ private:
 		vkFreeMemory(device, stagingBufferMemory, nullptr);
 
 		generateMipmaps(object.textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
+	}
+
+	void createWebcamImage() {
+		
+		webCam.getFrame();
+		cv::Mat camFrame = webCam.webcamFrame;
+		uchar* camData = new uchar[camFrame.total() * 4];
+		Mat continuousRGBA(camFrame.size(), CV_8UC4, camData);
+		cv::cvtColor(camFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
+		//cv::imshow("camFrame", webCam.webcamFrame);
+
+		int texWidth, texHeight, texChannels;
+
+		texWidth = continuousRGBA.size().width;
+		texHeight = continuousRGBA.size().height;
+		texChannels = continuousRGBA.channels();
+
+		VkDeviceSize imageSize = continuousRGBA.total() * continuousRGBA.elemSize();
+
+		webWidth = texWidth;
+		webHeight = texHeight;
+
+		createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, textureBuffer, textureBufferMemory);
+
+		vkMapMemory(device, textureBufferMemory, 0, imageSize, 0, &tBuffer);
+		memcpy(tBuffer, continuousRGBA.ptr(), static_cast<size_t>(imageSize));
+	}
+
+	void createObjectWebcamImage(auto& object) {
+		object.mipLevels = 1;
+		
+		createImage(webWidth, webHeight, object.mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, object.textureImage, object.textureImageMemory);
+
+		transitionImageLayout(object.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, object.mipLevels);
+		copyBufferToImage(textureBuffer, object.textureImage, static_cast<uint32_t>(webWidth), static_cast<uint32_t>(webHeight));
+		generateMipmaps(object.textureImage, VK_FORMAT_R8G8B8A8_SRGB, webWidth, webHeight, object.mipLevels);
+	}
+
+	void updateWebcam() {
+
+		webCam.getFrame();
+		cv::Mat camFrame = webCam.webcamFrame;
+		uchar* camData = new uchar[camFrame.total() * 4];
+		Mat continuousRGBA(camFrame.size(), CV_8UC4, camData);
+		cv::cvtColor(camFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
+
+		int texWidth, texHeight, texChannels;
+
+		texWidth = continuousRGBA.size().width;
+		texHeight = continuousRGBA.size().height;
+		texChannels = continuousRGBA.channels();
+
+
+		VkDeviceSize imageSize = continuousRGBA.total() * continuousRGBA.elemSize();
+
+		memcpy(tBuffer, continuousRGBA.ptr(), (size_t)imageSize);
+	}
+
+	void updateWebcamImage(auto& object) {
+
+		transitionImageLayout(object.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, object.mipLevels);
+		copyBufferToImage(textureBuffer, object.textureImage, static_cast<uint32_t>(webWidth), static_cast<uint32_t>(webHeight));
+		generateMipmaps(object.textureImage, VK_FORMAT_R8G8B8A8_SRGB, webWidth, webHeight, object.mipLevels);
+
 	}
 
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
@@ -792,6 +917,10 @@ private:
 	void createTextureImageView(auto& object) {
 		object.textureImageView = createImageView(object.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 	}
+	void createWebcamTextureImageView(auto& object) {
+		object.textureImageView = createImageView(object.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, object.mipLevels);
+	}
+
 
 	void createTextureSampler() {
 		VkSamplerCreateInfo samplerInfo{};
@@ -808,6 +937,7 @@ private:
 		VkPhysicalDeviceProperties properties{};
 		vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 		samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+
 
 		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 
@@ -910,7 +1040,7 @@ private:
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties); 
 
 		if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
 			throw runtime_error("failed to allocate image memory!");
