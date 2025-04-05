@@ -11,15 +11,29 @@ public:
 	Webcam();
 	
 	void getFrame();
-	void getFramerate();
-	bool shouldUpdate();
+
+	void calibrateCornerFilter();
+	void getCorners();
+	void updateCorners();
+
+	void updateFrames();
 
 	cv::Mat webcamFrame;
 
-	double capfps;
-	std::chrono::steady_clock::time_point starttime;
+	cv::Point2f cropCorners[4];
+	cv::Point2f targetCorners[4];
+
+	bool shouldUpdate = true;
 private:
 	cv::VideoCapture cap;
+
+	int filter[8] = { 0 };
+	float sizeRatio = 1;
+
+	uint32_t targetWidth;
+	uint32_t targetHeight;
+
+	bool isUpdating = true;
 };
 
 #endif

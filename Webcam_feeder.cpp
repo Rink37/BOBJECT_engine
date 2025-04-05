@@ -1,75 +1,112 @@
-﻿// Webcam_feeder.cpp : Defines the entry point for the application.
-//
-
-#include <iostream>
-#include<chrono>
+﻿#include <iostream>
+#include <chrono>
+#include <algorithm>
 #include <opencv2/opencv.hpp>
 #include "Webcam_feeder.h"
 
 using namespace std;
 using namespace cv;
 
-void displayWebcam() {
-	Mat webcamFrame;
-	namedWindow("Webcam viewer");
-	VideoCapture cap(0);
-	if (!cap.isOpened()) {
-		cout << "No camera detected" << endl;
-		system("pause");
+Webcam::Webcam() {
+	cap.open(0, CAP_DSHOW);
+	for (int i = 0; i != 4; i++) {
+		cropCorners[i] = Point2f(0, 0);
 	}
-	while (true) {
+	getFrame();
+	targetHeight = webcamFrame.size().height;
+	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	targetCorners[0] = Point2f(0, 0);
+	targetCorners[1] = Point2f(0, targetHeight);
+	targetCorners[2] = Point2f(targetWidth, 0);
+	targetCorners[3] = Point2f(targetWidth, targetHeight);
+} 
+
+void Webcam::updateFrames() {
+	while (1) {
+		getFrame();
+	}
+}
+
+void Webcam::getFrame() {
+	if (isUpdating) {
+		if (!cap.isOpened()) {
+			cout << "Camera error" << endl;
+		}
 		cap >> webcamFrame;
-		if (webcamFrame.empty()) {
+		updateCorners();
+		Mat warp = getPerspectiveTransform(cropCorners, targetCorners);
+		warpPerspective(webcamFrame, webcamFrame, warp, Size(targetHeight, targetWidth));
+		if (!shouldUpdate) {
+			isUpdating = false;
+		}
+	}
+	else if (shouldUpdate) {
+		isUpdating = true;
+	}
+}
+
+static void nothing(int, void*) {
+	//Trackbar requires a function with these arguments, but we're not using it for anything
+}
+
+
+void Webcam::calibrateCornerFilter() {
+	bool storedShouldUpdate = shouldUpdate;
+	shouldUpdate = true;
+	string windowName = "Calibrate colour filtering";
+	namedWindow(windowName);
+	// Initialise GUI trackbars
+	createTrackbar("Bmin", windowName, 0, 255, nothing);
+	createTrackbar("Bmax", windowName, 0, 255, nothing);
+	setTrackbarPos("Bmin", windowName, 96);
+	setTrackbarPos("Bmax", windowName, 155);
+	createTrackbar("Gmin", windowName, 0, 255, nothing);
+	createTrackbar("Gmax", windowName, 0, 255, nothing);
+	setTrackbarPos("Gmin", windowName, 37);
+	setTrackbarPos("Gmax", windowName, 88);
+	createTrackbar("Rmin", windowName, 0, 255, nothing);
+	createTrackbar("Rmax", windowName, 0, 255, nothing);
+	setTrackbarPos("Rmin", windowName, 7);
+	setTrackbarPos("Rmax", windowName, 135);
+	int bmin = 0;
+	int bmax = 255;
+	int gmin = 0;
+	int gmax = 255;
+	int rmin = 0;
+	int rmax = 255;
+	// Set color filtering parameters before the loop - we don't want to define them within the loop
+	Mat frame;
+	while (true) {
+		// Get values of trackbars and use them to define te value of colour filtering parameters
+		bmin = getTrackbarPos("Bmin", windowName);
+		bmax = getTrackbarPos("Bmax", windowName);
+		gmin = getTrackbarPos("Gmin", windowName);
+		gmax = getTrackbarPos("Gmax", windowName);
+		rmin = getTrackbarPos("Rmin", windowName);
+		rmax = getTrackbarPos("Rmax", windowName);
+		// Retrieve the frame from cap
+		cap >> frame;
+		if (frame.empty()) {
 			break;
 		}
-		imshow("Webcam viewer", webcamFrame);
-		char c = (char)waitKey(25); //Waits for us to press 'Esc'
+		blur(frame, frame, Size(5, 5)); // I've found that including a bit of blur gives much more solid corner detection and removes some unwanted artifacts
+		inRange(frame, Scalar(bmin, gmin, rmin), Scalar(bmax, gmax, rmax), frame); // Create a filter mask by colour
+		imshow(windowName, frame);//Show the frame
+		char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
 		if (c == 27) {
 			break;
 		}
 	}
-	cap.release();
-}
+	destroyWindow(windowName);
 
-Webcam::Webcam() {
-	cap.open(0, CAP_DSHOW);
-	capfps = 0;
-	starttime = chrono::high_resolution_clock::now();
-} 
-
-void Webcam::getFramerate() {
-	int Numreps = 50;
-	int i = 0;
-	auto start = chrono::high_resolution_clock::now();
-	while (i < Numreps) {
-		cap >> webcamFrame;
-		i++;
-	}
-	auto end = chrono::high_resolution_clock::now();
-
-	capfps = static_cast<float>(Numreps) / static_cast<float>(chrono::duration_cast<chrono::seconds>(end - start).count());
-	cout << "Webcam fps = " << capfps << endl;
-}
-
-bool Webcam::shouldUpdate() {
-	bool update = false;
-	if (capfps == 0) {
-		getFramerate();
-	}
-	auto currentTime = chrono::high_resolution_clock::now();
-	int timeInMs = chrono::duration_cast<chrono::milliseconds>(currentTime - starttime).count();
-	if (timeInMs <= 1000 / capfps || timeInMs > 1000 / (capfps - 1)) {
-		update = true;
-		starttime = chrono::high_resolution_clock::now();
-	}
-	return update;
-}
-
-void Webcam::getFrame() {
-	if (!cap.isOpened()) {
-		cout << "Camera error" << endl;
-	}
- 	cap >> webcamFrame;
+	filter[0] = bmin;
+	filter[1] = gmin;
+	filter[2] = rmin;
+	filter[3] = bmax;
+	filter[4] = gmax;
+	filter[5] = rmax;
+	
+	shouldUpdate = storedShouldUpdate;
 }
 
 int displayMaskedWebcam(int arr[6]) {
@@ -98,23 +135,19 @@ int displayMaskedWebcam(int arr[6]) {
 	return 0;
 }
 
-static void nothing(int, void*) {
-	//Trackbar requires a function with these arguments, but we're not using it for anything
-}
-
 int* calibrateMask(int out[6]) {
 	string windowName = "Colour calibration window";
 	namedWindow(windowName);
 	// Initialise GUI trackbars
 	createTrackbar("Bmin", windowName, 0, 255, nothing);
 	createTrackbar("Bmax", windowName, 0, 255, nothing);
-	setTrackbarPos("Bmax", windowName, 255);
+	setTrackbarPos("Bmax", windowName, 100);
 	createTrackbar("Gmin", windowName, 0, 255, nothing);
 	createTrackbar("Gmax", windowName, 0, 255, nothing);
 	setTrackbarPos("Gmax", windowName, 255);
 	createTrackbar("Rmin", windowName, 0, 255, nothing);
 	createTrackbar("Rmax", windowName, 0, 255, nothing);
-	setTrackbarPos("Rmax", windowName, 255);
+	setTrackbarPos("Rmax", windowName, 100);
 	int bmin = 0;
 	int bmax = 255;
 	int gmin = 0;
@@ -161,6 +194,148 @@ int* calibrateMask(int out[6]) {
 	out[4] = gmax;
 	out[5] = rmax;
 	return out; // return an updated mask parameters array which can be used in following functions. 
+}
+
+float dist(Point2f A, Point2f B) {
+	return sqrt(pow(A.x - B.x, 2) + pow(A.y - B.y, 2));
+}
+
+void Webcam::getCorners() {
+	Mat frame;
+	Mat mask;
+	vector<vector<Point>> contours;
+	vector<Vec4i> hierarchy;
+	cap >> frame;
+	int targetWidth = 100;
+	int targetHeight = 100;
+	Point2f corners[4] = {Point2f(0, 0), Point2f(0, frame.size[0]), Point2f(frame.size[1], 0), Point2f(frame.size[1], frame.size[0])};
+	Point2f targetCorners[4] = { Point2f(0, 0), Point2f(0, targetHeight), Point2f(targetWidth, 0), Point2f(targetWidth, targetHeight) };
+	namedWindow("Transformed Image");
+	float cX = 0;
+	float cY = 0;
+	int selectIndex = 0;
+	if (!cap.isOpened()) {
+		cout << "No camera detected" << endl;
+		system("pause");
+	}
+	while (true) {
+		cap >> frame;
+		if (frame.empty()) {
+			break;
+		}
+		blur(frame, mask, Size(5, 5));
+		inRange(mask, Scalar(filter[0], filter[1], filter[2]), Scalar(filter[3], filter[4], filter[5]), mask);
+		resize(mask, mask, Size(), 0.25, 0.25);
+		findContours(mask, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
+		vector<Point2f> coords;
+		for (int i = 0; i < contours.size(); i++) {
+			float area = contourArea(contours[i]);
+			if (area < 500 && area>2) {
+				Moments m = moments(contours[i]);
+				if (m.m00 != 0) {
+					cX = 4 * m.m10 / m.m00;
+					cY = 4 * m.m01 / m.m00;
+				}
+				else {
+					cout << area << endl;
+					cX = 0;
+					cY = 0;
+				}
+				coords.push_back(Point2f(cX, cY));
+				//circle(frame, Point2f(cX, cY), 5, Scalar(0, 255, 0), 8, 0);
+			}
+		}
+		int numCoords = coords.size();
+		if (numCoords >= 4) {
+			for (int i = 0; i < 4; i++) {
+				vector<float> eucDists;
+				for (int j = 0; j < numCoords; j++) {
+					eucDists.push_back(dist(corners[i], coords[j]));
+				}
+				auto it = min_element(begin(eucDists), end(eucDists));
+				selectIndex = distance(begin(eucDists), it);
+				if (eucDists[selectIndex] < 1000) {
+					corners[i] = coords[selectIndex];
+					coords.erase(coords.begin() + selectIndex);
+				}
+				numCoords -= 1;
+			}
+		}
+		//Mat warp = getPerspectiveTransform(corners, targetCorners);
+		//warpPerspective(frame, frame, warp, Size(targetHeight, targetWidth));
+		for (int i = 0; i < 4; i++) {
+			cv::circle(frame, corners[i], 10, Scalar(255, 0, 0), 8, 0);
+		}
+		imshow("Transformed Image", frame);
+		char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
+		if (c == 27) {
+			break;
+		}
+	}
+	cropCorners[0] = corners[0];
+	cropCorners[1] = corners[1];
+	cropCorners[2] = corners[2];
+	cropCorners[3] = corners[3];
+	destroyWindow("Transformed Image");
+}
+
+void Webcam::updateCorners() {
+	if (cropCorners[1] == Point2f(0, 0)) {
+		calibrateCornerFilter();
+		getCorners();
+	}
+	Mat frame;
+	resize(webcamFrame, frame, Size(), 0.25, 0.25);
+	Mat cropArea;
+	vector<vector<Point>> contours;
+	vector<Vec4i> hierarchy;
+	
+	float cX = 0;
+	float cY = 0;
+
+	float rectHalf = 20 / 2;
+
+	float smoothness = 25.0f;
+
+	float imgWidth = static_cast<float>(frame.cols);
+	float imgHeight = static_cast<float>(frame.rows);
+
+	float cropWidth, cropHeight;
+
+	float l, r, t, b;
+
+	for (int i = 0; i != 4; i++) {
+		//cout << i << " " << cropCorners[i] << endl;
+		
+		t = clamp((cropCorners[i].y)/4 - rectHalf , 0.0f, imgHeight);
+		b = clamp((cropCorners[i].y)/4 + rectHalf, 0.0f, imgHeight);
+		l = clamp((cropCorners[i].x)/4 - rectHalf , 0.0f, imgWidth);
+		r = clamp((cropCorners[i].x)/4 + rectHalf, 0.0f, imgWidth);
+
+		cropHeight = b - t;
+		cropWidth = r - l;
+
+		if (cropWidth > 0 && cropHeight > 1) {
+			cropArea = frame(cv::Rect(l, t, cropWidth, cropHeight)).clone();
+
+			blur(cropArea, cropArea, Size(5, 5));
+			inRange(cropArea, Scalar(filter[0], filter[1], filter[2]), Scalar(filter[3], filter[4], filter[5]), cropArea);
+
+			findContours(cropArea, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
+
+			//imshow("crop", cropArea);
+
+			if (contours.size() >= 1) {
+				Moments m = moments(contours[0]);
+				if (m.m00 != 0) {
+					cX = m.m10 / m.m00 * 4;
+					cY = m.m01 / m.m00 * 4;
+					cropCorners[i] = Point2f(((cropCorners[i].x)*(smoothness-1) + l*4 + cX)/smoothness, ((cropCorners[i].y)*(smoothness - 1) + t*4 + cY) / smoothness);
+				}
+			}
+			//cv::circle(webcamFrame, cropCorners[i], 10, Scalar(255, 0, 0), 8, 0);
+		}
+	}
 }
 
 //int main()

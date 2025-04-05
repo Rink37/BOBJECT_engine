@@ -29,7 +29,8 @@ void Camera::updateCamera(GLFWwindow* window) {
 	}
 	int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
 	int shiftState = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
-	if (state == GLFW_PRESS && shiftState != GLFW_PRESS) {
+	int mb4State = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_4);
+	if (state == GLFW_PRESS && shiftState != GLFW_PRESS && mb4State != GLFW_PRESS) {
 		if (!isRotating) {
 			glfwGetCursorPos(window, &initXpos, &initYpos);
 			initxrot = xrot;
@@ -40,7 +41,7 @@ void Camera::updateCamera(GLFWwindow* window) {
 		xrot = initxrot + static_cast<float>(activeXpos - initXpos);
 		yrot = std::clamp(inityrot + static_cast<float>(activeYpos - initYpos), -80.0f, 80.0f);
 	}
-	else if (state == GLFW_PRESS && shiftState == GLFW_PRESS) {
+	else if (state == GLFW_PRESS && (shiftState == GLFW_PRESS || mb4State == GLFW_PRESS)) {
 		if (!isPanning) {
 			glfwGetCursorPos(window, &initXpos, &initYpos);
 			initCenter = center;

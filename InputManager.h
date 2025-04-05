@@ -7,38 +7,8 @@
 
 #include <iostream>
 #include <map>
-#include<vector>
+#include <vector>
 #include "windows.h"
-
-class Keybind {
-	public:
-		char keyChar;
-		int keyCode;
-
-		void init(char);
-
-		bool getState();
-};
-
-class bindSet {
-private:
-	std::vector<Keybind> keybinds;
-public:
-	void addKeybind(char);
-	void getKeyStates();
-};
-
-namespace dir {
-	int getHorizontalAxis();
-	int getVerticalAxis();
-	int getForwardAxis();
-};
-
-namespace keycommands {
-	bool reloadModel();
-	bool addModel();
-};
-
 
 class KeyInput {
 public:
