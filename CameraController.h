@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef CAMERA_CONTROLLER
 #define CAMERA_CONTROLLER
 
@@ -13,6 +11,7 @@
 #include<glm/gtx/hash.hpp>
 
 #include<algorithm>
+#include<iostream>
 
 #include "math.h"
 
