@@ -119,6 +119,17 @@ struct UniformBufferObject {
 
 class Engine {
 public:
+	static Engine* get(){
+		if (nullptr == enginstance) enginstance = new Engine;
+		return enginstance;
+	}
+	Engine(const Engine&) = delete;
+	Engine& operator=(const Engine&) = delete;
+	static void destruct() {
+		delete enginstance;
+		enginstance = nullptr;
+	}
+
 	GLFWwindow* window;
 	uint32_t pipelineindex = 1;
 
@@ -174,6 +185,9 @@ public:
 
 	void createBuffer(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&);
 private:
+	static Engine* enginstance;
+	Engine() = default;
+	~Engine() = default;
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 	VkSurfaceKHR surface;

@@ -234,15 +234,16 @@ struct UIObject {
 class Application {
 public:
 	void run() {
-		engine.initWindow();
-		engine.initVulkan();
-		KeyInput::setupKeyInputs(engine.window);
+		engine->initWindow();
+		engine->initVulkan();
+		KeyInput::setupKeyInputs(engine->window);
 		createCanvas();
 		mainLoop();
 		cleanup();
+		Engine::destruct();
 	}
 private:
-	Engine engine;
+	Engine* engine = Engine::get();
 
 	VkBuffer textureBuffer;
 	VkDeviceMemory textureBufferMemory;
@@ -313,19 +314,19 @@ private:
 		hArrangement *Renderbuttons = new hArrangement(0, 0, 0.4, 0.2, 0.1);
 		hArrangement *Videobuttons = new hArrangement(0.775, 0.6, 0.2, 0.1, 0.1);
 
-		Button *loadObjectButton = new Button(0, 0, 0.2f, 0.1f, LOAD_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+		Button *loadObjectButton = new Button(0, 0, 0.2f, 0.1f, LOAD_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
 
-		Button *litRenderingButton = new Button(0, 0, 0.2f, 0.2f, RENDERED_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+		Button *litRenderingButton = new Button(0, 0, 0.2f, 0.2f, RENDERED_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
 
-		Button *unlitRenderingButton = new Button(0, 0, 0.2f, 0.2f, UNRENDERED_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+		Button *unlitRenderingButton = new Button(0, 0, 0.2f, 0.2f, UNRENDERED_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
 
-		Button *wireframeRenderingButton = new Button(0, 0, 0.2f, 0.2f, WIREFRAME_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+		Button *wireframeRenderingButton = new Button(0, 0, 0.2f, 0.2f, WIREFRAME_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
 
-		Button* playButton = new Button(0, 0, 0.2f, 0.2f, PLAY_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+		Button* playButton = new Button(0, 0, 0.2f, 0.2f, PLAY_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
 
-		Button* pauseButton = new Button(0, 0, 0.2f, 0.2f, PAUSE_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+		Button* pauseButton = new Button(0, 0, 0.2f, 0.2f, PAUSE_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
 
-		Button* settingsButton = new Button(0, 0, 0.2f, 0.2f, SETTINGS_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+		Button* settingsButton = new Button(0, 0, 0.2f, 0.2f, SETTINGS_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
 
 		Renderbuttons->addItem(unlitRenderingButton);
 		Renderbuttons->addItem(litRenderingButton);
@@ -334,7 +335,7 @@ private:
 		Videobuttons->addItem(playButton);
 		Videobuttons->addItem(pauseButton);
 		Videobuttons->addItem(settingsButton);
-		Videobuttons->arrangeItems(engine.windowWidth, engine.windowHeight);
+		Videobuttons->arrangeItems(engine->windowWidth, engine->windowHeight);
 
 		canvas.push_back(Videobuttons);
 
@@ -342,7 +343,7 @@ private:
 
 		buttons->addItem(loadObjectButton);
 		buttons->addItem(Renderbuttons);
-		buttons->arrangeItems(engine.windowWidth, engine.windowHeight);
+		buttons->arrangeItems(engine->windowWidth, engine->windowHeight);
 
 		Unrendered = unlitRenderingButton;
 		Rendered = litRenderingButton;
@@ -357,7 +358,7 @@ private:
 		canvas.push_back(ObjectButtons);
 
 		for (Button *item : {loadObjectButton, litRenderingButton, unlitRenderingButton, wireframeRenderingButton, playButton, pauseButton, settingsButton}) {
-			item->updateDisplay(engine.windowWidth, engine.windowHeight);
+			item->updateDisplay(engine->windowWidth, engine->windowHeight);
 
 			createTextureImage(item->image);
 			createTextureImageView(item->image);
@@ -386,7 +387,7 @@ private:
 			webcamView.updateAbsScale();
 		}
 
-		webcamView.createVertices(engine.windowWidth, engine.windowHeight);
+		webcamView.createVertices(engine->windowWidth, engine->windowHeight);
 
 		createUIVertexBuffer(&webcamView);
 		createIndexBuffer(&webcamView);
@@ -397,9 +398,9 @@ private:
 	}
 
 	void mainLoop() {
-		while (!glfwWindowShouldClose(engine.window)) {
+		while (!glfwWindowShouldClose(engine->window)) {
 			glfwPollEvents();
-			glfwGetCursorPos(engine.window, &mouseX, &mouseY);
+			glfwGetCursorPos(engine->window, &mouseX, &mouseY);
 			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_U)) {
 				webCam.shouldUpdate = false;
 			}
@@ -408,7 +409,7 @@ private:
 			}
 			updateWebcam();
 			updateWebcamImage(UIobjects[0]);
-			int state = glfwGetMouseButton(engine.window, GLFW_MOUSE_BUTTON_LEFT);
+			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
 			if (Play->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
 				webCam.shouldUpdate = true;
 			}
@@ -422,7 +423,7 @@ private:
 				item->checkForEvent(mouseX, mouseY, state);
 			}
 			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L)) {
-				engine.pipelineindex = 3;
+				engine->pipelineindex = 3;
 			}
 			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_0)) {
 				webCam.calibrateCornerFilter();
@@ -434,13 +435,13 @@ private:
 				}
 			}
 			if (Wireframe->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
-				engine.pipelineindex = engine.PipelineMap.at("Wireframe");
+				engine->pipelineindex = engine->PipelineMap.at("Wireframe");
 			}
 			if (Rendered->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
-				engine.pipelineindex = 1;
+				engine->pipelineindex = 1;
 			}
 			if (Unrendered->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
-				engine.pipelineindex = 0;
+				engine->pipelineindex = 0;
 			}
 			if (LB->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
 				loadStaticObject();
@@ -448,7 +449,7 @@ private:
 			drawFrame();
 		}
 
-		vkDeviceWaitIdle(engine.device);
+		vkDeviceWaitIdle(engine->device);
 	}
 
 	void setObjectVisibilities(UIItem* owner) {
@@ -475,9 +476,9 @@ private:
 
 			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibilities, this, placeholders::_1);
 
-			Button* objectButton = new Button(0, 0, 0.15, 0.15, UNRENDERED_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+			Button* objectButton = new Button(0, 0, 0.15, 0.15, UNRENDERED_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
 
-			objectButton->updateDisplay(engine.windowWidth, engine.windowHeight);
+			objectButton->updateDisplay(engine->windowWidth, engine->windowHeight);
 			objectButton->setClickFunction(testfunction);
 
 			createTextureImage(objectButton->image);
@@ -492,9 +493,9 @@ private:
 			ObjectMap.insert({ objectButton->Name, staticObjects.size() });
 
 			ObjectButtons->addItem(objectButton);
-			ObjectButtons->arrangeItems(engine.windowWidth, engine.windowHeight);
+			ObjectButtons->arrangeItems(engine->windowWidth, engine->windowHeight);
 
-			ObjectButtons->updateDisplay(engine.windowWidth, engine.windowHeight);
+			ObjectButtons->updateDisplay(engine->windowWidth, engine->windowHeight);
 			vector<UIImage*> images;
 			ObjectButtons->getImages(images);
 			for (UIImage* image : images) {
@@ -513,18 +514,18 @@ private:
 	void cleanup() {
 
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
-			vkDestroyDescriptorPool(engine.device, staticObjects[i].descriptorPool, nullptr);
+			vkDestroyDescriptorPool(engine->device, staticObjects[i].descriptorPool, nullptr);
 
-			vkDestroyBuffer(engine.device, staticObjects[i].indexBuffer, nullptr);
-			vkFreeMemory(engine.device, staticObjects[i].indexBufferMemory, nullptr);
+			vkDestroyBuffer(engine->device, staticObjects[i].indexBuffer, nullptr);
+			vkFreeMemory(engine->device, staticObjects[i].indexBufferMemory, nullptr);
 
-			vkDestroyBuffer(engine.device, staticObjects[i].vertexBuffer, nullptr);
-			vkFreeMemory(engine.device, staticObjects[i].vertexBufferMemory, nullptr);
+			vkDestroyBuffer(engine->device, staticObjects[i].vertexBuffer, nullptr);
+			vkFreeMemory(engine->device, staticObjects[i].vertexBufferMemory, nullptr);
 			
-			vkDestroyImage(engine.device, staticObjects[i].textureImage, nullptr);
-			vkFreeMemory(engine.device, staticObjects[i].textureImageMemory, nullptr);
+			vkDestroyImage(engine->device, staticObjects[i].textureImage, nullptr);
+			vkFreeMemory(engine->device, staticObjects[i].textureImageMemory, nullptr);
 
-			vkDestroyImageView(engine.device, staticObjects[i].textureImageView, nullptr);
+			vkDestroyImageView(engine->device, staticObjects[i].textureImageView, nullptr);
 		}
 
 		for (uint32_t i = 0; i != canvas.size(); i++) {
@@ -532,42 +533,42 @@ private:
 			canvas[i]->getImages(images);
 
 			for (UIImage *image : images) {
-				vkDestroyDescriptorPool(engine.device, image->descriptorPool, nullptr);
+				vkDestroyDescriptorPool(engine->device, image->descriptorPool, nullptr);
 
-				vkDestroyBuffer(engine.device, image->indexBuffer, nullptr);
-				vkFreeMemory(engine.device, image->indexBufferMemory, nullptr);
+				vkDestroyBuffer(engine->device, image->indexBuffer, nullptr);
+				vkFreeMemory(engine->device, image->indexBufferMemory, nullptr);
 
-				vkDestroyBuffer(engine.device, image->vertexBuffer, nullptr);
-				vkFreeMemory(engine.device, image->vertexBufferMemory, nullptr);
+				vkDestroyBuffer(engine->device, image->vertexBuffer, nullptr);
+				vkFreeMemory(engine->device, image->vertexBufferMemory, nullptr);
 
-				vkDestroyImage(engine.device, image->textureImage, nullptr);
-				vkFreeMemory(engine.device, image->textureImageMemory, nullptr);
+				vkDestroyImage(engine->device, image->textureImage, nullptr);
+				vkFreeMemory(engine->device, image->textureImageMemory, nullptr);
 
-				vkDestroyImageView(engine.device, image->textureImageView, nullptr);
+				vkDestroyImageView(engine->device, image->textureImageView, nullptr);
 			}
 		}
 
 		for (uint32_t i = 0; i != UIobjects.size(); i++) {
-			vkDestroyDescriptorPool(engine.device, UIobjects[i].descriptorPool, nullptr);
+			vkDestroyDescriptorPool(engine->device, UIobjects[i].descriptorPool, nullptr);
 
-			vkDestroyBuffer(engine.device, UIobjects[i].indexBuffer, nullptr);
-			vkFreeMemory(engine.device, UIobjects[i].indexBufferMemory, nullptr);
+			vkDestroyBuffer(engine->device, UIobjects[i].indexBuffer, nullptr);
+			vkFreeMemory(engine->device, UIobjects[i].indexBufferMemory, nullptr);
 
-			vkDestroyBuffer(engine.device, UIobjects[i].vertexBuffer, nullptr);
-			vkFreeMemory(engine.device, UIobjects[i].vertexBufferMemory, nullptr);
+			vkDestroyBuffer(engine->device, UIobjects[i].vertexBuffer, nullptr);
+			vkFreeMemory(engine->device, UIobjects[i].vertexBufferMemory, nullptr);
 
-			vkDestroyImage(engine.device, UIobjects[i].textureImage, nullptr);
-			vkFreeMemory(engine.device, UIobjects[i].textureImageMemory, nullptr);
+			vkDestroyImage(engine->device, UIobjects[i].textureImage, nullptr);
+			vkFreeMemory(engine->device, UIobjects[i].textureImageMemory, nullptr);
 
-			vkDestroyImageView(engine.device, UIobjects[i].textureImageView, nullptr);
+			vkDestroyImageView(engine->device, UIobjects[i].textureImageView, nullptr);
 		}
 
-		engine.cleanup();
+		engine->cleanup();
 	}
 
 	VkSampleCountFlagBits getMaxUseableSampleCount() {
 		VkPhysicalDeviceProperties physicalDeviceProperties;
-		vkGetPhysicalDeviceProperties(engine.physicalDevice, &physicalDeviceProperties);
+		vkGetPhysicalDeviceProperties(engine->physicalDevice, &physicalDeviceProperties);
 
 		VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
 
@@ -596,29 +597,29 @@ private:
 			throw runtime_error("failed to load texture image!");
 		}
 
-		engine.mipLevels = static_cast<uint32_t>(floor(log2(max(texWidth, texHeight)))) + 1; 
+		engine->mipLevels = static_cast<uint32_t>(floor(log2(max(texWidth, texHeight)))) + 1; 
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
 
-		engine.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		engine->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 		void* data;
-		vkMapMemory(engine.device, stagingBufferMemory, 0, imageSize, 0, &data);
+		vkMapMemory(engine->device, stagingBufferMemory, 0, imageSize, 0, &data);
 		memcpy(data, pixels, static_cast<size_t>(imageSize));
-		vkUnmapMemory(engine.device, stagingBufferMemory);
+		vkUnmapMemory(engine->device, stagingBufferMemory);
 
 		stbi_image_free(pixels);
 
-		createImage(texWidth, texHeight, engine.mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, object->textureImage, object->textureImageMemory);
+		createImage(texWidth, texHeight, engine->mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, object->textureImage, object->textureImageMemory);
 		
-		transitionImageLayout(object->textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, engine.mipLevels);
+		transitionImageLayout(object->textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, engine->mipLevels);
 		copyBufferToImage(stagingBuffer, object->textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-		vkDestroyBuffer(engine.device, stagingBuffer, nullptr);
-		vkFreeMemory(engine.device, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
+		vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
 
-		generateMipmaps(object->textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, engine.mipLevels);
+		generateMipmaps(object->textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, engine->mipLevels);
 	}
 
 	void createWebcamImage() {
@@ -640,9 +641,9 @@ private:
 		webWidth = texWidth;
 		webHeight = texHeight;
 
-		engine.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, textureBuffer, textureBufferMemory);
+		engine->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, textureBuffer, textureBufferMemory);
 
-		vkMapMemory(engine.device, textureBufferMemory, 0, imageSize, 0, &tBuffer);
+		vkMapMemory(engine->device, textureBufferMemory, 0, imageSize, 0, &tBuffer);
 		memcpy(tBuffer, continuousRGBA.ptr(), static_cast<size_t>(imageSize));
 	}
 
@@ -658,7 +659,7 @@ private:
 
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
 		VkFormatProperties formatProperties;
-		vkGetPhysicalDeviceFormatProperties(engine.physicalDevice, imageFormat, &formatProperties);
+		vkGetPhysicalDeviceFormatProperties(engine->physicalDevice, imageFormat, &formatProperties);
 
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
 			throw runtime_error("texture image format does not support linear blitting!");
@@ -739,7 +740,7 @@ private:
 	}
 
 	void createTextureImageView(auto *object) {
-		object->textureImageView = createImageView(object->textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, engine.mipLevels);
+		object->textureImageView = createImageView(object->textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, engine->mipLevels);
 	}
 	void createWebcamTextureImageView(auto& object) {
 		object.textureImageView = createImageView(object.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, object.mipLevels);
@@ -763,7 +764,7 @@ private:
 		viewInfo.subresourceRange.layerCount = 1;
 
 		VkImageView imageView;
-		if (vkCreateImageView(engine.device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+		if (vkCreateImageView(engine->device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
 			throw runtime_error("failed to create texture image view!");
 		}
 
@@ -788,34 +789,34 @@ private:
 
 		imageInfo.samples = numSamples;
 
-		if (vkCreateImage(engine.device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+		if (vkCreateImage(engine->device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
 			throw runtime_error("failed to create image!");
 		}
 
 		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(engine.device, image, &memRequirements);
+		vkGetImageMemoryRequirements(engine->device, image, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = engine.findMemoryType(memRequirements.memoryTypeBits, properties); 
+		allocInfo.memoryTypeIndex = engine->findMemoryType(memRequirements.memoryTypeBits, properties); 
 
-		if (vkAllocateMemory(engine.device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+		if (vkAllocateMemory(engine->device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
 			throw runtime_error("failed to allocate image memory!");
 		}
 
-		vkBindImageMemory(engine.device, image, imageMemory, 0);
+		vkBindImageMemory(engine->device, image, imageMemory, 0);
 	}
 
 	VkCommandBuffer beginSingleTimeCommands() {
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = engine.commandPool;
+		allocInfo.commandPool = engine->commandPool;
 		allocInfo.commandBufferCount = 1;
 
 		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(engine.device, &allocInfo, &commandBuffer);
+		vkAllocateCommandBuffers(engine->device, &allocInfo, &commandBuffer);
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -834,10 +835,10 @@ private:
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer;
 
-		vkQueueSubmit(engine.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(engine.graphicsQueue);
+		vkQueueSubmit(engine->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(engine->graphicsQueue);
 
-		vkFreeCommandBuffers(engine.device, engine.commandPool, 1, &commandBuffer);
+		vkFreeCommandBuffers(engine->device, engine->commandPool, 1, &commandBuffer);
 	}
 
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
@@ -938,13 +939,13 @@ private:
 	}
 
 	void drawFrame() {
-		vkWaitForFences(engine.device, 1, &engine.inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(engine->device, 1, &engine->inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex;
-		VkResult result = vkAcquireNextImageKHR(engine.device, engine.swapChain, UINT64_MAX, engine.imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(engine->device, engine->swapChain, UINT64_MAX, engine->imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			engine.recreateSwapChain();
+			engine->recreateSwapChain();
 			return;
 		}
 		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
@@ -953,28 +954,28 @@ private:
 
 		updateUniformBuffer(currentFrame);
 
-		vkResetFences(engine.device, 1, &engine.inFlightFences[currentFrame]);
+		vkResetFences(engine->device, 1, &engine->inFlightFences[currentFrame]);
 
-		vkResetCommandBuffer(engine.commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
-		recordCommandBuffer(engine.commandBuffers[currentFrame], imageIndex);
+		vkResetCommandBuffer(engine->commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
+		recordCommandBuffer(engine->commandBuffers[currentFrame], imageIndex);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		VkSemaphore waitSemaphores[] = { engine.imageAvailableSemaphores[currentFrame]};
+		VkSemaphore waitSemaphores[] = { engine->imageAvailableSemaphores[currentFrame]};
 		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &engine.commandBuffers[currentFrame];
+		submitInfo.pCommandBuffers = &engine->commandBuffers[currentFrame];
 
-		VkSemaphore signalSemaphores[] = { engine.renderFinishedSemaphores[currentFrame]};
+		VkSemaphore signalSemaphores[] = { engine->renderFinishedSemaphores[currentFrame]};
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		if (vkQueueSubmit(engine.graphicsQueue, 1, &submitInfo, engine.inFlightFences[currentFrame]) != VK_SUCCESS) {
+		if (vkQueueSubmit(engine->graphicsQueue, 1, &submitInfo, engine->inFlightFences[currentFrame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
 
@@ -984,19 +985,19 @@ private:
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
-		VkSwapchainKHR swapChains[] = { engine.swapChain };
+		VkSwapchainKHR swapChains[] = { engine->swapChain };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
 
 		presentInfo.pImageIndices = &imageIndex;
 
-		result = vkQueuePresentKHR(engine.presentQueue, &presentInfo);
+		result = vkQueuePresentKHR(engine->presentQueue, &presentInfo);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine.framebufferResized) {
-			engine.framebufferResized = false;
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine->framebufferResized) {
+			engine->framebufferResized = false;
 
 			for (size_t i = 0; i != canvas.size(); i++) {
-				canvas[i]->updateDisplay(engine.windowWidth, engine.windowHeight);
+				canvas[i]->updateDisplay(engine->windowWidth, engine->windowHeight);
 				vector<UIImage*> images;
 				canvas[i]->getImages(images);
 				for (UIImage *image : images) {
@@ -1005,12 +1006,12 @@ private:
 			}
 
 			for (uint32_t i = 0; i != UIobjects.size(); i++) {
-				UIobjects[i].createVertices(engine.windowWidth, engine.windowHeight);
+				UIobjects[i].createVertices(engine->windowWidth, engine->windowHeight);
 
 				updateUIVertexBuffer(UIobjects[i]);
 			}
 
-			engine.recreateSwapChain();
+			engine->recreateSwapChain();
 			return;
 		}
 		else if (result != VK_SUCCESS) {
@@ -1022,12 +1023,12 @@ private:
 
 	void updateUniformBuffer(uint32_t currentImage) {
 
-		camera.updateCamera(engine.window);
+		camera.updateCamera(engine->window);
 
 		UniformBufferObject ubo{};
 		ubo.model = glm::mat4(1.0f); //Defines model translation, rotation and scale 
 		ubo.view = camera.view;
-		ubo.proj = glm::perspective(glm::radians(camera.fov), engine.swapChainExtent.width / (float)engine.swapChainExtent.height, 0.1f, 10.0f);
+		ubo.proj = glm::perspective(glm::radians(camera.fov), engine->swapChainExtent.width / (float)engine->swapChainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
 		ubo.UVdistort[0] = 2*UIobjects[0].sizex;
@@ -1035,7 +1036,7 @@ private:
 		ubo.UVdistort[2] = 2*UIobjects[0].sizey;
 		ubo.UVdistort[3] = (-UIobjects[0].ypos - UIobjects[0].anchorY) - UIobjects[0].sizey;
 
-		memcpy(engine.uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
+		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
 
 	void createVertexBuffer(auto& object) {
@@ -1044,19 +1045,19 @@ private:
 		
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
-		engine.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 		void* data;
-		vkMapMemory(engine.device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		vkMapMemory(engine->device, stagingBufferMemory, 0, bufferSize, 0, &data);
 			memcpy(data, object.vertices.data(), (size_t) bufferSize);
-		vkUnmapMemory(engine.device, stagingBufferMemory);
+		vkUnmapMemory(engine->device, stagingBufferMemory);
 
-		engine.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, object.vertexBuffer, object.vertexBufferMemory);
+		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, object.vertexBuffer, object.vertexBufferMemory);
 
 		copyBuffer(stagingBuffer, object.vertexBuffer, bufferSize);
 
-		vkDestroyBuffer(engine.device, stagingBuffer, nullptr);
-		vkFreeMemory(engine.device, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
+		vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
 	}
 
 	void createUIVertexBuffer(auto *object) {
@@ -1065,21 +1066,21 @@ private:
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
-		engine.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 		void* data;
-		vkMapMemory(engine.device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		vkMapMemory(engine->device, stagingBufferMemory, 0, bufferSize, 0, &data);
 		memcpy(data, object->vertices.data(), (size_t)bufferSize);
-		vkUnmapMemory(engine.device, stagingBufferMemory);
+		vkUnmapMemory(engine->device, stagingBufferMemory);
 
-		engine.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, object->vertexBuffer, object->vertexBufferMemory);
+		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, object->vertexBuffer, object->vertexBufferMemory);
 
 		copyBuffer(stagingBuffer, object->vertexBuffer, bufferSize);
 
-		vkMapMemory(engine.device, object->vertexBufferMemory, 0, bufferSize, 0, &object->vBuffer);
+		vkMapMemory(engine->device, object->vertexBufferMemory, 0, bufferSize, 0, &object->vBuffer);
 
-		vkDestroyBuffer(engine.device, stagingBuffer, nullptr);
-		vkFreeMemory(engine.device, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
+		vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
 	}
 
 	void updateUIVertexBuffer(auto& object) {
@@ -1093,19 +1094,19 @@ private:
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
-		engine.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 		void* data;
-		vkMapMemory(engine.device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		vkMapMemory(engine->device, stagingBufferMemory, 0, bufferSize, 0, &data);
 			memcpy(data, object->indices.data(), (size_t)bufferSize);
-		vkUnmapMemory(engine.device, stagingBufferMemory);
+		vkUnmapMemory(engine->device, stagingBufferMemory);
 
-		engine.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, object->indexBuffer, object->indexBufferMemory);
+		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, object->indexBuffer, object->indexBufferMemory);
 
 		copyBuffer(stagingBuffer, object->indexBuffer, bufferSize);
 
-		vkDestroyBuffer(engine.device, stagingBuffer, nullptr);
-		vkFreeMemory(engine.device, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
+		vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
 	}
 
 	void createDescriptorPool(auto *object) {
@@ -1121,14 +1122,14 @@ private:
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-		if (vkCreateDescriptorPool(engine.device, &poolInfo, nullptr, &object->descriptorPool) != VK_SUCCESS) {
+		if (vkCreateDescriptorPool(engine->device, &poolInfo, nullptr, &object->descriptorPool) != VK_SUCCESS) {
 			throw runtime_error("failed to create descriptor pool!");
 		}
 	}
 
 
 	void createDescriptorSets(auto *object) {
-		vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, engine.descriptorSetLayout);
+		vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, engine->descriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = object->descriptorPool;
@@ -1137,20 +1138,20 @@ private:
 
 		object->descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
 		
-		if (vkAllocateDescriptorSets(engine.device, &allocInfo, object->descriptorSets.data()) != VK_SUCCESS) {
+		if (vkAllocateDescriptorSets(engine->device, &allocInfo, object->descriptorSets.data()) != VK_SUCCESS) {
 			throw runtime_error("failed to allocate descriptor sets!");
 		}
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = engine.uniformBuffers[i];
+			bufferInfo.buffer = engine->uniformBuffers[i];
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
 
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			imageInfo.imageView = object->textureImageView;
-			imageInfo.sampler = engine.textureSampler;
+			imageInfo.sampler = engine->textureSampler;
 
 			array<VkWriteDescriptorSet, 2> descriptorWrites{};
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1169,7 +1170,7 @@ private:
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].pImageInfo = &imageInfo;
 
-			vkUpdateDescriptorSets(engine.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+			vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}
 	}
 
@@ -1195,11 +1196,11 @@ private:
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = engine.renderPass;
-		renderPassInfo.framebuffer = engine.swapChainFramebuffers[imageIndex];
+		renderPassInfo.renderPass = engine->renderPass;
+		renderPassInfo.framebuffer = engine->swapChainFramebuffers[imageIndex];
 
 		renderPassInfo.renderArea.offset = { 0,0 };
-		renderPassInfo.renderArea.extent = engine.swapChainExtent;
+		renderPassInfo.renderArea.extent = engine->swapChainExtent;
 
 		array<VkClearValue, 2> clearValues{};
 		clearValues[0].color = { {0.812f, 0.2f, 0.2f, 1.0f} };
@@ -1213,18 +1214,18 @@ private:
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(engine.swapChainExtent.width);
-		viewport.height = static_cast<float>(engine.swapChainExtent.height);
+		viewport.width = static_cast<float>(engine->swapChainExtent.width);
+		viewport.height = static_cast<float>(engine->swapChainExtent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = { 0,0 };
-		scissor.extent = engine.swapChainExtent;
+		scissor.extent = engine->swapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine.GraphicsPipelines[engine.PipelineMap.at("UVWireframe")]);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UVWireframe")]);
 
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			if (staticObjects[i].isVisible) {
@@ -1235,13 +1236,13 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine.pipelineLayout, 0, 1, &staticObjects[i].descriptorSets[currentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].indices.size()), 1, 0, 0, 0);
 			}
 		}
 		
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine.GraphicsPipelines[engine.PipelineMap.at("UIShading")]);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UIShading")]);
 
 		for (uint32_t i = 0; i != UIobjects.size(); i++) {
 			VkBuffer vertexBuffers[] = { UIobjects[i].vertexBuffer};
@@ -1251,7 +1252,7 @@ private:
 
 			vkCmdBindIndexBuffer(commandBuffer, UIobjects[i].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine.pipelineLayout, 0, 1, &UIobjects[i].descriptorSets[currentFrame], 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &UIobjects[i].descriptorSets[currentFrame], 0, nullptr);
 
 			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(UIobjects[i].indices.size()), 1, 0, 0, 0);
 		}
@@ -1268,13 +1269,13 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, image->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine.pipelineLayout, 0, 1, &image->descriptorSets[currentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &image->descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(image->indices.size()), 1, 0, 0, 0);
 			}
 		}
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine.GraphicsPipelines[engine.pipelineindex]);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
 		
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			if (staticObjects[i].isVisible) {
@@ -1285,7 +1286,7 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine.pipelineLayout, 0, 1, &staticObjects[i].descriptorSets[currentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].indices.size()), 1, 0, 0, 0);
 			}
@@ -1298,6 +1299,8 @@ private:
 		}
 	}
 };
+
+Engine* Engine::enginstance = nullptr;
 
 int main()
 {
