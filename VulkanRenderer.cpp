@@ -35,6 +35,10 @@ using namespace std;
 const string LOAD_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\LoadButton.png";
 const string RENDERED_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\RenderedButton.png";
 const string UNRENDERED_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\UnrenderedButton.png";
+const string WIREFRAME_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\WireframeButton.png";
+const string PLAY_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\PlayButton.png";
+const string PAUSE_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\PauseButton.png";
+const string SETTINGS_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\SettingsButton.png";
 
 uint32_t currentFrame = 0;
 
@@ -253,14 +257,15 @@ private:
 
 	Button *Rendered;
 	Button *Unrendered;
+	Button* Wireframe;
+	Button* Pause;
+	Button* Play;
+	Button* Settings;
 	Button *LB;
 
 	vector<UIItem*> canvas;
 
 	vArrangement* ObjectButtons;
-
-	//int windowWidth = WIDTH;
-	//int windowHeight = HEIGHT;
 
 	double mouseX, mouseY;
 
@@ -306,6 +311,7 @@ private:
 
 	void createCanvas() {
 		hArrangement *Renderbuttons = new hArrangement(0, 0, 0.4, 0.2, 0.1);
+		hArrangement *Videobuttons = new hArrangement(0.775, 0.6, 0.2, 0.1, 0.1);
 
 		Button *loadObjectButton = new Button(0, 0, 0.2f, 0.1f, LOAD_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
 
@@ -313,10 +319,26 @@ private:
 
 		Button *unlitRenderingButton = new Button(0, 0, 0.2f, 0.2f, UNRENDERED_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
 
+		Button *wireframeRenderingButton = new Button(0, 0, 0.2f, 0.2f, WIREFRAME_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+
+		Button* playButton = new Button(0, 0, 0.2f, 0.2f, PLAY_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+
+		Button* pauseButton = new Button(0, 0, 0.2f, 0.2f, PAUSE_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+
+		Button* settingsButton = new Button(0, 0, 0.2f, 0.2f, SETTINGS_BUTTON_PATH, engine.windowWidth, engine.windowHeight);
+
 		Renderbuttons->addItem(unlitRenderingButton);
 		Renderbuttons->addItem(litRenderingButton);
+		Renderbuttons->addItem(wireframeRenderingButton);
 
-		vArrangement* buttons = new vArrangement(-0.8, 0.75, 0.15, 0.15, 0);
+		Videobuttons->addItem(playButton);
+		Videobuttons->addItem(pauseButton);
+		Videobuttons->addItem(settingsButton);
+		Videobuttons->arrangeItems(engine.windowWidth, engine.windowHeight);
+
+		canvas.push_back(Videobuttons);
+
+		vArrangement* buttons = new vArrangement(-0.6, 0.75, 0.4, 0.15, 0);
 
 		buttons->addItem(loadObjectButton);
 		buttons->addItem(Renderbuttons);
@@ -324,13 +346,17 @@ private:
 
 		Unrendered = unlitRenderingButton;
 		Rendered = litRenderingButton;
+		Wireframe = wireframeRenderingButton;
+		Play = playButton;
+		Pause = pauseButton;
+		Settings = settingsButton;
 		LB = loadObjectButton;
 
-		ObjectButtons = new vArrangement(-0.8, -0.5, 0.15, 0.2, 0.1);
+		ObjectButtons = new vArrangement(-0.8, -0.5, 0.05, 0.2, 0.1);
 
 		canvas.push_back(ObjectButtons);
 
-		for (Button *item : {loadObjectButton, litRenderingButton, unlitRenderingButton}) {
+		for (Button *item : {loadObjectButton, litRenderingButton, unlitRenderingButton, wireframeRenderingButton, playButton, pauseButton, settingsButton}) {
 			item->updateDisplay(engine.windowWidth, engine.windowHeight);
 
 			createTextureImage(item->image);
@@ -383,6 +409,15 @@ private:
 			updateWebcam();
 			updateWebcamImage(UIobjects[0]);
 			int state = glfwGetMouseButton(engine.window, GLFW_MOUSE_BUTTON_LEFT);
+			if (Play->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
+				webCam.shouldUpdate = true;
+			}
+			if (Pause->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
+				webCam.shouldUpdate = false;
+			}
+			if (Settings->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
+				webCam.calibrateCornerFilter();
+			}
 			for (UIItem* item : ObjectButtons->Items) {
 				item->checkForEvent(mouseX, mouseY, state);
 			}
@@ -397,6 +432,9 @@ private:
 				for (int i = 0; i != staticObjects.size(); i++) {
 					updateWebcamImage(staticObjects[i]);
 				}
+			}
+			if (Wireframe->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
+				engine.pipelineindex = engine.PipelineMap.at("Wireframe");
 			}
 			if (Rendered->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
 				engine.pipelineindex = 1;
@@ -414,7 +452,6 @@ private:
 	}
 
 	void setObjectVisibilities(UIItem* owner) {
-		cout << "Heard an event from " << owner->Name << endl;
 		for (int i = 0; i != staticObjects.size(); i++) {
 			staticObjects[i].isVisible = false;
 		}
@@ -591,7 +628,6 @@ private:
 		uchar* camData = new uchar[camFrame.total() * 4];
 		Mat continuousRGBA(camFrame.size(), CV_8UC4, camData);
 		cv::cvtColor(camFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
-		//cv::imshow("camFrame", webCam.webcamFrame);
 
 		int texWidth, texHeight, texChannels;
 
@@ -994,11 +1030,15 @@ private:
 		ubo.proj = glm::perspective(glm::radians(camera.fov), engine.swapChainExtent.width / (float)engine.swapChainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
+		ubo.UVdistort[0] = 2*UIobjects[0].sizex;
+		ubo.UVdistort[1] = (UIobjects[0].xpos + UIobjects[0].anchorX) - UIobjects[0].sizex;
+		ubo.UVdistort[2] = 2*UIobjects[0].sizey;
+		ubo.UVdistort[3] = (-UIobjects[0].ypos - UIobjects[0].anchorY) - UIobjects[0].sizey;
+
 		memcpy(engine.uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
 
 	void createVertexBuffer(auto& object) {
-		// copies mesh vertex data into GPU memory
 
 		VkDeviceSize bufferSize = sizeof(object.vertices[0]) * object.vertices.size();
 		
@@ -1020,7 +1060,6 @@ private:
 	}
 
 	void createUIVertexBuffer(auto *object) {
-		// copies mesh vertex data into GPU memory
 
 		VkDeviceSize bufferSize = sizeof(object->vertices[0]) * object->vertices.size();
 
@@ -1049,7 +1088,6 @@ private:
 	}
 
 	void createIndexBuffer(auto *object) {
-		// copies mesh index data into GPU memory
 
 		VkDeviceSize bufferSize = sizeof(object->indices[0]) * object->indices.size();
 
@@ -1186,6 +1224,23 @@ private:
 		scissor.extent = engine.swapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine.GraphicsPipelines[engine.PipelineMap.at("UVWireframe")]);
+
+		for (uint32_t i = 0; i != staticObjects.size(); i++) {
+			if (staticObjects[i].isVisible) {
+				VkBuffer vertexBuffers[] = { staticObjects[i].vertexBuffer };
+				VkDeviceSize offsets[] = { 0 };
+
+				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine.pipelineLayout, 0, 1, &staticObjects[i].descriptorSets[currentFrame], 0, nullptr);
+
+				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].indices.size()), 1, 0, 0, 0);
+			}
+		}
+		
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine.GraphicsPipelines[engine.PipelineMap.at("UIShading")]);
 
 		for (uint32_t i = 0; i != UIobjects.size(); i++) {
@@ -1234,7 +1289,7 @@ private:
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].indices.size()), 1, 0, 0, 0);
 			}
-		}	
+		}
 
 		vkCmdEndRenderPass(commandBuffer);
 

@@ -75,7 +75,7 @@ struct UIItem {
 	};
 
 	virtual void getImages(std::vector<UIImage*>& images) {
-
+		images.push_back(image);
 	};
 
 	virtual void arrangeItems(int, int) {
@@ -89,6 +89,8 @@ struct UIItem {
 
 class Button : public UIItem // Here a button is just a rectangle area in screen space which can be queried with coordinates to check if it has been pressed
 {
+private:
+	float windowPositions[4] = { 0.0f };
 public:
 	std::function<void(UIItem*)> clickFunction;
 	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
@@ -100,15 +102,31 @@ public:
 		this->sqAxisRatio = ysize / xsize;
 	};
 
+	void update(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
+		this->posx = x;
+		this->posy = y;
+
+		this->extentx = xsize;
+		this->extenty = ysize;
+
+		this->winWidth = static_cast<float>(wWidth);
+		this->winHeight = static_cast<float>(wHeight);
+
+		this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * this->winWidth;
+		this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * this->winWidth;
+		this->windowPositions[2] = (((-posy + extenty) / 2.0f) + 0.5f) * this->winHeight;
+		this->windowPositions[3] = (((-posy - extenty) / 2.0f) + 0.5f) * this->winHeight;
+
+		arrangeItems(wWidth, wHeight);
+
+		if (image->texWidth > 1) {
+			this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+		}
+	};
+
 	bool isInArea(float x, float y) {
 		bool result = false;
-		x /= winWidth;
-		x -= 0.5f;
-		x *= 2.0f;
-		y /= winHeight;
-		y -= 0.5f;
-		y *= 2.0f;
-		if (x >= posx - extentx && x <= posx + extentx && y <= -posy + extenty && y >= -posy - extenty) {
+		if (x >= windowPositions[0] && x <= windowPositions[1] && y <= windowPositions[2] && y >= windowPositions[3]) {
 			result = true;
 		}
 		return result;
@@ -129,9 +147,57 @@ public:
 			}
 		};
 	};
+};
 
-	void getImages(std::vector<UIImage*>& images) {
-		images.push_back(image);
+class Checkbox : public UIItem
+{
+private:
+	float windowPositions[4] = { 0.0f };
+public:
+	bool state;
+
+	Checkbox(float x, float y, float xsize, float ysize, std::string texpath, int wWidth, int wHeight, bool defaultState) {
+		update(x, y, xsize, ysize, wWidth, wHeight);
+		image->texPath = texpath;
+		state = defaultState;
+		this->sqAxisRatio = ysize / xsize;
+	};
+
+	void update(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
+		this->posx = x;
+		this->posy = y;
+
+		this->extentx = xsize;
+		this->extenty = ysize;
+
+		this->winWidth = static_cast<float>(wWidth);
+		this->winHeight = static_cast<float>(wHeight);
+
+		this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * this->winWidth;
+		this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * this->winWidth;
+		this->windowPositions[2] = (((-posy + extenty) / 2.0f) + 0.5f) * this->winHeight;
+		this->windowPositions[3] = (((-posy - extenty) / 2.0f) + 0.5f) * this->winHeight;
+
+		arrangeItems(wWidth, wHeight);
+
+		if (image->texWidth > 1) {
+			this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+		}
+	};
+
+	bool isInArea(float x, float y) {
+		bool result = false;
+		if (x >= windowPositions[0] && x <= windowPositions[1] && y <= windowPositions[2] && y >= windowPositions[3]) {
+			result = true;
+		}
+		return result;
+	};
+
+	void checkForEvent(float mousex, float mousey, int clickstate) {
+		bool check = isInArea(mousex, mousey);
+		if (check && clickstate == 1) {
+			state = !state;
+		};
 	};
 };
 
@@ -164,6 +230,7 @@ public:
 	};
 
 	void getImages(std::vector<UIImage*>& images) {
+		//images.push_back(image);
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIImage*> subimages;
 			Items[i]->getImages(subimages);
@@ -207,6 +274,7 @@ public:
 	};
 
 	void getImages(std::vector<UIImage*>& images) {
+		//images.push_back(image);
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIImage*> subimages;
 			Items[i]->getImages(subimages);
