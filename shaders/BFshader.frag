@@ -13,14 +13,15 @@ layout(binding = 1) uniform sampler2D texSampler;
 vec3 lightPos = vec3(5.0, 0.0, 0.0);
 const vec3 lightColor = vec3(1.0, 1.0, 1.0);
 const float lightPower = 40.0;
-float ambientScale = 0.05;
+const vec3 ambientLighting = vec3(0.812, 0.537, 0.514);
+float ambientScale = 0.2;
 const vec3 specColor = vec3(1.0, 1.0, 1.0);
 const float shininess = 16.0;
 
 void main(){
 	vec4 tex = texture(texSampler, fragTexCoord);
 
-	vec4 ambient = vec4(tex.rgb*ambientScale, tex.a); //fine
+	vec4 ambient = vec4(tex.rgb*ambientLighting*ambientScale, tex.a); 
 
 	vec3 normal = normalize(normalInterp);
 
@@ -31,7 +32,7 @@ void main(){
 	float lambertian = max(dot(lightDir, normal), 0.0);
 	float specular = 0.0f;
 
-	vec4 diffuse = vec4(tex.rgb*lambertian*lightColor.rgb*lightPower/distance, tex.a); //broken
+	vec4 diffuse = vec4(tex.rgb*lambertian*lightColor.rgb*lightPower/distance, tex.a); 
 
 	if (lambertian > 0.0){
 		vec3 viewDir = normalize(-vertPos);
