@@ -184,6 +184,9 @@ public:
 	std::uint32_t findMemoryType(std::uint32_t, VkMemoryPropertyFlags);
 
 	void createBuffer(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&);
+	void copyBuffer(VkBuffer, VkBuffer, VkDeviceSize);
+	VkCommandBuffer beginSingleTimeCommands();
+	void endSingleTimeCommands(VkCommandBuffer);
 private:
 	static Engine* enginstance;
 	Engine() = default;

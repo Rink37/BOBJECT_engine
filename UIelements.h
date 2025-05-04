@@ -3,6 +3,7 @@
 #ifndef UI_ELEMENTS
 #define UI_ELEMENTS
 
+#include"Textures.h"
 #include<iostream>
 #include<vector>
 #include<array>
@@ -17,13 +18,12 @@ struct UIImage {
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices = { 0, 3, 2, 2, 1, 0 };
 
-	VkImageView textureImageView;
-	VkImage textureImage;
-	VkDeviceMemory textureImageMemory;
+	imageTexture* texture = nullptr;
+	webcamTexture* wtexture = nullptr;
 
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
-	void* vBuffer;
+	void* vBuffer = nullptr;
 
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
@@ -34,6 +34,9 @@ struct UIImage {
 	uint32_t mipLevels;
 
 	void UpdateVertices(int, int, float, float, float, float);
+	void createVertexBuffer();
+	void createIndexBuffer();
+	void updateVertexBuffer();
 };
 
 struct UIItem {
@@ -46,7 +49,7 @@ struct UIItem {
 
 	std::string Name = "Unlabelled";
 
-	UIImage *image = new UIImage;
+	UIImage* image = new UIImage;
 
 	virtual void update(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
 		this->posx = x;
@@ -87,6 +90,20 @@ struct UIItem {
 	};
 };
 
+class WebcamPanel : public UIItem {
+// Represents only a webcam view
+public:
+	WebcamPanel(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
+		update(x, y, xsize, ysize, wWidth, wHeight);
+		image->wtexture = webcamTexture::get();
+
+		image->texWidth = image->wtexture->texWidth;
+		image->texHeight = image->wtexture->texHeight;
+
+		this->sqAxisRatio = ysize / xsize;
+	}
+};
+
 class Button : public UIItem // Here a button is just a rectangle area in screen space which can be queried with coordinates to check if it has been pressed
 {
 private:
@@ -96,10 +113,13 @@ public:
 	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
 	Button(float x, float y, float xsize, float ysize, std::string texpath, int wWidth, int wHeight) {
-		update(x, y, xsize, ysize, wWidth, wHeight);
-		image->texPath = texpath;
-
 		this->sqAxisRatio = ysize / xsize;
+		update(x, y, xsize, ysize, wWidth, wHeight);
+		//image->texPath = texpath;
+		image->texture = new imageTexture(texpath);
+
+		image->texWidth = image->texture->texWidth;
+		image->texHeight = image->texture->texHeight;
 	};
 
 	void update(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
@@ -124,7 +144,7 @@ public:
 		}
 	};
 
-	bool isInArea(float x, float y) {
+	bool isInArea(double x, double y) {
 		bool result = false;
 		if (x >= windowPositions[0] && x <= windowPositions[1] && y <= windowPositions[2] && y >= windowPositions[3]) {
 			result = true;
@@ -136,7 +156,7 @@ public:
 		clickFunction = func;
 	}
 
-	void checkForEvent(float mousex, float mousey, int state) {
+	void checkForEvent(double mousex, double mousey, int state) {
 		bool check = isInArea(mousex, mousey);
 		if (check && state == 1) {
 			auto currentTime = std::chrono::steady_clock::now();
@@ -157,10 +177,10 @@ public:
 	bool state;
 
 	Checkbox(float x, float y, float xsize, float ysize, std::string texpath, int wWidth, int wHeight, bool defaultState) {
+		this->sqAxisRatio = ysize / xsize;
 		update(x, y, xsize, ysize, wWidth, wHeight);
 		image->texPath = texpath;
 		state = defaultState;
-		this->sqAxisRatio = ysize / xsize;
 	};
 
 	void update(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
@@ -185,7 +205,7 @@ public:
 		}
 	};
 
-	bool isInArea(float x, float y) {
+	bool isInArea(double x, double y) {
 		bool result = false;
 		if (x >= windowPositions[0] && x <= windowPositions[1] && y <= windowPositions[2] && y >= windowPositions[3]) {
 			result = true;
@@ -274,7 +294,6 @@ public:
 	};
 
 	void getImages(std::vector<UIImage*>& images) {
-		//images.push_back(image);
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIImage*> subimages;
 			Items[i]->getImages(subimages);
@@ -287,17 +306,6 @@ public:
 private:
 
 	int method = 0;
-};
-
-class OldButton : public UIItem {
-public:
-	bool isInArea(float x, float y) {
-		bool result = false;
-		if (x >= posx - extentx && x <= posx + extentx && y >= posy - extenty && y <= posy + extenty) {
-			result = true;
-		}
-		return result;
-	}
 };
 
 #endif

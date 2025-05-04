@@ -17,7 +17,6 @@ struct Pipeline {
 		vertPath = vP;
 		fragPath = fP;
 	}
-
 	void setIsPipelineWireframe(bool iW) {
 		isWireframe = iW;
 	}
