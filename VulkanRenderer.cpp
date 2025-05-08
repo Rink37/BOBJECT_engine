@@ -1,7 +1,4 @@
-﻿#define STB_IMAGE_IMPLEMENTATION
-#include"stb_image.h"
-
-#define TINYOBJLOADER_IMPLEMENTATION
+﻿#define TINYOBJLOADER_IMPLEMENTATION
 #include"tiny_obj_loader.h"
 
 #include<iostream>
@@ -28,6 +25,15 @@
 #include"UIelements.h"
 #include"Webcam_feeder.h"
 #include"Textures.h"
+#include"Materials.h"
+
+#include"include/LoadButton.h"
+#include"include/PauseButton.h"
+#include"include/PlayButton.h"
+#include"include/RenderedButton.h"
+#include"include/SettingsButton.h"
+#include"include/UnrenderedButton.h"
+#include"include/WireframeButton.h"
 
 using namespace cv;
 using namespace std;
@@ -59,12 +65,13 @@ struct StaticObject {
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 
-	VkDescriptorPool descriptorPool;
-	vector<VkDescriptorSet> descriptorSets;
+	//VkDescriptorPool descriptorPool;
+	//vector<VkDescriptorSet> descriptorSets;
 
-	imageTexture* texture = nullptr;
+	Material* mat = nullptr;
 
-	webcamTexture* wtexture = webcamTexture::get();
+	//imageTexture* texture = nullptr;
+	//webcamTexture* wtexture = webcamTexture::get();
 
 	int texWidth;
 	int texHeight;
@@ -129,8 +136,8 @@ public:
 	void run() {
 		engine->initWindow();
 		engine->initVulkan();
-		webView->setup();
 		KeyInput::setupKeyInputs(engine->window);
+		createWebcamMaterial();
 		createCanvas();
 		mainLoop();
 		cleanup();
@@ -140,12 +147,10 @@ private:
 	Engine* engine = Engine::get();
 
 	Camera camera;
-	webcamTexture* webView = webcamTexture::get();
+	//webcamTexture* webView = webcamTexture::get();
 	WebcamPanel* webcamView = nullptr;
+	Material* webcamMaterial = nullptr;
 
-	Button *Rendered;
-	Button *Unrendered;
-	Button* Wireframe;
 	Button* Pause;
 	Button* Play;
 	Button* Settings;
@@ -162,17 +167,39 @@ private:
 
 	bool webcamObjectView = true;
 
+	void createWebcamMaterial() {
+		webcamTexture::get()->setup();
+		webcamMaterial = new Material(webcamTexture::get());
+	}
+
 	void createCanvas() {
 		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.4f, 0.2f, 0.1f);
 		hArrangement *Videobuttons = new hArrangement(0.775f, 0.6f, 0.2f, 0.1f, 0.1f);
 
-		Button *loadObjectButton = new Button(0.0f, 0.0f, 0.2f, 0.1f, LOAD_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
-		Button *litRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, RENDERED_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
-		Button *unlitRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, UNRENDERED_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
-		Button *wireframeRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, WIREFRAME_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
-		Button* playButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, PLAY_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
-		Button* pauseButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, PAUSE_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
-		Button* settingsButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, SETTINGS_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
+		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this, placeholders::_1);
+
+		imageData* lb = new LOADBUTTON;
+		imageData* rb = new RENDEREDBUTTON;
+		imageData* ub = new UNRENDEREDBUTTON;
+		imageData* wb = new WIREFRAMEBUTTON;
+		imageData* plb = new PLAYBUTTON;
+		imageData* pb = new PAUSEBUTTON;
+		imageData* sb = new SETTINGSBUTTON;
+
+		Button *loadObjectButton = new Button(0.0f, 0.0f, 0.2f, 0.1f, lb, engine->windowWidth, engine->windowHeight);
+		Button *litRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, rb, engine->windowWidth, engine->windowHeight);
+		Button *unlitRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, ub, engine->windowWidth, engine->windowHeight);
+		Button *wireframeRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, wb, engine->windowWidth, engine->windowHeight);
+		Button* playButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, plb, engine->windowWidth, engine->windowHeight);
+		Button* pauseButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, pb, engine->windowWidth, engine->windowHeight);
+		Button* settingsButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, sb, engine->windowWidth, engine->windowHeight);
+
+		unlitRenderingButton->Name = "FlatShading";
+		unlitRenderingButton->setClickFunction(pipelinefunction);
+		litRenderingButton->Name = "BFShading";
+		litRenderingButton->setClickFunction(pipelinefunction);
+		wireframeRenderingButton->Name = "Wireframe";
+		wireframeRenderingButton->setClickFunction(pipelinefunction);
 
 		Renderbuttons->addItem(unlitRenderingButton);
 		Renderbuttons->addItem(litRenderingButton);
@@ -181,6 +208,7 @@ private:
 		Videobuttons->addItem(playButton);
 		Videobuttons->addItem(pauseButton);
 		Videobuttons->addItem(settingsButton);
+		
 		Videobuttons->arrangeItems(engine->windowWidth, engine->windowHeight);
 
 		canvas.push_back(Videobuttons);
@@ -191,9 +219,6 @@ private:
 		buttons->addItem(Renderbuttons);
 		buttons->arrangeItems(engine->windowWidth, engine->windowHeight);
 
-		Unrendered = unlitRenderingButton;
-		Rendered = litRenderingButton;
-		Wireframe = wireframeRenderingButton;
 		Play = playButton;
 		Pause = pauseButton;
 		Settings = settingsButton;
@@ -204,20 +229,14 @@ private:
 		canvas.push_back(ObjectButtons);
 
 		for (Button *item : {loadObjectButton, litRenderingButton, unlitRenderingButton, wireframeRenderingButton, playButton, pauseButton, settingsButton}) {
-			
 			item->updateDisplay(engine->windowWidth, engine->windowHeight);
-
-			createDescriptorPool(item->image);
-			createDescriptorSets(item->image);
 		}
 
 		canvas.push_back(buttons);
 
-		webcamView = new WebcamPanel(0.775f, 0.1f, 0.2f, 0.2f, engine->windowWidth, engine->windowHeight);
+		webcamView = new WebcamPanel(0.775f, 0.1f, 0.2f, 0.2f, engine->windowWidth, engine->windowHeight, webcamMaterial);
 		webcamView->updateDisplay(engine->windowWidth, engine->windowHeight);
-
-		createDescriptorPool(webcamView->image);
-		createDescriptorSets(webcamView->image);
+		webcamView->image->mat = webcamMaterial;
 
 		canvas.push_back(webcamView);
 	}
@@ -228,29 +247,27 @@ private:
 			glfwGetCursorPos(engine->window, &mouseX, &mouseY);
 			webcamTexture::get()->updateWebcam();
 			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
-			if (Play->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
-				webcamTexture::get()->webCam.shouldUpdate = true;
-			}
-			if (Pause->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
-				webcamTexture::get()->webCam.shouldUpdate = false;
-			}
-			if (Settings->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
-				webcamTexture::get()->webCam.calibrateCornerFilter();
-			}
-			for (UIItem* item : ObjectButtons->Items) {
-				item->checkForEvent(mouseX, mouseY, state);
-			}
-			if (Wireframe->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
-				engine->pipelineindex = engine->PipelineMap.at("Wireframe");
-			}
-			if (Rendered->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
-				engine->pipelineindex = 1;
-			}
-			if (Unrendered->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
-				engine->pipelineindex = 0;
-			}
-			if (LB->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
-				loadStaticObject();
+			if (state == GLFW_PRESS) {
+				if (Play->isInArea(mouseX, mouseY)) {
+					webcamTexture::get()->webCam.shouldUpdate = true;
+				}
+				if (Pause->isInArea(mouseX, mouseY)) {
+					webcamTexture::get()->webCam.shouldUpdate = false;
+				}
+				if (Settings->isInArea(mouseX, mouseY)) {
+					webcamTexture::get()->webCam.calibrateCornerFilter();
+				}
+				for (UIItem* item : canvas) {
+					vector<UIItem*> scs;
+					item->getSubclasses(scs);
+					for (UIItem* sitem : scs) {
+						cout << sitem->Name << endl;
+						sitem->checkForEvent(mouseX, mouseY, state);
+					}
+				}
+				if (LB->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
+					loadStaticObject();
+				}
 			}
 			drawFrame();
 		}
@@ -264,6 +281,10 @@ private:
 		staticObjects[ObjectMap.at(owner->Name)].isVisible = true;
 	}
 
+	void setPipelineIndex(UIItem* owner) {
+		engine->pipelineindex = engine->PipelineMap.at(owner->Name);
+	}
+
 	void loadStaticObject() {
 		StaticObject newObject;
 		
@@ -272,18 +293,21 @@ private:
 		if (res) {
 			createVertexBuffer(newObject);
 			createIndexBuffer(&newObject);
-			createDescriptorPool(&newObject);
-			createDescriptorSets(&newObject);
+			newObject.mat = webcamMaterial;
+			//createDescriptorPool(&newObject);
+			//createDescriptorSets(&newObject);
 
 			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibilities, this, placeholders::_1);
 
-			Button* objectButton = new Button(0.0f, 0.0f, 0.15f, 0.15f, UNRENDERED_BUTTON_PATH, engine->windowWidth, engine->windowHeight);
+			imageData* ub = new UNRENDEREDBUTTON;
+
+			Button* objectButton = new Button(0.0f, 0.0f, 0.15f, 0.15f, ub, engine->windowWidth, engine->windowHeight);
 
 			objectButton->updateDisplay(engine->windowWidth, engine->windowHeight);
 			objectButton->setClickFunction(testfunction);
 
-			createDescriptorPool(objectButton->image);
-			createDescriptorSets(objectButton->image);
+			//createDescriptorPool(objectButton->image);
+			//createDescriptorSets(objectButton->image);
 
 			objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
 
@@ -304,10 +328,13 @@ private:
 	}
 
 	void cleanup() {
-		webcamTexture::get()->cleanup();
+		//vkDestroyDescriptorPool(engine->device, webcamMaterial->descriptorPool, nullptr);
 
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
-			vkDestroyDescriptorPool(engine->device, staticObjects[i].descriptorPool, nullptr);
+			if (staticObjects[i].mat != webcamMaterial) {
+				staticObjects[i].mat->cleanup();
+			}
+			//vkDestroyDescriptorPool(engine->device, staticObjects[i].mat->descriptorPool, nullptr);
 
 			vkDestroyBuffer(engine->device, staticObjects[i].indexBuffer, nullptr);
 			vkFreeMemory(engine->device, staticObjects[i].indexBufferMemory, nullptr);
@@ -321,7 +348,10 @@ private:
 			canvas[i]->getImages(images);
 
 			for (UIImage *image : images) {
-				vkDestroyDescriptorPool(engine->device, image->descriptorPool, nullptr);
+				//vkDestroyDescriptorPool(engine->device, image->mat->descriptorPool, nullptr);
+				if (image->mat != webcamMaterial) {
+					image->mat->cleanup();
+				}
 
 				vkDestroyBuffer(engine->device, image->indexBuffer, nullptr);
 				vkFreeMemory(engine->device, image->indexBufferMemory, nullptr);
@@ -329,12 +359,18 @@ private:
 				vkDestroyBuffer(engine->device, image->vertexBuffer, nullptr);
 				vkFreeMemory(engine->device, image->vertexBufferMemory, nullptr);
 
-				if (image->texture != nullptr) {
-					image->texture->cleanup();
-				}
+				//for (auto tex : image->mat->textures) {
+				//	if (tex != nullptr) {
+				//		tex->cleanup();
+				//	}
+				//}
+				//if (image->texture != nullptr) {
+				//	image->texture->cleanup();
+				//}
 			}
 		}
 
+		webcamMaterial->cleanup();
 		engine->cleanup();
 	}
 
@@ -486,7 +522,7 @@ private:
 		vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
 	}
 
-	void createDescriptorPool(auto *object) {
+	void OldcreateDescriptorPool(auto *object) {
 		array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
@@ -505,7 +541,7 @@ private:
 	}
 
 
-	void createDescriptorSets(auto *object) {
+	void OldcreateDescriptorSets(auto *object) {
 		vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, engine->descriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -608,7 +644,7 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].descriptorSets[currentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].mat->descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].indices.size()), 1, 0, 0, 0);
 			}
@@ -628,7 +664,7 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, image->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &image->descriptorSets[currentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &image->mat->descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(image->indices.size()), 1, 0, 0, 0);
 			}
@@ -645,7 +681,7 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].descriptorSets[currentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].mat->descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].indices.size()), 1, 0, 0, 0);
 			}

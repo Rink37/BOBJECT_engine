@@ -12,7 +12,7 @@ endif()
 project ("VulkanRenderer")
 
 # Add source to this project's executable.
-add_executable (VulkanRenderer "VulkanRenderer.cpp" "VulkanRenderer.h" "Bobject_Engine.h" "Bobject_Engine.cpp" "InputManager.h" "InputManager.cpp" "WindowsFileManager.h" "WindowsFileManager.cpp" "CameraController.cpp" "CameraController.h" "UIelements.cpp" "UIelements.h" "Webcam_feeder.cpp" "Webcam_feeder.h" "Pipelines.h" "Textures.h" "Textures.cpp")
+add_executable (VulkanRenderer "VulkanRenderer.cpp" "VulkanRenderer.h" "Bobject_Engine.h" "Bobject_Engine.cpp" "InputManager.h" "InputManager.cpp" "WindowsFileManager.h" "WindowsFileManager.cpp" "CameraController.cpp" "CameraController.h" "UIelements.cpp" "UIelements.h" "Webcam_feeder.cpp" "Webcam_feeder.h" "Pipelines.h" "Textures.h" "Textures.cpp" "Materials.h" "Materials.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET VulkanRenderer PROPERTY CXX_STANDARD 20)
@@ -20,14 +20,20 @@ endif()
 
 target_include_directories(VulkanRenderer PUBLIC "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.42.34433\\glfw-3.4.bin.WIN64\\include")
 target_include_directories(VulkanRenderer PUBLIC "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.42.34433\\GLM\\g-truc-glm-0af55cc")
-target_include_directories(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\opencv\\build\\include")
-target_include_directories(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\opencv\\build\\x64\\vc16\\lib")
-target_include_directories(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\opencv\\build\\x64\\vc16\\bin")
+#target_include_directories(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\opencv\\build\\include")
+#target_include_directories(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\opencv\\build\\x64\\vc16\\lib")
 target_include_directories(VulkanRenderer PUBLIC "C:\\VulkanSDK\\1.3.296.0\\Include")
 target_include_directories(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\VulkanRenderer\\include")
 
 target_link_libraries(VulkanRenderer PUBLIC "C:\\VulkanSDK\\1.3.296.0\\Lib\\vulkan-1.lib")
 target_link_libraries(VulkanRenderer PUBLIC "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.42.34433\\glfw-3.4.bin.WIN64\\lib-vc2022\\glfw3.lib")
+
+#target_include_directories(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\opencv\\build\\")
+set(OpenCV_DIR C:/Users/robda/Documents/opencv/build/)
+find_package(OpenCV REQUIRED)
+target_include_directories(VulkanRenderer PUBLIC ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(VulkanRenderer PRIVATE ${OpenCV_LIBS})
+
 target_link_libraries(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\opencv\\build\\x64\\vc16\\lib\\opencv_world4110d.lib")
 
 # TODO: Add tests and install targets if needed.

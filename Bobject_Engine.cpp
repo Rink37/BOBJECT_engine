@@ -1,6 +1,5 @@
 #include "Bobject_Engine.h"
 
-#include"stb_image.h"
 #include"tiny_obj_loader.h"
 #include"Pipelines.h"
 

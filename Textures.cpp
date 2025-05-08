@@ -1,5 +1,5 @@
 #include"Textures.h"
-#include"stb_image.h"
+//#include"stb_image.h"
 
 using namespace std;
 
@@ -9,8 +9,11 @@ bool Texture::hasStencilComponent(VkFormat format) {
 
 void imageTexture::createTextureImage() {
 
-	stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-	VkDeviceSize imageSize = texWidth * texHeight * 4;
+	unsigned char* pixels = imgData->Bytes;//stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	texWidth = imgData->Width;
+	texHeight = imgData->Height;
+	texChannels = imgData->Channels;
+	VkDeviceSize imageSize = texWidth * texHeight * texChannels;
 
 	if (!pixels) {
 		throw runtime_error("failed to load texture image!");
@@ -28,7 +31,7 @@ void imageTexture::createTextureImage() {
 	memcpy(data, pixels, static_cast<size_t>(imageSize));
 	vkUnmapMemory(Engine::get()->device, stagingBufferMemory);
 
-	stbi_image_free(pixels);
+	//stbi_image_free(pixels);
 
 	createImage(texWidth, texHeight, Engine::get()->mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 

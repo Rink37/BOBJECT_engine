@@ -4,13 +4,17 @@
 #define UI_ELEMENTS
 
 #include"Textures.h"
+#include"Materials.h"
 #include<iostream>
 #include<vector>
 #include<array>
 #include<chrono>
 
+#include"include/ImageDataType.h"
+
 struct UIImage {
-	std::string texPath;
+	//std::string texPath;
+	imageData* imgData;
 
 	int texHeight = 1;
 	int texWidth = 1;
@@ -18,8 +22,10 @@ struct UIImage {
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices = { 0, 3, 2, 2, 1, 0 };
 
-	imageTexture* texture = nullptr;
-	webcamTexture* wtexture = nullptr;
+	//imageTexture* texture = nullptr;
+	//webcamTexture* wtexture = nullptr;
+
+	Material* mat = nullptr;
 
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
@@ -28,8 +34,8 @@ struct UIImage {
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 
-	VkDescriptorPool descriptorPool;
-	std::vector<VkDescriptorSet> descriptorSets;
+	//VkDescriptorPool descriptorPool;
+	//std::vector<VkDescriptorSet> descriptorSets;
 
 	uint32_t mipLevels;
 
@@ -75,6 +81,7 @@ struct UIItem {
 	}
 
 	virtual void getSubclasses(std::vector<UIItem*> &scs) {
+		scs.push_back(this);
 	};
 
 	virtual void getImages(std::vector<UIImage*>& images) {
@@ -85,7 +92,7 @@ struct UIItem {
 
 	};
 
-	virtual void checkForEvent(float, float, int) {
+	virtual void checkForEvent(double, double, int) {
 
 	};
 };
@@ -93,12 +100,12 @@ struct UIItem {
 class WebcamPanel : public UIItem {
 // Represents only a webcam view
 public:
-	WebcamPanel(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
+	WebcamPanel(float x, float y, float xsize, float ysize, int wWidth, int wHeight, Material* webcamMat) {
 		update(x, y, xsize, ysize, wWidth, wHeight);
-		image->wtexture = webcamTexture::get();
+		image->mat = webcamMat;
 
-		image->texWidth = image->wtexture->texWidth;
-		image->texHeight = image->wtexture->texHeight;
+		image->texWidth = image->mat->textures[0]->texWidth;
+		image->texHeight = image->mat->textures[0]->texHeight;
 
 		this->sqAxisRatio = ysize / xsize;
 	}
@@ -109,17 +116,18 @@ class Button : public UIItem // Here a button is just a rectangle area in screen
 private:
 	float windowPositions[4] = { 0.0f };
 public:
-	std::function<void(UIItem*)> clickFunction;
+	std::function<void(UIItem*)> clickFunction = nullptr;
 	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
-	Button(float x, float y, float xsize, float ysize, std::string texpath, int wWidth, int wHeight) {
+	Button(float x, float y, float xsize, float ysize, imageData* iDpointer, int wWidth, int wHeight) {
 		this->sqAxisRatio = ysize / xsize;
 		update(x, y, xsize, ysize, wWidth, wHeight);
-		//image->texPath = texpath;
-		image->texture = new imageTexture(texpath);
 
-		image->texWidth = image->texture->texWidth;
-		image->texHeight = image->texture->texHeight;
+		Texture* tex = new imageTexture(iDpointer);
+		image->mat = new Material(tex);
+		
+		image->texWidth = image->mat->textures[0]->texWidth;
+		image->texHeight = image->mat->textures[0]->texHeight;
 	};
 
 	void update(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
@@ -157,15 +165,20 @@ public:
 	}
 
 	void checkForEvent(double mousex, double mousey, int state) {
-		bool check = isInArea(mousex, mousey);
-		if (check && state == 1) {
-			auto currentTime = std::chrono::steady_clock::now();
-			auto duration = std::chrono::duration<double>(currentTime - startTime);
-			if (duration.count() >= 0.25f) {
-				clickFunction(this);
-				startTime = std::chrono::steady_clock::now();
-			}
-		};
+		if (clickFunction != nullptr) {
+			bool check = isInArea(mousex, mousey);
+			if (check && state == 1) {
+				auto currentTime = std::chrono::steady_clock::now();
+				auto duration = std::chrono::duration<double>(currentTime - startTime);
+				if (duration.count() >= 0.25f) {
+					clickFunction(this);
+					startTime = std::chrono::steady_clock::now();
+				}
+			};
+		}
+		else {
+			std::cout << "No valid click function found" << std::endl;
+		}
 	};
 };
 
@@ -179,7 +192,7 @@ public:
 	Checkbox(float x, float y, float xsize, float ysize, std::string texpath, int wWidth, int wHeight, bool defaultState) {
 		this->sqAxisRatio = ysize / xsize;
 		update(x, y, xsize, ysize, wWidth, wHeight);
-		image->texPath = texpath;
+		//image->texPath = texpath;
 		state = defaultState;
 	};
 
@@ -244,13 +257,18 @@ public:
 	void arrangeItems(int, int); // Should be called any time there is a layout change
 
 	void getSubclasses(std::vector<UIItem*> &scs) {
+		scs.push_back(this);
 		for (size_t i = 0; i != Items.size(); i++) {
-			scs.push_back(Items[i]);
+			//scs.push_back(Items[i]);
+			std::vector<UIItem*> sscs;
+			Items[i]->getSubclasses(sscs);
+			for (size_t j = 0; j != sscs.size(); j++) {
+				scs.push_back(sscs[j]);
+			}
 		}
 	};
 
 	void getImages(std::vector<UIImage*>& images) {
-		//images.push_back(image);
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIImage*> subimages;
 			Items[i]->getImages(subimages);
@@ -288,8 +306,14 @@ public:
 	void arrangeItems(int, int); // Should be called any time there is a layout change
 
 	void getSubclasses(std::vector<UIItem*>& scs) {
+		scs.push_back(this);
 		for (size_t i = 0; i != Items.size(); i++) {
-			scs.push_back(Items[i]);
+			//scs.push_back(Items[i]);
+			std::vector<UIItem*> sscs;
+			Items[i]->getSubclasses(sscs);
+			for (size_t j = 0; j != sscs.size(); j++) {
+				scs.push_back(sscs[j]);
+			}
 		}
 	};
 
