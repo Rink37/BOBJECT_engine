@@ -26,7 +26,13 @@
 #include<cstdint>
 #include<algorithm>
 
-#include"Pipelines.h"
+//#include"Pipelines.h"
+#include"include/ShaderDataType.h"
+#include"include/Flat.h"
+#include"include/BF.h"
+#include"include/UI.h"
+#include"include/UV.h"
+#include"include/W.h"
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -168,9 +174,11 @@ public:
 
 	std::vector<VkBuffer> uniformBuffers;
 
-	std::vector<Pipeline*> PipelineDefs;
+	//std::vector<Pipeline*> PipelineDefs;
 	std::map<std::string, int> PipelineMap = {};
 	std::vector<VkPipeline*> GraphicsPipelines = {};
+
+	std::vector<shaderData*> shaderDatas;
 
 	bool framebufferResized = false;
 
@@ -213,7 +221,7 @@ private:
 	VkDeviceMemory colourImageMemory;
 	VkImageView colourImageView;
 
-	VkShaderModule createShaderModule(const std::vector<char>&);
+	VkShaderModule createShaderModule(const std::vector<unsigned char>&);
 
 	VkSampleCountFlagBits getMaxUseableSampleCount();
 	static void framebufferResizeCallback(GLFWwindow*, int, int);

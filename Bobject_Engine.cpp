@@ -1,7 +1,7 @@
 #include "Bobject_Engine.h"
 
 #include"tiny_obj_loader.h"
-#include"Pipelines.h"
+//#include"Pipelines.h"
 
 using namespace std;
 
@@ -26,20 +26,20 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 	}
 }
 
-static std::vector<char> readFile(const std::string& filename) {
-	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+//static std::vector<char> readFile(const std::string& filename) {
+//	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+//
+//	if (!file.is_open()) {
+//		throw std::runtime_error("failed to open file!");
+//	}
+//	size_t fileSize = (size_t)file.tellg();
+//	std::vector<char> buffer(fileSize);
+//	file.seekg(0);
+//	file.read(buffer.data(), fileSize);
+//	file.close();
 
-	if (!file.is_open()) {
-		throw std::runtime_error("failed to open file!");
-	}
-	size_t fileSize = (size_t)file.tellg();
-	std::vector<char> buffer(fileSize);
-	file.seekg(0);
-	file.read(buffer.data(), fileSize);
-	file.close();
-
-	return buffer;
-}
+//	return buffer;
+//}
 
 bool Engine::checkValidationLayerSupport() {
 	uint32_t layerCount;
@@ -398,7 +398,7 @@ void Engine::createDescriptorSetLayout() {
 }
 
 
-VkShaderModule Engine::createShaderModule(const vector<char>& code) {
+VkShaderModule Engine::createShaderModule(const vector<unsigned char>& code) {
 	VkShaderModuleCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.codeSize = code.size();
@@ -417,18 +417,24 @@ void Engine::createGraphicsPipelines() {
 
 	bool isWireframe = false;
 
-	PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/vert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/frag.spv")));
+	shaderDatas.push_back(new FLATSHADER);
+	shaderDatas.push_back(new BFSHADER);
+	shaderDatas.push_back(new UISHADER);
+	shaderDatas.push_back(new WSHADER);
+	shaderDatas.push_back(new UVSHADER);
+
+	//PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/Flatvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/Flatfrag.spv")));
 	PipelineMap.insert({ string("FlatShading"), 0 });
-	PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/BFvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/BFfrag.spv")));
+	//PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/BFvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/BFfrag.spv")));
 	PipelineMap.insert({ string("BFShading"), 1 });
-	PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/UIvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/UIfrag.spv")));
+	//PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/UIvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/UIfrag.spv")));
 	PipelineMap.insert({ string("UIShading"), 2 });
-	PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/Wvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/Wfrag.spv")));
+	//PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/Wvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/Wfrag.spv")));
 	PipelineMap.insert({ string("Wireframe"), 3 });
-	PipelineDefs[3]->setIsPipelineWireframe(true);
-	PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/UVvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/UVfrag.spv")));
+	//PipelineDefs[3]->setIsPipelineWireframe(true);
+	//PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/UVvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/UVfrag.spv")));
 	PipelineMap.insert({ string("UVWireframe"), 4 });
-	PipelineDefs[4]->setIsPipelineWireframe(true);
+	//PipelineDefs[4]->setIsPipelineWireframe(true);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -500,11 +506,11 @@ void Engine::createGraphicsPipelines() {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-	for (auto pipeline : PipelineDefs) {
+	for (auto sd : shaderDatas) {
 		VkPipeline* CurrentPipeline = new VkPipeline;
 
-		auto VertShaderCode = readFile(pipeline->vertPath);
-		auto FragShaderCode = readFile(pipeline->fragPath);
+		auto VertShaderCode = sd->vertData;
+		auto FragShaderCode = sd->fragData;
 
 		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
 		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode); 
@@ -527,7 +533,7 @@ void Engine::createGraphicsPipelines() {
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rasterizer.depthClampEnable = VK_FALSE;
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		if (pipeline->isWireframe) {
+		if (sd->isWireframe) {
 			rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
 		}
 		else {
