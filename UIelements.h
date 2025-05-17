@@ -13,17 +13,13 @@
 #include"include/ImageDataType.h"
 
 struct UIImage {
-	//std::string texPath;
 	imageData* imgData;
 
-	int texHeight = 1;
-	int texWidth = 1;
+	int texHeight = 0;
+	int texWidth = 0;
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices = { 0, 3, 2, 2, 1, 0 };
-
-	//imageTexture* texture = nullptr;
-	//webcamTexture* wtexture = nullptr;
 
 	Material* mat = nullptr;
 
@@ -34,9 +30,6 @@ struct UIImage {
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 
-	//VkDescriptorPool descriptorPool;
-	//std::vector<VkDescriptorSet> descriptorSets;
-
 	uint32_t mipLevels;
 
 	void UpdateVertices(int, int, float, float, float, float);
@@ -46,10 +39,17 @@ struct UIImage {
 };
 
 struct UIItem {
+	uint32_t minPixWidth, minPixHeight; // Defines the minimum size of the element on the screen - the maximum size is the image resolution
+
+	float buffer = 50.0;
+	
 	float posx, posy;
 	float extentx, extenty;
+	float anchorx, anchory;
 
 	float winWidth, winHeight;
+
+	float windowPositions[4] = { 0.0f };
 
 	float sqAxisRatio; // The ratio between axes if the window was perfectly square
 
@@ -60,6 +60,8 @@ struct UIItem {
 	virtual void update(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
 		this->posx = x;
 		this->posy = y;
+		this->anchorx = x;
+		this->anchory = y;
 
 		this->extentx = xsize;
 		this->extenty = ysize;
@@ -72,11 +74,15 @@ struct UIItem {
 		if (image->texWidth > 1) {
 			this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
 		}
+		else {
+			this->sqAxisRatio = ysize / xsize;
+		}
 	};
 
 	virtual void updateDisplay(int winWidth, int winHeight) {
 		this->winWidth = static_cast<float>(winWidth);
 		this->winHeight = static_cast<float>(winHeight);
+		this->calculateScreenPosition(winWidth, winHeight);
 		image->UpdateVertices(winWidth, winHeight, posx, posy, extentx, extenty);
 	}
 
@@ -95,6 +101,8 @@ struct UIItem {
 	virtual void checkForEvent(double, double, int) {
 
 	};
+
+	virtual void calculateScreenPosition(int, int);
 };
 
 class WebcamPanel : public UIItem {
@@ -113,43 +121,20 @@ public:
 
 class Button : public UIItem // Here a button is just a rectangle area in screen space which can be queried with coordinates to check if it has been pressed
 {
-private:
-	float windowPositions[4] = { 0.0f };
 public:
 	std::function<void(UIItem*)> clickFunction = nullptr;
 	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
 	Button(float x, float y, float xsize, float ysize, imageData* iDpointer, int wWidth, int wHeight) {
 		this->sqAxisRatio = ysize / xsize;
-		update(x, y, xsize, ysize, wWidth, wHeight);
 
 		Texture* tex = new imageTexture(iDpointer);
 		image->mat = new Material(tex);
 		
 		image->texWidth = image->mat->textures[0]->texWidth;
 		image->texHeight = image->mat->textures[0]->texHeight;
-	};
 
-	void update(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
-		this->posx = x;
-		this->posy = y;
-
-		this->extentx = xsize;
-		this->extenty = ysize;
-
-		this->winWidth = static_cast<float>(wWidth);
-		this->winHeight = static_cast<float>(wHeight);
-
-		this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * this->winWidth;
-		this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * this->winWidth;
-		this->windowPositions[2] = (((-posy + extenty) / 2.0f) + 0.5f) * this->winHeight;
-		this->windowPositions[3] = (((-posy - extenty) / 2.0f) + 0.5f) * this->winHeight;
-
-		arrangeItems(wWidth, wHeight);
-
-		if (image->texWidth > 1) {
-			this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
-		}
+		update(x, y, xsize, ysize, wWidth, wHeight);
 	};
 
 	bool isInArea(double x, double y) {
@@ -176,9 +161,9 @@ public:
 				}
 			};
 		}
-		else {
-			std::cout << "No valid click function found" << std::endl;
-		}
+		//else {
+		//	std::cout << "No valid click function found" << std::endl;
+		//}
 	};
 };
 
@@ -196,27 +181,22 @@ public:
 		state = defaultState;
 	};
 
-	void update(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
-		this->posx = x;
-		this->posy = y;
+	//void update(float x, float y, float xsize, float ysize, int wWidth, int wHeight) {
+	//	this->posx = x;
+	//	this->posy = y;
 
-		this->extentx = xsize;
-		this->extenty = ysize;
+	//	this->extentx = xsize;
+	//	this->extenty = ysize;
 
-		this->winWidth = static_cast<float>(wWidth);
-		this->winHeight = static_cast<float>(wHeight);
+	//	if (image->texWidth > 1) {
+	//		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+	//	}
 
-		this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * this->winWidth;
-		this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * this->winWidth;
-		this->windowPositions[2] = (((-posy + extenty) / 2.0f) + 0.5f) * this->winHeight;
-		this->windowPositions[3] = (((-posy - extenty) / 2.0f) + 0.5f) * this->winHeight;
+	//	this->winWidth = static_cast<float>(wWidth);
+	//	this->winHeight = static_cast<float>(wHeight);
 
-		arrangeItems(wWidth, wHeight);
-
-		if (image->texWidth > 1) {
-			this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
-		}
-	};
+	//	arrangeItems(wWidth, wHeight);
+	//};
 
 	bool isInArea(double x, double y) {
 		bool result = false;
@@ -241,6 +221,8 @@ public:
 	hArrangement(float px, float py, float ex, float ey, float spc) {
 		this->posx = px;
 		this->posy = py;
+		this->anchorx = px;
+		this->anchory = py;
 		this->extentx = ex;
 		this->extenty = ey;
 		this->spacing = spc;
@@ -259,7 +241,6 @@ public:
 	void getSubclasses(std::vector<UIItem*> &scs) {
 		scs.push_back(this);
 		for (size_t i = 0; i != Items.size(); i++) {
-			//scs.push_back(Items[i]);
 			std::vector<UIItem*> sscs;
 			Items[i]->getSubclasses(sscs);
 			for (size_t j = 0; j != sscs.size(); j++) {
@@ -290,6 +271,8 @@ public:
 	vArrangement(float px, float py, float ex, float ey, float spc) {
 		posx = px;
 		posy = py;
+		anchorx = px;
+		anchory = py;
 		extentx = ex;
 		extenty = ey;
 		spacing = spc;
@@ -308,7 +291,6 @@ public:
 	void getSubclasses(std::vector<UIItem*>& scs) {
 		scs.push_back(this);
 		for (size_t i = 0; i != Items.size(); i++) {
-			//scs.push_back(Items[i]);
 			std::vector<UIItem*> sscs;
 			Items[i]->getSubclasses(sscs);
 			for (size_t j = 0; j != sscs.size(); j++) {

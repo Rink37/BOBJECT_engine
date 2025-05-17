@@ -65,13 +65,7 @@ struct StaticObject {
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 
-	//VkDescriptorPool descriptorPool;
-	//vector<VkDescriptorSet> descriptorSets;
-
 	Material* mat = nullptr;
-
-	//imageTexture* texture = nullptr;
-	//webcamTexture* wtexture = webcamTexture::get();
 
 	int texWidth;
 	int texHeight;
@@ -137,6 +131,7 @@ public:
 		engine->initWindow();
 		engine->initVulkan();
 		KeyInput::setupKeyInputs(engine->window);
+		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		createWebcamMaterial();
 		createCanvas();
 		mainLoop();
@@ -147,7 +142,6 @@ private:
 	Engine* engine = Engine::get();
 
 	Camera camera;
-	//webcamTexture* webView = webcamTexture::get();
 	WebcamPanel* webcamView = nullptr;
 	Material* webcamMaterial = nullptr;
 
@@ -173,8 +167,8 @@ private:
 	}
 
 	void createCanvas() {
-		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.4f, 0.2f, 0.1f);
-		hArrangement *Videobuttons = new hArrangement(0.775f, 0.6f, 0.2f, 0.1f, 0.1f);
+		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.15f, 0.1f, 0.01f);
+		hArrangement *Videobuttons = new hArrangement(0.775f, 0.4f, 0.2f, 0.1f, 0.01f);
 
 		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this, placeholders::_1);
 
@@ -187,9 +181,11 @@ private:
 		imageData* sb = new SETTINGSBUTTON;
 
 		Button *loadObjectButton = new Button(0.0f, 0.0f, 0.2f, 0.1f, lb, engine->windowWidth, engine->windowHeight);
+		
 		Button *litRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, rb, engine->windowWidth, engine->windowHeight);
 		Button *unlitRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, ub, engine->windowWidth, engine->windowHeight);
 		Button *wireframeRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, wb, engine->windowWidth, engine->windowHeight);
+		
 		Button* playButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, plb, engine->windowWidth, engine->windowHeight);
 		Button* pauseButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, pb, engine->windowWidth, engine->windowHeight);
 		Button* settingsButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, sb, engine->windowWidth, engine->windowHeight);
@@ -213,7 +209,7 @@ private:
 
 		canvas.push_back(Videobuttons);
 
-		vArrangement* buttons = new vArrangement(-0.6f, 0.75f, 0.4f, 0.15f, 0.0f);
+		vArrangement* buttons = new vArrangement(-1.0f, 1.0f, 0.15f, 0.15f, 0.0f);
 
 		buttons->addItem(loadObjectButton);
 		buttons->addItem(Renderbuttons);
@@ -224,7 +220,7 @@ private:
 		Settings = settingsButton;
 		LB = loadObjectButton;
 
-		ObjectButtons = new vArrangement(-0.8f, -0.5f, 0.05f, 0.2f, 0.1f);
+		ObjectButtons = new vArrangement(-0.9f, -0.5f, 0.05f, 0.5f, 0.01f);
 
 		canvas.push_back(ObjectButtons);
 
@@ -234,7 +230,7 @@ private:
 
 		canvas.push_back(buttons);
 
-		webcamView = new WebcamPanel(0.775f, 0.1f, 0.2f, 0.2f, engine->windowWidth, engine->windowHeight, webcamMaterial);
+		webcamView = new WebcamPanel(0.775f, 0.1f, 0.2f, 0.142f, engine->windowWidth, engine->windowHeight, webcamMaterial);
 		webcamView->updateDisplay(engine->windowWidth, engine->windowHeight);
 		webcamView->image->mat = webcamMaterial;
 
@@ -261,7 +257,6 @@ private:
 					vector<UIItem*> scs;
 					item->getSubclasses(scs);
 					for (UIItem* sitem : scs) {
-						cout << sitem->Name << endl;
 						sitem->checkForEvent(mouseX, mouseY, state);
 					}
 				}
@@ -294,8 +289,6 @@ private:
 			createVertexBuffer(newObject);
 			createIndexBuffer(&newObject);
 			newObject.mat = webcamMaterial;
-			//createDescriptorPool(&newObject);
-			//createDescriptorSets(&newObject);
 
 			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibilities, this, placeholders::_1);
 
@@ -305,9 +298,6 @@ private:
 
 			objectButton->updateDisplay(engine->windowWidth, engine->windowHeight);
 			objectButton->setClickFunction(testfunction);
-
-			//createDescriptorPool(objectButton->image);
-			//createDescriptorSets(objectButton->image);
 
 			objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
 
@@ -328,13 +318,11 @@ private:
 	}
 
 	void cleanup() {
-		//vkDestroyDescriptorPool(engine->device, webcamMaterial->descriptorPool, nullptr);
 
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			if (staticObjects[i].mat != webcamMaterial) {
 				staticObjects[i].mat->cleanup();
 			}
-			//vkDestroyDescriptorPool(engine->device, staticObjects[i].mat->descriptorPool, nullptr);
 
 			vkDestroyBuffer(engine->device, staticObjects[i].indexBuffer, nullptr);
 			vkFreeMemory(engine->device, staticObjects[i].indexBufferMemory, nullptr);
@@ -348,7 +336,6 @@ private:
 			canvas[i]->getImages(images);
 
 			for (UIImage *image : images) {
-				//vkDestroyDescriptorPool(engine->device, image->mat->descriptorPool, nullptr);
 				if (image->mat != webcamMaterial) {
 					image->mat->cleanup();
 				}
@@ -358,15 +345,6 @@ private:
 
 				vkDestroyBuffer(engine->device, image->vertexBuffer, nullptr);
 				vkFreeMemory(engine->device, image->vertexBufferMemory, nullptr);
-
-				//for (auto tex : image->mat->textures) {
-				//	if (tex != nullptr) {
-				//		tex->cleanup();
-				//	}
-				//}
-				//if (image->texture != nullptr) {
-				//	image->texture->cleanup();
-				//}
 			}
 		}
 

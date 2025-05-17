@@ -20,17 +20,17 @@ public:
 	cv::Point2f cropCorners[4];
 	cv::Point2f targetCorners[4];
 
-	bool shouldUpdate = true;
+	bool shouldUpdate = false;
 private:
 	cv::VideoCapture cap;
 
-	int filter[8] = { 0 };
-	float sizeRatio = 1;
+	int filter[8];
+	float sizeRatio = 1.41;
 
 	uint32_t targetWidth;
 	uint32_t targetHeight;
 
-	bool isUpdating = true;
+	bool isUpdating = false;
 };
 
 #endif

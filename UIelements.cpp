@@ -79,6 +79,45 @@ void UIImage::createIndexBuffer() {
 	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
 }
 
+void UIItem::calculateScreenPosition(int winWidth, int winHeight) {
+	float W = static_cast<float>(winWidth);
+	float H = static_cast<float>(winHeight);
+
+	extenty = extentx * sqAxisRatio * W / H;
+
+	float bufferRatioX, bufferRatioY;
+
+	bufferRatioX = static_cast<float>(buffer) / (2 * W);
+	bufferRatioY = static_cast<float>(buffer) / (2 * H);
+
+	float minx, maxx;
+	minx = -extentx + posx;
+	maxx = posx + extentx;
+
+	if (minx < -1+bufferRatioX) {
+		posx = -1+bufferRatioX + extentx;
+	}
+	else if (maxx > 1-bufferRatioX) {
+		posx = 1-bufferRatioX - extentx;
+	}
+
+	float miny, maxy;
+	miny = -extenty - posy;
+	maxy = extenty - posy;
+
+	if (miny < -1+bufferRatioY) {
+		posy = -(- 1 + bufferRatioY + extenty);
+	}
+	else if (maxy > 1-bufferRatioY) {
+		posy = -(1-bufferRatioY - extenty);
+	}
+
+	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W;
+	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W;
+	this->windowPositions[2] = (((-posy + extenty) / 2.0f) + 0.5f) * H;
+	this->windowPositions[3] = (((-posy - extenty) / 2.0f) + 0.5f) * H;
+}
+
 void hArrangement::addItem(UIItem *item) {
 	Items.push_back(item);
 }
@@ -88,123 +127,91 @@ void vArrangement::addItem(UIItem* item) {
 }
 
 void hArrangement::arrangeItems(int wWidth, int wHeight) {
-	float axisRatio;
-
-	float itemHeight, itemWidth;
-
-	float totalWidth, scalefactor;
-
-	float xp, yp, xsc, ysc;
-
+	this->calculateScreenPosition(wWidth, wHeight);
 	this->winWidth = static_cast<float>(wWidth);
 	this->winHeight = static_cast<float>(wHeight);
 
-	if (method == 0) {
-		// For the moment method = 0 means that we scale items by constant height, with a width of the size ratio
-		itemHeight = 2 * extenty - (4 * extenty * spacing);
-		totalWidth = 2 * extentx * spacing;
+	float totalWidth = 0;
 
-		UIImage image;
+	// We scale all items to have a height of 1, then calculate the width of all items summed up
+	
+	for (size_t i = 0; i != Items.size(); i++) {
+		Items[i]->update(0.0f, 0.0f, this->extenty/Items[i]->sqAxisRatio, this->extenty, wWidth, wHeight);
+		totalWidth += Items[i]->extentx * 2;
+	}
 
-		for (size_t i = 0; i != Items.size(); i++) {
-			image = *Items[i]->image;
-			axisRatio = Items[i]->sqAxisRatio * winHeight / winWidth;
-			ysc = itemHeight/2;
-			itemWidth = itemHeight * axisRatio;
-			xsc = itemWidth/2;
-			yp = 0.5f * extenty;
-			xp = 0.5f * itemWidth + totalWidth;
-			totalWidth += itemWidth + 2 * extenty * spacing;
+	// Now we calculate the fraction of the width which is taken up by spaces
 
-			Items[i]->update(xp, yp, xsc, ysc, wWidth, wHeight);
-		}
+	float spaceFraction = spacing * (Items.size());
 
-		if (totalWidth > 2*extentx) {
-			scalefactor = 2*extentx / totalWidth;
+	// Now we find the constant scale factor required to fit all items into the same arrangement horizontally 
 
-			for (size_t i = 0; i != Items.size(); i++) {
-				ysc = Items[i]->extenty * scalefactor;
-				xsc = Items[i]->extentx * scalefactor;
-				xp = Items[i]->posx * scalefactor + posx - extentx;
-				yp = Items[i]->posy + posy - extenty;
-				Items[i]->update(xp, yp, xsc, ysc, wWidth, wHeight);
-			}
-		}
-		else {
-			float distance = (2*extentx - totalWidth) / (Items.size() - 1);
+	float scaleFactor = ((1 - spaceFraction) * this->extentx * 2) / (totalWidth);
+	if (scaleFactor > 1.0f) {
+		scaleFactor = 1.0f;
+	}
+	
+	// Finally for all items we calculate their positions on the screen and their sizes 
 
-			totalWidth = extentx * spacing;
-			for (size_t i = 0; i != Items.size(); i++) {
-				if (i > 1) {
-					xp = Items[i - 1]->posx + Items[i - 1]->extentx + 2*extenty * spacing + distance + posx - extentx;
-				}else{
-					xp = Items[i]->posx + this->posx - extentx;
-				}
-				yp = Items[i]->posy + posy - extenty;
-				Items[i]->update(xp, yp, Items[i]->extentx, Items[i]->extenty, wWidth, wHeight);
-			}
-		}
+	float xp, yp, xsc, ysc;
+
+	float occupiedFraction = spacing/2 * this->extentx * 2;
+
+	for (size_t i = 0; i != Items.size(); i++) {
+		yp = this->posy;
+		xp = this->posx - this->extentx + occupiedFraction + (Items[i]->extentx * scaleFactor);
+		xsc = scaleFactor*Items[i]->extentx;
+		ysc = xsc * Items[i]->sqAxisRatio;
+		occupiedFraction +=  xsc*2 + spacing*this->extentx*2;
+		Items[i]->update(xp, yp, xsc, ysc, wWidth, wHeight);
+		Items[i]->updateDisplay(wWidth, wHeight);
+		Items[i]->arrangeItems(wWidth, wHeight);
 	}
 }
 
 void vArrangement::arrangeItems(int wWidth, int wHeight) {
-	float axisRatio;
-
-	float itemHeight, itemWidth;
-
-	float totalHeight, scalefactor;
-
-	float xp, yp, xsc, ysc;
-
+	this->calculateScreenPosition(wWidth, wHeight);
 	this->winWidth = static_cast<float>(wWidth);
 	this->winHeight = static_cast<float>(wHeight);
 
-	if (method == 0) {
-		// For the moment method = 0 means that we scale items by constant height, with a width of the size ratio
-		itemWidth = 2*extentx - (4 * extentx * spacing);
-		totalHeight = 2 * extenty * spacing;
+	float totalHeight = 0;
 
-		UIImage image;
+	// We scale all items to have a width of 1, then calculate the width of all items summed up
 
-		for (int i = Items.size()-1; i >= 0; i--) {
-			image = *Items[i]->image;
-			axisRatio = Items[i]->sqAxisRatio * winWidth / winHeight;
-			xsc = itemWidth / 2;
-			itemHeight = itemWidth * axisRatio;
-			ysc = itemHeight / 2;
-			xp = 0.5f * extentx;
-			yp = 0.5f * itemHeight + totalHeight;
-			totalHeight += itemHeight + 2 * extenty * spacing;
+	for (size_t i = 0; i != Items.size(); i++) {
+		Items[i]->update(0.0f, 0.0f, this->extentx, this->extentx*Items[i]->sqAxisRatio, wWidth, wHeight);
+		totalHeight += Items[i]->extenty * 2 * winWidth/winHeight;
+	}
 
-			Items[i]->update(xp, yp, xsc, ysc, wWidth, wHeight);
-		}
+	// Now we calculate the fraction of the height which is taken up by spaces
 
-		if (totalHeight > 2*extenty) {
-			scalefactor = 2*extenty / totalHeight;
+	float spaceFraction = spacing * (Items.size());
 
-			for (size_t i = 0; i != Items.size(); i++) {
-				ysc = Items[i]->extenty * scalefactor;
-				xsc = Items[i]->extentx * scalefactor;
-				yp = Items[i]->posy * scalefactor + posy - extenty;
-				xp = Items[i]->posx + posx - extentx;
-				Items[i]->update(xp, yp, xsc, ysc, wWidth, wHeight);
-			}
-		}
-		else {
-			float distance = (2*extenty - totalHeight) / (Items.size() - 1);
+	// Now we find the constant scale factor required to fit all items into the same arrangement vertically
 
-			totalHeight = extenty * spacing;
-			for (size_t i = 0; i != Items.size(); i++) {
-				if (i > 1) {
-					yp = Items[i - 1]->posy + Items[i - 1]->extenty + 2*extentx * spacing + distance + posy - extenty;
-				}
-				else {
-					yp = Items[i]->posy + posy - extenty;
-				}
-				xp = Items[i]->posx + posx - extentx;
-				Items[i]->update(xp, yp, Items[i]->extentx, Items[i]->extenty, wWidth, wHeight);
-			}
-		}
+	float scaleFactor = ((1 - spaceFraction) * this->extenty * 2) / (totalHeight);
+	if (scaleFactor > 1.0f) {
+		scaleFactor = 1.0f;
+	}
+
+	// Finally for all items we calculate their positions on the screen and their sizes 
+
+	float xp, yp, xsc, ysc;
+
+	float occupiedFraction = spacing / 2 * this->extenty * 2;
+
+	size_t j = 0;
+
+	for (size_t i = 0; i != Items.size(); i++) {
+		j = Items.size() - 1 - i;
+		xp = this->posx;
+		yp = this->posy - this->extenty + occupiedFraction + (Items[j]->extenty * winWidth/winHeight * scaleFactor);
+		ysc = scaleFactor * Items[j]->extenty;
+		xsc = ysc / Items[j]->sqAxisRatio;
+		occupiedFraction += ysc * winWidth/winHeight * 2 + spacing * this->extenty * 2;
+		Items[j]->update(xp, yp, xsc, ysc, wWidth, wHeight);
+		Items[j]->updateDisplay(wWidth, wHeight);
+		Items[j]->arrangeItems(wWidth, wHeight);
 	}
 }
 

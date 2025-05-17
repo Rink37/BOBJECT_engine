@@ -12,7 +12,14 @@ Webcam::Webcam() {
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
-	getFrame();
+	filter[0] = 0;
+	filter[1] = 142;
+	filter[2] = 39;
+	filter[3] = 115;
+	filter[4] = 190;
+	filter[5] = 127;
+	cap >> webcamFrame;
+	//getFrame();
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
 	targetCorners[0] = Point2f(0, 0);
@@ -35,7 +42,7 @@ void Webcam::getFrame() {
 		cap >> webcamFrame;
 		updateCorners();
 		Mat warp = getPerspectiveTransform(cropCorners, targetCorners);
-		warpPerspective(webcamFrame, webcamFrame, warp, Size(targetHeight, targetWidth));
+		warpPerspective(webcamFrame, webcamFrame, warp, Size(targetWidth, targetHeight));
 		if (!shouldUpdate) {
 			isUpdating = false;
 		}
@@ -54,20 +61,21 @@ void Webcam::calibrateCornerFilter() {
 	bool storedShouldUpdate = shouldUpdate;
 	shouldUpdate = true;
 	string windowName = "Calibrate colour filtering";
+	std::cout << "Calibrating" << std::endl;
 	namedWindow(windowName);
 	// Initialise GUI trackbars
 	createTrackbar("Bmin", windowName, 0, 255, nothing);
 	createTrackbar("Bmax", windowName, 0, 255, nothing);
-	setTrackbarPos("Bmin", windowName, 96);
-	setTrackbarPos("Bmax", windowName, 155);
+	setTrackbarPos("Bmin", windowName, filter[0]);
+	setTrackbarPos("Bmax", windowName, filter[3]);
 	createTrackbar("Gmin", windowName, 0, 255, nothing);
 	createTrackbar("Gmax", windowName, 0, 255, nothing);
-	setTrackbarPos("Gmin", windowName, 37);
-	setTrackbarPos("Gmax", windowName, 88);
+	setTrackbarPos("Gmin", windowName, filter[1]);
+	setTrackbarPos("Gmax", windowName, filter[4]);
 	createTrackbar("Rmin", windowName, 0, 255, nothing);
 	createTrackbar("Rmax", windowName, 0, 255, nothing);
-	setTrackbarPos("Rmin", windowName, 7);
-	setTrackbarPos("Rmax", windowName, 135);
+	setTrackbarPos("Rmin", windowName, filter[2]);
+	setTrackbarPos("Rmax", windowName, filter[5]);
 	int bmin = 0;
 	int bmax = 255;
 	int gmin = 0;
@@ -135,67 +143,6 @@ int displayMaskedWebcam(int arr[6]) {
 	return 0;
 }
 
-int* calibrateMask(int out[6]) {
-	string windowName = "Colour calibration window";
-	namedWindow(windowName);
-	// Initialise GUI trackbars
-	createTrackbar("Bmin", windowName, 0, 255, nothing);
-	createTrackbar("Bmax", windowName, 0, 255, nothing);
-	setTrackbarPos("Bmax", windowName, 100);
-	createTrackbar("Gmin", windowName, 0, 255, nothing);
-	createTrackbar("Gmax", windowName, 0, 255, nothing);
-	setTrackbarPos("Gmax", windowName, 255);
-	createTrackbar("Rmin", windowName, 0, 255, nothing);
-	createTrackbar("Rmax", windowName, 0, 255, nothing);
-	setTrackbarPos("Rmax", windowName, 100);
-	int bmin = 0;
-	int bmax = 255;
-	int gmin = 0;
-	int gmax = 255;
-	int rmin = 0;
-	int rmax = 255;
-	// Set color filtering parameters before the loop - we don't want to define them within the loop
-	Mat frame;
-	VideoCapture cap(0);
-	if (!cap.isOpened()) {
-		cout << "No camera detected" << endl;
-		system("pause");
-		return out;
-	}
-	while (true) {
-		// Get values of trackbars and use them to define te value of colour filtering parameters
-		bmin = getTrackbarPos("Bmin", windowName);
-		bmax = getTrackbarPos("Bmax", windowName);
-		gmin = getTrackbarPos("Gmin", windowName);
-		gmax = getTrackbarPos("Gmax", windowName);
-		rmin = getTrackbarPos("Rmin", windowName);
-		rmax = getTrackbarPos("Rmax", windowName);
-		// Retrieve the frame from cap
-		cap >> frame;
-		if (frame.empty()) {
-			break;
-		}
-		blur(frame, frame, Size(5, 5)); // I've found that including a bit of blur gives much more solid corner detection and removes some unwanted artifacts
-		inRange(frame, Scalar(bmin, gmin, rmin), Scalar(bmax, gmax, rmax), frame); // Create a filter mask by colour
-		imshow(windowName, frame);//Show the frame
-		char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
-		if (c == 27) {
-			break;
-		}
-	}
-	cap.release();
-
-	destroyWindow(windowName);
-
-	out[0] = bmin;
-	out[1] = gmin;
-	out[2] = rmin;
-	out[3] = bmax;
-	out[4] = gmax;
-	out[5] = rmax;
-	return out; // return an updated mask parameters array which can be used in following functions. 
-}
-
 float dist(Point2f A, Point2f B) {
 	return sqrt(pow(A.x - B.x, 2) + pow(A.y - B.y, 2));
 }
@@ -206,10 +153,8 @@ void Webcam::getCorners() {
 	vector<vector<Point>> contours;
 	vector<Vec4i> hierarchy;
 	cap >> frame;
-	int targetWidth = 100;
-	int targetHeight = 100;
 	Point2f corners[4] = {Point2f(0, 0), Point2f(0, frame.size[0]), Point2f(frame.size[1], 0), Point2f(frame.size[1], frame.size[0])};
-	Point2f targetCorners[4] = { Point2f(0, 0), Point2f(0, targetHeight), Point2f(targetWidth, 0), Point2f(targetWidth, targetHeight) };
+	//Point2f targetCorners[4] = { Point2f(0, 0), Point2f(0, targetHeight), Point2f(targetWidth, 0), Point2f(targetWidth, targetHeight) };
 	namedWindow("Transformed Image");
 	float cX = 0;
 	float cY = 0;
@@ -280,7 +225,7 @@ void Webcam::getCorners() {
 }
 
 void Webcam::updateCorners() {
-	if (cropCorners[1] == Point2f(0, 0)) {
+	if (cropCorners[0] == Point2f(0, 0)) {
 		calibrateCornerFilter();
 		getCorners();
 	}
