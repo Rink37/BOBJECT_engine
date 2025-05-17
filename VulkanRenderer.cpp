@@ -1,5 +1,4 @@
-﻿#define TINYOBJLOADER_IMPLEMENTATION
-#include"tiny_obj_loader.h"
+﻿#include"tiny_obj_loader.h"
 
 #include<iostream>
 #include<stdexcept>
@@ -18,7 +17,6 @@
 #include<unordered_map>
 
 #include"Bobject_Engine.h"
-#include"Pipelines.h"
 #include"InputManager.h"
 #include"WindowsFileManager.h"
 #include"CameraController.h"
@@ -26,6 +24,7 @@
 #include"Webcam_feeder.h"
 #include"Textures.h"
 #include"Materials.h"
+#include"Meshes.h"
 
 #include"include/LoadButton.h"
 #include"include/PauseButton.h"
@@ -34,95 +33,22 @@
 #include"include/SettingsButton.h"
 #include"include/UnrenderedButton.h"
 #include"include/WireframeButton.h"
+#include"include/TestCheckboxButton.h"
 
 using namespace cv;
 using namespace std;
 
-const string LOAD_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\LoadButton.png";
-const string RENDERED_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\RenderedButton.png";
-const string UNRENDERED_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\UnrenderedButton.png";
-const string WIREFRAME_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\WireframeButton.png";
-const string PLAY_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\PlayButton.png";
-const string PAUSE_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\PauseButton.png";
-const string SETTINGS_BUTTON_PATH = "C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\SettingsButton.png";
-
 uint32_t currentFrame = 0;
 
-vector<int> keybinds = { GLFW_KEY_L, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_U, GLFW_KEY_I};
+vector<int> keybinds = { GLFW_KEY_L, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_U, GLFW_KEY_I };
 
 std::vector<KeyInput*> KeyInput::_instances;
 KeyInput defaultKeyBinds(keybinds);
 
 struct StaticObject {
-
 	bool isVisible = false;
-
-	vector<Vertex> vertices;
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
-
-	vector<uint32_t> indices;
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
-
+	StaticMesh mesh;
 	Material* mat = nullptr;
-
-	int texWidth;
-	int texHeight;
-
-	bool loadModel() {
-		tinyobj::attrib_t attrib;
-		vector<tinyobj::shape_t> shapes;
-		vector<tinyobj::material_t> materials;
-		string warn, err;
-
-		string testMODEL_PATH;
-
-		try {
-			testMODEL_PATH = winFile::OpenFileDialog();
-		}
-		catch (...) {
-			return false;
-		}
-		
-
-		if (tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, testMODEL_PATH.c_str())) {
-			unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-			for (const auto& shape : shapes) {
-				for (const auto& index : shape.mesh.indices) {
-					Vertex vertex{};
-
-					vertex.pos = {
-						attrib.vertices[3 * index.vertex_index + 0],
-						attrib.vertices[3 * index.vertex_index + 1],
-						attrib.vertices[3 * index.vertex_index + 2]
-					};
-
-					vertex.normal = {
-						attrib.normals[3 * index.normal_index + 0],
-						attrib.normals[3 * index.normal_index + 1],
-						attrib.normals[3 * index.normal_index + 2]
-					};
-
-					vertex.texCoord = {
-						attrib.texcoords[2 * index.texcoord_index + 0],
-						1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-					};
-
-
-					if (uniqueVertices.count(vertex) == 0) {
-						uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-						vertices.push_back(vertex);
-					}
-
-					indices.push_back(uniqueVertices[vertex]);
-				}
-			}
-			return true;
-		}
-		return false;
-	}
 };
 
 class Application {
@@ -145,19 +71,19 @@ private:
 	WebcamPanel* webcamView = nullptr;
 	Material* webcamMaterial = nullptr;
 
-	Button* Pause;
-	Button* Play;
-	Button* Settings;
-	Button *LB;
+	imageData* ub = new UNRENDEREDBUTTON;
+	imageData* tcb = new TESTCHECKBOXBUTTON;
 
-	vector<UIItem*> canvas;
+	vector<UIItem*> canvas{};
 
 	vArrangement* ObjectButtons;
 
-	double mouseX, mouseY;
+	double mouseX, mouseY = 0;
 
-	vector<StaticObject> staticObjects;
-	map<string, int> ObjectMap;
+	bool mouseDown = false;
+
+	vector<StaticObject> staticObjects = {};
+	map<string, int> ObjectMap = {};
 
 	bool webcamObjectView = true;
 
@@ -172,6 +98,12 @@ private:
 
 		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this, placeholders::_1);
 
+		std::function<void(UIItem*)> enableWebcamFunct = bind(&Application::enableWebcam, this, placeholders::_1);
+		std::function<void(UIItem*)> disableWebcamFunct = bind(&Application::disableWebcam, this, placeholders::_1);
+		std::function<void(UIItem*)> configureWebcamFunct = bind(&Application::calibrateWebcam, this, placeholders::_1);
+
+		std::function<void(UIItem*)> loadObjectFunct = bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
+
 		imageData* lb = new LOADBUTTON;
 		imageData* rb = new RENDEREDBUTTON;
 		imageData* ub = new UNRENDEREDBUTTON;
@@ -180,22 +112,36 @@ private:
 		imageData* pb = new PAUSEBUTTON;
 		imageData* sb = new SETTINGSBUTTON;
 
-		Button *loadObjectButton = new Button(0.0f, 0.0f, 0.2f, 0.1f, lb, engine->windowWidth, engine->windowHeight);
+		Button *loadObjectButton = new Button(0.0f, 0.0f, 0.2f, 0.1f, lb);
 		
-		Button *litRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, rb, engine->windowWidth, engine->windowHeight);
-		Button *unlitRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, ub, engine->windowWidth, engine->windowHeight);
-		Button *wireframeRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, wb, engine->windowWidth, engine->windowHeight);
+		Button *litRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, rb);
+		Button *unlitRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, ub);
+		Button *wireframeRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, wb);
 		
-		Button* playButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, plb, engine->windowWidth, engine->windowHeight);
-		Button* pauseButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, pb, engine->windowWidth, engine->windowHeight);
-		Button* settingsButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, sb, engine->windowWidth, engine->windowHeight);
+		Button* playButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, plb);
+		Button* pauseButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, pb);
+		Button* settingsButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, sb);
 
 		unlitRenderingButton->Name = "FlatShading";
 		unlitRenderingButton->setClickFunction(pipelinefunction);
+		
 		litRenderingButton->Name = "BFShading";
 		litRenderingButton->setClickFunction(pipelinefunction);
+		
 		wireframeRenderingButton->Name = "Wireframe";
 		wireframeRenderingButton->setClickFunction(pipelinefunction);
+
+		playButton->Name = "PlayWebcam";
+		playButton->setClickFunction(enableWebcamFunct);
+		
+		pauseButton->Name = "PauseWebcam";
+		pauseButton->setClickFunction(disableWebcamFunct);
+		
+		settingsButton->Name = "ConfigureWebcam";
+		settingsButton->setClickFunction(configureWebcamFunct);
+
+		loadObjectButton->Name = "LoadObject";
+		loadObjectButton->setClickFunction(loadObjectFunct);
 
 		Renderbuttons->addItem(unlitRenderingButton);
 		Renderbuttons->addItem(litRenderingButton);
@@ -204,8 +150,6 @@ private:
 		Videobuttons->addItem(playButton);
 		Videobuttons->addItem(pauseButton);
 		Videobuttons->addItem(settingsButton);
-		
-		Videobuttons->arrangeItems(engine->windowWidth, engine->windowHeight);
 
 		canvas.push_back(Videobuttons);
 
@@ -213,28 +157,21 @@ private:
 
 		buttons->addItem(loadObjectButton);
 		buttons->addItem(Renderbuttons);
-		buttons->arrangeItems(engine->windowWidth, engine->windowHeight);
-
-		Play = playButton;
-		Pause = pauseButton;
-		Settings = settingsButton;
-		LB = loadObjectButton;
 
 		ObjectButtons = new vArrangement(-0.9f, -0.5f, 0.05f, 0.5f, 0.01f);
 
 		canvas.push_back(ObjectButtons);
 
-		for (Button *item : {loadObjectButton, litRenderingButton, unlitRenderingButton, wireframeRenderingButton, playButton, pauseButton, settingsButton}) {
-			item->updateDisplay(engine->windowWidth, engine->windowHeight);
-		}
-
 		canvas.push_back(buttons);
 
-		webcamView = new WebcamPanel(0.775f, 0.1f, 0.2f, 0.142f, engine->windowWidth, engine->windowHeight, webcamMaterial);
-		webcamView->updateDisplay(engine->windowWidth, engine->windowHeight);
-		webcamView->image->mat = webcamMaterial;
+		webcamView = new WebcamPanel(0.775f, 0.1f, 0.2f, 0.142f, webcamMaterial);
+		webcamView->image->mat[0] = webcamMaterial;
 
 		canvas.push_back(webcamView);
+
+		for (UIItem* item : canvas) {
+			item->updateDisplay();
+		}
 	}
 
 	void mainLoop() {
@@ -244,36 +181,41 @@ private:
 			webcamTexture::get()->updateWebcam();
 			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
 			if (state == GLFW_PRESS) {
-				if (Play->isInArea(mouseX, mouseY)) {
-					webcamTexture::get()->webCam.shouldUpdate = true;
-				}
-				if (Pause->isInArea(mouseX, mouseY)) {
-					webcamTexture::get()->webCam.shouldUpdate = false;
-				}
-				if (Settings->isInArea(mouseX, mouseY)) {
-					webcamTexture::get()->webCam.calibrateCornerFilter();
-				}
+				mouseDown = 1;
+			}
+			else if (~state && mouseDown){
 				for (UIItem* item : canvas) {
 					vector<UIItem*> scs;
 					item->getSubclasses(scs);
 					for (UIItem* sitem : scs) {
-						sitem->checkForEvent(mouseX, mouseY, state);
+						sitem->checkForEvent(mouseX, mouseY, GLFW_PRESS);
 					}
 				}
-				if (LB->isInArea(mouseX, mouseY) && state == GLFW_PRESS) {
-					loadStaticObject();
-				}
+				mouseDown = 0;
 			}
 			drawFrame();
 		}
 		vkDeviceWaitIdle(engine->device);
 	}
 
-	void setObjectVisibilities(UIItem* owner) {
-		for (int i = 0; i != staticObjects.size(); i++) {
-			staticObjects[i].isVisible = false;
-		}
-		staticObjects[ObjectMap.at(owner->Name)].isVisible = true;
+	void enableWebcam(UIItem* owner) {
+		webcamTexture::get()->webCam.shouldUpdate = true;
+	}
+
+	void disableWebcam(UIItem* owner) {
+		webcamTexture::get()->webCam.shouldUpdate = false;
+	}
+
+	void calibrateWebcam(UIItem* owner) {
+		webcamTexture::get()->webCam.calibrateCornerFilter();
+	}
+
+	void buttonLoadStaticObject(UIItem* owner) {
+		loadStaticObject();
+	}
+
+	void setObjectVisibility(UIItem* owner) {
+		staticObjects[ObjectMap.at(owner->Name)].isVisible = owner->activestate;
 	}
 
 	void setPipelineIndex(UIItem* owner) {
@@ -281,39 +223,33 @@ private:
 	}
 
 	void loadStaticObject() {
-		StaticObject newObject;
-		
-		bool res = newObject.loadModel();
 
-		if (res) {
-			createVertexBuffer(newObject);
-			createIndexBuffer(&newObject);
+		try {
+			StaticObject newObject;
 			newObject.mat = webcamMaterial;
 
-			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibilities, this, placeholders::_1);
+			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
 
-			imageData* ub = new UNRENDEREDBUTTON;
+			Checkbox* objectButton = new Checkbox(0.0f, 0.0f, 0.15f, 0.15f, tcb, ub);
 
-			Button* objectButton = new Button(0.0f, 0.0f, 0.15f, 0.15f, ub, engine->windowWidth, engine->windowHeight);
-
-			objectButton->updateDisplay(engine->windowWidth, engine->windowHeight);
+			objectButton->updateDisplay();
 			objectButton->setClickFunction(testfunction);
+
+			newObject.isVisible = objectButton->activestate;
 
 			objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
 
 			ObjectMap.insert({ objectButton->Name, staticObjects.size() });
 
 			ObjectButtons->addItem(objectButton);
-			ObjectButtons->arrangeItems(engine->windowWidth, engine->windowHeight);
+			ObjectButtons->arrangeItems();
 
-			ObjectButtons->updateDisplay(engine->windowWidth, engine->windowHeight);
-
-			for (int i = 0; i != staticObjects.size(); i++) {
-				staticObjects[i].isVisible = false;
-			}
-			newObject.isVisible = true;
+			ObjectButtons->updateDisplay();
 
 			staticObjects.push_back(newObject);
+		}
+		catch (...) {
+			return;
 		}
 	}
 
@@ -324,11 +260,7 @@ private:
 				staticObjects[i].mat->cleanup();
 			}
 
-			vkDestroyBuffer(engine->device, staticObjects[i].indexBuffer, nullptr);
-			vkFreeMemory(engine->device, staticObjects[i].indexBufferMemory, nullptr);
-
-			vkDestroyBuffer(engine->device, staticObjects[i].vertexBuffer, nullptr);
-			vkFreeMemory(engine->device, staticObjects[i].vertexBufferMemory, nullptr);
+			staticObjects[i].mesh.cleanup();
 		}
 
 		for (uint32_t i = 0; i != canvas.size(); i++) {
@@ -336,36 +268,19 @@ private:
 			canvas[i]->getImages(images);
 
 			for (UIImage *image : images) {
-				if (image->mat != webcamMaterial) {
-					image->mat->cleanup();
+				for (Material* mat : image->mat) {
+					if (mat != webcamMaterial) {
+						mat->cleanup();
+					}
 				}
 
-				vkDestroyBuffer(engine->device, image->indexBuffer, nullptr);
-				vkFreeMemory(engine->device, image->indexBufferMemory, nullptr);
+				image->mesh.cleanup();
 
-				vkDestroyBuffer(engine->device, image->vertexBuffer, nullptr);
-				vkFreeMemory(engine->device, image->vertexBufferMemory, nullptr);
 			}
 		}
 
 		webcamMaterial->cleanup();
 		engine->cleanup();
-	}
-
-	VkSampleCountFlagBits getMaxUseableSampleCount() {
-		VkPhysicalDeviceProperties physicalDeviceProperties;
-		vkGetPhysicalDeviceProperties(engine->physicalDevice, &physicalDeviceProperties);
-
-		VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
-
-		if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
-		if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
-		if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
-		if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
-		if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
-		if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
-
-		return VK_SAMPLE_COUNT_1_BIT;
 	}
 
 	void drawFrame() {
@@ -427,7 +342,7 @@ private:
 			engine->framebufferResized = false;
 
 			for (size_t i = 0; i != canvas.size(); i++) {
-				canvas[i]->updateDisplay(engine->windowWidth, engine->windowHeight);
+				canvas[i]->updateDisplay();
 			}
 
 			engine->recreateSwapChain();
@@ -457,118 +372,6 @@ private:
 
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
-
-	void createVertexBuffer(auto& object) {
-
-		VkDeviceSize bufferSize = sizeof(object.vertices[0]) * object.vertices.size();
-		
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-		void* data;
-		vkMapMemory(engine->device, stagingBufferMemory, 0, bufferSize, 0, &data);
-			memcpy(data, object.vertices.data(), (size_t) bufferSize);
-		vkUnmapMemory(engine->device, stagingBufferMemory);
-
-		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, object.vertexBuffer, object.vertexBufferMemory);
-
-		engine->copyBuffer(stagingBuffer, object.vertexBuffer, bufferSize);
-
-		vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
-		vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
-	}
-
-	void createIndexBuffer(auto *object) {
-
-		VkDeviceSize bufferSize = sizeof(object->indices[0]) * object->indices.size();
-
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-		void* data;
-		vkMapMemory(engine->device, stagingBufferMemory, 0, bufferSize, 0, &data);
-			memcpy(data, object->indices.data(), (size_t)bufferSize);
-		vkUnmapMemory(engine->device, stagingBufferMemory);
-
-		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, object->indexBuffer, object->indexBufferMemory);
-
-		engine->copyBuffer(stagingBuffer, object->indexBuffer, bufferSize);
-
-		vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
-		vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
-	}
-
-	void OldcreateDescriptorPool(auto *object) {
-		array<VkDescriptorPoolSize, 2> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-		VkDescriptorPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-		if (vkCreateDescriptorPool(engine->device, &poolInfo, nullptr, &object->descriptorPool) != VK_SUCCESS) {
-			throw runtime_error("failed to create descriptor pool!");
-		}
-	}
-
-
-	void OldcreateDescriptorSets(auto *object) {
-		vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, engine->descriptorSetLayout);
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = object->descriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-		allocInfo.pSetLayouts = layouts.data();
-
-		object->descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-		
-		if (vkAllocateDescriptorSets(engine->device, &allocInfo, object->descriptorSets.data()) != VK_SUCCESS) {
-			throw runtime_error("failed to allocate descriptor sets!");
-		}
-
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = engine->uniformBuffers[i];
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UniformBufferObject);
-
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			if (object->texture != nullptr) {
-				imageInfo.imageView = object->texture->textureImageView;
-			}
-			else if (object -> wtexture != nullptr) {
-				imageInfo.imageView = object->wtexture->textureImageView;
-			}
-			imageInfo.sampler = engine->textureSampler;
-
-			array<VkWriteDescriptorSet, 2> descriptorWrites{};
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = object->descriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = object->descriptorSets[i];
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &imageInfo;
-
-			vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-		}
-	}
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		VkCommandBufferBeginInfo beginInfo{};
@@ -615,16 +418,16 @@ private:
 
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			if (staticObjects[i].isVisible) {
-				VkBuffer vertexBuffers[] = { staticObjects[i].vertexBuffer };
+				VkBuffer vertexBuffers[] = { staticObjects[i].mesh.vertexBuffer };
 				VkDeviceSize offsets[] = { 0 };
 
 				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].mat->descriptorSets[currentFrame], 0, nullptr);
 
-				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].indices.size()), 1, 0, 0, 0);
+				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh.indices.size()), 1, 0, 0, 0);
 			}
 		}
 		
@@ -635,16 +438,16 @@ private:
 			canvas[i]->getImages(images);
 
 			for (UIImage *image : images) {
-				VkBuffer vertexBuffers[] = { image->vertexBuffer };
+				VkBuffer vertexBuffers[] = { image->mesh.vertexBuffer };
 				VkDeviceSize offsets[] = { 0 };
 
 				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-				vkCmdBindIndexBuffer(commandBuffer, image->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(commandBuffer, image->mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &image->mat->descriptorSets[currentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &image->mat[image->matidx]->descriptorSets[currentFrame], 0, nullptr);
 
-				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(image->indices.size()), 1, 0, 0, 0);
+				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(image->mesh.indices.size()), 1, 0, 0, 0);
 			}
 		}
 
@@ -652,16 +455,16 @@ private:
 		
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			if (staticObjects[i].isVisible) {
-				VkBuffer vertexBuffers[] = { staticObjects[i].vertexBuffer };
+				VkBuffer vertexBuffers[] = { staticObjects[i].mesh.vertexBuffer };
 				VkDeviceSize offsets[] = { 0 };
 
 				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].mat->descriptorSets[currentFrame], 0, nullptr);
 
-				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].indices.size()), 1, 0, 0, 0);
+				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh.indices.size()), 1, 0, 0, 0);
 			}
 		}
 

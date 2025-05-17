@@ -2,86 +2,13 @@
 
 using namespace std;
 
-void UIImage::UpdateVertices(int windowWidth, int windowHeight, float xp, float yp, float xsc, float ysc) {
-	vertices.clear();
-
-	Vertex vertex;
-
-	vertex.pos = { -xsc + xp, -ysc - yp, 0.0f };
-	vertex.normal = { 0.0f, 0.0f, 0.0f };
-	vertex.texCoord = { 0.0f, 0.0f };
-	vertices.push_back(vertex);
-	vertex.pos = { xsc + xp, -ysc - yp, 0.0f };
-	vertex.texCoord = { 1.0f, 0.0f };
-	vertices.push_back(vertex);
-	vertex.pos = { xsc + xp, ysc - yp, 0.0f };
-	vertex.texCoord = { 1.0f, 1.0f };
-	vertices.push_back(vertex);
-	vertex.pos = { -xsc + xp, ysc - yp, 0.0f };
-	vertex.texCoord = { 0.0f, 1.0f };
-	vertices.push_back(vertex);
-
-	if (vBuffer == nullptr) {
-		createVertexBuffer();
-		createIndexBuffer();
-	}
-	else {
-		updateVertexBuffer();
-	}
+void UIImage::UpdateVertices(float xp, float yp, float xsc, float ysc) {
+	mesh.UpdateVertices(xp, yp, xsc, ysc);
 }
 
-void UIImage::createVertexBuffer() {
-
-	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-	Engine::get()->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-	void* data;
-	vkMapMemory(Engine::get()->device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, vertices.data(), (size_t)bufferSize);
-	vkUnmapMemory(Engine::get()->device, stagingBufferMemory);
-
-	Engine::get()->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBuffer, vertexBufferMemory);
-
-	Engine::get()->copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-	vkMapMemory(Engine::get()->device, vertexBufferMemory, 0, bufferSize, 0, &vBuffer);
-
-	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);
-	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
-}
-
-void UIImage::updateVertexBuffer() {
-	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-	memcpy(vBuffer, vertices.data(), (size_t)bufferSize);
-}
-
-void UIImage::createIndexBuffer() {
-
-	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-	Engine::get()->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-	void* data;
-	vkMapMemory(Engine::get()->device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, indices.data(), (size_t)bufferSize);
-	vkUnmapMemory(Engine::get()->device, stagingBufferMemory);
-
-	Engine::get()->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
-
-	Engine::get()->copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);
-	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
-}
-
-void UIItem::calculateScreenPosition(int winWidth, int winHeight) {
-	float W = static_cast<float>(winWidth);
-	float H = static_cast<float>(winHeight);
+void UIItem::calculateScreenPosition() {
+	float W = static_cast<float>(Engine::get()->windowWidth);
+	float H = static_cast<float>(Engine::get()->windowHeight);
 
 	extenty = extentx * sqAxisRatio * W / H;
 
@@ -126,17 +53,15 @@ void vArrangement::addItem(UIItem* item) {
 	Items.push_back(item);
 }
 
-void hArrangement::arrangeItems(int wWidth, int wHeight) {
-	this->calculateScreenPosition(wWidth, wHeight);
-	this->winWidth = static_cast<float>(wWidth);
-	this->winHeight = static_cast<float>(wHeight);
+void hArrangement::arrangeItems() {
+	this->calculateScreenPosition();
 
 	float totalWidth = 0;
 
 	// We scale all items to have a height of 1, then calculate the width of all items summed up
 	
 	for (size_t i = 0; i != Items.size(); i++) {
-		Items[i]->update(0.0f, 0.0f, this->extenty/Items[i]->sqAxisRatio, this->extenty, wWidth, wHeight);
+		Items[i]->update(0.0f, 0.0f, this->extenty/Items[i]->sqAxisRatio, this->extenty);
 		totalWidth += Items[i]->extentx * 2;
 	}
 
@@ -163,24 +88,24 @@ void hArrangement::arrangeItems(int wWidth, int wHeight) {
 		xsc = scaleFactor*Items[i]->extentx;
 		ysc = xsc * Items[i]->sqAxisRatio;
 		occupiedFraction +=  xsc*2 + spacing*this->extentx*2;
-		Items[i]->update(xp, yp, xsc, ysc, wWidth, wHeight);
-		Items[i]->updateDisplay(wWidth, wHeight);
-		Items[i]->arrangeItems(wWidth, wHeight);
+		Items[i]->update(xp, yp, xsc, ysc);
+		Items[i]->updateDisplay();
+		Items[i]->arrangeItems();
 	}
 }
 
-void vArrangement::arrangeItems(int wWidth, int wHeight) {
-	this->calculateScreenPosition(wWidth, wHeight);
-	this->winWidth = static_cast<float>(wWidth);
-	this->winHeight = static_cast<float>(wHeight);
+void vArrangement::arrangeItems() {
+	this->calculateScreenPosition();
+	float W = static_cast<float>(Engine::get()->windowWidth);
+	float H = static_cast<float>(Engine::get()->windowHeight);
 
 	float totalHeight = 0;
 
 	// We scale all items to have a width of 1, then calculate the width of all items summed up
 
 	for (size_t i = 0; i != Items.size(); i++) {
-		Items[i]->update(0.0f, 0.0f, this->extentx, this->extentx*Items[i]->sqAxisRatio, wWidth, wHeight);
-		totalHeight += Items[i]->extenty * 2 * winWidth/winHeight;
+		Items[i]->update(0.0f, 0.0f, this->extentx, this->extentx*Items[i]->sqAxisRatio);
+		totalHeight += Items[i]->extenty * 2 * W/H;
 	}
 
 	// Now we calculate the fraction of the height which is taken up by spaces
@@ -205,26 +130,26 @@ void vArrangement::arrangeItems(int wWidth, int wHeight) {
 	for (size_t i = 0; i != Items.size(); i++) {
 		j = Items.size() - 1 - i;
 		xp = this->posx;
-		yp = this->posy - this->extenty + occupiedFraction + (Items[j]->extenty * winWidth/winHeight * scaleFactor);
+		yp = this->posy - this->extenty + occupiedFraction + (Items[j]->extenty * W/H * scaleFactor);
 		ysc = scaleFactor * Items[j]->extenty;
 		xsc = ysc / Items[j]->sqAxisRatio;
-		occupiedFraction += ysc * winWidth/winHeight * 2 + spacing * this->extenty * 2;
-		Items[j]->update(xp, yp, xsc, ysc, wWidth, wHeight);
-		Items[j]->updateDisplay(wWidth, wHeight);
-		Items[j]->arrangeItems(wWidth, wHeight);
+		occupiedFraction += ysc * W/H * 2 + spacing * this->extenty * 2;
+		Items[j]->update(xp, yp, xsc, ysc);
+		Items[j]->updateDisplay();
+		Items[j]->arrangeItems();
 	}
 }
 
-void hArrangement::updateDisplay(int winWidth, int winHeight) {
-	arrangeItems(winWidth, winHeight);
+void hArrangement::updateDisplay() {
+	arrangeItems();
 	for (size_t i = 0; i != Items.size(); i++) {
-		Items[i]->updateDisplay(winWidth, winHeight);
+		Items[i]->updateDisplay();
 	}
 }
 
-void vArrangement::updateDisplay(int winWidth, int winHeight) {
-	arrangeItems(winWidth, winHeight);
+void vArrangement::updateDisplay() {
+	arrangeItems();
 	for (size_t i = 0; i != Items.size(); i++) {
-		Items[i]->updateDisplay(winWidth, winHeight);
+		Items[i]->updateDisplay();
 	}
 }

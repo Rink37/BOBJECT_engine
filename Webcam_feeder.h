@@ -1,6 +1,6 @@
 ﻿#ifndef WEBCAM
 #define WEBCAM
-#include <iostream>
+#include<iostream>
 #include<opencv2/opencv.hpp>
 
 class Webcam {
@@ -25,7 +25,7 @@ private:
 	cv::VideoCapture cap;
 
 	int filter[8];
-	float sizeRatio = 1.41;
+	float sizeRatio = 1.41f;
 
 	uint32_t targetWidth;
 	uint32_t targetHeight;
@@ -35,4 +35,3 @@ private:
 
 #endif
 
-// TODO: Reference additional headers your program requires here.
