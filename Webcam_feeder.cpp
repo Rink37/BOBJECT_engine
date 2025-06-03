@@ -18,8 +18,8 @@ Webcam::Webcam() {
 	filter[3] = 115;
 	filter[4] = 190;
 	filter[5] = 127;
-	cap >> webcamFrame;
-	//getFrame();
+	//cap >> webcamFrame;
+	getFrame();
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
 	targetCorners[0] = Point2f(0, 0);
@@ -102,10 +102,13 @@ void Webcam::calibrateCornerFilter() {
 		imshow(windowName, frame);//Show the frame
 		char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
 		if (c == 27) {
+			cv::destroyWindow(windowName);
+			break;
+		}
+		if (getWindowProperty(windowName, WND_PROP_VISIBLE) < 1) {
 			break;
 		}
 	}
-	destroyWindow(windowName);
 
 	filter[0] = bmin;
 	filter[1] = gmin;
@@ -214,6 +217,10 @@ void Webcam::getCorners() {
 		imshow("Transformed Image", frame);
 		char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
 		if (c == 27) {
+			cv::destroyWindow("Transformed Image");
+			break;
+		}
+		if (getWindowProperty("Transformed Image", WND_PROP_VISIBLE) < 1) {
 			break;
 		}
 	}
@@ -221,7 +228,6 @@ void Webcam::getCorners() {
 	cropCorners[1] = corners[1];
 	cropCorners[2] = corners[2];
 	cropCorners[3] = corners[3];
-	destroyWindow("Transformed Image");
 }
 
 void Webcam::updateCorners() {

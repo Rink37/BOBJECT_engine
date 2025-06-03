@@ -20,7 +20,7 @@ public:
 	cv::Point2f cropCorners[4];
 	cv::Point2f targetCorners[4];
 
-	bool shouldUpdate = false;
+	bool shouldUpdate = true;
 private:
 	cv::VideoCapture cap;
 
@@ -30,7 +30,7 @@ private:
 	uint32_t targetWidth;
 	uint32_t targetHeight;
 
-	bool isUpdating = false;
+	bool isUpdating = true;
 };
 
 #endif

@@ -26,7 +26,6 @@
 #include<cstdint>
 #include<algorithm>
 
-//#include"Pipelines.h"
 #include"include/ShaderDataType.h"
 #include"include/Flat.h"
 #include"include/BF.h"
@@ -174,7 +173,6 @@ public:
 
 	std::vector<VkBuffer> uniformBuffers;
 
-	//std::vector<Pipeline*> PipelineDefs;
 	std::map<std::string, int> PipelineMap = {};
 	std::vector<VkPipeline*> GraphicsPipelines = {};
 
@@ -199,6 +197,7 @@ private:
 	static Engine* enginstance;
 	Engine() = default;
 	~Engine() = default;
+
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 	VkSurfaceKHR surface;
@@ -251,7 +250,6 @@ private:
 	std::vector<const char*> getRequiredExtensions();
 
 	void DestroyDebugUtilsMessengerEXT(VkInstance, VkDebugUtilsMessengerEXT, const VkAllocationCallbacks*);
-	//void createBuffer(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&);
 
 	VkFormat findDepthFormat();
 	VkFormat findSupportedFormat(const std::vector<VkFormat>&, VkImageTiling, VkFormatFeatureFlags);
