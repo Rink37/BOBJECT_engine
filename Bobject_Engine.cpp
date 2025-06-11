@@ -1,7 +1,6 @@
 #include "Bobject_Engine.h"
 
 #include"tiny_obj_loader.h"
-//#include"Pipelines.h"
 
 using namespace std;
 
@@ -25,21 +24,6 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 }
-
-//static std::vector<char> readFile(const std::string& filename) {
-//	std::ifstream file(filename, std::ios::ate | std::ios::binary);
-//
-//	if (!file.is_open()) {
-//		throw std::runtime_error("failed to open file!");
-//	}
-//	size_t fileSize = (size_t)file.tellg();
-//	std::vector<char> buffer(fileSize);
-//	file.seekg(0);
-//	file.read(buffer.data(), fileSize);
-//	file.close();
-
-//	return buffer;
-//}
 
 bool Engine::checkValidationLayerSupport() {
 	uint32_t layerCount;
@@ -72,12 +56,14 @@ void Engine::framebufferResizeCallback(GLFWwindow* window, int width, int height
 	eng->framebufferResized = true;
 }
 
-void Engine::initWindow() {
+void Engine::initWindow(const char* appname) {
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	window = glfwCreateWindow(WIDTH, HEIGHT, "BOBJECT_engine", nullptr, nullptr);
+	appName = appname;
+
+	window = glfwCreateWindow(WIDTH, HEIGHT, appName, nullptr, nullptr);
 
 	glfwSetWindowUserPointer(window, this);
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
@@ -90,7 +76,7 @@ void Engine::createInstance() {
 
 	VkApplicationInfo appInfo{};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "Application";
+	appInfo.pApplicationName = appName;
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.pEngineName = "BOBJECT_Engine";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -294,6 +280,7 @@ void Engine::createImageViews() {
 }
 
 void Engine::createRenderPass() {
+	
 	VkAttachmentDescription colorAttachment{};
 	colorAttachment.format = swapChainImageFormat;
 	colorAttachment.samples = msaaSamples;
@@ -421,20 +408,14 @@ void Engine::createGraphicsPipelines() {
 	shaderDatas.push_back(new BFSHADER);
 	shaderDatas.push_back(new UISHADER);
 	shaderDatas.push_back(new WSHADER);
+	//shaderDatas.push_back(new NORMALGENERATORSHADER);
 	shaderDatas.push_back(new UVSHADER);
 
-	//PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/Flatvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/Flatfrag.spv")));
 	PipelineMap.insert({ string("FlatShading"), 0 });
-	//PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/BFvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/BFfrag.spv")));
 	PipelineMap.insert({ string("BFShading"), 1 });
-	//PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/UIvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/UIfrag.spv")));
 	PipelineMap.insert({ string("UIShading"), 2 });
-	//PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/Wvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/Wfrag.spv")));
 	PipelineMap.insert({ string("Wireframe"), 3 });
-	//PipelineDefs[3]->setIsPipelineWireframe(true);
-	//PipelineDefs.push_back(new Pipeline(string("C:/Users/robda/Documents/VulkanRenderer/shaders/UVvert.spv"), string("C:/Users/robda/Documents/VulkanRenderer/shaders/UVfrag.spv")));
 	PipelineMap.insert({ string("UVWireframe"), 4 });
-	//PipelineDefs[4]->setIsPipelineWireframe(true);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

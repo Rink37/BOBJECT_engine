@@ -15,6 +15,7 @@
 #include<chrono>
 #include<thread>
 #include<unordered_map>
+#include <opencv2/opencv.hpp>
 
 #include"Bobject_Engine.h"
 #include"InputManager.h"
@@ -25,6 +26,7 @@
 #include"Textures.h"
 #include"Materials.h"
 #include"Meshes.h"
+#include"GenerateNormalMap.h"
 
 #include"include/LoadButton.h"
 #include"include/PauseButton.h"
@@ -38,7 +40,7 @@
 using namespace cv;
 using namespace std;
 
-uint32_t currentFrame = 0;
+//uint32_t currentFrame = 0;
 
 vector<int> keybinds = { GLFW_KEY_L, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_U, GLFW_KEY_I };
 
@@ -54,12 +56,13 @@ struct StaticObject {
 class Application {
 public:
 	void run() {
-		engine->initWindow();
+		engine->initWindow("BOBERT_TradPainter");
 		engine->initVulkan();
 		KeyInput::setupKeyInputs(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		createWebcamMaterial();
 		createCanvas();
+		mapGenerator.setup();
 		mainLoop();
 		cleanup();
 		Engine::destruct();
@@ -86,6 +89,10 @@ private:
 	map<string, int> ObjectMap = {};
 
 	bool webcamObjectView = true;
+
+	NormalGen mapGenerator;
+	bool shouldRenderOSN = false;
+	bool OSNavailable = false;
 
 	void createWebcamMaterial() {
 		webcamTexture::get()->setup();
@@ -193,9 +200,289 @@ private:
 				}
 				mouseDown = 0;
 			}
+			if (OSNavailable) {
+				mapGenerator.OSNormalMap = convertToCVMat(mapGenerator.objectSpaceMap.colour.image, 1024, 1024);
+				OSNavailable = false;
+				string filepath = winFile::OpenFileDialog();
+				if (filepath != (string)"fail") {
+					Mat srcImg = imread(filepath);
+					mapGenerator.contextualConvertMap(srcImg);
+				}
+			}
+			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L)) {
+				shouldRenderOSN = true;
+			}
 			drawFrame();
 		}
 		vkDeviceWaitIdle(engine->device);
+	}
+
+	Mat convertToCVMat(VkImage srcImage, uint32_t width, uint32_t height) {
+		// see https://github.com/SaschaWillems/Vulkan/blob/master/examples/screenshot/screenshot.cpp 
+		
+		bool supportsBlit = true;
+
+		VkFormatProperties formatProps;
+
+		vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, &formatProps);
+		if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
+			std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
+			supportsBlit = false;
+		}
+
+		vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, &formatProps);
+		if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
+			std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
+			supportsBlit = false;
+		}
+
+		VkImageCreateInfo imageCreateCi = {};
+		imageCreateCi.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCreateCi.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateCi.format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageCreateCi.extent.width = width;
+		imageCreateCi.extent.height = height;
+		imageCreateCi.extent.depth = 1;
+		imageCreateCi.arrayLayers = 1;
+		imageCreateCi.mipLevels = 1;
+		imageCreateCi.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageCreateCi.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateCi.tiling = VK_IMAGE_TILING_LINEAR;
+		imageCreateCi.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+		VkImage dstImage;
+		if (vkCreateImage(Engine::get()->device, &imageCreateCi, nullptr, &dstImage) != VK_SUCCESS) {
+			throw runtime_error("Failed to create image");
+		}
+
+		VkMemoryRequirements memRequirements;
+		VkMemoryAllocateInfo memAllocInfo = {};
+		memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		VkDeviceMemory dstImageMemory;
+		vkGetImageMemoryRequirements(Engine::get()->device, dstImage, &memRequirements);
+		memAllocInfo.allocationSize = memRequirements.size;
+		
+		memAllocInfo.memoryTypeIndex = Engine::get()->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		if (vkAllocateMemory(Engine::get()->device, &memAllocInfo, nullptr, &dstImageMemory) != VK_SUCCESS) {
+			throw runtime_error("Failed to allocate memory");
+		}
+		if (vkBindImageMemory(Engine::get()->device, dstImage, dstImageMemory, 0) != VK_SUCCESS) {
+			throw runtime_error("Failed to bind image memory");
+		}
+
+		VkCommandBuffer copyCmd;
+		
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = Engine::get()->commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = 1;
+
+		if (vkAllocateCommandBuffers(Engine::get()->device, &allocInfo, &copyCmd) != VK_SUCCESS) {
+			throw runtime_error("failed to allocate command buffer!");
+		}
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		if (vkBeginCommandBuffer(copyCmd, &beginInfo) != VK_SUCCESS) {
+			throw runtime_error("failed to begin recording command buffer!");
+		}
+
+		VkImageMemoryBarrier imageMemoryBarrier = {};
+		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier.srcAccessMask = 0;
+		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		imageMemoryBarrier.image = dstImage;
+		imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+		vkCmdPipelineBarrier(
+			copyCmd,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &imageMemoryBarrier);
+
+		imageMemoryBarrier = {};
+		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		imageMemoryBarrier.image = srcImage;
+		imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+		vkCmdPipelineBarrier(
+			copyCmd,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &imageMemoryBarrier);
+
+		if (supportsBlit)
+		{
+			VkOffset3D blitSize;
+			blitSize.x = width;
+			blitSize.y = height;
+			blitSize.z = 1;
+			VkImageBlit imageBlitRegion{};
+			imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageBlitRegion.srcSubresource.layerCount = 1;
+			imageBlitRegion.srcOffsets[1] = blitSize;
+			imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageBlitRegion.dstSubresource.layerCount = 1;
+			imageBlitRegion.dstOffsets[1] = blitSize;
+
+			vkCmdBlitImage(
+				copyCmd,
+				srcImage , VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&imageBlitRegion,
+				VK_FILTER_NEAREST);
+		}
+		else
+		{
+			VkImageCopy imageCopyRegion{};
+			imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageCopyRegion.srcSubresource.layerCount = 1;
+			imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageCopyRegion.dstSubresource.layerCount = 1;
+			imageCopyRegion.extent.width = width;
+			imageCopyRegion.extent.height = height;
+			imageCopyRegion.extent.depth = 1;
+
+			vkCmdCopyImage(
+				copyCmd,
+				srcImage , VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&imageCopyRegion);
+		}
+		imageMemoryBarrier = {};
+		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		imageMemoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+		imageMemoryBarrier.image = dstImage;
+		imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+		vkCmdPipelineBarrier(
+			copyCmd,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &imageMemoryBarrier);
+
+		imageMemoryBarrier = {};
+		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		imageMemoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		imageMemoryBarrier.image = srcImage;
+		imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+		vkCmdPipelineBarrier(
+			copyCmd,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &imageMemoryBarrier);
+
+		if (vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
+			throw runtime_error("Failed to end command buffer");
+		}
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &copyCmd;
+
+		vkQueueSubmit(Engine::get()->graphicsQueue, 1, &submitInfo, nullptr);
+
+		vkFreeCommandBuffers(Engine::get()->device, Engine::get()->commandPool, 1, &copyCmd);
+
+		VkImageSubresource subResource{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
+		VkSubresourceLayout subResourceLayout;
+		vkGetImageSubresourceLayout(Engine::get()->device, dstImage, &subResource, &subResourceLayout);
+
+		const char* data;
+		vkMapMemory(Engine::get()->device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
+		data += subResourceLayout.offset;
+
+		const char* filename = "Temp.ppm";
+
+		std::ofstream file(filename, std::ios::out | std::ios::binary);
+
+		file << "P6\n" << width << "\n" << height << "\n" << 255 << "\n";
+
+		bool colorSwizzle = false;
+
+		if (!supportsBlit)
+		{
+			std::vector<VkFormat> formatsBGR = { VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SNORM };
+			colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), VK_FORMAT_R8G8B8A8_UNORM) != formatsBGR.end());
+		}
+
+		for (uint32_t y = 0; y < height; y++)
+		{
+			unsigned int* row = (unsigned int*)data;
+			for (uint32_t x = 0; x < width; x++)
+			{
+				if (colorSwizzle)
+				{
+					file.write((char*)row + 2, 1);
+					file.write((char*)row + 1, 1);
+					file.write((char*)row, 1);
+				}
+				else
+				{
+					file.write((char*)row, 3);
+				}
+				row++;
+			}
+			data += subResourceLayout.rowPitch;
+		}
+		file.close();
+
+		std::cout << "Image saved" << std::endl;
+
+		vkUnmapMemory(Engine::get()->device, dstImageMemory);
+		vkFreeMemory(Engine::get()->device, dstImageMemory, nullptr);
+		vkDestroyImage(Engine::get()->device, dstImage, nullptr);
+
+		Mat cvImg = imread((cv::String)filename);
+
+		std::remove(filename);
+
+		//string windowName = "TestImage";
+		//namedWindow(windowName);
+		//while (true){
+		//	imshow(windowName, cvImg);//Show the frame
+		//	char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
+		//	if (c == 27) {
+		//		cv::destroyWindow(windowName);
+		//		break;
+		//	}
+		//	if (getWindowProperty(windowName, WND_PROP_VISIBLE) < 1) {
+		//		break;
+		//	}
+		//}
+
+		return cvImg;
 	}
 
 	void enableWebcam(UIItem* owner) {
@@ -255,6 +542,8 @@ private:
 
 	void cleanup() {
 
+		mapGenerator.cleanup();
+
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			if (staticObjects[i].mat != webcamMaterial) {
 				staticObjects[i].mat->cleanup();
@@ -284,6 +573,7 @@ private:
 	}
 
 	void drawFrame() {
+		uint32_t currentFrame = engine->currentFrame;
 		vkWaitForFences(engine->device, 1, &engine->inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex;
@@ -352,7 +642,7 @@ private:
 			throw runtime_error("failed to acquire swap chain image!");
 		}
 
-		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+		engine->currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
 	void updateUniformBuffer(uint32_t currentImage) {
@@ -374,6 +664,8 @@ private:
 	} 
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+		uint32_t currentFrame = engine->currentFrame;
+
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -381,6 +673,12 @@ private:
 
 		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
 			throw runtime_error("failed to begin recording command buffer!");
+		}
+
+		if (shouldRenderOSN) {
+			commandBuffer = mapGenerator.draw(commandBuffer, &staticObjects[staticObjects.size() - 1].mesh);
+			shouldRenderOSN = false;
+			OSNavailable = true;
 		}
 
 		VkRenderPassBeginInfo renderPassInfo{};

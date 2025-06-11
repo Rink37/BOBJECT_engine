@@ -32,6 +32,7 @@
 #include"include/UI.h"
 #include"include/UV.h"
 #include"include/W.h"
+#include"include/NormalGenerator.h"
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -180,7 +181,7 @@ public:
 
 	bool framebufferResized = false;
 
-	void initWindow();
+	void initWindow(const char*);
 	void initVulkan();
 
 	void cleanup();
@@ -193,6 +194,21 @@ public:
 	void copyBuffer(VkBuffer, VkBuffer, VkDeviceSize);
 	VkCommandBuffer beginSingleTimeCommands();
 	void endSingleTimeCommands(VkCommandBuffer);
+
+	VkShaderModule createShaderModule(const std::vector<unsigned char>&);
+
+	const char* appName = "BOBJECT_engine app";
+
+	VkSampleCountFlagBits getMaxUseableSampleCount();
+
+	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice);
+
+	uint32_t currentFrame = 0;
+
+	VkFormat findDepthFormat();
+
+	std::vector<VkImage> swapChainImages;
+	VkFormat swapChainImageFormat;
 private:
 	static Engine* enginstance;
 	Engine() = default;
@@ -203,10 +219,6 @@ private:
 	VkSurfaceKHR surface;
 
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-
-	std::vector<VkImage> swapChainImages;
-	VkFormat swapChainImageFormat;
-	
 
 	std::vector<VkImageView> swapChainImageViews;
 
@@ -220,9 +232,6 @@ private:
 	VkDeviceMemory colourImageMemory;
 	VkImageView colourImageView;
 
-	VkShaderModule createShaderModule(const std::vector<unsigned char>&);
-
-	VkSampleCountFlagBits getMaxUseableSampleCount();
 	static void framebufferResizeCallback(GLFWwindow*, int, int);
 
 	bool checkValidationLayerSupport();
@@ -251,12 +260,10 @@ private:
 
 	void DestroyDebugUtilsMessengerEXT(VkInstance, VkDebugUtilsMessengerEXT, const VkAllocationCallbacks*);
 
-	VkFormat findDepthFormat();
 	VkFormat findSupportedFormat(const std::vector<VkFormat>&, VkImageTiling, VkFormatFeatureFlags);
 
 	void createImage(uint32_t, uint32_t, uint32_t, VkSampleCountFlagBits, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
 	VkImageView createImageView(VkImage, VkFormat, VkImageAspectFlags, uint32_t);
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice);
 
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT&);
 

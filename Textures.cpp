@@ -1,5 +1,4 @@
 #include"Textures.h"
-//#include"stb_image.h"
 
 using namespace std;
 
@@ -9,7 +8,7 @@ bool Texture::hasStencilComponent(VkFormat format) {
 
 void imageTexture::createTextureImage() {
 
-	unsigned char* pixels = imgData->Bytes;//stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	unsigned char* pixels = imgData->Bytes;
 	texWidth = imgData->Width;
 	texHeight = imgData->Height;
 	texChannels = imgData->Channels;

@@ -156,6 +156,10 @@ bool StaticMesh::loadModel() {
 					attrib.normals[3 * index.normal_index + 2]
 				};
 
+				//std::cout << "x: " << vertex.normal[0] << std::endl;
+				//std::cout << "y: " << vertex.normal[1] << std::endl;
+				//std::cout << "z: " << vertex.normal[2] << std::endl;
+
 				vertex.texCoord = {
 					attrib.texcoords[2 * index.texcoord_index + 0],
 					1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
