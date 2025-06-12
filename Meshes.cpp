@@ -156,10 +156,6 @@ bool StaticMesh::loadModel() {
 					attrib.normals[3 * index.normal_index + 2]
 				};
 
-				//std::cout << "x: " << vertex.normal[0] << std::endl;
-				//std::cout << "y: " << vertex.normal[1] << std::endl;
-				//std::cout << "z: " << vertex.normal[2] << std::endl;
-
 				vertex.texCoord = {
 					attrib.texcoords[2 * index.texcoord_index + 0],
 					1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
@@ -177,4 +173,65 @@ bool StaticMesh::loadModel() {
 		return true;
 	}
 	return false;
+}
+
+void StaticMesh::computeTangents() {
+	// First we initialise all the tangents and bitangents
+	for (Vertex vert : vertices) {
+		vert.tangent = glm::vec4(0, 0, 0, 0);
+		vert.biTangent = glm::vec4(0, 0, 0, 0);
+	}
+
+	// Then we calculate the tangents and bitangents described by the plane of each triangle
+	for (size_t i = 0; i != indices.size(); i+=3) {
+
+		size_t i0 = indices[i + 0];
+		size_t i1 = indices[i + 1];
+		size_t i2 = indices[i + 2];
+		
+		glm::vec3& v0 = vertices[i0].pos;
+		glm::vec3& v1 = vertices[i1].pos;
+		glm::vec3& v2 = vertices[i2].pos;
+
+		glm::vec2& uv0 = vertices[i0].texCoord;
+		glm::vec2& uv1 = vertices[i0].texCoord;
+		glm::vec2& uv2 = vertices[i0].texCoord;
+
+		glm::vec3 deltaPos1 = v1 - v0;
+		glm::vec3 deltaPos2 = v2 - v0;
+
+		glm::vec2 deltaUV1 = uv1 - uv0;
+		glm::vec2 deltaUV2 = uv2 - uv0;
+
+		float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+		glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
+		glm::vec3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x) * r;
+
+		vertices[i0].tangent += tangent;
+		vertices[i1].tangent += tangent;
+		vertices[i2].tangent += tangent;
+
+		vertices[i0].biTangent += bitangent;
+		vertices[i1].biTangent += bitangent;
+		vertices[i2].biTangent += bitangent;
+	}
+
+	// Finally we compute the normalized tangent vectors as well as the facing direction
+	// w describes whether the normals need to be inverted or not (for vertices that have been mirrored and share UV coordinates)
+
+	for (size_t i = 0; i != vertices.size(); i++) {
+		glm::vec3 n = vertices[i].normal;
+		glm::vec3 t0 = vertices[i].tangent;
+		glm::vec3 t1 = vertices[i].biTangent;
+
+		glm::vec3 t = t0 - (n * dot(n, t0));
+		t = normalize(t);
+
+		glm::vec3 c = cross(n, t0);
+		float w = (dot(c, t1) < 0) ? -1.0f : 1.0f;
+		vertices[i].tangent = glm::vec4(t.x, t.y, t.z, w);
+
+		t = cross(glm::vec3(vertices[i].tangent.x, vertices[i].tangent.y, vertices[i].tangent.z), vertices[i].normal);
+		vertices[i].biTangent = glm::vec4(t.x, t.y, t.z, w);
+	}
 }

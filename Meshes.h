@@ -40,6 +40,8 @@ public:
 	StaticMesh();
 private:
 	bool loadModel();
+
+	void computeTangents();
 };
 
 #endif

@@ -55,6 +55,8 @@ static std::vector<char> readFile(const std::string&);
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 normal;
+	glm::vec4 tangent;
+	glm::vec4 biTangent;
 	glm::vec2 texCoord;
 
 	static VkVertexInputBindingDescription getBindingDescription() {

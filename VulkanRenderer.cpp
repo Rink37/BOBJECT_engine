@@ -40,8 +40,6 @@
 using namespace cv;
 using namespace std;
 
-//uint32_t currentFrame = 0;
-
 vector<int> keybinds = { GLFW_KEY_L, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_U, GLFW_KEY_I };
 
 std::vector<KeyInput*> KeyInput::_instances;
