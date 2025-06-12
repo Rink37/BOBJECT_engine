@@ -17,31 +17,53 @@ struct FrameBufferAttachment {
 class NormalGen {
 public:
 	cv::Mat OSNormalMap;
+	cv::Mat TSNormalMap;
 
 	struct ObjectSpaceMap {
 		uint32_t width, height;
 		VkFramebuffer frameBuffer;
-		FrameBufferAttachment colour, depth;
+		FrameBufferAttachment colour;
 		VkRenderPass renderPass;
-		VkDescriptorImageInfo descriptor;
 	} objectSpaceMap{};
 
-	void setup() {
-		prepareMap();
-		createPipeline();
+	struct TangentSpaceMap {
+		uint32_t width, height;
+		VkFramebuffer frameBuffer;
+		FrameBufferAttachment colour;
+		VkRenderPass renderPass;
+		VkDescriptorImageInfo descriptor;
+	} tangentSpaceMap{};
+
+	void setupOSExtractor() {
+		prepareOSMap();
+		createOSPipeline();
 	};
 
-	void cleanup();
+	void cleanupOS();
 
-	VkCommandBuffer draw(VkCommandBuffer, Mesh*);
-	void contextualConvertMap(cv::Mat);
+	VkCommandBuffer drawOSMap(VkCommandBuffer, Mesh*);
+
+	void createOSImageFromMat(cv::Mat);
+
+	void setupTSExtractor() {
+		prepareTSMap();
+		createTSPipeline();
+	};
+
+	void cleanupTS();
 
 private:
-	VkPipelineLayout pipelineLayout;
-	VkPipeline pipeline;
+	VkPipelineLayout OSpipelineLayout;
+	VkPipeline OSpipeline;
 
-	void prepareMap();
-	void createPipeline();
+	void prepareOSMap();
+	void createOSPipeline();
+
+	VkPipelineLayout TSpipelineLayout;
+	VkPipeline TSpipeline;
+
+	void prepareTSMap();
+	void createTSPipeline();
 };
 
 #endif

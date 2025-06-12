@@ -457,4 +457,5 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 		}
 	}
 	imwrite("TestMap_squared.png", outMap);
+	OSNormalMap = outMap;
 }

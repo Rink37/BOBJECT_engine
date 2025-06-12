@@ -4,12 +4,9 @@
 
 using namespace std;
 
-void NormalGen::prepareMap() {
+void NormalGen::prepareOSMap() {
 	objectSpaceMap.width = MAPDIM;
 	objectSpaceMap.height = MAPDIM;
-
-	VkFormat fbDepthFormat;
-	fbDepthFormat = Engine::get()->findDepthFormat();
 
 	VkImageCreateInfo imageInfo = {};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -57,47 +54,7 @@ void NormalGen::prepareMap() {
 		throw runtime_error("failed to create texture image view!");
 	}
 
-	imageInfo.format = fbDepthFormat;
-	imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-
-	if (vkCreateImage(Engine::get()->device, &imageInfo, nullptr, &objectSpaceMap.depth.image) != VK_SUCCESS) {
-		throw runtime_error("failed to create image!");
-	}
-
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = Engine::get()->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	if (vkAllocateMemory(Engine::get()->device, &allocInfo, nullptr, &objectSpaceMap.depth.mem) != VK_SUCCESS) {
-		throw runtime_error("failed to allocate image memory!");
-	}
-
-	if (vkAllocateMemory(Engine::get()->device, &allocInfo, nullptr, &objectSpaceMap.depth.mem) != VK_SUCCESS) {
-		throw runtime_error("failed to allocate image memory!");
-	}
-
-	vkBindImageMemory(Engine::get()->device, objectSpaceMap.depth.image, objectSpaceMap.depth.mem, 0);
-
-	VkImageViewCreateInfo depthStencilView = {};
-	depthStencilView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	depthStencilView.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	depthStencilView.format = fbDepthFormat;
-	depthStencilView.flags = 0;
-	depthStencilView.subresourceRange = {};
-	depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-	if (fbDepthFormat >= VK_FORMAT_D16_UNORM_S8_UINT) {
-		depthStencilView.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-	}
-	depthStencilView.subresourceRange.baseMipLevel = 0;
-	depthStencilView.subresourceRange.levelCount = 1;
-	depthStencilView.subresourceRange.baseArrayLayer = 0;
-	depthStencilView.subresourceRange.layerCount = 1;
-	depthStencilView.image =objectSpaceMap.depth.image;
-
-	if (vkCreateImageView(Engine::get()->device, &depthStencilView, nullptr, &objectSpaceMap.depth.view) != VK_SUCCESS) {
-		throw runtime_error("failed to create texture image view!");
-	}
-
-	array<VkAttachmentDescription, 2> attachmentDescriptions = {};
+	array<VkAttachmentDescription, 1> attachmentDescriptions = {};
 	attachmentDescriptions[0].format = MAP_COLOUR_FORMAT;
 	attachmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -107,23 +64,12 @@ void NormalGen::prepareMap() {
 	attachmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	attachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	attachmentDescriptions[1].format = fbDepthFormat;
-	attachmentDescriptions[1].samples = VK_SAMPLE_COUNT_1_BIT;
-	attachmentDescriptions[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	attachmentDescriptions[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachmentDescriptions[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	attachmentDescriptions[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachmentDescriptions[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachmentDescriptions[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
 	VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-	VkAttachmentReference depthReference = { 1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
 	VkSubpassDescription subpassDescription = {};
 	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpassDescription.colorAttachmentCount = 1;
 	subpassDescription.pColorAttachments = &colorReference;
-	subpassDescription.pDepthStencilAttachment = &depthReference;
 
 	VkSubpassDependency dependency{};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -147,14 +93,13 @@ void NormalGen::prepareMap() {
 		throw runtime_error("Failed to create render pass");
 	}
 
-	VkImageView attachments[2];
+	VkImageView attachments[1];
 	attachments[0] = objectSpaceMap.colour.view;
-	attachments[1] = objectSpaceMap.depth.view;
 
 	VkFramebufferCreateInfo fbufCreateInfo = {};
 	fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	fbufCreateInfo.renderPass = objectSpaceMap.renderPass;
-	fbufCreateInfo.attachmentCount = 2;
+	fbufCreateInfo.attachmentCount = 1;
 	fbufCreateInfo.pAttachments = attachments;
 	fbufCreateInfo.width = objectSpaceMap.width;
 	fbufCreateInfo.height = objectSpaceMap.height;
@@ -163,12 +108,9 @@ void NormalGen::prepareMap() {
 	if (vkCreateFramebuffer(Engine::get()->device, &fbufCreateInfo, nullptr, &objectSpaceMap.frameBuffer) != VK_SUCCESS) {
 		throw runtime_error("Failed to create framebuffer");
 	}
-
-	objectSpaceMap.descriptor.imageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	objectSpaceMap.descriptor.imageView = objectSpaceMap.colour.view;
 }
 
-void NormalGen::createPipeline() {
+void NormalGen::createOSPipeline() {
 	shaderData* sD = new NORMALGENERATORSHADER;
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -200,15 +142,6 @@ void NormalGen::createPipeline() {
 	multisampling.rasterizationSamples = msaaSamples;
 	multisampling.minSampleShading = .2f;
 
-	VkPipelineDepthStencilStateCreateInfo depthStencil{};
-	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depthStencil.depthTestEnable = VK_TRUE;
-	depthStencil.depthWriteEnable = VK_TRUE;
-	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-	depthStencil.depthBoundsTestEnable = VK_FALSE;
-	depthStencil.minDepthBounds = 0.0f;
-	depthStencil.maxDepthBounds = 1.0f;
-
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	colorBlendAttachment.blendEnable = VK_FALSE;
@@ -228,7 +161,7 @@ void NormalGen::createPipeline() {
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 0;
 
-	if (vkCreatePipelineLayout(Engine::get()->device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+	if (vkCreatePipelineLayout(Engine::get()->device, &pipelineLayoutInfo, nullptr, &OSpipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
@@ -283,13 +216,12 @@ void NormalGen::createPipeline() {
 	pipelineInfo.pMultisampleState = &multisampling;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.pColorBlendState = &colorBlending;
-	pipelineInfo.layout = pipelineLayout;
+	pipelineInfo.layout = OSpipelineLayout;
 	pipelineInfo.renderPass = objectSpaceMap.renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-	pipelineInfo.pDepthStencilState = &depthStencil;
 
-	if (vkCreateGraphicsPipelines(Engine::get()->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
+	if (vkCreateGraphicsPipelines(Engine::get()->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &OSpipeline) != VK_SUCCESS) {
 		throw runtime_error("failed to create graphics pipeline!");
 	}
 
@@ -297,13 +229,10 @@ void NormalGen::createPipeline() {
 	vkDestroyShaderModule(Engine::get()->device, VertShaderModule, nullptr);
 }
 
-VkCommandBuffer NormalGen::draw(VkCommandBuffer commandbuffer, Mesh* mesh) {
+VkCommandBuffer NormalGen::drawOSMap(VkCommandBuffer commandbuffer, Mesh* mesh) {
 
-	cout << "Attempting to draw normal map" << endl;
-
-	VkClearValue clearValues[2] = {};
+	VkClearValue clearValues[1] = {};
 	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-	clearValues[1].depthStencil = { 1.0f, 0 };
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -330,7 +259,7 @@ VkCommandBuffer NormalGen::draw(VkCommandBuffer commandbuffer, Mesh* mesh) {
 	scissor.extent = { objectSpaceMap.width, objectSpaceMap.height };
 	vkCmdSetScissor(commandbuffer, 0, 1, &scissor);
 
-	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, OSpipeline);
 
 	VkBuffer vertexBuffers[] = { mesh->vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
@@ -346,21 +275,16 @@ VkCommandBuffer NormalGen::draw(VkCommandBuffer commandbuffer, Mesh* mesh) {
 	return commandbuffer;
 }
 
-void NormalGen::cleanup() {
+void NormalGen::cleanupOS() {
 	vkDeviceWaitIdle(Engine::get()->device);
 
-	vkDestroyPipeline(Engine::get()->device, pipeline, nullptr);
-	vkDestroyPipelineLayout(Engine::get()->device, pipelineLayout, nullptr);
+	vkDestroyPipeline(Engine::get()->device, OSpipeline, nullptr);
+	vkDestroyPipelineLayout(Engine::get()->device, OSpipelineLayout, nullptr);
 
 	vkDestroyRenderPass(Engine::get()->device, objectSpaceMap.renderPass, nullptr);
 	vkDestroyFramebuffer(Engine::get()->device, objectSpaceMap.frameBuffer, nullptr);
 
 	vkFreeMemory(Engine::get()->device, objectSpaceMap.colour.mem, nullptr);
-	vkFreeMemory(Engine::get()->device, objectSpaceMap.depth.mem, nullptr);
-
 	vkDestroyImageView(Engine::get()->device, objectSpaceMap.colour.view, nullptr);
 	vkDestroyImage(Engine::get()->device, objectSpaceMap.colour.image, nullptr);
-
-	vkDestroyImageView(Engine::get()->device, objectSpaceMap.depth.view, nullptr);
-	vkDestroyImage(Engine::get()->device, objectSpaceMap.depth.image, nullptr);
 }

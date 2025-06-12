@@ -225,7 +225,7 @@ void StaticMesh::computeTangents() {
 		glm::vec3 t1 = vertices[i].biTangent;
 
 		glm::vec3 t = t0 - (n * dot(n, t0));
-		t = normalize(t);
+		t = normalize(t); // Disabling this normalization will scale the vectors based on the scale of the vertices (perhaps this is more ideal?)
 
 		glm::vec3 c = cross(n, t0);
 		float w = (dot(c, t1) < 0) ? -1.0f : 1.0f;
