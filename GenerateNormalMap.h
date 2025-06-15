@@ -31,7 +31,9 @@ public:
 		VkFramebuffer frameBuffer;
 		FrameBufferAttachment colour;
 		VkRenderPass renderPass;
-		VkDescriptorImageInfo descriptor;
+		VkDescriptorPool descriptorPool;
+		VkDescriptorSet descriptorSet;
+		VkDescriptorSetLayout descriptorSetLayout;
 	} tangentSpaceMap{};
 
 	void setupOSExtractor() {
@@ -47,8 +49,13 @@ public:
 
 	void setupTSExtractor() {
 		prepareTSMap();
+		prepareTSDescriptor();
 		createTSPipeline();
 	};
+
+	void contextualConvertMap(cv::Mat);
+
+	VkCommandBuffer convertOStoTS(VkCommandBuffer, Mesh*);
 
 	void cleanupTS();
 
@@ -63,7 +70,9 @@ private:
 	VkPipeline TSpipeline;
 
 	void prepareTSMap();
+	void prepareTSDescriptor();
 	void createTSPipeline();
+	
 };
 
 #endif

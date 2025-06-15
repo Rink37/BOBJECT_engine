@@ -189,7 +189,9 @@ public:
 			else {
 				image->matidx = 1;
 			}
-			clickFunction(this);
+			if (clickFunction != nullptr) {
+				clickFunction(this);
+			}
 		};
 	};
 };

@@ -36,6 +36,15 @@
 #include"include/UnrenderedButton.h"
 #include"include/WireframeButton.h"
 #include"include/TestCheckboxButton.h"
+#include"include/WebcamOffButton.h"
+#include"include/WebcamOnButton.h"
+#include"include/D2NButton.h"
+#include"include/DiffuseText.h"
+#include"include/NormalText.h"
+#include"include/PlusButton.h"
+#include"include/SaveButton.h"
+#include"include/TangentSpace.h"
+#include"include/OpenButton.h"
 
 using namespace cv;
 using namespace std;
@@ -60,7 +69,6 @@ public:
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		createWebcamMaterial();
 		createCanvas();
-		mapGenerator.setup();
 		mainLoop();
 		cleanup();
 		Engine::destruct();
@@ -92,6 +100,9 @@ private:
 	bool shouldRenderOSN = false;
 	bool OSNavailable = false;
 
+	bool shouldConvertOSN = false;
+	bool TSNavailable = false;
+
 	void createWebcamMaterial() {
 		webcamTexture::get()->setup();
 		webcamMaterial = new Material(webcamTexture::get());
@@ -99,7 +110,9 @@ private:
 
 	void createCanvas() {
 		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.15f, 0.1f, 0.01f);
-		hArrangement *Videobuttons = new hArrangement(0.775f, 0.4f, 0.2f, 0.1f, 0.01f);
+		hArrangement *Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
+
+		vArrangement* SurfacePanel = new vArrangement(0.6f, 0.0f, 0.2f, 0.5f, 0.01f);
 
 		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this, placeholders::_1);
 
@@ -117,6 +130,44 @@ private:
 		imageData* pb = new PAUSEBUTTON;
 		imageData* sb = new SETTINGSBUTTON;
 
+		imageData* diffuse = new DIFFUSETEXT;
+		imageData* normal = new NORMALTEXT;
+
+		imageData* webcamOn = new WEBCAMONBUTTON;
+		imageData* webcamOff = new WEBCAMOFFBUTTON;
+
+		imageData* OpenButton = new OPENBUTTON;
+		imageData* SaveButton = new SAVEBUTTON;
+
+		imageData* plusButton = new PLUSBUTTON;
+
+		Button* diffuseTextPanel = new Button(0.0f, 0.0f, 1.0f, 1.0f, diffuse);
+		Checkbox* diffuseWebcamToggle = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, webcamOn, webcamOff);
+		diffuseWebcamToggle->Name = "ToggleDiffuseWebcam";
+
+		Button* diffLoad = new Button(0.0f, 0.0f, 1.0f, 1.0f, OpenButton);
+		diffLoad->Name = "LoadDiffuse";
+
+		Button* diffSave = new Button(0.0f, 0.0f, 1.0f, 1.0f, SaveButton);
+		diffSave->Name = "SaveDiffuse";
+
+		hArrangement* DiffuseButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
+
+		Button* normalTextPanel = new Button(0.0f, 0.0f, 1.0f, 1.0f, normal);
+		Button* normalPlus = new Button(0.0f, 0.0f, 1.0f, 1.0f, plusButton);
+
+		hArrangement* NormalButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
+
+		NormalButtons->addItem(normalTextPanel);
+		NormalButtons->addItem(normalPlus);
+
+		DiffuseButtons->addItem(diffuseTextPanel);
+		DiffuseButtons->addItem(diffuseWebcamToggle);
+		DiffuseButtons->addItem(diffLoad);
+		DiffuseButtons->addItem(diffSave);
+
+		//canvas.push_back(SurfacePanel);
+		
 		Button *loadObjectButton = new Button(0.0f, 0.0f, 0.2f, 0.1f, lb);
 		
 		Button *litRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, rb);
@@ -152,6 +203,9 @@ private:
 		Renderbuttons->addItem(litRenderingButton);
 		Renderbuttons->addItem(wireframeRenderingButton);
 
+		Button* webcamImage = new Button(0.0f, 0.0f, 0.2f, 0.2f, webcamOn);
+
+		Videobuttons->addItem(webcamImage);
 		Videobuttons->addItem(playButton);
 		Videobuttons->addItem(pauseButton);
 		Videobuttons->addItem(settingsButton);
@@ -169,10 +223,17 @@ private:
 
 		canvas.push_back(buttons);
 
-		webcamView = new WebcamPanel(0.775f, 0.1f, 0.2f, 0.142f, webcamMaterial);
+		//webcamView = new WebcamPanel(0.775f, 0.1f, 0.2f, 0.142f, webcamMaterial);
+		webcamView = new WebcamPanel(0.0f, 0.0f, 1.0f, 0.71f, webcamMaterial);
 		webcamView->image->mat[0] = webcamMaterial;
 
-		canvas.push_back(webcamView);
+		SurfacePanel->addItem(DiffuseButtons);
+		SurfacePanel->addItem(webcamView);
+		SurfacePanel->addItem(NormalButtons);
+
+		//canvas.push_back(webcamView);
+
+		canvas.push_back(SurfacePanel);
 
 		for (UIItem* item : canvas) {
 			item->updateDisplay();
@@ -199,6 +260,9 @@ private:
 				mouseDown = 0;
 			}
 			if (OSNavailable) {
+				vkDestroyBuffer(Engine::get()->device, staticObjects[staticObjects.size() - 1].mesh.texCoordIndexBuffer, nullptr);
+				vkFreeMemory(Engine::get()->device, staticObjects[staticObjects.size() - 1].mesh.texCoordIndexBufferMemory, nullptr);
+				
 				mapGenerator.OSNormalMap = convertToCVMat(mapGenerator.objectSpaceMap.colour.image, 1024, 1024);
 				OSNavailable = false;
 				string filepath = winFile::OpenFileDialog();
@@ -206,10 +270,31 @@ private:
 					Mat srcImg = imread(filepath);
 					mapGenerator.contextualConvertMap(srcImg);
 				}
+				mapGenerator.cleanupOS();
 			}
 			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L)) {
 				shouldRenderOSN = true;
+				mapGenerator.setupOSExtractor();
 			}
+
+			if (TSNavailable) {
+				vkDestroyBuffer(Engine::get()->device, staticObjects[staticObjects.size() - 1].mesh.texCoordIndexBuffer, nullptr);
+				vkFreeMemory(Engine::get()->device, staticObjects[staticObjects.size() - 1].mesh.texCoordIndexBufferMemory, nullptr);
+				mapGenerator.TSNormalMap = convertToCVMat(mapGenerator.tangentSpaceMap.colour.image, mapGenerator.tangentSpaceMap.width, mapGenerator.tangentSpaceMap.height);
+				imwrite("TSNormal.png", mapGenerator.TSNormalMap);
+				TSNavailable = false;
+				mapGenerator.cleanupTS();
+			}
+			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_U)) {
+				shouldConvertOSN = true;
+				string filepath = winFile::OpenFileDialog();
+				if (filepath != (string)"fail") {
+					Mat srcImg = imread(filepath);
+					mapGenerator.createOSImageFromMat(srcImg);
+					mapGenerator.setupTSExtractor();
+				}
+			}
+
 			drawFrame();
 		}
 		vkDeviceWaitIdle(engine->device);
@@ -540,7 +625,8 @@ private:
 
 	void cleanup() {
 
-		mapGenerator.cleanup();
+		//mapGenerator.cleanupOS();
+		//mapGenerator.cleanupTS();
 
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			if (staticObjects[i].mat != webcamMaterial) {
@@ -674,9 +760,15 @@ private:
 		}
 
 		if (shouldRenderOSN) {
-			commandBuffer = mapGenerator.draw(commandBuffer, &staticObjects[staticObjects.size() - 1].mesh);
+			commandBuffer = mapGenerator.drawOSMap(commandBuffer, &staticObjects[staticObjects.size() - 1].mesh);
 			shouldRenderOSN = false;
 			OSNavailable = true;
+		}
+
+		if (shouldConvertOSN) {
+			commandBuffer = mapGenerator.convertOStoTS(commandBuffer, &staticObjects[staticObjects.size() - 1].mesh);
+			shouldConvertOSN = false;
+			TSNavailable = true;
 		}
 
 		VkRenderPassBeginInfo renderPassInfo{};

@@ -23,6 +23,7 @@ void Material::createDescriptorPool() {
 
 void Material::createDescriptorSets() {
 	vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, Engine::get()->descriptorSetLayout);
+	
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = descriptorPool;

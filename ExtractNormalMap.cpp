@@ -50,6 +50,7 @@ void NormalGen::prepareOSMap() {
 	colorImageViewInfo.subresourceRange.baseArrayLayer = 0;
 	colorImageViewInfo.subresourceRange.layerCount = 1;
 	colorImageViewInfo.image = objectSpaceMap.colour.image;
+	
 	if (vkCreateImageView(Engine::get()->device, &colorImageViewInfo, nullptr, &objectSpaceMap.colour.view) != VK_SUCCESS) {
 		throw runtime_error("failed to create texture image view!");
 	}
@@ -240,7 +241,7 @@ VkCommandBuffer NormalGen::drawOSMap(VkCommandBuffer commandbuffer, Mesh* mesh) 
 	renderPassBeginInfo.framebuffer = objectSpaceMap.frameBuffer;
 	renderPassBeginInfo.renderArea.extent.width = objectSpaceMap.width;
 	renderPassBeginInfo.renderArea.extent.height = objectSpaceMap.height;
-	renderPassBeginInfo.clearValueCount = 2;
+	renderPassBeginInfo.clearValueCount = 1;
 	renderPassBeginInfo.pClearValues = clearValues;
 
 	vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -264,11 +265,13 @@ VkCommandBuffer NormalGen::drawOSMap(VkCommandBuffer commandbuffer, Mesh* mesh) 
 	VkBuffer vertexBuffers[] = { mesh->vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
 
+	mesh->createTexCoordIndexBuffer();
+
 	vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
 
-	vkCmdBindIndexBuffer(commandbuffer, mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(commandbuffer, mesh->texCoordIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-	vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(mesh->uniqueTexindices.size()), 1, 0, 0, 0);
 
 	vkCmdEndRenderPass(commandbuffer);
 

@@ -430,18 +430,18 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 				}
 			}
 		}
-		cv::namedWindow("Output");
-		while (true) {
-			imshow("Output", outMap);
-			char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
-			if (c == 27) {
-				cv::destroyWindow("Output");
-				break;
-			}
-			if (getWindowProperty("Output", WND_PROP_VISIBLE) < 1) {
-				break;
-			}
-		}
+		//cv::namedWindow("Output");
+		//while (true) {
+		//	imshow("Output", outMap);
+		//	char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
+		//	if (c == 27) {
+		//		cv::destroyWindow("Output");
+		//		break;
+		//	}
+		//	if (getWindowProperty("Output", WND_PROP_VISIBLE) < 1) {
+		//		break;
+		//	}
+		//}
 	}
 
 	cv::namedWindow("Output");
@@ -456,6 +456,6 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 			break;
 		}
 	}
-	imwrite("TestMap_squared.png", outMap);
+	imwrite("OSNormal.png", outMap);
 	OSNormalMap = outMap;
 }

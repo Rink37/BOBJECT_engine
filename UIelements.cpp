@@ -123,7 +123,7 @@ void vArrangement::arrangeItems() {
 
 	float xp, yp, xsc, ysc;
 
-	float occupiedFraction = spacing / 2 * this->extenty * 2;
+	float occupiedFraction = spacing * this->extenty;
 
 	size_t j = 0;
 

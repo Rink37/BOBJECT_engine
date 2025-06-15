@@ -49,6 +49,28 @@ void Mesh::createIndexBuffer() {
 	vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
 }
 
+void Mesh::createTexCoordIndexBuffer() {
+	Engine* engine = Engine::get();
+
+	VkDeviceSize bufferSize = sizeof(uniqueTexindices[0]) * uniqueTexindices.size();
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(engine->device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, uniqueTexindices.data(), (size_t)bufferSize);
+	vkUnmapMemory(engine->device, stagingBufferMemory);
+
+	engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texCoordIndexBuffer, texCoordIndexBufferMemory);
+
+	engine->copyBuffer(stagingBuffer, texCoordIndexBuffer, bufferSize);
+
+	vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
+	vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
+}
+
 const void Mesh::cleanup() {
 	Engine* engine = Engine::get();
 
@@ -136,9 +158,9 @@ bool StaticMesh::loadModel() {
 		return false;
 	}
 
-
 	if (tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, testMODEL_PATH.c_str())) {
 		unordered_map<Vertex, uint32_t> uniqueVertices{};
+		unordered_map<glm::vec2, uint32_t> uniqueCoords{};
 
 		for (const auto& shape : shapes) {
 			for (const auto& index : shape.mesh.indices) {
@@ -161,6 +183,11 @@ bool StaticMesh::loadModel() {
 					1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
 				};
 
+				// We also want to find any vertices which share a texture coord with a vertex that has a different position
+
+				if (uniqueCoords.count(vertex.texCoord) == 0) {
+					uniqueCoords[vertex.texCoord] = static_cast<uint32_t>(vertices.size());
+				}
 
 				if (uniqueVertices.count(vertex) == 0) {
 					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
@@ -168,8 +195,14 @@ bool StaticMesh::loadModel() {
 				}
 
 				indices.push_back(uniqueVertices[vertex]);
+
+				if (vertices[uniqueCoords[vertex.texCoord]].pos == vertices[uniqueVertices[vertex]].pos) {
+					uniqueTexindices.push_back(uniqueVertices[vertex]);
+				}
+
 			}
 		}
+		computeTangents();
 		return true;
 	}
 	return false;
@@ -179,7 +212,7 @@ void StaticMesh::computeTangents() {
 	// First we initialise all the tangents and bitangents
 	for (Vertex vert : vertices) {
 		vert.tangent = glm::vec4(0, 0, 0, 0);
-		vert.biTangent = glm::vec4(0, 0, 0, 0);
+		vert.biTangent = glm::vec3(0, 0, 0);
 	}
 
 	// Then we calculate the tangents and bitangents described by the plane of each triangle
@@ -194,8 +227,8 @@ void StaticMesh::computeTangents() {
 		glm::vec3& v2 = vertices[i2].pos;
 
 		glm::vec2& uv0 = vertices[i0].texCoord;
-		glm::vec2& uv1 = vertices[i0].texCoord;
-		glm::vec2& uv2 = vertices[i0].texCoord;
+		glm::vec2& uv1 = vertices[i1].texCoord;
+		glm::vec2& uv2 = vertices[i2].texCoord;
 
 		glm::vec3 deltaPos1 = v1 - v0;
 		glm::vec3 deltaPos2 = v2 - v0;
@@ -206,10 +239,11 @@ void StaticMesh::computeTangents() {
 		float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
 		glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
 		glm::vec3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x) * r;
+		glm::vec4 fourTan = glm::vec4(tangent, 1.0);
 
-		vertices[i0].tangent += tangent;
-		vertices[i1].tangent += tangent;
-		vertices[i2].tangent += tangent;
+		vertices[i0].tangent += fourTan;
+		vertices[i1].tangent += fourTan;
+		vertices[i2].tangent += fourTan;
 
 		vertices[i0].biTangent += bitangent;
 		vertices[i1].biTangent += bitangent;
@@ -232,6 +266,6 @@ void StaticMesh::computeTangents() {
 		vertices[i].tangent = glm::vec4(t.x, t.y, t.z, w);
 
 		t = cross(glm::vec3(vertices[i].tangent.x, vertices[i].tangent.y, vertices[i].tangent.z), vertices[i].normal);
-		vertices[i].biTangent = glm::vec4(t.x, t.y, t.z, w);
+		vertices[i].biTangent = t;
 	}
 }

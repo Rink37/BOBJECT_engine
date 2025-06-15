@@ -10,12 +10,20 @@ struct Mesh {
 	VkDeviceMemory vertexBufferMemory;
 
 	std::vector<uint32_t> indices;
-	
+
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 
+	std::vector<uint32_t> uniqueTexindices;
+
+	VkBuffer texCoordIndexBuffer;
+	VkDeviceMemory texCoordIndexBufferMemory;
+
 	virtual void createVertexBuffer();
+	virtual void computeTangents() {};
 	void createIndexBuffer();
+
+	void createTexCoordIndexBuffer();
 
 	const void cleanup();
 };
@@ -38,10 +46,9 @@ public:
 class StaticMesh : public Mesh {
 public:
 	StaticMesh();
+	void computeTangents();
 private:
 	bool loadModel();
-
-	void computeTangents();
 };
 
 #endif

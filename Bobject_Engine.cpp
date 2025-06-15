@@ -408,7 +408,6 @@ void Engine::createGraphicsPipelines() {
 	shaderDatas.push_back(new BFSHADER);
 	shaderDatas.push_back(new UISHADER);
 	shaderDatas.push_back(new WSHADER);
-	//shaderDatas.push_back(new NORMALGENERATORSHADER);
 	shaderDatas.push_back(new UVSHADER);
 
 	PipelineMap.insert({ string("FlatShading"), 0 });
