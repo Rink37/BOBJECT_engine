@@ -86,17 +86,17 @@ void UIMesh::UpdateVertices(float xp, float yp, float xsc, float ysc) {
 
 	Vertex vertex{};
 
-	vertex.pos = { -xsc + xp, -ysc - yp, 0.0f };
+	vertex.pos = { -xsc + xp, yp - ysc, 0.0f };
 	vertex.normal = { 0.0f, 0.0f, 0.0f };
 	vertex.texCoord = { 0.0f, 0.0f };
 	vertices.push_back(vertex);
-	vertex.pos = { xsc + xp, -ysc - yp, 0.0f };
+	vertex.pos = { xsc + xp, yp - ysc, 0.0f };
 	vertex.texCoord = { 1.0f, 0.0f };
 	vertices.push_back(vertex);
-	vertex.pos = { xsc + xp, ysc - yp, 0.0f };
+	vertex.pos = { xsc + xp, yp + ysc, 0.0f };
 	vertex.texCoord = { 1.0f, 1.0f };
 	vertices.push_back(vertex);
-	vertex.pos = { -xsc + xp, ysc - yp, 0.0f };
+	vertex.pos = { -xsc + xp, yp + ysc, 0.0f };
 	vertex.texCoord = { 0.0f, 1.0f };
 	vertices.push_back(vertex);
 

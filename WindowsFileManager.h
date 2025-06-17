@@ -9,6 +9,7 @@
 
 namespace winFile {
 	std::string OpenFileDialog();
+	std::string SaveFileDialog();
 };
 
 #endif

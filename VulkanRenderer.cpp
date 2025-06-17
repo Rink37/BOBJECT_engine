@@ -77,7 +77,7 @@ private:
 	Engine* engine = Engine::get();
 
 	Camera camera;
-	WebcamPanel* webcamView = nullptr;
+	ImagePanel* webcamView = nullptr;
 	Material* webcamMaterial = nullptr;
 
 	imageData* ub = new UNRENDEREDBUTTON;
@@ -103,16 +103,19 @@ private:
 	bool shouldConvertOSN = false;
 	bool TSNavailable = false;
 
+	hArrangement *NormalButtons = nullptr;
+	vArrangement* SurfacePanel = nullptr;
+
 	void createWebcamMaterial() {
 		webcamTexture::get()->setup();
 		webcamMaterial = new Material(webcamTexture::get());
 	}
 
 	void createCanvas() {
-		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.15f, 0.1f, 0.01f);
+		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
 		hArrangement *Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
 
-		vArrangement* SurfacePanel = new vArrangement(0.6f, 0.0f, 0.2f, 0.5f, 0.01f);
+		SurfacePanel = new vArrangement(0.0f, 0.0f, 0.2f, 0.5f, 0.01f);
 
 		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this, placeholders::_1);
 
@@ -121,6 +124,10 @@ private:
 		std::function<void(UIItem*)> configureWebcamFunct = bind(&Application::calibrateWebcam, this, placeholders::_1);
 
 		std::function<void(UIItem*)> loadObjectFunct = bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
+
+		std::function<void(UIItem*)> addNormalButton = bind(&Application::createNormalButtons, this, placeholders::_1);
+
+		std::function<void(UIItem*)> saveWebcam = bind(&Application::saveWebcamImage, this, placeholders::_1);
 
 		imageData* lb = new LOADBUTTON;
 		imageData* rb = new RENDEREDBUTTON;
@@ -150,33 +157,37 @@ private:
 
 		Button* diffSave = new Button(0.0f, 0.0f, 1.0f, 1.0f, SaveButton);
 		diffSave->Name = "SaveDiffuse";
+		diffSave->setClickFunction(saveWebcam);
 
-		hArrangement* DiffuseButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
+		hArrangement* DiffuseButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
 		Button* normalTextPanel = new Button(0.0f, 0.0f, 1.0f, 1.0f, normal);
 		Button* normalPlus = new Button(0.0f, 0.0f, 1.0f, 1.0f, plusButton);
+		normalPlus->Name = "add Normal";
+		normalPlus->setClickFunction(addNormalButton);
 
-		hArrangement* NormalButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
+		NormalButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+
+		spacer* testSpacer = new spacer;
 
 		NormalButtons->addItem(normalTextPanel);
 		NormalButtons->addItem(normalPlus);
+		NormalButtons->addItem(testSpacer);
 
 		DiffuseButtons->addItem(diffuseTextPanel);
 		DiffuseButtons->addItem(diffuseWebcamToggle);
 		DiffuseButtons->addItem(diffLoad);
 		DiffuseButtons->addItem(diffSave);
-
-		//canvas.push_back(SurfacePanel);
 		
-		Button *loadObjectButton = new Button(0.0f, 0.0f, 0.2f, 0.1f, lb);
+		Button *loadObjectButton = new Button(0.0f, 0.0f, 2.0f, 1.0f, lb);
 		
-		Button *litRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, rb);
-		Button *unlitRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, ub);
-		Button *wireframeRenderingButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, wb);
+		Button *litRenderingButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, rb);
+		Button *unlitRenderingButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, ub);
+		Button *wireframeRenderingButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, wb);
 		
-		Button* playButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, plb);
-		Button* pauseButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, pb);
-		Button* settingsButton = new Button(0.0f, 0.0f, 0.2f, 0.2f, sb);
+		Button* playButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, plb);
+		Button* pauseButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, pb);
+		Button* settingsButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, sb);
 
 		unlitRenderingButton->Name = "FlatShading";
 		unlitRenderingButton->setClickFunction(pipelinefunction);
@@ -223,15 +234,13 @@ private:
 
 		canvas.push_back(buttons);
 
-		//webcamView = new WebcamPanel(0.775f, 0.1f, 0.2f, 0.142f, webcamMaterial);
-		webcamView = new WebcamPanel(0.0f, 0.0f, 1.0f, 0.71f, webcamMaterial);
+		webcamView = new ImagePanel(0.0f, 0.0f, 1.0f, 0.71f, webcamMaterial, true);
 		webcamView->image->mat[0] = webcamMaterial;
 
 		SurfacePanel->addItem(DiffuseButtons);
 		SurfacePanel->addItem(webcamView);
 		SurfacePanel->addItem(NormalButtons);
-
-		//canvas.push_back(webcamView);
+		//SurfacePanel->addItem(new spacer);
 
 		canvas.push_back(SurfacePanel);
 
@@ -541,8 +550,6 @@ private:
 		}
 		file.close();
 
-		std::cout << "Image saved" << std::endl;
-
 		vkUnmapMemory(Engine::get()->device, dstImageMemory);
 		vkFreeMemory(Engine::get()->device, dstImageMemory, nullptr);
 		vkDestroyImage(Engine::get()->device, dstImage, nullptr);
@@ -551,21 +558,62 @@ private:
 
 		std::remove(filename);
 
-		//string windowName = "TestImage";
-		//namedWindow(windowName);
-		//while (true){
-		//	imshow(windowName, cvImg);//Show the frame
-		//	char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
-		//	if (c == 27) {
-		//		cv::destroyWindow(windowName);
-		//		break;
-		//	}
-		//	if (getWindowProperty(windowName, WND_PROP_VISIBLE) < 1) {
-		//		break;
-		//	}
-		//}
-
 		return cvImg;
+	}
+
+	void saveWebcamImage(UIItem* owner) {
+		Mat frame = webcamTexture::get()->webCam.webcamFrame;
+		string saveName = winFile::SaveFileDialog();
+		if (saveName != string("fail")) {
+			imwrite(saveName, frame);
+		}
+	}
+
+	void createNormalButtons(UIItem* owner) {
+		vector<UIImage*> images;
+		NormalButtons->getImages(images);
+
+		for (UIImage* image : images) {
+			for (Material* mat : image->mat) {
+				if (mat != webcamMaterial) {
+					mat->cleanup();
+				}
+			}
+
+			image->mesh.cleanup();
+
+		}
+		
+		NormalButtons->Items.clear();
+
+		imageData* normal = new NORMALTEXT;
+
+		imageData* webcamOn = new WEBCAMONBUTTON;
+		imageData* webcamOff = new WEBCAMOFFBUTTON;
+
+		imageData* OpenButton = new OPENBUTTON;
+		imageData* SaveButton = new SAVEBUTTON;
+
+		Button* normalText = new Button(0.0f, 0.0f, 2.0f, 1.0f, normal);
+
+		Checkbox* normalWebcamToggle = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, webcamOn, webcamOff);
+		normalWebcamToggle->Name = "ToggleDiffuseWebcam";
+		normalWebcamToggle->activestate = false;
+		normalWebcamToggle->image->matidx = 1;
+
+		Button* normalLoad = new Button(0.0f, 0.0f, 1.0f, 1.0f, OpenButton);
+		normalLoad->Name = "LoadNormal";
+
+		Button* normalSave = new Button(0.0f, 0.0f, 1.0f, 1.0f, SaveButton);
+		normalSave->Name = "SaveNormal";
+
+		NormalButtons->addItem(normalText);
+		NormalButtons->addItem(normalWebcamToggle);
+		NormalButtons->addItem(normalLoad);
+		NormalButtons->addItem(normalSave);
+
+		NormalButtons->arrangeItems();
+		NormalButtons->updateDisplay();
 	}
 
 	void enableWebcam(UIItem* owner) {

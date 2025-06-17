@@ -89,19 +89,27 @@ struct UIItem {
 	};
 
 	virtual void calculateScreenPosition();
+
+	virtual bool isSpacer() {
+		return false;
+	}
 };
 
-class WebcamPanel : public UIItem {
+class ImagePanel : public UIItem {
 // Represents only a webcam view
 public:
-	WebcamPanel(float x, float y, float xsize, float ysize, Material* webcamMat) {
-		update(x, y, xsize, ysize);
-		image->mat[0] = webcamMat;
+	bool isWebcam;
+
+	ImagePanel(float x, float y, float xsize, float ysize, Material* surf, bool iW) {
+		update(x, -1.0 * y, xsize, ysize);
+		image->mat[0] = surf;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
 		this->sqAxisRatio = ysize / xsize;
+
+		this->isWebcam = iW;
 	}
 };
 
@@ -120,12 +128,12 @@ public:
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
-		update(x, y, xsize, ysize);
+		update(x, -1.0 * y, xsize, ysize);
 	};
 
 	bool isInArea(double x, double y) {
 		bool result = false;
-		if (x >= windowPositions[0] && x <= windowPositions[1] && y <= windowPositions[2] && y >= windowPositions[3]) {
+		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
 			result = true;
 		}
 		return result;
@@ -164,12 +172,12 @@ public:
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
-		update(x, y, xsize, ysize);
+		update(x, -1.0 * y, xsize, ysize);
 	};
 
 	bool isInArea(double x, double y) {
 		bool result = false;
-		if (x >= windowPositions[0] && x <= windowPositions[1] && y <= windowPositions[2] && y >= windowPositions[3]) {
+		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
 			result = true;
 		}
 		return result;
@@ -196,13 +204,32 @@ public:
 	};
 };
 
+class spacer : public UIItem {
+public:
+	bool isSpacer() {
+		return true;
+	}
+
+	void update(float x, float y, float xsize, float ysize) {};
+
+	void updateDisplay() {};
+
+	void getImages(std::vector<UIImage*>& images) {};
+
+	void arrangeItems() {};
+
+	void checkForEvent(double, double, int) {};
+
+	void calculateScreenPosition() {};
+};
+
 class hArrangement : public UIItem {
 public:
 	float spacing;
 	
 	hArrangement(float px, float py, float ex, float ey, float spc) {
 		this->posx = px;
-		this->posy = py;
+		this->posy = -1.0 * py;
 		this->anchorx = px;
 		this->anchory = py;
 		this->extentx = ex;
@@ -211,6 +238,8 @@ public:
 
 		this->sqAxisRatio = ey / ex;
 	}
+
+	void calculateScreenPosition();
 
 	std::vector<UIItem *> Items;
 
@@ -252,7 +281,7 @@ public:
 
 	vArrangement(float px, float py, float ex, float ey, float spc) {
 		posx = px;
-		posy = py;
+		posy = -1.0 * py;
 		anchorx = px;
 		anchory = py;
 		extentx = ex;
@@ -261,6 +290,8 @@ public:
 
 		this->sqAxisRatio = ey / ex;
 	}
+
+	void calculateScreenPosition();
 
 	std::vector<UIItem*> Items;
 
