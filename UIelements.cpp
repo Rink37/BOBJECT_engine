@@ -130,7 +130,7 @@ void hArrangement::arrangeItems() {
 		// This means that the total width of the items is smaller than the free space, so we need to add more buffer space
 		scaleFactor = 1.0f;
 		if (numSpacers > 0) {
-			spacerSize = (totalWidth + xbuffer * Items.size()) / numSpacers;
+			spacerSize = (this->extentx * 2 - (totalWidth + xbuffer * Items.size())) / numSpacers;
 		}
 		else {
 			xbuffer = (this->extentx * 2 - totalWidth) / Items.size();
@@ -144,7 +144,6 @@ void hArrangement::arrangeItems() {
 	float currentPosition = 0;
 
 	for (size_t i = 0; i != Items.size(); i++) {
-		//cout << (currentPosition) / (this->extentx * 2) << " " << numSpacers << " " << spacerSize << endl;
 		currentPosition += xbuffer / 2;
 		if (Items[i]->isSpacer()) {
 			currentPosition += spacerSize;
@@ -163,8 +162,6 @@ void hArrangement::arrangeItems() {
 		}
 		currentPosition += xbuffer / 2;
 	}
-	//cout << (currentPosition) / (this->extentx * 2) << " " << numSpacers << " " << spacerSize << endl;
-	//cout << endl;
 }
 
 void vArrangement::arrangeItems() {
@@ -203,7 +200,7 @@ void vArrangement::arrangeItems() {
 		// This means that the total width of the items is smaller than the free space, so we need to add more buffer space
 		scaleFactor = 1.0f;
 		if (numSpacers > 0) {
-			spacerSize = (totalHeight + ybuffer * Items.size()) / numSpacers;
+			spacerSize = (this->extenty * 2 - (totalHeight + ybuffer * Items.size())) / numSpacers;
 		}
 		else {
 			ybuffer = (this->extenty * 2 - totalHeight) / Items.size();
@@ -217,7 +214,6 @@ void vArrangement::arrangeItems() {
 	float currentPosition = 0;
 
 	for (size_t i = 0; i != Items.size(); i++) {
-		//cout << (currentPosition) / (this->extenty * 2) << " " << numSpacers << " " << spacerSize << endl;
 		currentPosition += ybuffer / 2;
 		if (Items[i]->isSpacer()) {
 			currentPosition += spacerSize;
@@ -236,8 +232,6 @@ void vArrangement::arrangeItems() {
 		}
 		currentPosition += ybuffer / 2;
 	}
-	//cout << (currentPosition) / (this->extenty * 2) << " " << numSpacers << " " << spacerSize << endl;
-	//cout << endl;
 }
 
 void hArrangement::updateDisplay() {

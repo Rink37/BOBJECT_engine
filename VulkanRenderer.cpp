@@ -106,6 +106,8 @@ private:
 	hArrangement *NormalButtons = nullptr;
 	vArrangement* SurfacePanel = nullptr;
 
+	Material* OSNormal = nullptr;
+
 	void createWebcamMaterial() {
 		webcamTexture::get()->setup();
 		webcamMaterial = new Material(webcamTexture::get());
@@ -115,7 +117,7 @@ private:
 		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
 		hArrangement *Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
 
-		SurfacePanel = new vArrangement(0.0f, 0.0f, 0.2f, 0.5f, 0.01f);
+		SurfacePanel = new vArrangement(1.0f, 0.0f, 0.2f, 0.4f, 0.01f);
 
 		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this, placeholders::_1);
 
@@ -235,12 +237,10 @@ private:
 		canvas.push_back(buttons);
 
 		webcamView = new ImagePanel(0.0f, 0.0f, 1.0f, 0.71f, webcamMaterial, true);
-		webcamView->image->mat[0] = webcamMaterial;
-
 		SurfacePanel->addItem(DiffuseButtons);
 		SurfacePanel->addItem(webcamView);
 		SurfacePanel->addItem(NormalButtons);
-		//SurfacePanel->addItem(new spacer);
+		SurfacePanel->addItem(new spacer);
 
 		canvas.push_back(SurfacePanel);
 
@@ -570,6 +570,9 @@ private:
 	}
 
 	void createNormalButtons(UIItem* owner) {
+		//shouldRenderOSN = true;
+		//mapGenerator.setupOSExtractor();
+		
 		vector<UIImage*> images;
 		NormalButtons->getImages(images);
 
@@ -614,6 +617,17 @@ private:
 
 		NormalButtons->arrangeItems();
 		NormalButtons->updateDisplay();
+
+		if (OSNormal == nullptr) {
+			OSNormal = webcamMaterial;
+		}
+
+		ImagePanel* webImg = new ImagePanel(0.0f, 0.0f, 1.0f, 0.71f, OSNormal, true);
+		webImg->updateDisplay();
+
+		SurfacePanel->addItem(webImg);
+		SurfacePanel->addItem(new spacer);
+		SurfacePanel->arrangeItems();
 	}
 
 	void enableWebcam(UIItem* owner) {
@@ -672,10 +686,6 @@ private:
 	}
 
 	void cleanup() {
-
-		//mapGenerator.cleanupOS();
-		//mapGenerator.cleanupTS();
-
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			if (staticObjects[i].mat != webcamMaterial) {
 				staticObjects[i].mat->cleanup();
@@ -790,7 +800,7 @@ private:
 		ubo.UVdistort[0] = 2*webcamView->extentx;
 		ubo.UVdistort[1] = (webcamView->posx) - webcamView->extentx;
 		ubo.UVdistort[2] = 2*webcamView->extenty;
-		ubo.UVdistort[3] = (-webcamView->posy) - webcamView->extenty;
+		ubo.UVdistort[3] = (webcamView->posy) - webcamView->extenty;
 
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 

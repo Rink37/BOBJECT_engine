@@ -4,12 +4,18 @@
 #include"Bobject_engine.h"
 #include"Webcam_feeder.h"
 #include"include/ImageDataType.h"
+#include<opencv2/opencv.hpp>
 #include<string>
 
 struct Texture {
+
+	// I want a more robust system for setting and transitioning the image layout here 
+	
 	int texWidth;
 	int texHeight;
 	int texChannels;
+
+	cv::Mat texMat;
 
 	VkImage textureImage = nullptr;
 	VkDeviceMemory textureImageMemory = nullptr;
@@ -21,6 +27,7 @@ struct Texture {
 	void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
 	void generateMipmaps(VkImage, VkFormat, int32_t, int32_t, uint32_t);
 	VkImageView createImageView(VkImage, VkFormat, VkImageAspectFlags, uint32_t);
+	void getCVMat();
 
 	virtual void setup() {
 
@@ -36,7 +43,6 @@ public:
 
 	imageTexture(imageData* iD) {
 		imgData = iD;
-		//TEXTURE_PATH = path;
 		createTextureImage();
 		createTextureImageView();
 	};
