@@ -456,6 +456,6 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 			break;
 		}
 	}
-	imwrite("OSNormal.png", outMap);
+	imwrite("OSNormal_backup.png", outMap);
 	OSNormalMap = outMap;
 }

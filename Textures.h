@@ -8,8 +8,7 @@
 #include<string>
 
 struct Texture {
-
-	// I want a more robust system for setting and transitioning the image layout here 
+	bool cleaned = false;
 	
 	int texWidth;
 	int texHeight;
@@ -21,13 +20,18 @@ struct Texture {
 	VkDeviceMemory textureImageMemory = nullptr;
 	VkImageView textureImageView = nullptr;
 
+	VkFormat textureFormat = VK_FORMAT_R8G8B8A8_SRGB;
+	VkImageLayout textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
 	bool hasStencilComponent(VkFormat);
 	void createImage(uint32_t, uint32_t, uint32_t, VkSampleCountFlagBits, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
 	void transitionImageLayout(VkImage, VkFormat, VkImageLayout, VkImageLayout, uint32_t);
 	void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
 	void generateMipmaps(VkImage, VkFormat, int32_t, int32_t, uint32_t);
 	VkImageView createImageView(VkImage, VkFormat, VkImageAspectFlags, uint32_t);
+	
 	void getCVMat();
+	void transitionMatToImg();
 
 	virtual void setup() {
 
@@ -40,18 +44,26 @@ struct Texture {
 
 class imageTexture : public Texture {
 public:
+	imageTexture() = default;
+
+	imageTexture(std::string filename, VkFormat format) {
+		// Image texture which is loaded from file
+		texMat = cv::imread(filename);
+		textureFormat = format;
+		transitionMatToImg();
+		createTextureImageView();
+	}
 
 	imageTexture(imageData* iD) {
+		// Built-in image texture
 		imgData = iD;
 		createTextureImage();
 		createTextureImageView();
 	};
 
-	imageData* imgData;
+	imageData* imgData = nullptr;
 
-	std::string TEXTURE_PATH;
-
-	uint32_t mipLevels;
+	uint32_t mipLevels = 0;
 
 	void cleanup() {
 		if (textureImage != nullptr) {
@@ -59,6 +71,7 @@ public:
 			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
 			vkDestroyImageView(Engine::get()->device, textureImageView, nullptr);
 		}
+		cleaned = true;
 	}
 
 private:
@@ -101,6 +114,11 @@ public:
 		}
 		destruct();
 	}
+
+	void getCVMat() {
+		texMat = webCam.webcamFrame;
+	}
+
 private:
 	static webcamTexture* winstance;
 	webcamTexture() = default;

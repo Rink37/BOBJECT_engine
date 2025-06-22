@@ -196,9 +196,14 @@ bool StaticMesh::loadModel() {
 
 				indices.push_back(uniqueVertices[vertex]);
 
-				if (vertices[uniqueCoords[vertex.texCoord]].pos == vertices[uniqueVertices[vertex]].pos) {
-					uniqueTexindices.push_back(uniqueVertices[vertex]);
-				}
+				uniqueTexindices.push_back(uniqueVertices[vertex]);
+
+				// System attempts to seek the unique texture coordinate vertices - does not currently work
+
+				//if (vertices[uniqueCoords[vertex.texCoord]].pos == vertices[uniqueVertices[vertex]].pos) {
+					// Checks if the position of this vertex is the same as the position of the first vertex with the same texture coordinate
+				//	uniqueTexindices.push_back(uniqueVertices[vertex]);
+				//}
 
 			}
 		}

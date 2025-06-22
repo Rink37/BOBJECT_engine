@@ -372,14 +372,30 @@ void Engine::createDescriptorSetLayout() {
 	samplerLayoutBinding.pImmutableSamplers = nullptr;
 	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+	VkDescriptorSetLayoutBinding normalLayoutBinding{}; //We then define the descriptor for the shader. 
+	normalLayoutBinding.binding = 2;
+	normalLayoutBinding.descriptorCount = 1;
+	normalLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	normalLayoutBinding.pImmutableSamplers = nullptr;
+	normalLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	array<VkDescriptorSetLayoutBinding, 2> diffBindings = { uboLayoutBinding, samplerLayoutBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-	layoutInfo.pBindings = bindings.data();
+	layoutInfo.bindingCount = static_cast<uint32_t>(diffBindings.size());
+	layoutInfo.pBindings = diffBindings.data();
 
-	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &diffuseDescriptorSetLayout) != VK_SUCCESS) {
+		throw runtime_error("failed to create descriptor set layout!");
+	}
+
+	array<VkDescriptorSetLayoutBinding, 3> normDiffBindings = { uboLayoutBinding, samplerLayoutBinding, normalLayoutBinding };
+
+	layoutInfo.bindingCount = static_cast<uint32_t>(normDiffBindings.size());
+	layoutInfo.pBindings = normDiffBindings.data();
+
+	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &diffNormDescriptorSetLayout) != VK_SUCCESS) {
 		throw runtime_error("failed to create descriptor set layout!");
 	}
 }
@@ -480,9 +496,15 @@ void Engine::createGraphicsPipelines() {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+	pipelineLayoutInfo.pSetLayouts = &diffuseDescriptorSetLayout;
 
-	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &diffusePipelineLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
+	pipelineLayoutInfo.pSetLayouts = &diffNormDescriptorSetLayout;
+
+	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &diffNormPipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
@@ -535,7 +557,7 @@ void Engine::createGraphicsPipelines() {
 		pipelineInfo.pMultisampleState = &multisampling;
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.layout = pipelineLayout;
+		pipelineInfo.layout = diffusePipelineLayout;
 		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -550,6 +572,131 @@ void Engine::createGraphicsPipelines() {
 		vkDestroyShaderModule(device, FragShaderModule, nullptr);
 		vkDestroyShaderModule(device, VertShaderModule, nullptr);
 	}
+
+	shaderData* OS_BF = new OS_BFSHADER;
+	VkPipeline* CurrentPipeline = new VkPipeline;
+
+	auto VertShaderCode = OS_BF->vertData;
+	auto FragShaderCode = OS_BF->fragData;
+
+	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
+	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+
+	VkPipelineShaderStageCreateInfo VertShaderStageInfo{};
+	VertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	VertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	VertShaderStageInfo.module = VertShaderModule;
+	VertShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo FragShaderStageInfo{};
+	FragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	FragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	FragShaderStageInfo.module = FragShaderModule;
+	FragShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo, FragShaderStageInfo };
+
+	VkPipelineRasterizationStateCreateInfo rasterizer{};
+	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer.depthClampEnable = VK_FALSE;
+	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	if (OS_BF->isWireframe) {
+		rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
+	}
+	else {
+		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	}
+	rasterizer.lineWidth = 1.0f;
+	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	rasterizer.depthBiasEnable = VK_FALSE;
+
+	VkGraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = ShaderStages;
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizer;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.pDynamicState = &dynamicState;
+	pipelineInfo.layout = diffNormPipelineLayout;
+	pipelineInfo.renderPass = renderPass;
+	pipelineInfo.subpass = 0;
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	pipelineInfo.pDepthStencilState = &depthStencil;
+
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, CurrentPipeline) != VK_SUCCESS) {
+		throw runtime_error("failed to create graphics pipeline!");
+	}
+
+	GraphicsPipelines.push_back(CurrentPipeline);
+	PipelineMap.insert({ string("OSNormBF"), 5 });
+
+	shaderData* TS_BF = new TS_BFSHADER;
+	VkPipeline* TangentPipeline = new VkPipeline;
+
+	auto tangentVertShaderCode = TS_BF->vertData;
+	auto tangentFragShaderCode = TS_BF->fragData;
+
+	VkPipelineVertexInputStateCreateInfo tangentVertexInputInfo{};
+	tangentVertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	
+	auto tangentAttributeDescriptions = Vertex::getCompleteAttributeDescriptions();
+
+	tangentVertexInputInfo.vertexBindingDescriptionCount = 1;
+	tangentVertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(tangentAttributeDescriptions.size());
+	tangentVertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	tangentVertexInputInfo.pVertexAttributeDescriptions = tangentAttributeDescriptions.data();
+
+	VkShaderModule tangentVertShaderModule = createShaderModule(tangentVertShaderCode);
+	VkShaderModule tangentFragShaderModule = createShaderModule(tangentFragShaderCode);
+
+	VkPipelineShaderStageCreateInfo tangentVertShaderStageInfo{};
+	tangentVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	tangentVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	tangentVertShaderStageInfo.module = tangentVertShaderModule;
+	tangentVertShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo tangentFragShaderStageInfo{};
+	tangentFragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	tangentFragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	tangentFragShaderStageInfo.module = tangentFragShaderModule;
+	tangentFragShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo tangentShaderStages[] = { tangentVertShaderStageInfo, tangentFragShaderStageInfo };
+
+	VkGraphicsPipelineCreateInfo tangentpipelineInfo{};
+	tangentpipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	tangentpipelineInfo.stageCount = 2;
+	tangentpipelineInfo.pStages = tangentShaderStages;
+	tangentpipelineInfo.pVertexInputState = &tangentVertexInputInfo;
+	tangentpipelineInfo.pInputAssemblyState = &inputAssembly;
+	tangentpipelineInfo.pViewportState = &viewportState;
+	tangentpipelineInfo.pRasterizationState = &rasterizer;
+	tangentpipelineInfo.pMultisampleState = &multisampling;
+	tangentpipelineInfo.pColorBlendState = &colorBlending;
+	tangentpipelineInfo.pDynamicState = &dynamicState;
+	tangentpipelineInfo.layout = diffNormPipelineLayout;
+	tangentpipelineInfo.renderPass = renderPass;
+	tangentpipelineInfo.subpass = 0;
+	tangentpipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	tangentpipelineInfo.pDepthStencilState = &depthStencil;
+
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &tangentpipelineInfo, nullptr, TangentPipeline) != VK_SUCCESS) {
+		throw runtime_error("failed to create graphics pipeline!");
+	}
+
+	GraphicsPipelines.push_back(TangentPipeline);
+	PipelineMap.insert({ string("TSNormBF"), 6 });
+
+
+	vkDestroyShaderModule(device, FragShaderModule, nullptr);
+	vkDestroyShaderModule(device, VertShaderModule, nullptr);
+	vkDestroyShaderModule(device, tangentFragShaderModule, nullptr);
+	vkDestroyShaderModule(device, tangentVertShaderModule, nullptr);
 }
 
 void Engine::createCommandPool() {
@@ -713,7 +860,8 @@ void Engine::cleanup() {
 		vkDestroyPipeline(device, *pipeline, nullptr);
 	}
 
-	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+	vkDestroyPipelineLayout(device, diffusePipelineLayout, nullptr);
+	vkDestroyPipelineLayout(device, diffNormPipelineLayout, nullptr);
 	vkDestroyRenderPass(device, renderPass, nullptr);
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -721,7 +869,8 @@ void Engine::cleanup() {
 		vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
 	}
 
-	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+	vkDestroyDescriptorSetLayout(device, diffuseDescriptorSetLayout, nullptr);
+	vkDestroyDescriptorSetLayout(device, diffNormDescriptorSetLayout, nullptr);
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);

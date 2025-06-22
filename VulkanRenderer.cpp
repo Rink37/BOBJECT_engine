@@ -27,6 +27,7 @@
 #include"Materials.h"
 #include"Meshes.h"
 #include"GenerateNormalMap.h"
+#include"SurfaceConstructor.h"
 
 #include"include/LoadButton.h"
 #include"include/PauseButton.h"
@@ -38,12 +39,14 @@
 #include"include/TestCheckboxButton.h"
 #include"include/WebcamOffButton.h"
 #include"include/WebcamOnButton.h"
+#include"include/WebcamViewButton.h"
 #include"include/D2NButton.h"
 #include"include/DiffuseText.h"
 #include"include/NormalText.h"
 #include"include/PlusButton.h"
 #include"include/SaveButton.h"
 #include"include/TangentSpace.h"
+#include"include/OSButton.h"
 #include"include/OpenButton.h"
 
 using namespace cv;
@@ -67,7 +70,7 @@ public:
 		engine->initVulkan();
 		KeyInput::setupKeyInputs(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
-		createWebcamMaterial();
+		sConst->setupSurfaceConstructor();
 		createCanvas();
 		mainLoop();
 		cleanup();
@@ -75,10 +78,11 @@ public:
 	}
 private:
 	Engine* engine = Engine::get();
+	surfaceConstructor* sConst = surfaceConstructor::get();
 
 	Camera camera;
-	ImagePanel* webcamView = nullptr;
-	Material* webcamMaterial = nullptr;
+	ImagePanel* diffuseView = nullptr;
+	ImagePanel* normalView = nullptr;
 
 	imageData* ub = new UNRENDEREDBUTTON;
 	imageData* tcb = new TESTCHECKBOXBUTTON;
@@ -106,20 +110,24 @@ private:
 	hArrangement *NormalButtons = nullptr;
 	vArrangement* SurfacePanel = nullptr;
 
+	Checkbox* diffuseTog = nullptr;
+	Checkbox* normalTog = nullptr;
+
+	Material* Diffuse = nullptr;
 	Material* OSNormal = nullptr;
 
-	void createWebcamMaterial() {
-		webcamTexture::get()->setup();
-		webcamMaterial = new Material(webcamTexture::get());
-	}
+	bool lit = true;
+
+	uint8_t viewIndex = 1;
 
 	void createCanvas() {
 		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
 		hArrangement *Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
 
-		SurfacePanel = new vArrangement(1.0f, 0.0f, 0.2f, 0.4f, 0.01f);
+		SurfacePanel = new vArrangement(1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 
 		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this, placeholders::_1);
+		std::function<void(UIItem*)> lightingFunction = bind(&Application::toggleLighting, this, placeholders::_1);
 
 		std::function<void(UIItem*)> enableWebcamFunct = bind(&Application::enableWebcam, this, placeholders::_1);
 		std::function<void(UIItem*)> disableWebcamFunct = bind(&Application::disableWebcam, this, placeholders::_1);
@@ -129,11 +137,14 @@ private:
 
 		std::function<void(UIItem*)> addNormalButton = bind(&Application::createNormalButtons, this, placeholders::_1);
 
-		std::function<void(UIItem*)> saveWebcam = bind(&Application::saveWebcamImage, this, placeholders::_1);
+		std::function<void(UIItem*)> toggleDiffuse = bind(&Application::toggleDiffuseCam, this, placeholders::_1);
+		std::function<void(UIItem*)> loadDiffuse = bind(&Application::loadDiffuseImage, this, placeholders::_1);
+		std::function<void(UIItem*)> saveWebcam = bind(&Application::saveDiffuseImage, this, placeholders::_1);
 
 		imageData* lb = new LOADBUTTON;
 		imageData* rb = new RENDEREDBUTTON;
-		imageData* ub = new UNRENDEREDBUTTON;
+		imageData* fb = new UNRENDEREDBUTTON;
+		imageData* ub = new WEBCAMVIEWBUTTON;
 		imageData* wb = new WIREFRAMEBUTTON;
 		imageData* plb = new PLAYBUTTON;
 		imageData* pb = new PAUSEBUTTON;
@@ -151,11 +162,13 @@ private:
 		imageData* plusButton = new PLUSBUTTON;
 
 		Button* diffuseTextPanel = new Button(0.0f, 0.0f, 1.0f, 1.0f, diffuse);
-		Checkbox* diffuseWebcamToggle = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, webcamOn, webcamOff);
-		diffuseWebcamToggle->Name = "ToggleDiffuseWebcam";
+		diffuseTog = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, webcamOn, webcamOff);
+		diffuseTog->Name = "ToggleDiffuseWebcam";
+		diffuseTog->setClickFunction(toggleDiffuse);
 
 		Button* diffLoad = new Button(0.0f, 0.0f, 1.0f, 1.0f, OpenButton);
 		diffLoad->Name = "LoadDiffuse";
+		diffLoad->setClickFunction(loadDiffuse);
 
 		Button* diffSave = new Button(0.0f, 0.0f, 1.0f, 1.0f, SaveButton);
 		diffSave->Name = "SaveDiffuse";
@@ -177,7 +190,8 @@ private:
 		NormalButtons->addItem(testSpacer);
 
 		DiffuseButtons->addItem(diffuseTextPanel);
-		DiffuseButtons->addItem(diffuseWebcamToggle);
+		DiffuseButtons->addItem(diffuseTog);
+		DiffuseButtons->addItem(new spacer);
 		DiffuseButtons->addItem(diffLoad);
 		DiffuseButtons->addItem(diffSave);
 		
@@ -191,10 +205,10 @@ private:
 		Button* pauseButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, pb);
 		Button* settingsButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, sb);
 
-		unlitRenderingButton->Name = "FlatShading";
+		unlitRenderingButton->Name = "WebcamMat";
 		unlitRenderingButton->setClickFunction(pipelinefunction);
 		
-		litRenderingButton->Name = "BFShading";
+		litRenderingButton->Name = "SurfaceMat";
 		litRenderingButton->setClickFunction(pipelinefunction);
 		
 		wireframeRenderingButton->Name = "Wireframe";
@@ -218,10 +232,15 @@ private:
 
 		Button* webcamImage = new Button(0.0f, 0.0f, 0.2f, 0.2f, webcamOn);
 
+		Checkbox* litCheckbox = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, rb, fb);
+		litCheckbox->Name = "Lighting toggle";
+		litCheckbox->setClickFunction(lightingFunction);
+
 		Videobuttons->addItem(webcamImage);
 		Videobuttons->addItem(playButton);
 		Videobuttons->addItem(pauseButton);
 		Videobuttons->addItem(settingsButton);
+		Videobuttons->addItem(litCheckbox);
 
 		canvas.push_back(Videobuttons);
 
@@ -236,9 +255,10 @@ private:
 
 		canvas.push_back(buttons);
 
-		webcamView = new ImagePanel(0.0f, 0.0f, 1.0f, 0.71f, webcamMaterial, true);
+		cout << "Diffuse mat:" << sConst->currentDiffuse() << endl;
+		diffuseView = new ImagePanel(0.0f, 0.0f, 1.0f, 0.71f, sConst->currentDiffuse(), true);
 		SurfacePanel->addItem(DiffuseButtons);
-		SurfacePanel->addItem(webcamView);
+		SurfacePanel->addItem(diffuseView);
 		SurfacePanel->addItem(NormalButtons);
 		SurfacePanel->addItem(new spacer);
 
@@ -268,323 +288,123 @@ private:
 				}
 				mouseDown = 0;
 			}
-			if (OSNavailable) {
-				vkDestroyBuffer(Engine::get()->device, staticObjects[staticObjects.size() - 1].mesh.texCoordIndexBuffer, nullptr);
-				vkFreeMemory(Engine::get()->device, staticObjects[staticObjects.size() - 1].mesh.texCoordIndexBufferMemory, nullptr);
-				
-				mapGenerator.OSNormalMap = convertToCVMat(mapGenerator.objectSpaceMap.colour.image, 1024, 1024);
-				OSNavailable = false;
-				string filepath = winFile::OpenFileDialog();
-				if (filepath != (string)"fail") {
-					Mat srcImg = imread(filepath);
-					mapGenerator.contextualConvertMap(srcImg);
-				}
-				mapGenerator.cleanupOS();
-			}
-			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L)) {
-				shouldRenderOSN = true;
-				mapGenerator.setupOSExtractor();
-			}
-
-			if (TSNavailable) {
-				vkDestroyBuffer(Engine::get()->device, staticObjects[staticObjects.size() - 1].mesh.texCoordIndexBuffer, nullptr);
-				vkFreeMemory(Engine::get()->device, staticObjects[staticObjects.size() - 1].mesh.texCoordIndexBufferMemory, nullptr);
-				mapGenerator.TSNormalMap = convertToCVMat(mapGenerator.tangentSpaceMap.colour.image, mapGenerator.tangentSpaceMap.width, mapGenerator.tangentSpaceMap.height);
-				imwrite("TSNormal.png", mapGenerator.TSNormalMap);
-				TSNavailable = false;
-				mapGenerator.cleanupTS();
-			}
-			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_U)) {
-				shouldConvertOSN = true;
-				string filepath = winFile::OpenFileDialog();
-				if (filepath != (string)"fail") {
-					Mat srcImg = imread(filepath);
-					mapGenerator.createOSImageFromMat(srcImg);
-					mapGenerator.setupTSExtractor();
-				}
-			}
 
 			drawFrame();
 		}
 		vkDeviceWaitIdle(engine->device);
 	}
 
-	Mat convertToCVMat(VkImage srcImage, uint32_t width, uint32_t height) {
-		// see https://github.com/SaschaWillems/Vulkan/blob/master/examples/screenshot/screenshot.cpp 
-		
-		bool supportsBlit = true;
-
-		VkFormatProperties formatProps;
-
-		vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, &formatProps);
-		if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
-			std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
-			supportsBlit = false;
-		}
-
-		vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, &formatProps);
-		if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
-			std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
-			supportsBlit = false;
-		}
-
-		VkImageCreateInfo imageCreateCi = {};
-		imageCreateCi.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCreateCi.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateCi.format = VK_FORMAT_R8G8B8A8_UNORM;
-		imageCreateCi.extent.width = width;
-		imageCreateCi.extent.height = height;
-		imageCreateCi.extent.depth = 1;
-		imageCreateCi.arrayLayers = 1;
-		imageCreateCi.mipLevels = 1;
-		imageCreateCi.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageCreateCi.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateCi.tiling = VK_IMAGE_TILING_LINEAR;
-		imageCreateCi.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-
-		VkImage dstImage;
-		if (vkCreateImage(Engine::get()->device, &imageCreateCi, nullptr, &dstImage) != VK_SUCCESS) {
-			throw runtime_error("Failed to create image");
-		}
-
-		VkMemoryRequirements memRequirements;
-		VkMemoryAllocateInfo memAllocInfo = {};
-		memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		VkDeviceMemory dstImageMemory;
-		vkGetImageMemoryRequirements(Engine::get()->device, dstImage, &memRequirements);
-		memAllocInfo.allocationSize = memRequirements.size;
-		
-		memAllocInfo.memoryTypeIndex = Engine::get()->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		if (vkAllocateMemory(Engine::get()->device, &memAllocInfo, nullptr, &dstImageMemory) != VK_SUCCESS) {
-			throw runtime_error("Failed to allocate memory");
-		}
-		if (vkBindImageMemory(Engine::get()->device, dstImage, dstImageMemory, 0) != VK_SUCCESS) {
-			throw runtime_error("Failed to bind image memory");
-		}
-
-		VkCommandBuffer copyCmd;
-		
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = Engine::get()->commandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = 1;
-
-		if (vkAllocateCommandBuffers(Engine::get()->device, &allocInfo, &copyCmd) != VK_SUCCESS) {
-			throw runtime_error("failed to allocate command buffer!");
-		}
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		if (vkBeginCommandBuffer(copyCmd, &beginInfo) != VK_SUCCESS) {
-			throw runtime_error("failed to begin recording command buffer!");
-		}
-
-		VkImageMemoryBarrier imageMemoryBarrier = {};
-		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		imageMemoryBarrier.srcAccessMask = 0;
-		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		imageMemoryBarrier.image = dstImage;
-		imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-
-		vkCmdPipelineBarrier(
-			copyCmd,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &imageMemoryBarrier);
-
-		imageMemoryBarrier = {};
-		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		imageMemoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		imageMemoryBarrier.image = srcImage;
-		imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-
-		vkCmdPipelineBarrier(
-			copyCmd,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &imageMemoryBarrier);
-
-		if (supportsBlit)
-		{
-			VkOffset3D blitSize;
-			blitSize.x = width;
-			blitSize.y = height;
-			blitSize.z = 1;
-			VkImageBlit imageBlitRegion{};
-			imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageBlitRegion.srcSubresource.layerCount = 1;
-			imageBlitRegion.srcOffsets[1] = blitSize;
-			imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageBlitRegion.dstSubresource.layerCount = 1;
-			imageBlitRegion.dstOffsets[1] = blitSize;
-
-			vkCmdBlitImage(
-				copyCmd,
-				srcImage , VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				1,
-				&imageBlitRegion,
-				VK_FILTER_NEAREST);
-		}
-		else
-		{
-			VkImageCopy imageCopyRegion{};
-			imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageCopyRegion.srcSubresource.layerCount = 1;
-			imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageCopyRegion.dstSubresource.layerCount = 1;
-			imageCopyRegion.extent.width = width;
-			imageCopyRegion.extent.height = height;
-			imageCopyRegion.extent.depth = 1;
-
-			vkCmdCopyImage(
-				copyCmd,
-				srcImage , VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				1,
-				&imageCopyRegion);
-		}
-		imageMemoryBarrier = {};
-		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imageMemoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-		imageMemoryBarrier.image = dstImage;
-		imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-
-		vkCmdPipelineBarrier(
-			copyCmd,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &imageMemoryBarrier);
-
-		imageMemoryBarrier = {};
-		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imageMemoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		imageMemoryBarrier.image = srcImage;
-		imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-
-		vkCmdPipelineBarrier(
-			copyCmd,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &imageMemoryBarrier);
-
-		if (vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
-			throw runtime_error("Failed to end command buffer");
-		}
-
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &copyCmd;
-
-		vkQueueSubmit(Engine::get()->graphicsQueue, 1, &submitInfo, nullptr);
-
-		vkFreeCommandBuffers(Engine::get()->device, Engine::get()->commandPool, 1, &copyCmd);
-
-		VkImageSubresource subResource{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
-		VkSubresourceLayout subResourceLayout;
-		vkGetImageSubresourceLayout(Engine::get()->device, dstImage, &subResource, &subResourceLayout);
-
-		const char* data;
-		vkMapMemory(Engine::get()->device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
-		data += subResourceLayout.offset;
-
-		const char* filename = "Temp.ppm";
-
-		std::ofstream file(filename, std::ios::out | std::ios::binary);
-
-		file << "P6\n" << width << "\n" << height << "\n" << 255 << "\n";
-
-		bool colorSwizzle = false;
-
-		if (!supportsBlit)
-		{
-			std::vector<VkFormat> formatsBGR = { VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SNORM };
-			colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), VK_FORMAT_R8G8B8A8_UNORM) != formatsBGR.end());
-		}
-
-		for (uint32_t y = 0; y < height; y++)
-		{
-			unsigned int* row = (unsigned int*)data;
-			for (uint32_t x = 0; x < width; x++)
-			{
-				if (colorSwizzle)
-				{
-					file.write((char*)row + 2, 1);
-					file.write((char*)row + 1, 1);
-					file.write((char*)row, 1);
-				}
-				else
-				{
-					file.write((char*)row, 3);
-				}
-				row++;
-			}
-			data += subResourceLayout.rowPitch;
-		}
-		file.close();
-
-		vkUnmapMemory(Engine::get()->device, dstImageMemory);
-		vkFreeMemory(Engine::get()->device, dstImageMemory, nullptr);
-		vkDestroyImage(Engine::get()->device, dstImage, nullptr);
-
-		Mat cvImg = imread((cv::String)filename);
-
-		std::remove(filename);
-
-		return cvImg;
+	void toggleDiffuseCam(UIItem* owner) {
+		sConst->toggleDiffWebcam();
+		sConst->updateSurfaceMat();
+		diffuseView->image->mat[0] = sConst->currentDiffuse();
 	}
 
-	void saveWebcamImage(UIItem* owner) {
-		Mat frame = webcamTexture::get()->webCam.webcamFrame;
+	void toggleNormalCam(UIItem* owner) {
+		sConst->toggleNormWebcam();
+		sConst->updateSurfaceMat();
+		normalView->image->mat[0] = sConst->currentNormal();
+	}
+
+	void toggleNormalType(UIItem* owner) {
+		sConst->toggleNormType();
+		if (sConst->OSNormTex != nullptr && sConst->TSNormTex == nullptr) {
+			sConst->transitionToTS(&staticObjects[staticObjects.size() - 1].mesh);
+		}
+		normalView->image->mat[0] = sConst->currentNormal();
+		sConst->updateSurfaceMat();
+	}
+
+	void loadNormalImage(UIItem* owner) {
+		string fileName = winFile::OpenFileDialog();
+		if (fileName != string("fail")) {
+			imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
+			sConst->loadNormal(loadedTexture);
+			sConst->normalIdx = 1 + sConst->normalType;
+			normalView->image->mat[0] = sConst->currentNormal();
+			normalTog->activestate = false;
+			normalTog->image->matidx = 1;
+		}
+		sConst->updateSurfaceMat();
+	}
+
+	void saveNormalImage(UIItem* owner) {
+		Mat saveNormal;
+		if (sConst->normalIdx == 0) {
+			saveNormal = webcamTexture::get()->webCam.webcamFrame;
+		}
+		else {
+			if (sConst->normalType) {
+				sConst->TSNormTex->getCVMat();
+				saveNormal = sConst->TSNormTex->texMat;
+			}
+			else {
+				sConst->OSNormTex->getCVMat();
+				saveNormal = sConst->OSNormTex->texMat;
+			}
+		}
 		string saveName = winFile::SaveFileDialog();
 		if (saveName != string("fail")) {
-			imwrite(saveName, frame);
+			imwrite(saveName, saveNormal);
+		}
+	}
+
+	void loadDiffuseImage(UIItem* owner) {
+		string fileName = winFile::OpenFileDialog();
+		if (fileName != string("fail")) {
+			imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
+			sConst->loadDiffuse(loadedTexture);
+			sConst->diffuseIdx = 1;
+			diffuseView->image->mat[0] = sConst->currentDiffuse();
+			diffuseTog->activestate = false;
+			diffuseTog->image->matidx = 1;
+		}
+		sConst->updateSurfaceMat();
+	}
+
+	void saveDiffuseImage(UIItem* owner) {
+		Mat saveDiffuse;
+		if (sConst->diffuseIdx == 0) {
+			saveDiffuse = webcamTexture::get()->webCam.webcamFrame;
+		}
+		else {
+			sConst->diffTex->getCVMat();
+			saveDiffuse = sConst->diffTex->texMat;
+		}
+		string saveName = winFile::SaveFileDialog();
+		if (saveName != string("fail")) {
+			imwrite(saveName, saveDiffuse);
 		}
 	}
 
 	void createNormalButtons(UIItem* owner) {
-		//shouldRenderOSN = true;
-		//mapGenerator.setupOSExtractor();
+
+		if (staticObjects.size() == 0) {
+			return;
+		}
+
+		std::function<void(UIItem*)> toggleWebcam = bind(&Application::toggleNormalCam, this, placeholders::_1);
+		std::function<void(UIItem*)> toggleType = bind(&Application::toggleNormalType, this, placeholders::_1);
+		std::function<void(UIItem*)> saveNorm = bind(&Application::saveNormalImage, this, placeholders::_1);
+		std::function<void(UIItem*)> loadNorm = bind(&Application::loadNormalImage, this, placeholders::_1);
+
+		sConst->generateOSMap(&staticObjects[staticObjects.size()-1].mesh);
+		sConst->normalAvailable = true;
+		sConst->normalIdx = 1;
+		sConst->updateSurfaceMat();
+
+		SurfacePanel->removeItem(3);
 		
 		vector<UIImage*> images;
 		NormalButtons->getImages(images);
 
 		for (UIImage* image : images) {
 			for (Material* mat : image->mat) {
-				if (mat != webcamMaterial) {
+				if (mat != sConst->webcamMaterial) {
 					mat->cleanup();
 				}
 			}
-
 			image->mesh.cleanup();
-
 		}
 		
 		NormalButtons->Items.clear();
@@ -597,35 +417,49 @@ private:
 		imageData* OpenButton = new OPENBUTTON;
 		imageData* SaveButton = new SAVEBUTTON;
 
+		imageData* osType = new OSBUTTON;
+		imageData* tsType = new TANGENTSPACE;
+
+		imageData* diffToNorm = new D2NBUTTON;
+
 		Button* normalText = new Button(0.0f, 0.0f, 2.0f, 1.0f, normal);
 
-		Checkbox* normalWebcamToggle = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, webcamOn, webcamOff);
-		normalWebcamToggle->Name = "ToggleDiffuseWebcam";
-		normalWebcamToggle->activestate = false;
-		normalWebcamToggle->image->matidx = 1;
+		normalTog = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, webcamOn, webcamOff);
+		normalTog->Name = "ToggleNormalWebcam";
+		normalTog->activestate = false;
+		normalTog->image->matidx = 1;
+		normalTog->setClickFunction(toggleWebcam);
+
+		Checkbox* mapTypeToggle = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, osType, tsType);
+		mapTypeToggle->Name = "ToggleNormalType";
+		mapTypeToggle->setClickFunction(toggleType);
+
+		Button* copyLayout = new Button(0.0f, 0.0f, 1.0f, 1.0f, diffToNorm);
+		copyLayout->Name = "copyDiffLayout";
 
 		Button* normalLoad = new Button(0.0f, 0.0f, 1.0f, 1.0f, OpenButton);
 		normalLoad->Name = "LoadNormal";
+		normalLoad->setClickFunction(loadNorm);
 
 		Button* normalSave = new Button(0.0f, 0.0f, 1.0f, 1.0f, SaveButton);
 		normalSave->Name = "SaveNormal";
+		normalSave->setClickFunction(saveNorm);
 
 		NormalButtons->addItem(normalText);
-		NormalButtons->addItem(normalWebcamToggle);
+		NormalButtons->addItem(normalTog);
+		NormalButtons->addItem(mapTypeToggle);
+		NormalButtons->addItem(copyLayout);
 		NormalButtons->addItem(normalLoad);
 		NormalButtons->addItem(normalSave);
 
 		NormalButtons->arrangeItems();
 		NormalButtons->updateDisplay();
 
-		if (OSNormal == nullptr) {
-			OSNormal = webcamMaterial;
-		}
+		normalView = new ImagePanel(0.0f, 0.0f, 1.0f, 0.71f, sConst->currentNormal(), true);
+		normalView->image->texHeight = 0.71f * normalView->image->texWidth;
+		normalView->updateDisplay();
 
-		ImagePanel* webImg = new ImagePanel(0.0f, 0.0f, 1.0f, 0.71f, OSNormal, true);
-		webImg->updateDisplay();
-
-		SurfacePanel->addItem(webImg);
+		SurfacePanel->addItem(normalView);
 		SurfacePanel->addItem(new spacer);
 		SurfacePanel->arrangeItems();
 	}
@@ -651,14 +485,41 @@ private:
 	}
 
 	void setPipelineIndex(UIItem* owner) {
-		engine->pipelineindex = engine->PipelineMap.at(owner->Name);
+		//engine->pipelineindex = engine->PipelineMap.at(owner->Name);
+		if (owner->Name == string("WebcamMat")) {
+			viewIndex = 0;
+		}
+		else if (owner->Name == string("SurfaceMat")) {
+			viewIndex = 1;
+		}
+		else if (owner->Name == string("Wireframe")) {
+			viewIndex = 2;
+		}
+		updatePipelineIndex();
+	}
+
+	void toggleLighting(UIItem* owner) {
+		lit = owner->activestate;
+		updatePipelineIndex();
+	}
+
+	void updatePipelineIndex() {
+		if ((viewIndex == 0 || viewIndex == 1) && lit) {
+			engine->pipelineindex = 1;
+		}
+		else if (viewIndex != 2) {
+			engine->pipelineindex = 0;
+		}
+		else if (viewIndex == 2) {
+			engine->pipelineindex = 3;
+		}
 	}
 
 	void loadStaticObject() {
 
 		try {
 			StaticObject newObject;
-			newObject.mat = webcamMaterial;
+			newObject.mat = sConst->surfaceMat;
 
 			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
 
@@ -687,10 +548,6 @@ private:
 
 	void cleanup() {
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
-			if (staticObjects[i].mat != webcamMaterial) {
-				staticObjects[i].mat->cleanup();
-			}
-
 			staticObjects[i].mesh.cleanup();
 		}
 
@@ -700,17 +557,15 @@ private:
 
 			for (UIImage *image : images) {
 				for (Material* mat : image->mat) {
-					if (mat != webcamMaterial) {
+					if (mat != sConst->webcamMaterial && !mat->cleaned) {
 						mat->cleanup();
 					}
 				}
-
 				image->mesh.cleanup();
-
 			}
 		}
 
-		webcamMaterial->cleanup();
+		sConst->cleanup();
 		engine->cleanup();
 	}
 
@@ -797,10 +652,10 @@ private:
 		ubo.proj = glm::perspective(glm::radians(camera.fov), engine->swapChainExtent.width / (float)engine->swapChainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
-		ubo.UVdistort[0] = 2*webcamView->extentx;
-		ubo.UVdistort[1] = (webcamView->posx) - webcamView->extentx;
-		ubo.UVdistort[2] = 2*webcamView->extenty;
-		ubo.UVdistort[3] = (webcamView->posy) - webcamView->extenty;
+		ubo.UVdistort[0] = 2*diffuseView->extentx;
+		ubo.UVdistort[1] = (diffuseView->posx) - diffuseView->extentx;
+		ubo.UVdistort[2] = 2*diffuseView->extenty;
+		ubo.UVdistort[3] = (diffuseView->posy) - diffuseView->extenty;
 
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
@@ -871,7 +726,7 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].mat->descriptorSets[currentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &staticObjects[i].mat->descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh.indices.size()), 1, 0, 0, 0);
 			}
@@ -891,26 +746,59 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, image->mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &image->mat[image->matidx]->descriptorSets[currentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &image->mat[image->matidx]->descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(image->mesh.indices.size()), 1, 0, 0, 0);
 			}
 		}
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
-		
-		for (uint32_t i = 0; i != staticObjects.size(); i++) {
-			if (staticObjects[i].isVisible) {
-				VkBuffer vertexBuffers[] = { staticObjects[i].mesh.vertexBuffer };
-				VkDeviceSize offsets[] = { 0 };
+		//vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
+		if (viewIndex == 1 && lit) {
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(sConst->renderPipeline)]);
 
-				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+			for (uint32_t i = 0; i != staticObjects.size(); i++) {
+				if (staticObjects[i].isVisible) {
+					VkBuffer vertexBuffers[] = { staticObjects[i].mesh.vertexBuffer };
+					VkDeviceSize offsets[] = { 0 };
 
-				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+					vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].mat->descriptorSets[currentFrame], 0, nullptr);
+					vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh.indices.size()), 1, 0, 0, 0);
+					//vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].mat->descriptorSets[currentFrame], 0, nullptr);
+					if (sConst->normalAvailable) {
+						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat->descriptorSets[currentFrame], 0, nullptr);
+					}
+					else {
+						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->surfaceMat->descriptorSets[currentFrame], 0, nullptr);
+					}
+
+					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh.indices.size()), 1, 0, 0, 0);
+				}
+			}
+		}
+		else {
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
+
+			for (uint32_t i = 0; i != staticObjects.size(); i++) {
+				if (staticObjects[i].isVisible) {
+					VkBuffer vertexBuffers[] = { staticObjects[i].mesh.vertexBuffer };
+					VkDeviceSize offsets[] = { 0 };
+
+					vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+					vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+					if (viewIndex == 1) {
+						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->currentDiffuse()->descriptorSets[currentFrame], 0, nullptr);
+					}
+					else {
+						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->webcamMaterial->descriptorSets[currentFrame], 0, nullptr);
+
+					}
+
+					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh.indices.size()), 1, 0, 0, 0);
+				}
 			}
 		}
 
@@ -922,6 +810,8 @@ private:
 	}
 };
 
+
+surfaceConstructor* surfaceConstructor::sinstance = nullptr;
 webcamTexture* webcamTexture::winstance = nullptr;
 Engine* Engine::enginstance = nullptr;
 

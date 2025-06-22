@@ -33,6 +33,8 @@
 #include"include/UV.h"
 #include"include/W.h"
 #include"include/NormalGenerator.h"
+#include"include/OS_BF.h"
+#include"include/TS_BF.h"
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -192,7 +194,8 @@ public:
 
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 
-	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorSetLayout diffuseDescriptorSetLayout;
+	VkDescriptorSetLayout diffNormDescriptorSetLayout;
 
 	VkExtent2D swapChainExtent;
 
@@ -202,7 +205,8 @@ public:
 
 	std::vector<void*> uniformBuffersMapped;
 
-	VkPipelineLayout pipelineLayout;
+	VkPipelineLayout diffusePipelineLayout;
+	VkPipelineLayout diffNormPipelineLayout;
 
 	std::vector<VkBuffer> uniformBuffers;
 

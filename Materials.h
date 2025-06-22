@@ -12,10 +12,23 @@ public:
 		createMaterial();
 	}
 
+	Material(Texture* defaultTex, Texture* normalTex) {
+		textures.push_back(defaultTex);
+		textures.push_back(normalTex);
+		createMaterial();
+	}
+
 	void cleanup(){
 		for (Texture* tex : textures) {
-			tex->cleanup();
+			if (tex != webcamTexture::get()) {
+				tex->cleanup();
+			}
 		}
+		vkDestroyDescriptorPool(Engine::get()->device, this->descriptorPool, nullptr);
+		cleaned = true;
+	}
+
+	void cleanupDescriptor() {
 		vkDestroyDescriptorPool(Engine::get()->device, this->descriptorPool, nullptr);
 	}
 
@@ -31,6 +44,8 @@ public:
 
 	void createDescriptorPool();
 	void createDescriptorSets();
+
+	bool cleaned = false;
 };
 
 #endif

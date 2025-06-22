@@ -245,6 +245,11 @@ public:
 
 	void addItem(UIItem *item);
 
+	void removeItem(uint32_t index) {
+		Items.erase(Items.begin() + index);
+		arrangeItems();
+	}
+
 	void updateDisplay();
 
 	void arrangeItems(); // Should be called any time there is a layout change
@@ -300,6 +305,11 @@ public:
 	void updateDisplay();
 
 	void arrangeItems(); // Should be called any time there is a layout change
+
+	void removeItem(uint32_t index) {
+		Items.erase(Items.begin() + index);
+		arrangeItems();
+	}
 
 	void getSubclasses(std::vector<UIItem*>& scs) {
 		scs.push_back(this);

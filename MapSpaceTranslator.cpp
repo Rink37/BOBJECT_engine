@@ -18,8 +18,6 @@ void NormalGen::createOSImageFromMat(Mat srcImg) {
 	objectSpaceMap.width = OSNormalMap.size().width;
 	objectSpaceMap.height = OSNormalMap.size().height;
 
-	cout << objectSpaceMap.width << " " << objectSpaceMap.height << endl;
-
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 
@@ -35,7 +33,7 @@ void NormalGen::createOSImageFromMat(Mat srcImg) {
 	VkImageCreateInfo imageInfo = {};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+	imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 	imageInfo.extent.width = objectSpaceMap.width;
 	imageInfo.extent.height = objectSpaceMap.height;
 	imageInfo.extent.depth = 1;
@@ -184,7 +182,7 @@ void NormalGen::createOSImageFromMat(Mat srcImg) {
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = objectSpaceMap.colour.image;
 	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+	viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	viewInfo.subresourceRange.baseMipLevel = 0;
 	viewInfo.subresourceRange.levelCount = 1;
