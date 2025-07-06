@@ -1,21 +1,10 @@
-﻿#include"tiny_obj_loader.h"
-
-#include<iostream>
+﻿#include<iostream>
 #include<stdexcept>
 #include<cstdlib>
 #include<cstring>
 #include<vector>
-#include<optional>
-#include<set>
 #include<cstdint>
-#include<limits>
-#include<algorithm>
-#include<fstream>
-#include<array>
-#include<chrono>
-#include<thread>
-#include<unordered_map>
-#include <opencv2/opencv.hpp>
+#include<opencv2/opencv.hpp>
 
 #include"Bobject_Engine.h"
 #include"InputManager.h"
@@ -89,9 +78,10 @@ private:
 
 	vector<UIItem*> canvas{};
 
-	vArrangement* ObjectButtons;
+	vArrangement* ObjectButtons = nullptr;
 
-	double mouseX, mouseY = 0;
+	double mouseX = 0.0;
+	double mouseY = 0.0;
 
 	bool mouseDown = false;
 
@@ -131,6 +121,7 @@ private:
 
 		std::function<void(UIItem*)> enableWebcamFunct = bind(&Application::enableWebcam, this, placeholders::_1);
 		std::function<void(UIItem*)> disableWebcamFunct = bind(&Application::disableWebcam, this, placeholders::_1);
+		std::function<void(UIItem*)> toggleWebcamFunct = bind(&Application::toggleWebcam, this, placeholders::_1);
 		std::function<void(UIItem*)> configureWebcamFunct = bind(&Application::calibrateWebcam, this, placeholders::_1);
 
 		std::function<void(UIItem*)> loadObjectFunct = bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
@@ -149,16 +140,12 @@ private:
 		imageData* plb = new PLAYBUTTON;
 		imageData* pb = new PAUSEBUTTON;
 		imageData* sb = new SETTINGSBUTTON;
-
 		imageData* diffuse = new DIFFUSETEXT;
 		imageData* normal = new NORMALTEXT;
-
 		imageData* webcamOn = new WEBCAMONBUTTON;
 		imageData* webcamOff = new WEBCAMOFFBUTTON;
-
 		imageData* OpenButton = new OPENBUTTON;
 		imageData* SaveButton = new SAVEBUTTON;
-
 		imageData* plusButton = new PLUSBUTTON;
 
 		Button* diffuseTextPanel = new Button(0.0f, 0.0f, 1.0f, 1.0f, diffuse);
@@ -201,8 +188,9 @@ private:
 		Button *unlitRenderingButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, ub);
 		Button *wireframeRenderingButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, wb);
 		
-		Button* playButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, plb);
-		Button* pauseButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, pb);
+		Checkbox* webcamToggle = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, plb, pb);
+		webcamToggle->Name = "Webcam active toggle";
+		webcamToggle->setClickFunction(toggleWebcamFunct);
 		Button* settingsButton = new Button(0.0f, 0.0f, 1.0f, 1.0f, sb);
 
 		unlitRenderingButton->Name = "WebcamMat";
@@ -213,12 +201,6 @@ private:
 		
 		wireframeRenderingButton->Name = "Wireframe";
 		wireframeRenderingButton->setClickFunction(pipelinefunction);
-
-		playButton->Name = "PlayWebcam";
-		playButton->setClickFunction(enableWebcamFunct);
-		
-		pauseButton->Name = "PauseWebcam";
-		pauseButton->setClickFunction(disableWebcamFunct);
 		
 		settingsButton->Name = "ConfigureWebcam";
 		settingsButton->setClickFunction(configureWebcamFunct);
@@ -237,8 +219,7 @@ private:
 		litCheckbox->setClickFunction(lightingFunction);
 
 		Videobuttons->addItem(webcamImage);
-		Videobuttons->addItem(playButton);
-		Videobuttons->addItem(pauseButton);
+		Videobuttons->addItem(webcamToggle);
 		Videobuttons->addItem(settingsButton);
 		Videobuttons->addItem(litCheckbox);
 
@@ -377,6 +358,10 @@ private:
 		}
 	}
 
+	void contextConvertMap(UIItem* owner) {
+		sConst->contextConvert();
+	}
+
 	void createNormalButtons(UIItem* owner) {
 
 		if (staticObjects.size() == 0) {
@@ -387,9 +372,11 @@ private:
 		std::function<void(UIItem*)> toggleType = bind(&Application::toggleNormalType, this, placeholders::_1);
 		std::function<void(UIItem*)> saveNorm = bind(&Application::saveNormalImage, this, placeholders::_1);
 		std::function<void(UIItem*)> loadNorm = bind(&Application::loadNormalImage, this, placeholders::_1);
+		std::function<void(UIItem*)> convertImg = bind(&Application::contextConvertMap, this, placeholders::_1);
 
 		sConst->generateOSMap(&staticObjects[staticObjects.size()-1].mesh);
 		sConst->normalAvailable = true;
+		webcamTexture::get()->changeFormat(VK_FORMAT_R8G8B8A8_UNORM);
 		sConst->normalIdx = 1;
 		sConst->updateSurfaceMat();
 
@@ -436,6 +423,7 @@ private:
 
 		Button* copyLayout = new Button(0.0f, 0.0f, 1.0f, 1.0f, diffToNorm);
 		copyLayout->Name = "copyDiffLayout";
+		copyLayout->setClickFunction(convertImg);
 
 		Button* normalLoad = new Button(0.0f, 0.0f, 1.0f, 1.0f, OpenButton);
 		normalLoad->Name = "LoadNormal";
@@ -456,7 +444,7 @@ private:
 		NormalButtons->updateDisplay();
 
 		normalView = new ImagePanel(0.0f, 0.0f, 1.0f, 0.71f, sConst->currentNormal(), true);
-		normalView->image->texHeight = 0.71f * normalView->image->texWidth;
+		normalView->image->texHeight = static_cast<uint32_t>(0.71f * normalView->image->texWidth);
 		normalView->updateDisplay();
 
 		SurfacePanel->addItem(normalView);
@@ -470,6 +458,10 @@ private:
 
 	void disableWebcam(UIItem* owner) {
 		webcamTexture::get()->webCam.shouldUpdate = false;
+	}
+
+	void toggleWebcam(UIItem* owner) {
+		webcamTexture::get()->webCam.shouldUpdate = owner->activestate;
 	}
 
 	void calibrateWebcam(UIItem* owner) {
@@ -752,7 +744,6 @@ private:
 			}
 		}
 
-		//vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
 		if (viewIndex == 1 && lit) {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(sConst->renderPipeline)]);
 
@@ -765,7 +756,6 @@ private:
 
 					vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-					//vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelineLayout, 0, 1, &staticObjects[i].mat->descriptorSets[currentFrame], 0, nullptr);
 					if (sConst->normalAvailable) {
 						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat->descriptorSets[currentFrame], 0, nullptr);
 					}

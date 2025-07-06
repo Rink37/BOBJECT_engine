@@ -249,8 +249,8 @@ VkCommandBuffer NormalGen::drawOSMap(VkCommandBuffer commandbuffer, Mesh* mesh) 
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = objectSpaceMap.width;
-	viewport.height = objectSpaceMap.height;
+	viewport.width = static_cast<float>(objectSpaceMap.width);
+	viewport.height = static_cast<float>(objectSpaceMap.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	vkCmdSetViewport(commandbuffer, 0, 1, &viewport);

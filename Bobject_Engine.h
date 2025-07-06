@@ -199,7 +199,7 @@ public:
 
 	VkExtent2D swapChainExtent;
 
-	uint32_t mipLevels;
+	uint32_t mipLevels = 1;
 
 	VkSampler textureSampler;
 

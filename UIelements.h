@@ -23,7 +23,7 @@ struct UIImage {
 
 	UIMesh mesh;
 
-	uint32_t mipLevels;
+	uint32_t mipLevels = 0;
 
 	void UpdateVertices(float, float, float, float);
 
@@ -101,7 +101,7 @@ public:
 	bool isWebcam;
 
 	ImagePanel(float x, float y, float xsize, float ysize, Material* surf, bool iW) {
-		update(x, -1.0 * y, xsize, ysize);
+		update(x, -1.0f * y, xsize, ysize);
 		image->mat[0] = surf;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -128,7 +128,7 @@ public:
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
-		update(x, -1.0 * y, xsize, ysize);
+		update(x, -1.0f * y, xsize, ysize);
 	};
 
 	bool isInArea(double x, double y) {
@@ -172,7 +172,7 @@ public:
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
-		update(x, -1.0 * y, xsize, ysize);
+		update(x, -1.0f * y, xsize, ysize);
 	};
 
 	bool isInArea(double x, double y) {
@@ -229,7 +229,7 @@ public:
 	
 	hArrangement(float px, float py, float ex, float ey, float spc) {
 		this->posx = px;
-		this->posy = -1.0 * py;
+		this->posy = -1.0f * py;
 		this->anchorx = px;
 		this->anchory = py;
 		this->extentx = ex;
@@ -286,7 +286,7 @@ public:
 
 	vArrangement(float px, float py, float ex, float ey, float spc) {
 		posx = px;
-		posy = -1.0 * py;
+		posy = -1.0f * py;
 		anchorx = px;
 		anchory = py;
 		extentx = ex;

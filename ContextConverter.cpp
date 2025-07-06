@@ -15,46 +15,72 @@ float phi(float x)
 	int sign = 1;
 	if (x < 0)
 		sign = -1;
-	x = fabs(x) / sqrt(2.0);
+	x = fabs(x) / sqrt(2.0f);
 
 	double t = 1.0 / (1.0 + p * x);
 	double y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * exp(-x * x);
 
-	return 0.5 * (1.0 + sign * y);
+	return static_cast<float>(0.5 * (1.0 + sign * y));
 }
 
-Vec3b avgColourFromMask(Mat srcImg, Mat mask) {
-	Vec3f sumColour;
-	int sum = 0;
-	for (int x = 0; x != srcImg.rows; x++) {
-		for (int y = 0; y != srcImg.cols; y++) {
-			if (mask.at<uchar>(x, y) != 0 && srcImg.at<Vec3b>(x, y) != Vec3b(0, 0, 0)) {
-				sumColour += static_cast<Vec3f>(srcImg.at<Vec3b>(x, y))/255.0f;
-				sum++;
+Mat maskImage(Mat input, Mat mask) {
+	Mat output = input.clone();
+	for (int y = 0; y != input.rows; y++) {
+		for (int x = 0; x != input.cols; x++) {
+			if (mask.at<uchar>(y, x) != 0) {
+				output.at<Vec3b>(y, x) = input.at<Vec3b>(y,x);
+			}
+			else {
+				output.at<Vec3b>(y, x) = Vec3b(0, 0, 0);
 			}
 		}
 	}
-	if (sum != 0) {
-		return static_cast<Vec3b>(255 * sumColour / sum);
+	return output;
+}
+
+Vec3b avgColourFromMask(Mat srcImg, Mat mask, Rect ROI) {
+	
+	Vec3f sumColour;
+	int sum = 0;
+	int darksum = 0;
+	for (int y = ROI.y; y != ROI.y + ROI.height; y++) {
+		for (int x = ROI.x; x != ROI.x+ROI.width; x++){
+			if (mask.at<uchar>(y, x) != 0){//&& srcImg.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
+				if (srcImg.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
+					darksum++;
+					sum++;
+				}
+				else {
+					sumColour += static_cast<Vec3f>(srcImg.at<Vec3b>(y, x)) / 255.0f;
+					sum++;
+				}
+			}
+		}
+	}
+	if (sum != 0 && (static_cast<float>(darksum)/static_cast<float>(sum) < 0.5f)) {
+		return static_cast<Vec3b>(255 * sumColour / (sum-darksum));
 	}
 	else {
 		return Vec3b(0, 0, 0);
 	}
 }
 
-Vec3f stdFromMask(Mat srcImg, Mat mask, Vec3b avgColour) {
+Vec3f stdFromMask(Mat srcImg, Mat mask, Vec3b avgColour, Rect ROI) {
 	Vec3f currentColour;
 	float c0 = 0;
 	float c1 = 0;
 	float c2 = 0;
 	int sum = 0;
-	for (int x = 0; x != srcImg.rows; x++) {
-		for (int y = 0; y != srcImg.cols; y++) {
-			if (mask.at<uchar>(x, y) != 0) {
-				currentColour = static_cast<Vec3f>(srcImg.at<Vec3b>(x, y));
-				c0 += powf(currentColour[0] - static_cast<float>(avgColour[0]), 2.0f);
-				c1 += powf(currentColour[1] - static_cast<float>(avgColour[1]), 2.0f);
-				c2 += powf(currentColour[1] - static_cast<float>(avgColour[2]), 2.0f);
+	for (int y = ROI.y; y != ROI.y + ROI.height; y++) {
+		for (int x = ROI.x; x != ROI.x + ROI.width; x++) {
+			if (mask.at<uchar>(y, x) != 0) {
+				currentColour = static_cast<Vec3f>(srcImg.at<Vec3b>(y, x));
+				if (currentColour == Vec3f(0.0f, 0.0f, 0.0f)) {
+					continue;
+				}
+				c0 += (currentColour[0] * currentColour[0] - 2 * currentColour[0] * static_cast<float>(avgColour[0]) + static_cast<float>(avgColour[0] * avgColour[0]));
+				c1 += (currentColour[1] * currentColour[1] - 2 * currentColour[1] * static_cast<float>(avgColour[1]) + static_cast<float>(avgColour[1] * avgColour[1]));
+				c2 += (currentColour[2] * currentColour[2] - 2 * currentColour[2] * static_cast<float>(avgColour[2]) + static_cast<float>(avgColour[2] * avgColour[2]));
 				sum++;
 			}
 		}
@@ -80,38 +106,19 @@ float colourPval(Vec3b colour, Vec3b avgColour, Vec3f stdev) {
 }
 
 float pointDist(Point2f pointA, Point2f pointB){
-	return norm( pointA - pointB );
+	return static_cast<float>(norm( pointA - pointB ));
 }
 
 float colourDist(Vec3b colourA, Vec3b colourB) {
-	return norm( colourA - colourB );
+	return static_cast<float>(norm( colourA - colourB ));
 }
-
-Mat maskByValue(Mat input, int val) {
-	Mat output = input.clone();
-	for (int x = 0; x != input.rows; x++) {
-		for (int y = 0; y != input.cols; y++) {
-			if (static_cast<int>(input.at<int>(x, y)) == val) {
-				output.at<int>(x, y) = 255;
-			}
-			else {
-				output.at<int>(x, y) = 0;
-			}
-		}
-	}
-	return output;
-}
-
 void NormalGen::contextualConvertMap(Mat srcImg) {
 
 	// Function attempts to map the object-space normal map so that each different colour in the input image appears as a flat plane on the result
 
-	// Currently experiences an issue where colour filtering fails close to edges because the closest detected colour belongs to a different island
-	// We need some method of segmenting the islands
+	// I'm working on optimization currently: For simplicity it is assumed that any opencv function is the fastest way to perform that operation
 
-	Mat srcImgSegment = srcImg.clone();
 	Mat segmentMask;
-	Mat segmentMask2;
 	Mat srcMap;
 	Mat outMap;
 	Mat islands;
@@ -123,18 +130,29 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 	outMap = srcMap.clone();
 	Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
 
-	cvtColor(srcMap, islands, COLOR_BGR2GRAY);
+	int val;
+
+	// First we want to separate unique UV islands so that we can process islands separately
+
+	Mat trackingMap;
+	resize(srcMap, trackingMap, Size(512 * srcImg.cols / srcImg.rows, 512), INTER_LINEAR);
+	Mat trackingImg;
+	resize(srcImg, trackingImg, Size(512 * srcImg.cols / srcImg.rows, 512), INTER_LINEAR);
+
+	Mat srcImgSegment = trackingImg.clone();
+
+	float scalefac = static_cast<float>(srcImg.rows) / 512.0f;
+
+	cvtColor(trackingMap, islands, COLOR_BGR2GRAY);
 	threshold(islands, islands, 1, 255, THRESH_BINARY);
 
-	int val;
-	
 	connectedComponents(islands, islandMarkers);
 	
 	for (int x = 0; x != islandMarkers.rows; x++) {
 		for (int y = 0; y != islandMarkers.cols; y++) {
 			val = islandMarkers.at<int>(x, y)+1;
 			islandMarkers.at<int>(x, y) = val;
-			if (val > 1 && (find(islandUniqueMarkers.begin(), islandUniqueMarkers.end(), val) == islandUniqueMarkers.end())) {
+			if (val >= 0 && (find(islandUniqueMarkers.begin(), islandUniqueMarkers.end(), val) == islandUniqueMarkers.end())) {
 				islandUniqueMarkers.push_back(val);
 			}
 		}
@@ -145,58 +163,35 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 	Mat mainOpening;
 	Mat twoDimage;
 
+	uint32_t imageSize = trackingImg.rows * trackingImg.cols;
+	uint32_t segmentSize = imageSize;
+
 	int K = 25;
+	int tempK = K;
+	Rect segmentRect;
 	int attempts = 10;
 
 	Mat label;
 	Mat center;
 	TermCriteria criteria(3, 10, 1.0);
 
-	Mat maskedImage = srcImg.clone();
-	Mat grayMask;
-	Mat threshed;
-	Mat opening;
+	Mat opening = trackingImg.clone();
+	cvtColor(opening, opening, COLOR_BGR2GRAY);
 	Mat sure_bg;
 	Mat sure_fg;
 	Mat dist_transform;
 	Mat unknown;
 	Mat markers;
 	Mat target;
-	Mat remaining;
-	Mat contours;
+	vector<vector<Point> > contours;
 
-	double minVal;
-	double maxVal;
-	Point minLoc;
-	Point maxLoc;
-
-	vector<Mat> totMarkers;
-	vector<Point2f> centroids;
-	vector<Vec3b> mapColours;
-	vector<Vec3b> avgColours;
-	vector<Vec3f> colourStdev;
-	vector<vector<int>> totUniqueMarkers;
-
-	vector<int> unique_markers;
 	int um;
 	int tot;
 
-	vector<vector<int>> indexes;
 	vector<int> tindexes;
 
 	Rect bBox;
 	Point2f centroid;
-
-	Vec3b thisMapColour;
-	Vec3b thisAvgColour;
-	Vec3f thisColourStd;
-
-	Vec3b closestMapColour;
-	Vec3b closestAvgColour;
-
-	vector<Point2f> tempCentroids;
-	vector<Vec3b> tempMapColours;
-	vector<Vec3b> tempAvgColours;
 
 	Vec3f calculatedColour;
 
@@ -208,29 +203,38 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 
 	int closeIndex = 0;
 
-	double matMax = 0;
-	double matMin = 0;
-	Point maxloc;
-	Point minloc;
+	//double matMax = 0;
+	//double matMin = 0;
+	//Point maxloc;
+	//Point minloc;
 	float minProb;
 
-	morphologyEx(srcImgSegment, mainOpening, MORPH_OPEN, kernel, Point(-1, -1), 2);
+	Vec3b SourceCol;
 
-	for (int m = 0; m != islandUniqueMarkers.size(); m++) {
+	//morphologyEx(trackingImg, mainOpening, MORPH_OPEN, kernel, Point(-1, -1), 2);
+	mainOpening = trackingImg.clone();
+
+	for (int m = 1; m != islandUniqueMarkers.size()-1; m++) {
 		islandMarker = islandUniqueMarkers[m];
-		threshold(islandMarkers, segmentMask, islandMarker - 1, 255, THRESH_BINARY);
-		threshold(islandMarkers, segmentMask2, islandMarker, 255, THRESH_BINARY);
-		subtract(segmentMask, segmentMask2, segmentMask);
+		inRange(islandMarkers, islandMarker, islandMarker, segmentMask);
 		segmentMask.convertTo(segmentMask, CV_8U);
 
-		totMarkers.clear();
-		centroids.clear();
-		mapColours.clear();
-		avgColours.clear();
-		colourStdev.clear();
-		totUniqueMarkers.clear();
-		unique_markers.clear();
-		indexes.clear();
+		segmentRect = boundingRect(segmentMask);
+		segmentSize = segmentRect.area();
+
+		tempK = 5 + static_cast<uint32_t>(sqrt(static_cast<float>(segmentSize) / static_cast<float>(imageSize)) * static_cast<float>(K));
+		
+		cout << "Segment " << m << "/" << islandUniqueMarkers.size() << " has " << tempK << " layers:" << endl;
+
+		vector<Mat> totMarkers; 
+		vector<Point2f> centroids;
+		vector<Vec3b> mapColours;
+		vector<Vec3b> avgColours;
+		vector<Vec3f> colourStdev;
+		vector<vector<int>> totUniqueMarkers;
+		vector<int> unique_markers;
+		vector<vector<int>> indexes;
+		vector<Rect> totRects;
 		tot = 0;
 
 		for (int x = 0; x != srcImgSegment.rows; x++) {
@@ -244,10 +248,23 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 			}
 		}
 
-		twoDimage = mainOpening.reshape(1, mainOpening.rows * mainOpening.cols);
+		//cv::namedWindow("Output");
+		//while (true) {
+		//	imshow("Output", srcImgSegment);
+		//	char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
+		//	if (c == 27) {
+		//		cv::destroyWindow("Output");
+		//		break;
+		//	}
+		//	if (getWindowProperty("Output", WND_PROP_VISIBLE) < 1) {
+		//		break;
+		//	}
+		//}
+
+		twoDimage = srcImgSegment.reshape(1, srcImgSegment.rows * srcImgSegment.cols);
 		twoDimage.convertTo(twoDimage, CV_32FC3);
 
-		kmeans(twoDimage, K, label, criteria, attempts, NULL, center);
+		kmeans(twoDimage, tempK, label, criteria, attempts, NULL, center);
 		center.convertTo(center, CV_8U);
 		label = label.reshape(1, 1);
 		label.convertTo(label, CV_8UC1);
@@ -258,28 +275,22 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 
 			cout << cluster << endl;
 
-			for (int x = 0; x != maskedImage.rows; x++) {
-				for (int y = 0; y != maskedImage.cols; y++) {
-					if (static_cast<int>(label.at<uchar>(0, x * maskedImage.cols + y)) == cluster) {
-						maskedImage.at<Vec3b>(x, y) = srcImg.at<Vec3b>(x, y);
+			// First we find threshed, which is an image representing the pixels of the image which are in the given cluster
+			for (int x = 0; x != opening.rows; x++) {
+				for (int y = 0; y != opening.cols; y++) {
+					if (static_cast<int>(label.at<uchar>(0, x * opening.cols + y)) == cluster) {
+						opening.at<uchar>(x, y) = 255;
 					}
 					else {
-						maskedImage.at<Vec3b>(x, y) = Vec3b(0, 0, 0);
+						opening.at<uchar>(x, y) = 0;
 					}
 				}
 			}
 
-			cvtColor(maskedImage, grayMask, COLOR_BGR2GRAY);
-			threshold(grayMask, threshed, 1, 255, THRESH_BINARY);
-
-			opening = threshed.clone();
-
 			dilate(opening, sure_bg, kernel, Point(-1, 1), 3);
 			distanceTransform(opening, dist_transform, DIST_L2, 5);
 
-			minMaxLoc(dist_transform, &minVal, &maxVal, &minLoc, &maxLoc);
-
-			threshold(dist_transform, sure_fg, 0.1 * maxVal, 255, 0);
+			threshold(dist_transform, sure_fg, 3.0, 255, 0);
 
 			sure_fg.convertTo(sure_fg, CV_8U);
 			subtract(sure_bg, sure_fg, unknown);
@@ -297,7 +308,8 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 				}
 			}
 
-			watershed(mainOpening, markers);
+			watershed(trackingImg, markers);
+			//resize(markers, markers, Size(srcImg.cols, srcImg.rows), INTER_LINEAR);
 
 			totMarkers.push_back(markers);
 
@@ -313,30 +325,35 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 			}
 
 			totUniqueMarkers.push_back(unique_markers);
-
+			
 			markers.convertTo(markers, CV_32F);
 
 			tindexes.clear();
 
 			for (int i = 0; i != unique_markers.size(); i++) {
 				um = unique_markers[i];
-				threshold(markers, target, um - 1, 255, THRESH_BINARY);
-				threshold(markers, remaining, um, 255, THRESH_BINARY);
-				subtract(target, remaining, target);
+				inRange(markers, um, um, target);
 				target.convertTo(target, CV_8U);
 
 				bBox = boundingRect(target);
-				centroid.x = static_cast<float>(bBox.x) + (static_cast<float>(bBox.width) / 2.0f);
-				centroid.y = static_cast<float>(bBox.y) + (static_cast<float>(bBox.height) / 2.0f);
 
-				if (avgColourFromMask(srcImgSegment, target) != Vec3b(0, 0, 0) && bBox.width * bBox.height > 50) {
-					//cout << bBox.width * bBox.height << endl;
+				if (bBox.width == srcImgSegment.cols && bBox.height == srcImgSegment.rows) {
+					continue;
+				}
+
+				SourceCol = avgColourFromMask(srcImgSegment, target, bBox);
+				
+				if (SourceCol != Vec3b(0, 0, 0) && bBox.area() > 20) {
+
+					centroid.x = (static_cast<float>(bBox.x) + (static_cast<float>(bBox.width) / 2.0f)) * scalefac;
+					centroid.y = (static_cast<float>(bBox.y) + (static_cast<float>(bBox.height) / 2.0f)) * scalefac;
 					
 					centroids.push_back(centroid);
 
-					mapColours.push_back(avgColourFromMask(srcMap, target));
-					avgColours.push_back(avgColourFromMask(srcImg, target));
-					colourStdev.push_back(stdFromMask(srcImg, target, avgColours[tot]));
+					mapColours.push_back(avgColourFromMask(trackingMap, target, bBox));
+					avgColours.push_back(SourceCol);
+					colourStdev.push_back(stdFromMask(trackingImg, target, SourceCol, bBox));
+					totRects.push_back(bBox);
 
 					tindexes.push_back(tot);
 					tot++;
@@ -352,7 +369,14 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 
 		// Generation loop
 
-		// This step is very slow - some elements could potentially be promoted to GPU operations
+		Vec3b thisMapColour;
+		Vec3b thisAvgColour;
+		Vec3f thisColourStd;
+
+		Vec3b closestMapColour;
+		Vec3b closestAvgColour;
+
+		resize(srcImgSegment, srcImgSegment, Size(srcImg.cols, srcImg.rows), INTER_LINEAR);
 
 		for (int cluster = 0; cluster < center.rows; cluster++) {
 			cout << cluster << endl;
@@ -372,64 +396,123 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 				thisAvgColour = avgColours[tindexes[i]];
 				thisColourStd = colourStdev[tindexes[i]];
 
-				threshold(markers, target, um - 1, 255, THRESH_BINARY);
-				threshold(markers, remaining, um, 255, THRESH_BINARY);
-				subtract(target, remaining, target);
+				inRange(markers, um, um, target);
+				target.convertTo(target, CV_32F);
 				GaussianBlur(target, target, Size(11, 11), 5.0, 5.0);
+				resize(target, target, Size(srcImg.cols, srcImg.rows), INTER_NEAREST);
 
-				tempCentroids.clear();
-				copy(centroids.begin(), centroids.end(), back_inserter(tempCentroids));
-				tempCentroids.erase(tempCentroids.begin() + tindexes[i]);
+				//cv::namedWindow("Output");
+				//while (true) {
+				//	imshow("Output", target);
+				//	char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
+				//	if (c == 27) {
+				//		cv::destroyWindow("Output");
+				//		break;
+				//	}
+				//	if (getWindowProperty("Output", WND_PROP_VISIBLE) < 1) {
+				//		break;
+				//	}
+				//}
+				
+				bBox = totRects[tindexes[i]];
 
-				tempMapColours.clear();
-				copy(mapColours.begin(), mapColours.end(), back_inserter(tempMapColours));
+				vector<Point2f> allCentroids;
+				std::copy(centroids.begin(), centroids.end(), back_inserter(allCentroids));
+				allCentroids.erase(allCentroids.begin() + tindexes[i]);
+
+				vector<Vec3b> tempMapColours;
+				std::copy(mapColours.begin(), mapColours.end(), back_inserter(tempMapColours));
 				tempMapColours.erase(tempMapColours.begin() + tindexes[i]);
 
-				tempAvgColours.clear();
-				copy(avgColours.begin(), avgColours.end(), back_inserter(tempAvgColours));
+				vector<Vec3b> tempAvgColours;
+				std::copy(avgColours.begin(), avgColours.end(), back_inserter(tempAvgColours));
 				tempAvgColours.erase(tempAvgColours.begin() + tindexes[i]);
 
-				for (int x = 0; x != target.rows; x++) {
-					for (int y = 0; y != target.cols; y++) {
-						if (srcImgSegment.at<Vec3b>(x, y) == Vec3b(0, 0, 0)) {
+				vector<int> idxsToKeep;
+
+				for (int j = 0; j != allCentroids.size(); j++) {
+					currentDist = pointDist(centroids[tindexes[i]], allCentroids[j]);
+					if (currentDist < 50 * scalefac) {
+						idxsToKeep.push_back(j);
+					}
+				}
+
+				vector<Point2f> tempCentroids;
+
+				for (int j = 0; j != idxsToKeep.size(); j++) {
+					tempCentroids.push_back(allCentroids[idxsToKeep[j]]);
+				}
+
+				for (int x = static_cast<int>((bBox.y - bBox.height) * scalefac); x != static_cast<int>((bBox.y + 2*bBox.height) * scalefac); x++) {
+					for (int y = static_cast<int>((bBox.x - bBox.width) * scalefac); y != static_cast<int>((bBox.x + 2*bBox.width) * scalefac); y++) {
+						if (x > srcImg.rows - 1 || x < 0) {
 							continue;
 						}
+						if (y > srcImg.cols - 1 || y < 0) {
+							continue;
+						}
+						//if (srcImgSegment.at<Vec3b>(x, y) == Vec3b(0, 0, 0)) {
+						//	continue;
+						//}
 						closeIndex = -1;
 						if (target.at<float>(x, y) > 0.1) {
+						//if (true){
+
 							coord.x = static_cast<float>(y);
 							coord.y = static_cast<float>(x);
+							
 							minDist = 10000.0f;
+							array<int, 2> closestPoints = { 0,0 };
+							int numOfMinDists = 0;
 							for (int j = 0; j != tempCentroids.size(); j++) {
 								currentDist = pointDist(coord, tempCentroids[j]);
 								if (currentDist < minDist) {
 									minDist = currentDist;
-									closeIndex = j;
+									closestPoints[1] = closestPoints[0];
+									closestPoints[0] = idxsToKeep[j];
+									closeIndex = idxsToKeep[j];
+									numOfMinDists++;
 								}
 							}
-							if (closeIndex == -1) {
-								continue;
+							if (numOfMinDists > 1) {
+								float totDist = pointDist(allCentroids[closestPoints[0]], allCentroids[closestPoints[1]]);
+								float gradient = static_cast<float>((allCentroids[closestPoints[0]].y - allCentroids[closestPoints[1]].y)) / static_cast<float>((allCentroids[closestPoints[0]].x - allCentroids[closestPoints[1]].x));
+								float intersect = allCentroids[closestPoints[0]].y - allCentroids[closestPoints[0]].x * gradient;
+								float invGradient = -1.0f / gradient;
+								float invIntersect = coord.y - coord.x * invGradient;
+								float intersectX = (invIntersect - intersect) / (gradient - invGradient);
+								float intersectY = gradient * intersectX + intersect;
+
+								Point2f intersectCoord;
+								intersectCoord.x = intersectX;
+								intersectCoord.y = intersectY;
+
+								float curDist = (pointDist(allCentroids[closestPoints[0]], intersectCoord)) / totDist;
+								closestAvgColour = tempAvgColours[closestPoints[0]] * (1-curDist) + tempAvgColours[closestPoints[1]] * curDist;
 							}
-							closestMapColour = tempMapColours[closeIndex];
-							closestAvgColour = tempAvgColours[closeIndex];
+							else {
+								if (closeIndex == -1) {
+									continue;
+								}
+								closestAvgColour = tempAvgColours[closeIndex];
+							}
 							minProb = colourPval(closestAvgColour, thisAvgColour, thisColourStd);
-							d = (colourPval(srcImg.at<Vec3b>(x, y), thisAvgColour, thisColourStd) - minProb) / (1 - minProb);
+							d = (colourPval(srcImg.at<Vec3b>(x, y), thisAvgColour, thisColourStd) - minProb) / (1 - minProb); 
 							if (d > 1.0f) {
 								d = 1.0f;
 							}
 							if (d < 0.0f) {
 								d = 0.0f;
 							}
-							d = 1 - d;
-							d *= d;
-							d = 1 - d;
+							d = 2.0f * d - d*d;
 							calculatedColour = (static_cast<Vec3f>(thisMapColour) * d + static_cast<Vec3f>(outMap.at<Vec3b>(x, y)) * (1 - d));
-							//calculatedColour = (static_cast<Vec3f>(thisMapColour) * d + static_cast<Vec3f>(closestMapColour) * (1 - d));
 							outMap.at<Vec3b>(x, y) = static_cast<Vec3b>(calculatedColour);
 						}
 					}
 				}
 			}
 		}
+		resize(srcImgSegment, srcImgSegment, Size(trackingImg.cols, trackingImg.rows), INTER_LINEAR);
 		//cv::namedWindow("Output");
 		//while (true) {
 		//	imshow("Output", outMap);

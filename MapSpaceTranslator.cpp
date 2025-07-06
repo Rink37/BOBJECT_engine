@@ -481,7 +481,7 @@ void NormalGen::prepareTSDescriptor() {
 VkCommandBuffer NormalGen::convertOStoTS(VkCommandBuffer commandbuffer, Mesh* mesh) {
 
 	VkClearValue clearValues[1] = {};
-	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+	clearValues[0].color = { {0.5f, 0.5f, 1.0f, 1.0f} };
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -497,8 +497,8 @@ VkCommandBuffer NormalGen::convertOStoTS(VkCommandBuffer commandbuffer, Mesh* me
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = tangentSpaceMap.width;
-	viewport.height = tangentSpaceMap.height;
+	viewport.width = static_cast<float>(tangentSpaceMap.width);
+	viewport.height = static_cast<float>(tangentSpaceMap.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	vkCmdSetViewport(commandbuffer, 0, 1, &viewport);

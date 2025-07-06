@@ -55,6 +55,8 @@ public:
 	Material* currentNormal() {
 		return Normal[normalIdx];
 	}
+
+	void contextConvert();
 	
 	void toggleDiffWebcam() {
 		// Simple function to flip whether the diffuse is a webcam view or not

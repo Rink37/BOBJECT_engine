@@ -10,9 +10,9 @@
 struct Texture {
 	bool cleaned = false;
 	
-	int texWidth;
-	int texHeight;
-	int texChannels;
+	uint32_t texWidth;
+	uint32_t texHeight;
+	uint32_t texChannels;
 
 	cv::Mat texMat;
 
@@ -46,6 +46,12 @@ class imageTexture : public Texture {
 public:
 	imageTexture() = default;
 
+	imageTexture(cv::Mat initMat) {
+		texMat = initMat;
+		transitionMatToImg();
+		createTextureImageView();
+	}
+
 	imageTexture(std::string filename, VkFormat format) {
 		// Image texture which is loaded from file
 		texMat = cv::imread(filename);
@@ -56,12 +62,12 @@ public:
 
 	imageTexture(imageData* iD) {
 		// Built-in image texture
-		imgData = iD;
-		createTextureImage();
+		//imgData = iD;
+		createTextureImage(iD);
 		createTextureImageView();
 	};
 
-	imageData* imgData = nullptr;
+	//imageData* imgData = nullptr;
 
 	uint32_t mipLevels = 0;
 
@@ -75,12 +81,15 @@ public:
 	}
 
 private:
-	void createTextureImage();
+	void createTextureImage(imageData*);
 	void createTextureImageView();
 };
 
 class webcamTexture : public Texture{
 public:
+	VkFormat textureFormat = VK_FORMAT_R8G8B8A8_SRGB;
+	VkFormat previousTextureFormat = VK_FORMAT_R8G8B8A8_SRGB;
+
 	static webcamTexture* get() {
 		if (nullptr == winstance) winstance = new webcamTexture;
 		return winstance;
@@ -117,6 +126,10 @@ public:
 
 	void getCVMat() {
 		texMat = webCam.webcamFrame;
+	}
+
+	void changeFormat(VkFormat newFormat) {
+		textureFormat = newFormat;
 	}
 
 private:
