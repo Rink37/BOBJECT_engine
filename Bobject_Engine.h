@@ -181,6 +181,7 @@ public:
 	VkDevice device;
 
 	VkCommandPool commandPool;
+	VkCommandPool computeCommandPool = nullptr;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
 	VkQueue computeQueue = nullptr;
@@ -200,8 +201,6 @@ public:
 	VkDescriptorSetLayout diffNormDescriptorSetLayout;
 
 	VkExtent2D swapChainExtent;
-
-	//uint32_t mipLevels = 1;
 
 	VkSampler textureSampler;
 
@@ -232,6 +231,9 @@ public:
 	void copyBuffer(VkBuffer, VkBuffer, VkDeviceSize);
 	VkCommandBuffer beginSingleTimeCommands();
 	void endSingleTimeCommands(VkCommandBuffer);
+
+	VkCommandBuffer beginSingleTimeComputeCommand();
+	void endSingleTimeComputeCommand(VkCommandBuffer);
 
 	VkShaderModule createShaderModule(const std::vector<unsigned char>&);
 
@@ -285,6 +287,7 @@ private:
 	void createDescriptorSetLayout();
 	void createGraphicsPipelines();
 	void createCommandPool();
+	void createComputeCommandPool();
 	void createColourResources();
 	void createDepthResources();
 	void createFramebuffers();

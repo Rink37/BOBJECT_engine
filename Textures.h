@@ -74,10 +74,11 @@ public:
 		createTextureImageView();
 	}
 
-	imageTexture(cv::Mat initMat, VkFormat format, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t ml) {
+	imageTexture(cv::Mat initMat, VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t ml) {
 		// Image texture created from an openCV image with non-standard properties
 		texMat = initMat;
 		textureFormat = format;
+		textureLayout = layout;
 		textureUsage = usage;
 		textureTiling = tiling;
 		mipLevels = ml;

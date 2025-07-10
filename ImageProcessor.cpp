@@ -124,11 +124,44 @@ void filter::createFilterPipeline() {
 void filter::createFilterTarget() {
 	filterTarget = new Texture;
 	filterTarget->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
-	filterTarget->textureUsage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Transfer dst might cause issues? I'm not sure yet
-	filterTarget->textureLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	filterTarget->textureUsage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Transfer dst might cause issues? I'm not sure yet
+	filterTarget->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	filterTarget->texWidth = texWidth;
 	filterTarget->texHeight = texHeight;
+	filterTarget->mipLevels = 1;
 	filterTarget->setup();
+}
+
+void filter::filterImage() {
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+
+	vkQueueWaitIdle(Engine::get()->computeQueue);
+
+	//source->transitionImageLayout(source->textureImage, source->textureFormat, VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, source->mipLevels);
+	filterTarget->transitionImageLayout(filterTarget->textureImage, filterTarget->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, filterTarget->mipLevels);
+
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipeline);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipelineLayout, 0, 1, &filterDescriptorSet, 0, 0);
+	vkCmdDispatch(commandBuffer, source->texWidth / 16, source->texHeight / 16, 1);
+
+	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
+
+	filterTarget->transitionImageLayout(filterTarget->textureImage, filterTarget->textureFormat, VK_IMAGE_LAYOUT_GENERAL, filterTarget->textureLayout, filterTarget->mipLevels);
+
+	filterTarget->getCVMat();
+
+	cv::namedWindow("Output");
+	while (true) {
+		cv::imshow("Output", filterTarget->texMat);
+		char c = (char)cv::waitKey(25); //Waits for us to press 'Esc', then exits
+		if (c == 27) {
+			cv::destroyWindow("Output");
+			break;
+		}
+		if (cv::getWindowProperty("Output", cv::WND_PROP_VISIBLE) < 1) {
+			break;
+		}
+	}
 }
 
 

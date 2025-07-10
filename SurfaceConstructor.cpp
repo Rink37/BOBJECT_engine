@@ -180,6 +180,7 @@ void surfaceConstructor::contextConvert() {
 		return;
 	}
 	filter Kuwahara(diffTex, new FILTERDEFAULTSHADER);
+	Kuwahara.filterImage();
 }
 
 //void surfaceConstructor::contextConvert() {

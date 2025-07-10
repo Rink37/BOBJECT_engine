@@ -13,7 +13,7 @@ public:
 	filter(Texture* src, shaderData* sd) {
 		src->getCVMat();
 		cv::Mat srcMat = src->texMat;
-		source = new imageTexture(srcMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+		source = new imageTexture(srcMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
 		texWidth = source->texWidth;
 		texHeight = source->texHeight;
 
@@ -25,6 +25,8 @@ public:
 		createFilterPipelineLayout();
 		createFilterPipeline();
 	}
+
+	void filterImage();
 private:
 	uint32_t filtertype = 0;
 	uint32_t texWidth = 0;
