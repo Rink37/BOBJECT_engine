@@ -1,7 +1,7 @@
 #include"SurfaceConstructor.h"
 #include"GenerateNormalMap.h"
 #include"ImageProcessor.h"
-#include"include/FilterDefault.h"
+#include"include/Kuwahara.h"
 
 using namespace std;
 
@@ -179,7 +179,7 @@ void surfaceConstructor::contextConvert() {
 	if (diffTex == nullptr || OSNormTex == nullptr) {
 		return;
 	}
-	filter Kuwahara(diffTex, new FILTERDEFAULTSHADER);
+	filter Kuwahara(diffTex, new KUWAHARASHADER);
 	Kuwahara.filterImage();
 }
 
