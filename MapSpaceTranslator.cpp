@@ -6,244 +6,23 @@ using namespace cv;
 using namespace std;
 
 void NormalGen::createOSImageFromMat(Mat srcImg) {
-
-	// Used to specify the image of the object space normal map
-
-	uchar* imgData = new uchar[srcImg.total() * 4];
-	cv::Mat continuousRGBA(srcImg.size(), CV_8UC4, imgData);
-	cv::cvtColor(srcImg, OSNormalMap, cv::COLOR_BGR2RGBA, 4);
-
-	delete[] imgData;
-
-	objectSpaceMap.width = OSNormalMap.size().width;
-	objectSpaceMap.height = OSNormalMap.size().height;
-
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-
-	VkDeviceSize imageSize = OSNormalMap.total() * OSNormalMap.elemSize();
-
-	Engine::get()->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-	void* data;
-	vkMapMemory(Engine::get()->device, stagingBufferMemory, 0, imageSize, 0, &data);
-	memcpy(data, OSNormalMap.ptr(), static_cast<size_t>(imageSize));
-	vkUnmapMemory(Engine::get()->device, stagingBufferMemory);
-
-	VkImageCreateInfo imageInfo = {};
-	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-	imageInfo.extent.width = objectSpaceMap.width;
-	imageInfo.extent.height = objectSpaceMap.height;
-	imageInfo.extent.depth = 1;
-	imageInfo.mipLevels = 1;
-	imageInfo.arrayLayers = 1;
-	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	if (vkCreateImage(Engine::get()->device, &imageInfo, nullptr, &objectSpaceMap.colour.image) != VK_SUCCESS) {
-		throw runtime_error("failed to create image!");
-	}
-
-	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(Engine::get()->device, objectSpaceMap.colour.image, &memRequirements);
-
-	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = Engine::get()->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	if (vkAllocateMemory(Engine::get()->device, &allocInfo, nullptr, &objectSpaceMap.colour.mem) != VK_SUCCESS) {
-		throw runtime_error("failed to allocate image memory!");
-	}
-
-	vkBindImageMemory(Engine::get()->device, objectSpaceMap.colour.image, objectSpaceMap.colour.mem, 0);
-
-	VkCommandBuffer transitionCommandBuffer = Engine::get()->beginSingleTimeCommands();
-
-	VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-	VkImageMemoryBarrier barrier{};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = oldLayout;
-	barrier.newLayout = newLayout;
-
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-	barrier.image = objectSpaceMap.colour.image;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-
-	VkPipelineStageFlags sourceStage;
-	VkPipelineStageFlags destinationStage;
-
-	barrier.srcAccessMask = 0;
-	barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-	sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-	destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-
-	vkCmdPipelineBarrier(
-		transitionCommandBuffer,
-		sourceStage, destinationStage,
-		0,
-		0, nullptr,
-		0, nullptr,
-		1, &barrier
-	);
-
-	Engine::get()->endSingleTimeCommands(transitionCommandBuffer);
-
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-
-	VkBufferImageCopy region{};
-	region.bufferOffset = 0;
-	region.bufferRowLength = 0;
-	region.bufferImageHeight = 0;
-
-	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	region.imageSubresource.mipLevel = 0;
-	region.imageSubresource.baseArrayLayer = 0;
-	region.imageSubresource.layerCount = 1;
-
-	region.imageOffset = { 0,0,0 };
-	region.imageExtent = {
-		objectSpaceMap.width,
-		objectSpaceMap.height,
-		1
-	};
-
-	vkCmdCopyBufferToImage(
-		commandBuffer,
-		stagingBuffer,
-		objectSpaceMap.colour.image,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		1,
-		&region
-	);
-
-	Engine::get()->endSingleTimeCommands(commandBuffer);
-
-	VkCommandBuffer transition2CommandBuffer = Engine::get()->beginSingleTimeCommands();
 	
-	oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-	VkImageMemoryBarrier barrier2{};
-	barrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier2.oldLayout = oldLayout;
-	barrier2.newLayout = newLayout;
-
-	barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-	barrier2.image = objectSpaceMap.colour.image;
-	barrier2.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-	barrier2.subresourceRange.baseMipLevel = 0;
-	barrier2.subresourceRange.levelCount = 1;
-	barrier2.subresourceRange.baseArrayLayer = 0;
-	barrier2.subresourceRange.layerCount = 1;
-
-	VkPipelineStageFlags sourceStage2;
-	VkPipelineStageFlags destinationStage2;
-
-	barrier2.srcAccessMask = 0;
-	barrier2.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-	sourceStage2 = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-	destinationStage2 = VK_PIPELINE_STAGE_TRANSFER_BIT;
-
-	vkCmdPipelineBarrier(
-		transition2CommandBuffer,
-		sourceStage2, destinationStage2,
-		0,
-		0, nullptr,
-		0, nullptr,
-		1, &barrier2
-	);
-
-	Engine::get()->endSingleTimeCommands(transition2CommandBuffer);
-
-	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);
-	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
-
-	VkImageViewCreateInfo viewInfo{};
-	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	viewInfo.image = objectSpaceMap.colour.image;
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = 1;
-	viewInfo.subresourceRange.baseArrayLayer = 0;
-	viewInfo.subresourceRange.layerCount = 1;
-
-	if (vkCreateImageView(Engine::get()->device, &viewInfo, nullptr, &objectSpaceMap.colour.view) != VK_SUCCESS) {
-		throw runtime_error("failed to create texture image view!");
-	}
+	objectSpaceMap.colour = new imageTexture(srcImg, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
 
 }
 
 void NormalGen::prepareTSMap() {
-	tangentSpaceMap.width = objectSpaceMap.width;
-	tangentSpaceMap.height = objectSpaceMap.height;
+	tangentSpaceMap.colour = new Texture;
 
-	VkImageCreateInfo imageInfo = {};
-	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.format = MAP_COLOUR_FORMAT;
-	imageInfo.extent.width = tangentSpaceMap.width;
-	imageInfo.extent.height = tangentSpaceMap.height;
-	imageInfo.extent.depth = 1;
-	imageInfo.mipLevels = 1;
-	imageInfo.arrayLayers = 1;
-	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	tangentSpaceMap.colour->texWidth = objectSpaceMap.colour->texWidth;
+	tangentSpaceMap.colour->texHeight = objectSpaceMap.colour->texHeight;
+	tangentSpaceMap.colour->texChannels = 4;
+	tangentSpaceMap.colour->mipLevels = 1;
+	tangentSpaceMap.colour->textureFormat = MAP_COLOUR_FORMAT;
+	tangentSpaceMap.colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-	if (vkCreateImage(Engine::get()->device, &imageInfo, nullptr, &tangentSpaceMap.colour.image) != VK_SUCCESS) {
-		throw runtime_error("failed to create image!");
-	}
-
-	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(Engine::get()->device, tangentSpaceMap.colour.image, &memRequirements);
-
-	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = Engine::get()->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	if (vkAllocateMemory(Engine::get()->device, &allocInfo, nullptr, &tangentSpaceMap.colour.mem) != VK_SUCCESS) {
-		throw runtime_error("failed to allocate image memory!");
-	}
-
-	vkBindImageMemory(Engine::get()->device, tangentSpaceMap.colour.image, tangentSpaceMap.colour.mem, 0);
-
-	VkImageViewCreateInfo colorImageViewInfo = {};
-	colorImageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	colorImageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	colorImageViewInfo.format = MAP_COLOUR_FORMAT;
-	colorImageViewInfo.subresourceRange = {};
-	colorImageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	colorImageViewInfo.subresourceRange.baseMipLevel = 0;
-	colorImageViewInfo.subresourceRange.levelCount = 1;
-	colorImageViewInfo.subresourceRange.baseArrayLayer = 0;
-	colorImageViewInfo.subresourceRange.layerCount = 1;
-	colorImageViewInfo.image = tangentSpaceMap.colour.image;
-	if (vkCreateImageView(Engine::get()->device, &colorImageViewInfo, nullptr, &tangentSpaceMap.colour.view) != VK_SUCCESS) {
-		throw runtime_error("failed to create texture image view!");
-	}
+	tangentSpaceMap.colour->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	tangentSpaceMap.colour->textureImageView = tangentSpaceMap.colour->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 	array<VkAttachmentDescription, 1> attachmentDescriptions = {};
 	attachmentDescriptions[0].format = MAP_COLOUR_FORMAT;
@@ -288,9 +67,9 @@ void NormalGen::prepareTSMap() {
 	fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	fbufCreateInfo.renderPass = tangentSpaceMap.renderPass;
 	fbufCreateInfo.attachmentCount = 1;
-	fbufCreateInfo.pAttachments = &tangentSpaceMap.colour.view;
-	fbufCreateInfo.width = tangentSpaceMap.width;
-	fbufCreateInfo.height = tangentSpaceMap.height;
+	fbufCreateInfo.pAttachments = &tangentSpaceMap.colour->textureImageView;
+	fbufCreateInfo.width = tangentSpaceMap.colour->texWidth;
+	fbufCreateInfo.height = tangentSpaceMap.colour->texHeight;
 	fbufCreateInfo.layers = 1;
 
 	if (vkCreateFramebuffer(Engine::get()->device, &fbufCreateInfo, nullptr, &tangentSpaceMap.frameBuffer) != VK_SUCCESS) {
@@ -463,7 +242,7 @@ void NormalGen::prepareTSDescriptor() {
 
 	VkDescriptorImageInfo imageInfo{};
 	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	imageInfo.imageView = objectSpaceMap.colour.view;
+	imageInfo.imageView = objectSpaceMap.colour->textureImageView;
 	imageInfo.sampler = Engine::get()->textureSampler;
 
 	VkWriteDescriptorSet descriptorWrite{};
@@ -487,8 +266,8 @@ VkCommandBuffer NormalGen::convertOStoTS(VkCommandBuffer commandbuffer, Mesh* me
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassBeginInfo.renderPass = tangentSpaceMap.renderPass;
 	renderPassBeginInfo.framebuffer = tangentSpaceMap.frameBuffer;
-	renderPassBeginInfo.renderArea.extent.width = tangentSpaceMap.width;
-	renderPassBeginInfo.renderArea.extent.height = tangentSpaceMap.height;
+	renderPassBeginInfo.renderArea.extent.width = tangentSpaceMap.colour->texWidth;
+	renderPassBeginInfo.renderArea.extent.height = tangentSpaceMap.colour->texHeight;
 	renderPassBeginInfo.clearValueCount = 1;
 	renderPassBeginInfo.pClearValues = clearValues;
 
@@ -497,15 +276,15 @@ VkCommandBuffer NormalGen::convertOStoTS(VkCommandBuffer commandbuffer, Mesh* me
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(tangentSpaceMap.width);
-	viewport.height = static_cast<float>(tangentSpaceMap.height);
+	viewport.width = static_cast<float>(tangentSpaceMap.colour->texWidth);
+	viewport.height = static_cast<float>(tangentSpaceMap.colour->texHeight);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
 
 	VkRect2D scissor{};
 	scissor.offset = { 0,0 };
-	scissor.extent = { tangentSpaceMap.width, tangentSpaceMap.height };
+	scissor.extent = { tangentSpaceMap.colour->texWidth, tangentSpaceMap.colour->texHeight };
 	vkCmdSetScissor(commandbuffer, 0, 1, &scissor);
 
 	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, TSpipeline);
@@ -537,11 +316,7 @@ void NormalGen::cleanupTS() {
 	vkDestroyRenderPass(Engine::get()->device, tangentSpaceMap.renderPass, nullptr);
 	vkDestroyFramebuffer(Engine::get()->device, tangentSpaceMap.frameBuffer, nullptr);
 
-	vkFreeMemory(Engine::get()->device, tangentSpaceMap.colour.mem, nullptr);
-	vkDestroyImageView(Engine::get()->device, tangentSpaceMap.colour.view, nullptr);
-	vkDestroyImage(Engine::get()->device, tangentSpaceMap.colour.image, nullptr);
+	tangentSpaceMap.colour->cleanup();
+	objectSpaceMap.colour->cleanup();
 
-	vkFreeMemory(Engine::get()->device, objectSpaceMap.colour.mem, nullptr);
-	vkDestroyImageView(Engine::get()->device, objectSpaceMap.colour.view, nullptr);
-	vkDestroyImage(Engine::get()->device, objectSpaceMap.colour.image, nullptr);
 }

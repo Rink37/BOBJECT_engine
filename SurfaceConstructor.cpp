@@ -1,9 +1,14 @@
 #include"SurfaceConstructor.h"
 #include"GenerateNormalMap.h"
+#include"ImageProcessor.h"
+#include"include/FilterDefault.h"
 
 using namespace std;
 
 void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
+
+	// This function can potentially be simplified using default image operations
+
 	NormalGen generator;
 	generator.setupOSExtractor();
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
@@ -31,43 +36,14 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 	}
 
 	OSNormTex = new imageTexture;
-	OSNormTex->texWidth = generator.objectSpaceMap.width;
-	OSNormTex->texHeight = generator.objectSpaceMap.height;
+	OSNormTex->texWidth = generator.objectSpaceMap.colour->texWidth;
+	OSNormTex->texHeight = generator.objectSpaceMap.colour->texHeight;
 	OSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	OSNormTex->textureUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	OSNormTex->textureTiling = VK_IMAGE_TILING_LINEAR;
+	OSNormTex->mipLevels = 1;
 
-	Engine::get()->mipLevels = static_cast<uint32_t>(floor(log2(max(OSNormTex->texWidth, OSNormTex->texHeight)))) + 1;
-
-	VkImageCreateInfo imageCreateCi = {};
-	imageCreateCi.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageCreateCi.imageType = VK_IMAGE_TYPE_2D;
-	imageCreateCi.format = OSNormTex->textureFormat;
-	imageCreateCi.extent.width = generator.objectSpaceMap.width;
-	imageCreateCi.extent.height = generator.objectSpaceMap.height;
-	imageCreateCi.extent.depth = 1;
-	imageCreateCi.arrayLayers = 1;
-	imageCreateCi.mipLevels = 1;
-	imageCreateCi.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageCreateCi.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageCreateCi.tiling = VK_IMAGE_TILING_LINEAR;
-	imageCreateCi.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-	if (vkCreateImage(Engine::get()->device, &imageCreateCi, nullptr, &OSNormTex->textureImage) != VK_SUCCESS) {
-		throw runtime_error("Failed to create image");
-	}
-
-	VkMemoryRequirements memRequirements;
-	VkMemoryAllocateInfo memAllocInfo = {};
-	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	vkGetImageMemoryRequirements(Engine::get()->device, OSNormTex->textureImage, &memRequirements);
-	memAllocInfo.allocationSize = memRequirements.size;
-
-	memAllocInfo.memoryTypeIndex = Engine::get()->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	if (vkAllocateMemory(Engine::get()->device, &memAllocInfo, nullptr, &OSNormTex->textureImageMemory) != VK_SUCCESS) {
-		throw runtime_error("Failed to allocate memory");
-	}
-	if (vkBindImageMemory(Engine::get()->device, OSNormTex->textureImage, OSNormTex->textureImageMemory, 0) != VK_SUCCESS) {
-		throw runtime_error("Failed to bind image memory");
-	}
+	OSNormTex->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 	VkCommandBuffer copyCmd;
 
@@ -113,7 +89,7 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 	imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 	imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-	imageMemoryBarrier.image = generator.objectSpaceMap.colour.image;
+	imageMemoryBarrier.image = generator.objectSpaceMap.colour->textureImage;
 	imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 
 	vkCmdPipelineBarrier(
@@ -128,8 +104,8 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 	if (supportsBlit)
 	{
 		VkOffset3D blitSize;
-		blitSize.x = generator.objectSpaceMap.width;
-		blitSize.y = generator.objectSpaceMap.height;
+		blitSize.x = generator.objectSpaceMap.colour->texWidth;
+		blitSize.y = generator.objectSpaceMap.colour->texHeight;
 		blitSize.z = 1;
 		VkImageBlit imageBlitRegion{};
 		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -141,7 +117,7 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 
 		vkCmdBlitImage(
 			copyCmd,
-			generator.objectSpaceMap.colour.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			generator.objectSpaceMap.colour->textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			OSNormTex->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			1,
 			&imageBlitRegion,
@@ -154,13 +130,13 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 		imageCopyRegion.srcSubresource.layerCount = 1;
 		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		imageCopyRegion.dstSubresource.layerCount = 1;
-		imageCopyRegion.extent.width = generator.objectSpaceMap.width;
-		imageCopyRegion.extent.height = generator.objectSpaceMap.height;
+		imageCopyRegion.extent.width = generator.objectSpaceMap.colour->texWidth;
+		imageCopyRegion.extent.height = generator.objectSpaceMap.colour->texHeight;
 		imageCopyRegion.extent.depth = 1;
 
 		vkCmdCopyImage(
 			copyCmd,
-			generator.objectSpaceMap.colour.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			generator.objectSpaceMap.colour->textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			OSNormTex->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			1,
 			&imageCopyRegion);
@@ -191,23 +167,8 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 
 	vkDestroyFence(Engine::get()->device, copyFence, nullptr);
 
-	OSNormTex->generateMipmaps(OSNormTex->textureImage, OSNormTex->textureFormat, OSNormTex->texWidth, OSNormTex->texHeight, 1);
-
-	VkImageViewCreateInfo viewInfo{};
-	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	viewInfo.image = OSNormTex->textureImage;
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.format = OSNormTex->textureFormat; 
-
-	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = 1;
-	viewInfo.subresourceRange.baseArrayLayer = 0;
-	viewInfo.subresourceRange.layerCount = 1;
-
-	if (vkCreateImageView(Engine::get()->device, &viewInfo, nullptr, &OSNormTex->textureImageView) != VK_SUCCESS) {
-		throw runtime_error("failed to create texture image view!");
-	}
+	OSNormTex->generateMipmaps();
+	OSNormTex->textureImageView = OSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 	Normal[1] = new Material(OSNormTex);
 
@@ -216,18 +177,25 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 
 void surfaceConstructor::contextConvert() {
 	if (diffTex == nullptr || OSNormTex == nullptr) {
-		// We need both of these images to perform context conversion
 		return;
 	}
-	// OpenCV functions are used for conversion so we use CV matrices instead of engine images
-	OSNormTex->getCVMat();
-	diffTex->getCVMat();
-	NormalGen generator;
-	generator.OSNormalMap = OSNormTex->texMat;
-	generator.contextualConvertMap(diffTex->texMat);
-	//imageTexture* convertedOS = new imageTexture(generator.OSNormalMap);
-	//loadNormal(convertedOS);
+	filter Kuwahara(diffTex, new FILTERDEFAULTSHADER);
 }
+
+//void surfaceConstructor::contextConvert() {
+//	if (diffTex == nullptr || OSNormTex == nullptr) {
+//		// We need both of these images to perform context conversion
+//		return;
+//	}
+//	// OpenCV functions are used for conversion so we use CV matrices instead of engine images
+//	OSNormTex->getCVMat();
+//	diffTex->getCVMat();
+//	NormalGen generator;
+//	generator.OSNormalMap = OSNormTex->texMat;
+//	generator.contextualConvertMap(diffTex->texMat);
+//	//imageTexture* convertedOS = new imageTexture(generator.OSNormalMap);
+//	//loadNormal(convertedOS);
+//}
 
 void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 	NormalGen generator;
@@ -259,41 +227,14 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 	}
 
 	TSNormTex = new imageTexture;
-	TSNormTex->texWidth = generator.tangentSpaceMap.width;
-	TSNormTex->texHeight = generator.tangentSpaceMap.height;
+	TSNormTex->texWidth = generator.tangentSpaceMap.colour->texWidth;
+	TSNormTex->texHeight = generator.tangentSpaceMap.colour->texHeight;
 	TSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	TSNormTex->textureUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	TSNormTex->textureTiling = VK_IMAGE_TILING_LINEAR;
+	TSNormTex->mipLevels = 1;
 
-	VkImageCreateInfo imageCreateCi = {};
-	imageCreateCi.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageCreateCi.imageType = VK_IMAGE_TYPE_2D;
-	imageCreateCi.format = TSNormTex->textureFormat;
-	imageCreateCi.extent.width = generator.tangentSpaceMap.width;
-	imageCreateCi.extent.height = generator.tangentSpaceMap.height;
-	imageCreateCi.extent.depth = 1;
-	imageCreateCi.arrayLayers = 1;
-	imageCreateCi.mipLevels = 1;
-	imageCreateCi.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageCreateCi.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageCreateCi.tiling = VK_IMAGE_TILING_LINEAR;
-	imageCreateCi.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-	if (vkCreateImage(Engine::get()->device, &imageCreateCi, nullptr, &TSNormTex->textureImage) != VK_SUCCESS) {
-		throw runtime_error("Failed to create image");
-	}
-
-	VkMemoryRequirements memRequirements;
-	VkMemoryAllocateInfo memAllocInfo = {};
-	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	vkGetImageMemoryRequirements(Engine::get()->device, TSNormTex->textureImage, &memRequirements);
-	memAllocInfo.allocationSize = memRequirements.size;
-
-	memAllocInfo.memoryTypeIndex = Engine::get()->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	if (vkAllocateMemory(Engine::get()->device, &memAllocInfo, nullptr, &TSNormTex->textureImageMemory) != VK_SUCCESS) {
-		throw runtime_error("Failed to allocate memory");
-	}
-	if (vkBindImageMemory(Engine::get()->device, TSNormTex->textureImage, TSNormTex->textureImageMemory, 0) != VK_SUCCESS) {
-		throw runtime_error("Failed to bind image memory");
-	}
+	TSNormTex->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 	VkCommandBuffer copyCmd;
 
@@ -339,7 +280,7 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 	imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 	imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-	imageMemoryBarrier.image = generator.tangentSpaceMap.colour.image;
+	imageMemoryBarrier.image = generator.tangentSpaceMap.colour->textureImage;
 	imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 
 	vkCmdPipelineBarrier(
@@ -354,8 +295,8 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 	if (supportsBlit)
 	{
 		VkOffset3D blitSize;
-		blitSize.x = generator.tangentSpaceMap.width;
-		blitSize.y = generator.tangentSpaceMap.height;
+		blitSize.x = generator.tangentSpaceMap.colour->texWidth;
+		blitSize.y = generator.tangentSpaceMap.colour->texHeight;
 		blitSize.z = 1;
 		VkImageBlit imageBlitRegion{};
 		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -367,7 +308,7 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 
 		vkCmdBlitImage(
 			copyCmd,
-			generator.tangentSpaceMap.colour.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			generator.tangentSpaceMap.colour->textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			TSNormTex->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			1,
 			&imageBlitRegion,
@@ -380,13 +321,13 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 		imageCopyRegion.srcSubresource.layerCount = 1;
 		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		imageCopyRegion.dstSubresource.layerCount = 1;
-		imageCopyRegion.extent.width = generator.tangentSpaceMap.width;
-		imageCopyRegion.extent.height = generator.tangentSpaceMap.height;
+		imageCopyRegion.extent.width = generator.tangentSpaceMap.colour->texWidth;
+		imageCopyRegion.extent.height = generator.tangentSpaceMap.colour->texHeight;
 		imageCopyRegion.extent.depth = 1;
 
 		vkCmdCopyImage(
 			copyCmd,
-			generator.tangentSpaceMap.colour.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			generator.tangentSpaceMap.colour->textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			TSNormTex->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			1,
 			&imageCopyRegion);
@@ -417,23 +358,8 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 
 	vkDestroyFence(Engine::get()->device, copyFence, nullptr);
 
-	TSNormTex->generateMipmaps(TSNormTex->textureImage, TSNormTex->textureFormat, TSNormTex->texWidth, TSNormTex->texHeight, 1);
-
-	VkImageViewCreateInfo viewInfo{};
-	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	viewInfo.image = TSNormTex->textureImage;
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.format = TSNormTex->textureFormat;
-
-	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = 1;
-	viewInfo.subresourceRange.baseArrayLayer = 0;
-	viewInfo.subresourceRange.layerCount = 1;
-
-	if (vkCreateImageView(Engine::get()->device, &viewInfo, nullptr, &TSNormTex->textureImageView) != VK_SUCCESS) {
-		throw runtime_error("failed to create texture image view!");
-	}
+	TSNormTex->generateMipmaps();
+	TSNormTex->textureImageView = TSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 	Normal[2] = new Material(TSNormTex);
 	generator.cleanupTS();

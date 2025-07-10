@@ -171,7 +171,7 @@ void Engine::createLogicalDevice() {
 	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
 	vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+	set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() , indices.computeFamily.value() };
 
 	float queuePriority = 1.0f;
 	for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -191,7 +191,7 @@ void Engine::createLogicalDevice() {
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-	createInfo.queueCreateInfoCount = static_cast<uint32_t>(validationLayers.size());
+	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
 	createInfo.pEnabledFeatures = &deviceFeatures;
@@ -213,6 +213,7 @@ void Engine::createLogicalDevice() {
 
 	vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
 	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+	vkGetDeviceQueue(device, indices.computeFamily.value(), 0, &computeQueue);
 }
 
 void Engine::createSwapChain() {
@@ -775,7 +776,7 @@ void Engine::createTextureSampler() {
 
 	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = static_cast<float>(mipLevels);
+	samplerInfo.maxLod = 10000.0f;
 
 	if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
 		throw runtime_error("failed to create texture sampler!");
@@ -1041,6 +1042,10 @@ QueueFamilyIndices Engine::findQueueFamilies(VkPhysicalDevice device) {
 			indices.graphicsFamily = i;
 		}
 
+		if ((queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) && ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0)) {
+			indices.computeFamily = i;
+		}
+
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
@@ -1052,6 +1057,15 @@ QueueFamilyIndices Engine::findQueueFamilies(VkPhysicalDevice device) {
 			break;
 		}
 		i++;
+	}
+
+	if (!indices.isComplete()) {
+		for (const auto& queueFamily : queueFamilies) {
+			if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) {
+				indices.computeFamily = i;
+				break;
+			}
+		}
 	}
 
 	return indices;

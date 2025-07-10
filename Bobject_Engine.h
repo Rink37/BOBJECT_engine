@@ -138,9 +138,10 @@ namespace std {
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
 	std::optional<uint32_t> presentFamily;
+	std::optional<uint32_t> computeFamily;
 
 	const bool isComplete() {
-		return graphicsFamily.has_value() && presentFamily.has_value();
+		return graphicsFamily.has_value() && presentFamily.has_value() && computeFamily.has_value();
 	}
 };
 
@@ -182,6 +183,7 @@ public:
 	VkCommandPool commandPool;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
+	VkQueue computeQueue = nullptr;
 
 	VkRenderPass renderPass;
 
@@ -199,7 +201,7 @@ public:
 
 	VkExtent2D swapChainExtent;
 
-	uint32_t mipLevels = 1;
+	//uint32_t mipLevels = 1;
 
 	VkSampler textureSampler;
 
@@ -245,6 +247,7 @@ public:
 
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
+
 private:
 	static Engine* enginstance;
 	Engine() = default;

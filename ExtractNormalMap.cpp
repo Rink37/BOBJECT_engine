@@ -5,55 +5,17 @@
 using namespace std;
 
 void NormalGen::prepareOSMap() {
-	objectSpaceMap.width = MAPDIM;
-	objectSpaceMap.height = MAPDIM;
+	objectSpaceMap.colour = new Texture;
 
-	VkImageCreateInfo imageInfo = {};
-	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.format = MAP_COLOUR_FORMAT;
-	imageInfo.extent.width = objectSpaceMap.width;
-	imageInfo.extent.height = objectSpaceMap.height;
-	imageInfo.extent.depth = 1;
-	imageInfo.mipLevels = 1;
-	imageInfo.arrayLayers = 1;
-	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	objectSpaceMap.colour->texWidth = MAPDIM;
+	objectSpaceMap.colour->texHeight = MAPDIM;
+	objectSpaceMap.colour->texChannels = 4;
+	objectSpaceMap.colour->mipLevels = 1;
+	objectSpaceMap.colour->textureFormat = MAP_COLOUR_FORMAT;
+	objectSpaceMap.colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-	if (vkCreateImage(Engine::get()->device, &imageInfo, nullptr, &objectSpaceMap.colour.image) != VK_SUCCESS) {
-		throw runtime_error("failed to create image!");
-	}
-
-	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(Engine::get()->device, objectSpaceMap.colour.image, &memRequirements);
-
-	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = Engine::get()->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	if (vkAllocateMemory(Engine::get()->device, &allocInfo, nullptr, &objectSpaceMap.colour.mem) != VK_SUCCESS) {
-		throw runtime_error("failed to allocate image memory!");
-	}
-
-	vkBindImageMemory(Engine::get()->device, objectSpaceMap.colour.image, objectSpaceMap.colour.mem, 0);
-
-	VkImageViewCreateInfo colorImageViewInfo = {};
-	colorImageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	colorImageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	colorImageViewInfo.format = MAP_COLOUR_FORMAT;
-	colorImageViewInfo.subresourceRange = {};
-	colorImageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	colorImageViewInfo.subresourceRange.baseMipLevel = 0;
-	colorImageViewInfo.subresourceRange.levelCount = 1;
-	colorImageViewInfo.subresourceRange.baseArrayLayer = 0;
-	colorImageViewInfo.subresourceRange.layerCount = 1;
-	colorImageViewInfo.image = objectSpaceMap.colour.image;
-	
-	if (vkCreateImageView(Engine::get()->device, &colorImageViewInfo, nullptr, &objectSpaceMap.colour.view) != VK_SUCCESS) {
-		throw runtime_error("failed to create texture image view!");
-	}
+	objectSpaceMap.colour->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	objectSpaceMap.colour->textureImageView = objectSpaceMap.colour->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 	array<VkAttachmentDescription, 1> attachmentDescriptions = {};
 	attachmentDescriptions[0].format = MAP_COLOUR_FORMAT;
@@ -95,15 +57,15 @@ void NormalGen::prepareOSMap() {
 	}
 
 	VkImageView attachments[1];
-	attachments[0] = objectSpaceMap.colour.view;
+	attachments[0] = objectSpaceMap.colour->textureImageView;
 
 	VkFramebufferCreateInfo fbufCreateInfo = {};
 	fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	fbufCreateInfo.renderPass = objectSpaceMap.renderPass;
 	fbufCreateInfo.attachmentCount = 1;
 	fbufCreateInfo.pAttachments = attachments;
-	fbufCreateInfo.width = objectSpaceMap.width;
-	fbufCreateInfo.height = objectSpaceMap.height;
+	fbufCreateInfo.width = objectSpaceMap.colour->texWidth;
+	fbufCreateInfo.height = objectSpaceMap.colour->texHeight;
 	fbufCreateInfo.layers = 1;
 
 	if (vkCreateFramebuffer(Engine::get()->device, &fbufCreateInfo, nullptr, &objectSpaceMap.frameBuffer) != VK_SUCCESS) {
@@ -239,8 +201,8 @@ VkCommandBuffer NormalGen::drawOSMap(VkCommandBuffer commandbuffer, Mesh* mesh) 
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassBeginInfo.renderPass = objectSpaceMap.renderPass;
 	renderPassBeginInfo.framebuffer = objectSpaceMap.frameBuffer;
-	renderPassBeginInfo.renderArea.extent.width = objectSpaceMap.width;
-	renderPassBeginInfo.renderArea.extent.height = objectSpaceMap.height;
+	renderPassBeginInfo.renderArea.extent.width = objectSpaceMap.colour->texWidth;
+	renderPassBeginInfo.renderArea.extent.height = objectSpaceMap.colour->texHeight;
 	renderPassBeginInfo.clearValueCount = 1;
 	renderPassBeginInfo.pClearValues = clearValues;
 
@@ -249,15 +211,15 @@ VkCommandBuffer NormalGen::drawOSMap(VkCommandBuffer commandbuffer, Mesh* mesh) 
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(objectSpaceMap.width);
-	viewport.height = static_cast<float>(objectSpaceMap.height);
+	viewport.width = static_cast<float>(objectSpaceMap.colour->texWidth);
+	viewport.height = static_cast<float>(objectSpaceMap.colour->texHeight);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
 
 	VkRect2D scissor{};
 	scissor.offset = { 0,0 };
-	scissor.extent = { objectSpaceMap.width, objectSpaceMap.height };
+	scissor.extent = { objectSpaceMap.colour->texWidth, objectSpaceMap.colour->texHeight };
 	vkCmdSetScissor(commandbuffer, 0, 1, &scissor);
 
 	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, OSpipeline);
@@ -287,7 +249,6 @@ void NormalGen::cleanupOS() {
 	vkDestroyRenderPass(Engine::get()->device, objectSpaceMap.renderPass, nullptr);
 	vkDestroyFramebuffer(Engine::get()->device, objectSpaceMap.frameBuffer, nullptr);
 
-	vkFreeMemory(Engine::get()->device, objectSpaceMap.colour.mem, nullptr);
-	vkDestroyImageView(Engine::get()->device, objectSpaceMap.colour.view, nullptr);
-	vkDestroyImage(Engine::get()->device, objectSpaceMap.colour.image, nullptr);
+	objectSpaceMap.colour->cleanup();
+
 }

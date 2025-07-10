@@ -8,34 +8,51 @@
 #include<string>
 
 struct Texture {
-	bool cleaned = false;
-	
-	uint32_t texWidth;
-	uint32_t texHeight;
-	uint32_t texChannels;
+	// Structure describing an arbitrary image in the application
+	// I use a mix of OpenCV images and Vulkan images for various reasons, so it makes sense to have a structure which manages conversions
 
-	cv::Mat texMat;
+	uint32_t texWidth = 0;
+	uint32_t texHeight = 0; 
+	uint32_t texChannels = 0; 
 
-	VkImage textureImage = nullptr;
+	cv::Mat texMat; // The OpenCV matrix image
+	VkImage textureImage = nullptr; 
 	VkDeviceMemory textureImageMemory = nullptr;
 	VkImageView textureImageView = nullptr;
 
 	VkFormat textureFormat = VK_FORMAT_R8G8B8A8_SRGB;
 	VkImageLayout textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	VkImageUsageFlags textureUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	VkImageTiling textureTiling = VK_IMAGE_TILING_OPTIMAL;
+	uint32_t mipLevels = 0;
 
 	bool hasStencilComponent(VkFormat);
-	void createImage(uint32_t, uint32_t, uint32_t, VkSampleCountFlagBits, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
-	void transitionImageLayout(VkImage, VkFormat, VkImageLayout, VkImageLayout, uint32_t);
+	void createImage(VkSampleCountFlagBits, VkMemoryPropertyFlags);
+	void transitionImageLayout(VkImage, VkFormat, VkImageLayout, VkImageLayout, uint32_t); // We need to be able to explicitly pass an image for image copying functions
 	void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
-	void generateMipmaps(VkImage, VkFormat, int32_t, int32_t, uint32_t);
-	VkImageView createImageView(VkImage, VkFormat, VkImageAspectFlags, uint32_t);
+	void generateMipmaps();
+	VkImageView createImageView(VkImageAspectFlags);
 	
 	void getCVMat();
+	void destroyCVMat();
 	void transitionMatToImg();
 
 	virtual void setup() {
-
+		if (texWidth == 0) {
+			texWidth = 512;
+			texHeight = 512;
+			texChannels = 4;
+		}
+		if (mipLevels == 0) {
+			mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+		}
+		createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+		generateMipmaps();
+		textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	}
+
+	bool cleaned = false;
 
 	virtual void cleanup() {
 
@@ -43,11 +60,27 @@ struct Texture {
 };
 
 class imageTexture : public Texture {
+	// A specific class of texture which constructs an engine image using pixel data
+	// OpenCV matrixes are not constructed by default if construction arguments are not OpenCV images, but they can be constructed later - this is just to save memory
+	// If the image is constructed using an OpenCV matrix the matrix is stored since we assume the matrix will be used again
+	// If it won't be, we can destroy the matrix using destroyCVMat();
 public:
 	imageTexture() = default;
 
 	imageTexture(cv::Mat initMat) {
+		// Image texture which is created using a given openCV image
 		texMat = initMat;
+		transitionMatToImg();
+		createTextureImageView();
+	}
+
+	imageTexture(cv::Mat initMat, VkFormat format, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t ml) {
+		// Image texture created from an openCV image with non-standard properties
+		texMat = initMat;
+		textureFormat = format;
+		textureUsage = usage;
+		textureTiling = tiling;
+		mipLevels = ml;
 		transitionMatToImg();
 		createTextureImageView();
 	}
@@ -62,14 +95,13 @@ public:
 
 	imageTexture(imageData* iD) {
 		// Built-in image texture
-		//imgData = iD;
 		createTextureImage(iD);
 		createTextureImageView();
 	};
 
-	//imageData* imgData = nullptr;
+	void setup() {
 
-	uint32_t mipLevels = 0;
+	}
 
 	void cleanup() {
 		if (textureImage != nullptr) {
@@ -87,8 +119,6 @@ private:
 
 class webcamTexture : public Texture{
 public:
-	VkFormat textureFormat = VK_FORMAT_R8G8B8A8_SRGB;
-	VkFormat previousTextureFormat = VK_FORMAT_R8G8B8A8_SRGB;
 
 	static webcamTexture* get() {
 		if (nullptr == winstance) winstance = new webcamTexture;
@@ -103,9 +133,9 @@ public:
 	}
 
 	Webcam webCam;
-	VkBuffer textureBuffer;
-	VkDeviceMemory textureBufferMemory;
-	void* tBuffer;
+	VkBuffer textureBuffer = nullptr;
+	VkDeviceMemory textureBufferMemory = nullptr;
+	void* tBuffer = nullptr;
 	void updateWebcam();
 
 	void setup() {
@@ -140,6 +170,8 @@ private:
 	void updateWebcamImage();
 	void createWebcamImage();
 	void createWebcamTextureImageView();
+
+	VkDeviceSize imageSize = 0;
 };
 
 #endif

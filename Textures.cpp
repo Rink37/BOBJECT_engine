@@ -9,17 +9,18 @@ bool Texture::hasStencilComponent(VkFormat format) {
 
 void imageTexture::createTextureImage(imageData* imgData) {
 
-	const unsigned char* pixels = imgData->Bytes;
 	texWidth = imgData->Width;
 	texHeight = imgData->Height;
 	texChannels = imgData->Channels;
 	VkDeviceSize imageSize = texWidth * texHeight * texChannels;
 
-	if (!pixels) {
+	if (!imgData->Bytes) {
 		throw runtime_error("failed to load texture image!");
 	}
 
-	Engine::get()->mipLevels = static_cast<uint32_t>(floor(log2(max(texWidth, texHeight)))) + 1;
+	if (mipLevels == 0) {
+		mipLevels = static_cast<uint32_t>(floor(log2(max(texWidth, texHeight)))) + 1;
+	}
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
@@ -28,30 +29,30 @@ void imageTexture::createTextureImage(imageData* imgData) {
 
 	void* data;
 	vkMapMemory(Engine::get()->device, stagingBufferMemory, 0, imageSize, 0, &data);
-	memcpy(data, pixels, static_cast<size_t>(imageSize));
+	memcpy(data, imgData->Bytes, static_cast<size_t>(imageSize));
 	vkUnmapMemory(Engine::get()->device, stagingBufferMemory);
 
-	createImage(texWidth, texHeight, Engine::get()->mipLevels, VK_SAMPLE_COUNT_1_BIT, textureFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+	createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, Engine::get()->mipLevels);
+	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);
 	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
 
-	generateMipmaps(textureImage, textureFormat, texWidth, texHeight, Engine::get()->mipLevels);
+	generateMipmaps();
 }
 
 void imageTexture::createTextureImageView() {
-	textureImageView = createImageView(textureImage, textureFormat, VK_IMAGE_ASPECT_COLOR_BIT, Engine::get()->mipLevels);
+	textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
-VkImageView Texture::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels) {
+VkImageView Texture::createImageView(VkImageAspectFlags aspectFlags) {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	viewInfo.image = image;
+	viewInfo.image = textureImage;
 	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.format = format;
+	viewInfo.format = textureFormat;
 
 	viewInfo.subresourceRange.aspectMask = aspectFlags;
 	viewInfo.subresourceRange.baseMipLevel = 0;
@@ -67,7 +68,8 @@ VkImageView Texture::createImageView(VkImage image, VkFormat format, VkImageAspe
 	return imageView;
 }
 
-void Texture::createImage(uint32_t texWidth, uint32_t texHeight, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
+void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlags properties) {
+	
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -76,32 +78,32 @@ void Texture::createImage(uint32_t texWidth, uint32_t texHeight, uint32_t mipLev
 	imageInfo.extent.depth = 1;
 	imageInfo.mipLevels = mipLevels;
 	imageInfo.arrayLayers = 1;
-	imageInfo.format = format;
-	imageInfo.tiling = tiling;
+	imageInfo.format = textureFormat;
+	imageInfo.tiling = textureTiling;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = usage;
+	imageInfo.usage = textureUsage;
 
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	imageInfo.samples = numSamples;
 
-	if (vkCreateImage(Engine::get()->device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+	if (vkCreateImage(Engine::get()->device, &imageInfo, nullptr, &textureImage) != VK_SUCCESS) {
 		throw runtime_error("failed to create image!");
 	}
 
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(Engine::get()->device, image, &memRequirements);
+	vkGetImageMemoryRequirements(Engine::get()->device, textureImage, &memRequirements);
 
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
 	allocInfo.memoryTypeIndex = Engine::get()->findMemoryType(memRequirements.memoryTypeBits, properties);
 
-	if (vkAllocateMemory(Engine::get()->device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+	if (vkAllocateMemory(Engine::get()->device, &allocInfo, nullptr, &textureImageMemory) != VK_SUCCESS) {
 		throw runtime_error("failed to allocate image memory!");
 	}
 
-	vkBindImageMemory(Engine::get()->device, image, imageMemory, 0);
+	vkBindImageMemory(Engine::get()->device, textureImage, textureImageMemory, 0);
 }
 
 void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
@@ -223,9 +225,9 @@ void Texture::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, 
 	Engine::get()->endSingleTimeCommands(commandBuffer);
 }
 
-void Texture::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
+void Texture::generateMipmaps() {
 	VkFormatProperties formatProperties;
-	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, imageFormat, &formatProperties);
+	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProperties);
 
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
 		throw runtime_error("texture image format does not support linear blitting!");
@@ -235,7 +237,7 @@ void Texture::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWi
 
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.image = image;
+	barrier.image = textureImage;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -273,8 +275,8 @@ void Texture::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWi
 		blit.dstSubresource.baseArrayLayer = 0;
 		blit.dstSubresource.layerCount = 1;
 
-		vkCmdBlitImage(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		vkCmdBlitImage(commandBuffer, textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			1, &blit, VK_FILTER_LINEAR);
 
 		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -303,6 +305,11 @@ void Texture::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWi
 		1, &barrier);
 
 	Engine::get()->endSingleTimeCommands(commandBuffer);
+}
+
+void Texture::destroyCVMat() {
+	// Free the memory of the openCV matrix if it isn't needed later - saves memory by avoiding duplication
+	texMat.release();
 }
 
 void Texture::getCVMat() { 
@@ -504,7 +511,7 @@ void Texture::getCVMat() {
 }
 
 void Texture::transitionMatToImg() {
-	// Creates an engine image using an opencv Matrix
+	// Creates a Vulkan image using an opencv Matrix
 
 	uchar* matData = new uchar[texMat.total() * 4];
 	cv::Mat continuousRGBA(texMat.size(), CV_8UC4, matData);
@@ -515,8 +522,10 @@ void Texture::transitionMatToImg() {
 	texChannels = continuousRGBA.channels();
 
 	VkDeviceSize imageSize = continuousRGBA.total() * continuousRGBA.elemSize();
-	
-	Engine::get()->mipLevels = static_cast<uint32_t>(floor(log2(max(texWidth, texHeight)))) + 1;
+
+	if (mipLevels == 0) {
+		mipLevels = static_cast<uint32_t>(floor(log2(max(texWidth, texHeight)))) + 1;
+	}
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
@@ -528,28 +537,28 @@ void Texture::transitionMatToImg() {
 	memcpy(data, continuousRGBA.ptr(), static_cast<size_t>(imageSize));
 	vkUnmapMemory(Engine::get()->device, stagingBufferMemory);
 
-	createImage(texWidth, texHeight, Engine::get()->mipLevels, VK_SAMPLE_COUNT_1_BIT, textureFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+	createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, Engine::get()->mipLevels);
+	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);
 	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
 
-	generateMipmaps(textureImage, textureFormat, texWidth, texHeight, Engine::get()->mipLevels);
+	generateMipmaps();
 }
 
 void webcamTexture::createWebcamImage() {
 
 	webCam.getFrame();
-	cv::Mat camFrame = webCam.webcamFrame;
-	uchar* camData = new uchar[camFrame.total() * 4];
-	cv::Mat continuousRGBA(camFrame.size(), CV_8UC4, camData);
-	cv::cvtColor(camFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
+	uchar* camData = new uchar[webCam.webcamFrame.total() * 4];
+	cv::Mat continuousRGBA(webCam.webcamFrame.size(), CV_8UC4, camData);
+	cv::cvtColor(webCam.webcamFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
 
 	texWidth = continuousRGBA.size().width;
 	texHeight = continuousRGBA.size().height;
 	texChannels = continuousRGBA.channels();
+	mipLevels = 1;
 
 	VkDeviceSize imageSize = continuousRGBA.total() * continuousRGBA.elemSize();
 
@@ -558,28 +567,23 @@ void webcamTexture::createWebcamImage() {
 	vkMapMemory(Engine::get()->device, textureBufferMemory, 0, imageSize, 0, &tBuffer);
 	memcpy(tBuffer, continuousRGBA.ptr(), static_cast<size_t>(imageSize));
 
-	createImage(texWidth, texHeight, 1, VK_SAMPLE_COUNT_1_BIT, textureFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+	createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 	copyBufferToImage(textureBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	generateMipmaps(textureImage, textureFormat, texWidth, texHeight, 1);
+	generateMipmaps();
 }
 
 void webcamTexture::createWebcamTextureImageView() {
-	textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void webcamTexture::updateWebcam() {
 
 	webCam.getFrame();
-	cv::Mat camFrame = webCam.webcamFrame;
-	uchar* camData = new uchar[camFrame.total() * 4];
-	cv::Mat continuousRGBA(camFrame.size(), CV_8UC4, camData);
-	cv::cvtColor(camFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
-
-	texWidth = continuousRGBA.size().width;
-	texHeight = continuousRGBA.size().height;
-	texChannels = continuousRGBA.channels();
+	uchar* camData = new uchar[webCam.webcamFrame.total() * 4];
+	cv::Mat continuousRGBA(webCam.webcamFrame.size(), CV_8UC4, camData);
+	cv::cvtColor(webCam.webcamFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
 
 	VkDeviceSize imageSize = continuousRGBA.total() * continuousRGBA.elemSize();
 
@@ -588,13 +592,12 @@ void webcamTexture::updateWebcam() {
 	delete[] camData;
 	updateWebcamImage();
 
-}
+} 
 
 void webcamTexture::updateWebcamImage() {
 
-	transitionImageLayout(textureImage, previousTextureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 	copyBufferToImage(textureBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	generateMipmaps(textureImage, textureFormat, texWidth, texHeight, 1);
-	previousTextureFormat = textureFormat;
+	generateMipmaps();
 
 }

@@ -477,7 +477,6 @@ private:
 	}
 
 	void setPipelineIndex(UIItem* owner) {
-		//engine->pipelineindex = engine->PipelineMap.at(owner->Name);
 		if (owner->Name == string("WebcamMat")) {
 			viewIndex = 0;
 		}

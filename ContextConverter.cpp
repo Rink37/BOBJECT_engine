@@ -101,7 +101,7 @@ float colourPval(Vec3b colour, Vec3b avgColour, Vec3f stdev) {
 	colourP += 1 - phi(abs(colourZ[0]));
 	colourP += 1 - phi(abs(colourZ[1]));
 	colourP += 1 - phi(abs(colourZ[2]));
-	colourP /= 1.5f;
+	//colourP /= 0.5f;
 	return colourP;
 }
 
@@ -432,7 +432,7 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 
 				for (int j = 0; j != allCentroids.size(); j++) {
 					currentDist = pointDist(centroids[tindexes[i]], allCentroids[j]);
-					if (currentDist < 50 * scalefac) {
+					if (currentDist < 50 * scalefac * scalefac) {
 						idxsToKeep.push_back(j);
 					}
 				}
@@ -474,6 +474,7 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 									numOfMinDists++;
 								}
 							}
+							numOfMinDists = 0;
 							if (numOfMinDists > 1) {
 								float totDist = pointDist(allCentroids[closestPoints[0]], allCentroids[closestPoints[1]]);
 								float gradient = static_cast<float>((allCentroids[closestPoints[0]].y - allCentroids[closestPoints[1]].y)) / static_cast<float>((allCentroids[closestPoints[0]].x - allCentroids[closestPoints[1]].x));
@@ -504,7 +505,8 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 							if (d < 0.0f) {
 								d = 0.0f;
 							}
-							d = 2.0f * d - d*d;
+							//d = 2.0f * d - d*d;
+							//d *= d;
 							calculatedColour = (static_cast<Vec3f>(thisMapColour) * d + static_cast<Vec3f>(outMap.at<Vec3b>(x, y)) * (1 - d));
 							outMap.at<Vec3b>(x, y) = static_cast<Vec3b>(calculatedColour);
 						}
@@ -539,6 +541,6 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 			break;
 		}
 	}
-	imwrite("OSNormal_backup.png", outMap);
+	imwrite("OSNormal_sqbackup.png", outMap);
 	OSNormalMap = outMap;
 }
