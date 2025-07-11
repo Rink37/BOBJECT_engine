@@ -2,6 +2,8 @@
 #include"GenerateNormalMap.h"
 #include"ImageProcessor.h"
 #include"include/Kuwahara.h"
+#include"include/SobelX.h"
+#include"include/SobelY.h"
 
 using namespace std;
 
@@ -181,6 +183,11 @@ void surfaceConstructor::contextConvert() {
 	}
 	filter Kuwahara(diffTex, new KUWAHARASHADER);
 	Kuwahara.filterImage();
+	Texture* kuwaharaFiltered = new imageTexture(Kuwahara.filterTarget->texMat);
+	filter SobelX(kuwaharaFiltered, new SOBELXSHADER);
+	SobelX.filterImage();
+	filter SobelY(kuwaharaFiltered, new SOBELYSHADER);
+	SobelY.filterImage();
 }
 
 //void surfaceConstructor::contextConvert() {
