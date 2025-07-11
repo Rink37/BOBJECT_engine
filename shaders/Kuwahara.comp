@@ -5,7 +5,7 @@ layout(binding = 0, rgba8) uniform readonly image2D inputImage;
 layout(binding = 1, rgba8) uniform image2D resultImage;
 
 void main(){
-	const int kernelRadius = 10;
+	const int kernelRadius = 15;
 
 	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
 
@@ -25,7 +25,8 @@ void main(){
 	for (int y = -kernelRadius; y <= kernelRadius; y++){
 		for (int x = -kernelRadius; x <= kernelRadius; x++){
 			vec2 v = vec2(float(x), float(y)) / kernelRadius;
-			vec3 c = imageLoad(inputImage, ivec2(pixelCoords.x + v.x * gl_WorkGroupSize.x, pixelCoords.y + v.y * gl_WorkGroupSize.y)).rgb;
+			//vec3 c = imageLoad(inputImage, ivec2(pixelCoords.x + v.x * gl_WorkGroupSize.x, pixelCoords.y + v.y * gl_WorkGroupSize.y)).rgb;
+			vec3 c = imageLoad(inputImage, ivec2(pixelCoords.x + v.x * kernelRadius, pixelCoords.y + v.y * kernelRadius)).rgb;
 			float sum = 0.0f;
 			float w[8];
 			float z, vxx, vyy;
@@ -77,7 +78,7 @@ void main(){
 		s[k] = abs(s[k]/m[k].w - m[k].rgb * m[k].rgb);
 
 		float sigma2 = s[k].r + s[k].g + s[k].b;
-		float w = 1.0f / (1.0f + pow(4000.0f * sigma2, 4.0f));
+		float w = 1.0f / (1.0f + pow(1000.0f * sigma2, 4.0f));
 
 		avgPixel += vec4(m[k].rgb * w, w);
 	}
