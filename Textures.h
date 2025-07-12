@@ -37,6 +37,8 @@ struct Texture {
 	void destroyCVMat();
 	void transitionMatToImg();
 
+	Texture* getCopy();
+
 	virtual void setup() {
 		if (texWidth == 0) {
 			texWidth = 512;
@@ -89,6 +91,14 @@ public:
 	imageTexture(std::string filename, VkFormat format) {
 		// Image texture which is loaded from file
 		texMat = cv::imread(filename);
+		textureFormat = format;
+		transitionMatToImg();
+		createTextureImageView();
+	}
+
+	imageTexture(cv::Mat initMat, VkFormat format) {
+		// Image texture which is loaded from file
+		texMat = initMat;
 		textureFormat = format;
 		transitionMatToImg();
 		createTextureImageView();

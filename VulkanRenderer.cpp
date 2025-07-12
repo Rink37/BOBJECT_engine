@@ -269,7 +269,6 @@ private:
 				}
 				mouseDown = 0;
 			}
-
 			drawFrame();
 		}
 		vkDeviceWaitIdle(engine->device);
@@ -289,8 +288,12 @@ private:
 
 	void toggleNormalType(UIItem* owner) {
 		sConst->toggleNormType();
-		if (sConst->OSNormTex != nullptr && sConst->TSNormTex == nullptr) {
+		if (sConst->OSNormTex != nullptr && !sConst->TSmatching) {
+			if (sConst->TSNormTex != nullptr) {
+				sConst->TSNormTex->cleanup();
+			}
 			sConst->transitionToTS(&staticObjects[staticObjects.size() - 1].mesh);
+			sConst->TSmatching = true;
 		}
 		normalView->image->mat[0] = sConst->currentNormal();
 		sConst->updateSurfaceMat();
@@ -360,6 +363,10 @@ private:
 
 	void contextConvertMap(UIItem* owner) {
 		sConst->contextConvert();
+		sConst->normalIdx = 1 + sConst->normalType;
+		normalView->image->mat[0] = sConst->currentNormal();
+		normalTog->activestate = false;
+		normalTog->image->matidx = 1;
 	}
 
 	void createNormalButtons(UIItem* owner) {

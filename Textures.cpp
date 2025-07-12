@@ -7,6 +7,10 @@ bool Texture::hasStencilComponent(VkFormat format) {
 	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
+Texture* Texture::getCopy() {
+	return new Texture;
+}
+
 void imageTexture::createTextureImage(imageData* imgData) {
 
 	texWidth = imgData->Width;
@@ -498,12 +502,6 @@ void Texture::getCVMat() {
 	vkMapMemory(Engine::get()->device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
 	data += subResourceLayout.offset;
 
-	const char* filename = "Temp.ppm";
-
-	std::ofstream file(filename, std::ios::out | std::ios::binary);
-
-	file << "P6\n" << texWidth << "\n" << texHeight << "\n" << 255 << "\n";
-
 	bool colorSwizzle = false;
 
 	if (!supportsBlit)
@@ -512,32 +510,30 @@ void Texture::getCVMat() {
 		colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), textureFormat) != formatsBGR.end());
 	}
 
+	texMat.create(texHeight, texWidth, CV_8UC3);
+
 	for (uint32_t y = 0; y < texHeight; y++)
 	{
 		unsigned int* row = (unsigned int*)data;
 		for (uint32_t x = 0; x < texWidth; x++)
 		{
-			if (colorSwizzle)
+			if (!colorSwizzle)
 			{
-				file.write((char*)row + 2, 1);
-				file.write((char*)row + 1, 1);
-				file.write((char*)row, 1);
+				texMat.at<Vec3b>(y, x) = Vec3b(*((char*)row+2), *((char*)row+1), *((char*)row));
 			}
 			else
 			{
-				file.write((char*)row, 3);
+				texMat.at<Vec3b>(y, x) = Vec3b(*((char*)row), *((char*)row+1), *((char*)row+2));
 			}
 			row++;
 		}
 		data += subResourceLayout.rowPitch;
 	}
-	file.close();
 
 	vkUnmapMemory(Engine::get()->device, dstImageMemory);
 	vkFreeMemory(Engine::get()->device, dstImageMemory, nullptr);
 	vkDestroyImage(Engine::get()->device, dstImage, nullptr);
 
-	texMat = imread((cv::String)filename);
 }
 
 void Texture::transitionMatToImg() {

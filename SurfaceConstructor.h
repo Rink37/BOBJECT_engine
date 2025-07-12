@@ -37,9 +37,10 @@ public:
 	// Default state management //
 	Material* webcamMaterial = nullptr;
 
-	imageTexture* diffTex = nullptr; // The non-webcam texture used as the diffuse on the surface
-	imageTexture* OSNormTex = nullptr; // The non-webcam texture used as the object-space normal map of the surface
-	imageTexture* TSNormTex = nullptr; // The non-webcam texture used as the tangent-space normal map of the surface
+	Texture* diffTex = nullptr; // The non-webcam texture used as the diffuse on the surface
+	Texture* OSNormTex = nullptr; // The non-webcam texture used as the object-space normal map of the surface
+	Texture* TSNormTex = nullptr; // The non-webcam texture used as the tangent-space normal map of the surface
+	bool TSmatching = false;
 
 	// Materials used by the display panels //
 	std::array<Material*, 2> Diffuse = { }; // The material used as a diffuse - none if we don't load any image
@@ -80,7 +81,7 @@ public:
 		}
 	}
 
-	void loadDiffuse(imageTexture* diffuse) {
+	void loadDiffuse(Texture* diffuse) {
 		if (diffTex != nullptr) {
 			diffTex->cleanup();
 		}
@@ -92,7 +93,7 @@ public:
 		diffuseIdx = 1;
 	}
 
-	void loadNormal(imageTexture* normal) {
+	void loadNormal(Texture* normal) {
 		if (!normalType) {
 			if (OSNormTex != nullptr) {
 				OSNormTex->cleanup();
@@ -104,6 +105,7 @@ public:
 			OSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
 			Normal[1] = new Material(OSNormTex);
 			normalIdx = 1;
+			TSmatching = false;
 		}
 		else {
 			if (TSNormTex != nullptr) {

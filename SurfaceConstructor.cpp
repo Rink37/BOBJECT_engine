@@ -199,8 +199,12 @@ void surfaceConstructor::contextConvert() {
 	xgrad.convertTo(xgrad, CV_32F);
 	ygrad.convertTo(ygrad, CV_32F);
 
+	kuwaharaFiltered->cleanup();
+	Kuwahara.cleanup();
+	SobelX.cleanup();
+	SobelY.cleanup();
+
 	Mat convertedY = diffTex->texMat.clone();
-	//converted.convertTo(converted, CV_32FC3);
 
 	int thresh = 15;
 
@@ -231,9 +235,7 @@ void surfaceConstructor::contextConvert() {
 				}
 			}
 			else {
-				if (OSNormTex->texMat.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
-					gradindexes.push_back(y);
-				}
+				gradindexes.push_back(y);
 				if (indexes.size() > 0) {
 					Vec3f avg = Vec3f(0.0f, 0.0f, 0.0f);
 					for (int k = 0; k != indexes.size(); k++) {
@@ -279,9 +281,7 @@ void surfaceConstructor::contextConvert() {
 				}
 			}
 			else {
-				if (OSNormTex->texMat.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
-					gradindexes.push_back(x);
-				}
+				gradindexes.push_back(x);
 				if (indexes.size() > 0) {
 					Vec3f avg = Vec3f(0.0f, 0.0f, 0.0f);
 					for (int k = 0; k != indexes.size(); k++) {
@@ -377,7 +377,6 @@ void surfaceConstructor::contextConvert() {
 						Vec3f value = static_cast<Vec3f>(converted.at<Vec3b>(index, x)) + (static_cast<Vec3f>(startColour) * (1.0f - yg) + static_cast<Vec3f>(endColour) * yg) * sf;
 						value /= (sf + scaleFacs.at<float>(index, x));
 						converted.at<Vec3b>(index, x) = static_cast<Vec3b>(value);
-						//converted.at<Vec3b>(index, x) += static_cast<Vec3b>((static_cast<Vec3f>(startColour) * (1.0f - yg) + static_cast<Vec3f>(endColour) * yg) * sf);
 					}
 					indexes.clear();
 					startColour = endColour;
@@ -386,25 +385,31 @@ void surfaceConstructor::contextConvert() {
 		}
 	}
 
+	scaleFacs.release();
+	xgrad.release();
+	ygrad.release();
+
+	Mat grayConverted;
+	Mat grayDilated;
+	Mat kernel = getStructuringElement(MORPH_RECT, Size(100, 100));
+	cvtColor(converted, grayConverted, COLOR_BGR2GRAY);
+	inRange(grayConverted, 1, 255, grayConverted);
+	dilate(grayConverted, grayDilated, kernel);
+	subtract(grayDilated, grayConverted, grayConverted);
+
+	inpaint(converted, grayConverted, converted, 1.0, INPAINT_TELEA);
+
+	grayConverted.release();
+
 	Texture* refKuwaharaTarget = new imageTexture(converted);
 	filter referenceKuwahara(diffTex, refKuwaharaTarget, new REFERENCEKUWAHARASHADER);
 	referenceKuwahara.filterImage();
 
-	cv::namedWindow("Output");
-	while (true) {
-		cv::imshow("Output", referenceKuwahara.filterTarget[0]->texMat);
-		char c = (char)cv::waitKey(25); //Waits for us to press 'Esc', then exits
-		if (c == 27) {
-			cv::destroyWindow("Output");
-			break;
-		}
-		if (cv::getWindowProperty("Output", cv::WND_PROP_VISIBLE) < 1) {
-			break;
-		}
-	}
+	normalType = 0;
+	loadNormal(new imageTexture(referenceKuwahara.filterTarget[0]->texMat(Range(0, converted.rows), Range(0, converted.cols)), VK_FORMAT_R8G8B8A8_UNORM));
+	updateSurfaceMat();
 
-	//cv::cvtColor(referenceKuwahara.filterTarget[0]->texMat, referenceKuwahara.filterTarget[0]->texMat, COLOR_RGB2BGR);
-	cv::imwrite("TestOSNorm.jpg", referenceKuwahara.filterTarget[0]->texMat);
+	referenceKuwahara.cleanup();
 }
 
 //void surfaceConstructor::contextConvert() {

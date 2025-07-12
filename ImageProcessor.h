@@ -15,6 +15,7 @@ public:
 		src->getCVMat();
 		cv::Mat srcMat = src->texMat;
 		source.push_back(new imageTexture(srcMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		srcMat.release();
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
 
@@ -36,6 +37,8 @@ public:
 		cv::Mat src1Mat = src1->texMat;
 		source.push_back(new imageTexture(src1Mat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 		
+		src0Mat.release();
+		src1Mat.release();
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
 
@@ -49,6 +52,24 @@ public:
 	}
 
 	void filterImage();
+
+	void cleanup() {
+		for (Texture* tex : source) {
+			if (!tex->cleaned) {
+				tex->cleanup();
+			}
+		}
+		for (Texture* tex : filterTarget) {
+			if (!tex->cleaned) {
+				tex->cleanup();
+			}
+		}
+		vkDestroyPipeline(Engine::get()->device, filterPipeline, nullptr);
+		vkDestroyPipelineLayout(Engine::get()->device, filterPipelineLayout, nullptr);
+
+		vkDestroyDescriptorPool(Engine::get()->device, descPool, nullptr);
+		vkDestroyDescriptorSetLayout(Engine::get()->device, filterDescriptorSetLayout, nullptr);
+	};
 
 	std::vector<Texture*> source;
 	std::vector<Texture*> filterTarget;
@@ -65,7 +86,7 @@ private:
 	VkDescriptorSetLayout filterDescriptorSetLayout = nullptr;
 	VkDescriptorSet filterDescriptorSet;
 
-	VkShaderModule filterShaderModule = nullptr; 
+	VkShaderModule filterShaderModule = nullptr; // Destroyed by default
 
 	void createDescriptorSetLayout();
 	void createDescriptorSet();
