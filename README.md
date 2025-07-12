@@ -14,4 +14,4 @@ I'm working on functionality to remap a normal map using a diffuse texture but t
 
 // COMMON QUESTION //
 
-Can the webcam device be changes? No, not yet - though this is something I aim to add soon.
+Can the webcam device be changed? No, not yet - though this is something I aim to add soon.
