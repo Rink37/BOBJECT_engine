@@ -185,13 +185,16 @@ void surfaceConstructor::contextConvert() {
 	}
 	filter Kuwahara(diffTex, new KUWAHARASHADER);
 	Kuwahara.filterImage();
-	Texture* kuwaharaFiltered = new imageTexture(Kuwahara.filterTarget[0]->texMat);
-	filter SobelX(kuwaharaFiltered, new SOBELXSHADER);
+		
+	filter SobelX(Kuwahara.filterTarget[0], new SOBELXSHADER);
 	SobelX.filterImage();
-	filter SobelY(kuwaharaFiltered, new SOBELYSHADER);
+	filter SobelY(Kuwahara.filterTarget[0], new SOBELYSHADER);
 	SobelY.filterImage();
 	Mat xgrad;
 	Mat ygrad;
+
+	SobelX.filterTarget[0]->getCVMat();
+	SobelY.filterTarget[0]->getCVMat();
 
 	cvtColor(SobelX.filterTarget[0]->texMat, xgrad, COLOR_RGB2GRAY);
 	cvtColor(SobelY.filterTarget[0]->texMat, ygrad, COLOR_RGB2GRAY);
@@ -199,7 +202,6 @@ void surfaceConstructor::contextConvert() {
 	xgrad.convertTo(xgrad, CV_32F);
 	ygrad.convertTo(ygrad, CV_32F);
 
-	kuwaharaFiltered->cleanup();
 	Kuwahara.cleanup();
 	SobelX.cleanup();
 	SobelY.cleanup();
@@ -399,11 +401,12 @@ void surfaceConstructor::contextConvert() {
 
 	inpaint(converted, grayConverted, converted, 1.0, INPAINT_TELEA);
 
+	grayDilated.release();
 	grayConverted.release();
 
-	Texture* refKuwaharaTarget = new imageTexture(converted);
-	filter referenceKuwahara(diffTex, refKuwaharaTarget, new REFERENCEKUWAHARASHADER);
+	filter referenceKuwahara(diffTex, new imageTexture(converted, VK_FORMAT_R8G8B8A8_UNORM), new REFERENCEKUWAHARASHADER);
 	referenceKuwahara.filterImage();
+	referenceKuwahara.filterTarget[0]->getCVMat();
 
 	normalType = 0;
 	loadNormal(new imageTexture(referenceKuwahara.filterTarget[0]->texMat(Range(0, converted.rows), Range(0, converted.cols)), VK_FORMAT_R8G8B8A8_UNORM));

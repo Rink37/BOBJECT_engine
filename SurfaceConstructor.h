@@ -102,7 +102,7 @@ public:
 				Normal[1]->cleanupDescriptor();
 			}
 			OSNormTex = normal;
-			OSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
+			//OSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
 			Normal[1] = new Material(OSNormTex);
 			normalIdx = 1;
 			TSmatching = false;
@@ -115,7 +115,7 @@ public:
 				Normal[2]->cleanupDescriptor();
 			}
 			TSNormTex = normal;
-			TSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
+			//TSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
 			Normal[2] = new Material(TSNormTex);
 			normalIdx = 2;
 		}

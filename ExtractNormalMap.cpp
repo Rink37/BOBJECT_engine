@@ -250,5 +250,4 @@ void NormalGen::cleanupOS() {
 	vkDestroyFramebuffer(Engine::get()->device, objectSpaceMap.frameBuffer, nullptr);
 
 	objectSpaceMap.colour->cleanup();
-
 }

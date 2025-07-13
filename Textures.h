@@ -37,7 +37,8 @@ struct Texture {
 	void destroyCVMat();
 	void transitionMatToImg();
 
-	Texture* getCopy();
+	Texture* copyImage(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, VkMemoryPropertyFlags, uint32_t);
+	Texture* copyTexture(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, uint32_t);
 
 	virtual void setup() {
 		if (texWidth == 0) {
@@ -57,7 +58,12 @@ struct Texture {
 	bool cleaned = false;
 
 	virtual void cleanup() {
-
+		if (textureImage != nullptr) {
+			vkDestroyImage(Engine::get()->device, textureImage, nullptr);
+			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
+			vkDestroyImageView(Engine::get()->device, textureImageView, nullptr);
+		}
+		cleaned = true;
 	}
 };
 
@@ -114,14 +120,14 @@ public:
 
 	}
 
-	void cleanup() {
-		if (textureImage != nullptr) {
-			vkDestroyImage(Engine::get()->device, textureImage, nullptr);
-			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
-			vkDestroyImageView(Engine::get()->device, textureImageView, nullptr);
-		}
-		cleaned = true;
-	}
+	//void cleanup() {
+	//	if (textureImage != nullptr) {
+	//		vkDestroyImage(Engine::get()->device, textureImage, nullptr);
+	//		vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
+	//		vkDestroyImageView(Engine::get()->device, textureImageView, nullptr);
+	//	}
+	//	cleaned = true;
+	//}
 
 private:
 	void createTextureImage(imageData*);

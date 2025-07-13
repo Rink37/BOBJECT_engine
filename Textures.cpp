@@ -7,8 +7,145 @@ bool Texture::hasStencilComponent(VkFormat format) {
 	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-Texture* Texture::getCopy() {
-	return new Texture;
+Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, VkMemoryPropertyFlags memFlags, uint32_t mipLevels)
+{
+	Texture* copy = new Texture;
+	bool supportsBlit = true;
+
+	VkFormatProperties formatProps;
+
+	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProps);
+	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
+		std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
+		supportsBlit = false;
+	}
+
+	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProps);
+	if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
+		std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
+		supportsBlit = false;
+	}
+
+	copy->textureFormat = format;
+	copy->texWidth = texWidth;
+	copy->texHeight = texHeight;
+	copy->textureLayout = layout;
+	copy->textureTiling = tiling;
+	copy->textureUsage = usage;
+	copy->mipLevels = mipLevels;
+
+	//copy->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	copy->createImage(VK_SAMPLE_COUNT_1_BIT, memFlags);
+
+	VkCommandBuffer copyCmd;
+
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = Engine::get()->commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = 1;
+
+	if (vkAllocateCommandBuffers(Engine::get()->device, &allocInfo, &copyCmd) != VK_SUCCESS) {
+		throw runtime_error("failed to allocate command buffer!");
+	}
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.pInheritanceInfo = nullptr;
+
+	if (vkBeginCommandBuffer(copyCmd, &beginInfo) != VK_SUCCESS) {
+		throw runtime_error("failed to begin recording command buffer!");
+	}
+
+	transitionImageLayout(copy->textureImage, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+
+	if (textureLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+		transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+	}
+	else {
+		// This is a bit of a quick fix - I just need to add this transition to the list of valid transitions in the function 
+		transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
+		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+	}
+
+	if (supportsBlit)
+	{
+		VkOffset3D blitSize;
+		blitSize.x = texWidth;
+		blitSize.y = texHeight;
+		blitSize.z = 1;
+		VkImageBlit imageBlitRegion{};
+		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.srcSubresource.layerCount = 1;
+		imageBlitRegion.srcOffsets[1] = blitSize;
+		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.dstSubresource.layerCount = 1;
+		imageBlitRegion.dstOffsets[1] = blitSize;
+
+		vkCmdBlitImage(
+			copyCmd,
+			textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			copy->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageBlitRegion,
+			VK_FILTER_NEAREST);
+	}
+	else
+	{
+		VkImageCopy imageCopyRegion{};
+		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.srcSubresource.layerCount = 1;
+		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.dstSubresource.layerCount = 1;
+		imageCopyRegion.extent.width = texWidth;
+		imageCopyRegion.extent.height = texHeight;
+		imageCopyRegion.extent.depth = 1;
+
+		vkCmdCopyImage(
+			copyCmd,
+			textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			copy->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageCopyRegion);
+	}
+
+	if (vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
+		throw runtime_error("Failed to end command buffer");
+	}
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &copyCmd;
+
+	VkFence copyFence;
+	VkFenceCreateInfo fenceInfo = {};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+	vkCreateFence(Engine::get()->device, &fenceInfo, nullptr, &copyFence);
+
+	vkQueueSubmit(Engine::get()->graphicsQueue, 1, &submitInfo, copyFence);
+
+	if (vkWaitForFences(Engine::get()->device, 1, &copyFence, VK_TRUE, UINT64_MAX) == VK_TIMEOUT) {
+		throw runtime_error("Fence timeout");
+	};
+
+	vkFreeCommandBuffers(Engine::get()->device, Engine::get()->commandPool, 1, &copyCmd);
+
+	vkDestroyFence(Engine::get()->device, copyFence, nullptr);
+	
+	transitionImageLayout(copy->textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, mipLevels);
+	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, 1);
+	
+	return copy;
+}
+
+Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t mipLevels) {
+	Texture* copy = copyImage(format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, usage, tiling, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT , mipLevels);
+	copy->textureLayout = layout;
+	copy->generateMipmaps();
+	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	return copy;
 }
 
 void imageTexture::createTextureImage(imageData* imgData) {
@@ -111,6 +248,10 @@ void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlag
 }
 
 void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
+	if (oldLayout == newLayout) {
+		return;
+	}
+
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 
 	VkImageMemoryBarrier barrier{};
@@ -357,149 +498,14 @@ void Texture::getCVMat() {
 		supportsBlit = false;
 	}
 
-	VkImageCreateInfo imageCreateCi = {};
-	imageCreateCi.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageCreateCi.imageType = VK_IMAGE_TYPE_2D;
-	imageCreateCi.format = textureFormat;
-	imageCreateCi.extent.width = texWidth;
-	imageCreateCi.extent.height = texHeight;
-	imageCreateCi.extent.depth = 1;
-	imageCreateCi.arrayLayers = 1;
-	imageCreateCi.mipLevels = 1;
-	imageCreateCi.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageCreateCi.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageCreateCi.tiling = VK_IMAGE_TILING_LINEAR;
-	imageCreateCi.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-
-	VkImage dstImage;
-	if (vkCreateImage(Engine::get()->device, &imageCreateCi, nullptr, &dstImage) != VK_SUCCESS) {
-		throw runtime_error("Failed to create image");
-	}
-
-	VkMemoryRequirements memRequirements;
-	VkMemoryAllocateInfo memAllocInfo = {};
-	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	VkDeviceMemory dstImageMemory;
-	vkGetImageMemoryRequirements(Engine::get()->device, dstImage, &memRequirements);
-	memAllocInfo.allocationSize = memRequirements.size;
-
-	memAllocInfo.memoryTypeIndex = Engine::get()->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	if (vkAllocateMemory(Engine::get()->device, &memAllocInfo, nullptr, &dstImageMemory) != VK_SUCCESS) {
-		throw runtime_error("Failed to allocate memory");
-	}
-	if (vkBindImageMemory(Engine::get()->device, dstImage, dstImageMemory, 0) != VK_SUCCESS) {
-		throw runtime_error("Failed to bind image memory");
-	}
-
-	VkCommandBuffer copyCmd;
-
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = Engine::get()->commandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
-
-	if (vkAllocateCommandBuffers(Engine::get()->device, &allocInfo, &copyCmd) != VK_SUCCESS) {
-		throw runtime_error("failed to allocate command buffer!");
-	}
-
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.pInheritanceInfo = nullptr;
-
-	if (vkBeginCommandBuffer(copyCmd, &beginInfo) != VK_SUCCESS) {
-		throw runtime_error("failed to begin recording command buffer!");
-	}
-
-	transitionImageLayout(dstImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
-
-	if (textureLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-		transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
-	}
-	else {
-		// This is a bit of a quick fix - I just need to add this transition to the list of valid transitions in the function 
-		transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
-		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
-	}
-	
-	
-
-	if (supportsBlit)
-	{
-		VkOffset3D blitSize;
-		blitSize.x = texWidth;
-		blitSize.y = texHeight;
-		blitSize.z = 1;
-		VkImageBlit imageBlitRegion{};
-		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageBlitRegion.srcSubresource.layerCount = 1;
-		imageBlitRegion.srcOffsets[1] = blitSize;
-		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageBlitRegion.dstSubresource.layerCount = 1;
-		imageBlitRegion.dstOffsets[1] = blitSize;
-
-		vkCmdBlitImage(
-			copyCmd,
-			textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1,
-			&imageBlitRegion,
-			VK_FILTER_NEAREST);
-	}
-	else
-	{
-		VkImageCopy imageCopyRegion{};
-		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageCopyRegion.srcSubresource.layerCount = 1;
-		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageCopyRegion.dstSubresource.layerCount = 1;
-		imageCopyRegion.extent.width = texWidth;
-		imageCopyRegion.extent.height = texHeight;
-		imageCopyRegion.extent.depth = 1;
-
-		vkCmdCopyImage(
-			copyCmd,
-			textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1,
-			&imageCopyRegion);
-	}
-
-	if (vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
-		throw runtime_error("Failed to end command buffer");
-	}
-
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &copyCmd;
-
-	VkFence copyFence;
-	VkFenceCreateInfo fenceInfo = {};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-
-	vkCreateFence(Engine::get()->device, &fenceInfo, nullptr, &copyFence);
-
-	vkQueueSubmit(Engine::get()->graphicsQueue, 1, &submitInfo, copyFence);
-
-	if (vkWaitForFences(Engine::get()->device, 1, &copyFence, VK_TRUE, UINT64_MAX) == VK_TIMEOUT) {
-		throw runtime_error("Fence timeout");
-	};
-
-	vkFreeCommandBuffers(Engine::get()->device, Engine::get()->commandPool, 1, &copyCmd);
-
-	vkDestroyFence(Engine::get()->device, copyFence, nullptr);
-
-	transitionImageLayout(dstImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, 1);
-
-	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, 1);
+	Texture* dst = copyImage(textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
 
 	VkImageSubresource subResource{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
 	VkSubresourceLayout subResourceLayout;
-	vkGetImageSubresourceLayout(Engine::get()->device, dstImage, &subResource, &subResourceLayout);
+	vkGetImageSubresourceLayout(Engine::get()->device, dst->textureImage, &subResource, &subResourceLayout);
 
 	const char* data;
-	vkMapMemory(Engine::get()->device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
+	vkMapMemory(Engine::get()->device, dst->textureImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
 	data += subResourceLayout.offset;
 
 	bool colorSwizzle = false;
@@ -530,9 +536,7 @@ void Texture::getCVMat() {
 		data += subResourceLayout.rowPitch;
 	}
 
-	vkUnmapMemory(Engine::get()->device, dstImageMemory);
-	vkFreeMemory(Engine::get()->device, dstImageMemory, nullptr);
-	vkDestroyImage(Engine::get()->device, dstImage, nullptr);
+	dst->cleanup();
 
 }
 

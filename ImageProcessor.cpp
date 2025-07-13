@@ -227,20 +227,7 @@ void filter::filterImage() {
 
 	filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->textureLayout, filterTarget[0]->mipLevels);
 
-	filterTarget[0]->getCVMat();
-
-	//cv::namedWindow("Output");
-	//while (true) {
-	//	cv::imshow("Output", filterTarget->texMat);
-	//	char c = (char)cv::waitKey(25); //Waits for us to press 'Esc', then exits
-	//	if (c == 27) {
-	//		cv::destroyWindow("Output");
-	//		break;
-	//	}
-	//	if (cv::getWindowProperty("Output", cv::WND_PROP_VISIBLE) < 1) {
-	//		break;
-	//	}
-	//}
+	//filterTarget[0]->getCVMat();
 }
 
 

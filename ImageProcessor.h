@@ -12,10 +12,7 @@ class filter {
 public:
 	filter(Texture* src, shaderData* sd) {
 		filtertype = OIOO;
-		src->getCVMat();
-		cv::Mat srcMat = src->texMat;
-		source.push_back(new imageTexture(srcMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
-		srcMat.release();
+		source.push_back(src->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
 
@@ -30,15 +27,10 @@ public:
 
 	filter(Texture* src0, Texture* src1, shaderData* sd) {
 		filtertype = TIOO;
-		src0->getCVMat();
-		cv::Mat src0Mat = src0->texMat;
-		source.push_back(new imageTexture(src0Mat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
-		src1->getCVMat();
-		cv::Mat src1Mat = src1->texMat;
-		source.push_back(new imageTexture(src1Mat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+
+		source.push_back(src0->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		source.push_back(src1->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 		
-		src0Mat.release();
-		src1Mat.release();
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
 
