@@ -67,9 +67,8 @@ public:
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		sConst->setupSurfaceConstructor();
 		createCanvas();
-		loadAutosave();
+		webcamTexture::get()->webCam.loadFilter();
 		mainLoop();
-		saveAutosave();
 		cleanup();
 		Engine::destruct();
 	}
@@ -111,11 +110,23 @@ private:
 
 	uint8_t viewIndex = 1;
 
-	string autosaveLocation = "C:\\Users\\robda\\Documents\\VulkanRenderer\\TestFile.bin";
-
-	void loadAutosave() {
-		session::get()->loadStudio(autosaveLocation);
+	void loadSave(UIItem* owner) {
+		string saveLocation;
+		saveLocation = winFile::OpenFileDialog();
+		if (saveLocation == "fail") {
+			return;
+		}
+		session::get()->loadStudio(saveLocation);
 		webcamTexture::get()->webCam.loadFilter();
+		for (StaticObject obj : staticObjects) {
+			obj.mesh->cleanup();
+		}
+		staticObjects.clear();
+		for (UIItem* item : ObjectButtons->Items) {
+			item->image->cleanup();
+		}
+		ObjectButtons->Items.clear();
+		ObjectMap.clear();
 		for (string path : session::get()->currentStudio.modelPaths) {
 			StaticObject newObject(path);
 			newObject.mat = sConst->surfaceMat;
@@ -180,14 +191,20 @@ private:
 		webcamTexture::get()->webCam.saveFilter();
 	}
 
-	void saveAutosave() {
-		cout << session::get()->currentStudio.diffusePath << endl;
-		session::get()->saveStudio(autosaveLocation);
+	void save(UIItem* owner) {
+		string saveLocation;
+		saveLocation = winFile::SaveFileDialog();
+		if (saveLocation == "fail") {
+			return;
+		}
+		session::get()->saveStudio(saveLocation);
 	}
 	
 	void createCanvas() {
 		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
 		hArrangement *Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
+
+		hArrangement* SessionButtons = new hArrangement(1.0f, 1.0f, 0.1f, 0.05f, 0.01f);
 
 		SurfacePanel = new vArrangement(1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 
@@ -207,6 +224,9 @@ private:
 		std::function<void(UIItem*)> loadDiffuse = bind(&Application::loadDiffuseImage, this, placeholders::_1);
 		std::function<void(UIItem*)> saveWebcam = bind(&Application::saveDiffuseImage, this, placeholders::_1);
 
+		std::function<void(UIItem*)> saveSessionFunc = bind(&Application::save, this, placeholders::_1);
+		std::function<void(UIItem*)> loadSessionFunc = bind(&Application::loadSave, this, placeholders::_1);
+
 		imageData* lb = new LOADBUTTON;
 		imageData* rb = new RENDEREDBUTTON;
 		imageData* fb = new UNRENDEREDBUTTON;
@@ -222,6 +242,20 @@ private:
 		imageData* OpenButton = new OPENBUTTON;
 		imageData* SaveButton = new SAVEBUTTON;
 		imageData* plusButton = new PLUSBUTTON;
+
+		Button* loadSession = new Button(0.0f, 0.0f, 1.0f, 1.0f, OpenButton);
+		Button* saveSession = new Button(0.0f, 0.0f, 1.0f, 1.0f, SaveButton);
+		
+		loadSession->Name = "LoadStudio";
+		loadSession->setClickFunction(loadSessionFunc);
+		
+		saveSession->Name = "SaveStudio";
+		saveSession->setClickFunction(saveSessionFunc);
+
+		SessionButtons->addItem(loadSession);
+		SessionButtons->addItem(saveSession);
+
+		canvas.push_back(SessionButtons);
 
 		Button* diffuseTextPanel = new Button(0.0f, 0.0f, 1.0f, 1.0f, diffuse);
 		diffuseTog = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, webcamOn, webcamOff);
@@ -414,6 +448,12 @@ private:
 		}
 		string saveName = winFile::SaveFileDialog();
 		if (saveName != string("fail")) {
+			if (sConst->normalIdx == 1) {
+				session::get()->currentStudio.OSPath = saveName;
+			}
+			else if (sConst->normalIdx == 2) {
+				session::get()->currentStudio.TSPath = saveName;
+			}
 			imwrite(saveName, saveNormal);
 		}
 	}
@@ -444,6 +484,7 @@ private:
 		}
 		string saveName = winFile::SaveFileDialog();
 		if (saveName != string("fail")) {
+			session::get()->currentStudio.diffusePath = saveName;
 			imwrite(saveName, saveDiffuse);
 		}
 	}

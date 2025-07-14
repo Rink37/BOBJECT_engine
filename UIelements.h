@@ -27,6 +27,12 @@ struct UIImage {
 
 	void UpdateVertices(float, float, float, float);
 
+	void cleanup() {
+		for (Material* indMat : mat) {
+			indMat->cleanup();
+		}
+		mesh.cleanup();
+	}
 };
 
 struct UIItem {

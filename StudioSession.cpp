@@ -120,6 +120,7 @@ void session::loadStudio(string name) {
 			in.read(&currentStudio.TSPath[0], TSPathSize);
 		}
 
+		currentStudio.modelPaths.clear();
 		uint32_t modelNumber = 0;
 		in.read((char*)&modelNumber, sizeof(uint32_t));
 		for (uint32_t i = 0; i != modelNumber; i++) {
