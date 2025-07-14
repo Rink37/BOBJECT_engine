@@ -63,6 +63,7 @@ struct Texture {
 			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
 			vkDestroyImageView(Engine::get()->device, textureImageView, nullptr);
 		}
+		destroyCVMat();
 		cleaned = true;
 	}
 };
@@ -80,6 +81,7 @@ public:
 		texMat = initMat;
 		transitionMatToImg();
 		createTextureImageView();
+		destroyCVMat();
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t ml) {
@@ -92,6 +94,7 @@ public:
 		mipLevels = ml;
 		transitionMatToImg();
 		createTextureImageView();
+		destroyCVMat();
 	}
 
 	imageTexture(std::string filename, VkFormat format) {
@@ -100,6 +103,7 @@ public:
 		textureFormat = format;
 		transitionMatToImg();
 		createTextureImageView();
+		destroyCVMat();
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format) {
@@ -108,6 +112,7 @@ public:
 		textureFormat = format;
 		transitionMatToImg();
 		createTextureImageView();
+		destroyCVMat();
 	}
 
 	imageTexture(imageData* iD) {
@@ -119,15 +124,6 @@ public:
 	void setup() {
 
 	}
-
-	//void cleanup() {
-	//	if (textureImage != nullptr) {
-	//		vkDestroyImage(Engine::get()->device, textureImage, nullptr);
-	//		vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
-	//		vkDestroyImageView(Engine::get()->device, textureImageView, nullptr);
-	//	}
-	//	cleaned = true;
-	//}
 
 private:
 	void createTextureImage(imageData*);

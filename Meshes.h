@@ -45,10 +45,11 @@ public:
 
 class StaticMesh : public Mesh {
 public:
-	StaticMesh();
+	StaticMesh() {};
+	StaticMesh(std::string);
 	void computeTangents();
 private:
-	bool loadModel();
+	bool loadModel(std::string);
 };
 
 #endif

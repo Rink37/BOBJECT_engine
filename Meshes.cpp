@@ -137,26 +137,23 @@ void UIMesh::updateVertexBuffer() {
 	memcpy(vBuffer, vertices.data(), (size_t)bufferSize);
 }
 
-StaticMesh::StaticMesh() {
-	loadModel();
+//StaticMesh::StaticMesh() {
+//	loadModel(modelPath);
+//	createVertexBuffer();
+//	createIndexBuffer();
+//}
+
+StaticMesh::StaticMesh(string modelPath) {
+	loadModel(modelPath);
 	createVertexBuffer();
 	createIndexBuffer();
 }
 
-bool StaticMesh::loadModel() {
+bool StaticMesh::loadModel(string testMODEL_PATH) {
 	tinyobj::attrib_t attrib;
 	vector<tinyobj::shape_t> shapes;
 	vector<tinyobj::material_t> materials;
 	string warn, err;
-
-	string testMODEL_PATH;
-
-	try {
-		testMODEL_PATH = winFile::OpenFileDialog();
-	}
-	catch (...) {
-		return false;
-	}
 
 	if (tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, testMODEL_PATH.c_str())) {
 		unordered_map<Vertex, uint32_t> uniqueVertices{};

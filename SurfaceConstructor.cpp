@@ -206,6 +206,7 @@ void surfaceConstructor::contextConvert() {
 	SobelX.cleanup();
 	SobelY.cleanup();
 
+	diffTex->getCVMat();
 	Mat convertedY = diffTex->texMat.clone();
 
 	int thresh = 15;
@@ -413,6 +414,8 @@ void surfaceConstructor::contextConvert() {
 	updateSurfaceMat();
 
 	referenceKuwahara.cleanup();
+	diffTex->destroyCVMat();
+	OSNormTex->destroyCVMat();
 }
 
 //void surfaceConstructor::contextConvert() {

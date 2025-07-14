@@ -12,13 +12,7 @@ Webcam::Webcam() {
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
-	filter[0] = 0;
-	filter[1] = 142;
-	filter[2] = 39;
-	filter[3] = 115;
-	filter[4] = 190;
-	filter[5] = 127;
-	//cap >> webcamFrame;
+	//loadFilter();
 	getFrame();
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
@@ -27,6 +21,20 @@ Webcam::Webcam() {
 	targetCorners[2] = Point2f(targetWidth, 0);
 	targetCorners[3] = Point2f(targetWidth, targetHeight);
 } 
+
+void Webcam::loadFilter() {
+	for (int k = 0; k != 6; k++) {
+		filter[k] = session::get()->currentStudio.calibrationSettings[k];
+	}
+	//calibrateCornerFilter();
+	getCorners(false);
+}
+
+void Webcam::saveFilter() {
+	for (int k = 0; k != 6; k++) {
+		session::get()->currentStudio.calibrationSettings[k]  = filter[k];
+	}
+}
 
 void Webcam::updateFrames() {
 	while (1) {
@@ -118,6 +126,14 @@ void Webcam::calibrateCornerFilter() {
 	filter[5] = rmax;
 	
 	shouldUpdate = storedShouldUpdate;
+
+	saveFilter();
+
+	targetCorners[0] = Point2f(0, 0);
+	targetCorners[1] = Point2f(0, targetHeight);
+	targetCorners[2] = Point2f(targetWidth, 0);
+	targetCorners[3] = Point2f(targetWidth, targetHeight);
+	getCorners(true);
 }
 
 int displayMaskedWebcam(int arr[6]) {
@@ -150,15 +166,18 @@ float dist(Point2f A, Point2f B) {
 	return sqrt(pow(A.x - B.x, 2) + pow(A.y - B.y, 2));
 }
 
-void Webcam::getCorners() {
+void Webcam::getCorners(bool show) {
 	Mat frame;
 	Mat mask;
 	vector<vector<Point>> contours;
 	vector<Vec4i> hierarchy;
 	cap >> frame;
 	Point2f corners[4] = {Point2f(0, 0), Point2f(0, frame.size[0]), Point2f(frame.size[1], 0), Point2f(frame.size[1], frame.size[0])};
-	//Point2f targetCorners[4] = { Point2f(0, 0), Point2f(0, targetHeight), Point2f(targetWidth, 0), Point2f(targetWidth, targetHeight) };
-	namedWindow("Transformed Image");
+
+	if (show) {
+		namedWindow("Transformed Image");
+	}
+	
 	float cX = 0;
 	float cY = 0;
 	int selectIndex = 0;
@@ -211,16 +230,21 @@ void Webcam::getCorners() {
 		}
 		//Mat warp = getPerspectiveTransform(corners, targetCorners);
 		//warpPerspective(frame, frame, warp, Size(targetHeight, targetWidth));
-		for (int i = 0; i < 4; i++) {
-			cv::circle(frame, corners[i], 10, Scalar(255, 0, 0), 8, 0);
+		if (show) {
+			for (int i = 0; i < 4; i++) {
+				cv::circle(frame, corners[i], 10, Scalar(255, 0, 0), 8, 0);
+			}
+			imshow("Transformed Image", frame);
+			char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
+			if (c == 27) {
+				cv::destroyWindow("Transformed Image");
+				break;
+			}
+			if (getWindowProperty("Transformed Image", WND_PROP_VISIBLE) < 1) {
+				break;
+			}
 		}
-		imshow("Transformed Image", frame);
-		char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
-		if (c == 27) {
-			cv::destroyWindow("Transformed Image");
-			break;
-		}
-		if (getWindowProperty("Transformed Image", WND_PROP_VISIBLE) < 1) {
+		else {
 			break;
 		}
 	}
@@ -231,10 +255,10 @@ void Webcam::getCorners() {
 }
 
 void Webcam::updateCorners() {
-	if (cropCorners[0] == Point2f(0, 0)) {
-		calibrateCornerFilter();
-		getCorners();
-	}
+	//if (cropCorners[0] == Point2f(0, 0)) {
+	//	calibrateCornerFilter();
+	//	getCorners();
+	//}
 	Mat frame;
 	resize(webcamFrame, frame, Size(), 0.25, 0.25);
 	Mat cropArea;

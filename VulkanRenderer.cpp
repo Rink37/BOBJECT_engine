@@ -17,6 +17,7 @@
 #include"Meshes.h"
 #include"GenerateNormalMap.h"
 #include"SurfaceConstructor.h"
+#include"StudioSession.h"
 
 #include"include/LoadButton.h"
 #include"include/PauseButton.h"
@@ -46,9 +47,14 @@ vector<int> keybinds = { GLFW_KEY_L, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_U, GLFW_KE
 std::vector<KeyInput*> KeyInput::_instances;
 KeyInput defaultKeyBinds(keybinds);
 
-struct StaticObject {
+class StaticObject {
+public:
+	StaticObject(string name) {
+		mesh = new StaticMesh(name);
+	}
+	
 	bool isVisible = false;
-	StaticMesh mesh;
+	StaticMesh* mesh = nullptr;
 	Material* mat = nullptr;
 };
 
@@ -61,7 +67,9 @@ public:
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		sConst->setupSurfaceConstructor();
 		createCanvas();
+		loadAutosave();
 		mainLoop();
+		saveAutosave();
 		cleanup();
 		Engine::destruct();
 	}
@@ -90,13 +98,6 @@ private:
 
 	bool webcamObjectView = true;
 
-	NormalGen mapGenerator;
-	bool shouldRenderOSN = false;
-	bool OSNavailable = false;
-
-	bool shouldConvertOSN = false;
-	bool TSNavailable = false;
-
 	hArrangement *NormalButtons = nullptr;
 	vArrangement* SurfacePanel = nullptr;
 
@@ -110,6 +111,80 @@ private:
 
 	uint8_t viewIndex = 1;
 
+	string autosaveLocation = "C:\\Users\\robda\\Documents\\VulkanRenderer\\TestFile.bin";
+
+	void loadAutosave() {
+		session::get()->loadStudio(autosaveLocation);
+		webcamTexture::get()->webCam.loadFilter();
+		for (string path : session::get()->currentStudio.modelPaths) {
+			StaticObject newObject(path);
+			newObject.mat = sConst->surfaceMat;
+
+			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
+
+			Checkbox* objectButton = new Checkbox(0.0f, 0.0f, 0.15f, 0.15f, tcb, ub);
+
+			objectButton->updateDisplay();
+			objectButton->setClickFunction(testfunction);
+
+			newObject.isVisible = objectButton->activestate;
+
+			objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
+
+			ObjectMap.insert({ objectButton->Name, staticObjects.size() });
+
+			ObjectButtons->addItem(objectButton);
+			ObjectButtons->arrangeItems();
+
+			ObjectButtons->updateDisplay();
+
+			staticObjects.push_back(newObject);
+		}
+		if (session::get()->currentStudio.diffusePath != "None") {
+			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
+			sConst->loadDiffuse(loadedTexture);
+			sConst->diffuseIdx = 1;
+			diffuseView->image->mat[0] = sConst->currentDiffuse();
+			diffuseTog->activestate = false;
+			diffuseTog->image->matidx = 1;
+		}
+		if (session::get()->currentStudio.OSPath != "None") {
+			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.OSPath, VK_FORMAT_R8G8B8A8_UNORM);
+			if (!sConst->normalAvailable) {
+				createNormalButtons(new UIItem);
+			}
+			sConst->normalType = 0;
+			sConst->loadNormal(loadedTexture);
+			sConst->normalIdx = 1;
+			normalView->image->mat[0] = sConst->currentNormal();
+			normalTog->activestate = false;
+			normalTog->image->matidx = 1;
+
+		}
+		if (session::get()->currentStudio.TSPath != "None") {
+			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.TSPath, VK_FORMAT_R8G8B8A8_UNORM);
+			if (!sConst->normalAvailable) {
+				createNormalButtons(new UIItem);
+			}
+			sConst->normalType = 1;
+			sConst->loadNormal(loadedTexture);
+			sConst->normalIdx = 2;
+			sConst->TSmatching = true;
+			normalView->image->mat[0] = sConst->currentNormal();
+			normalTog->activestate = false;
+			normalTog->image->matidx = 1;
+			NormalButtons->Items[2]->activestate = false;
+			NormalButtons->Items[2]->image->matidx = 1;
+		}
+		sConst->updateSurfaceMat();
+		webcamTexture::get()->webCam.saveFilter();
+	}
+
+	void saveAutosave() {
+		cout << session::get()->currentStudio.diffusePath << endl;
+		session::get()->saveStudio(autosaveLocation);
+	}
+	
 	void createCanvas() {
 		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
 		hArrangement *Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
@@ -236,7 +311,6 @@ private:
 
 		canvas.push_back(buttons);
 
-		cout << "Diffuse mat:" << sConst->currentDiffuse() << endl;
 		diffuseView = new ImagePanel(0.0f, 0.0f, 1.0f, 0.71f, sConst->currentDiffuse(), true);
 		SurfacePanel->addItem(DiffuseButtons);
 		SurfacePanel->addItem(diffuseView);
@@ -288,14 +362,17 @@ private:
 
 	void toggleNormalType(UIItem* owner) {
 		sConst->toggleNormType();
-		if (sConst->OSNormTex != nullptr && !sConst->TSmatching) {
+		if (sConst->normalType == 1 && sConst->OSNormTex != nullptr && !sConst->TSmatching) {
 			if (sConst->TSNormTex != nullptr) {
 				sConst->TSNormTex->cleanup();
 			}
-			sConst->transitionToTS(&staticObjects[staticObjects.size() - 1].mesh);
+			sConst->transitionToTS(staticObjects[staticObjects.size() - 1].mesh);
 			sConst->TSmatching = true;
+			normalView->image->mat[0] = sConst->currentNormal();
 		}
-		normalView->image->mat[0] = sConst->currentNormal();
+		else {
+			normalView->image->mat[0] = sConst->currentNormal();
+		}
 		sConst->updateSurfaceMat();
 	}
 
@@ -308,8 +385,14 @@ private:
 			normalView->image->mat[0] = sConst->currentNormal();
 			normalTog->activestate = false;
 			normalTog->image->matidx = 1;
+			sConst->updateSurfaceMat();
+			if (!sConst->normalType) {
+				session::get()->currentStudio.OSPath = fileName;
+			}
+			else {
+				session::get()->currentStudio.TSPath = fileName;
+			}
 		}
-		sConst->updateSurfaceMat();
 	}
 
 	void saveNormalImage(UIItem* owner) {
@@ -321,10 +404,12 @@ private:
 			if (sConst->normalType) {
 				sConst->TSNormTex->getCVMat();
 				saveNormal = sConst->TSNormTex->texMat;
+				sConst->TSNormTex->destroyCVMat();
 			}
 			else {
 				sConst->OSNormTex->getCVMat();
 				saveNormal = sConst->OSNormTex->texMat;
+				sConst->OSNormTex->destroyCVMat();
 			}
 		}
 		string saveName = winFile::SaveFileDialog();
@@ -342,8 +427,9 @@ private:
 			diffuseView->image->mat[0] = sConst->currentDiffuse();
 			diffuseTog->activestate = false;
 			diffuseTog->image->matidx = 1;
+			sConst->updateSurfaceMat();
+			session::get()->currentStudio.diffusePath = fileName;
 		}
-		sConst->updateSurfaceMat();
 	}
 
 	void saveDiffuseImage(UIItem* owner) {
@@ -354,6 +440,7 @@ private:
 		else {
 			sConst->diffTex->getCVMat();
 			saveDiffuse = sConst->diffTex->texMat;
+			sConst->diffTex->destroyCVMat();
 		}
 		string saveName = winFile::SaveFileDialog();
 		if (saveName != string("fail")) {
@@ -381,7 +468,10 @@ private:
 		std::function<void(UIItem*)> loadNorm = bind(&Application::loadNormalImage, this, placeholders::_1);
 		std::function<void(UIItem*)> convertImg = bind(&Application::contextConvertMap, this, placeholders::_1);
 
-		sConst->generateOSMap(&staticObjects[staticObjects.size()-1].mesh);
+		sConst->normalType = 0;
+		if (sConst->OSNormTex == nullptr) {
+			sConst->generateOSMap(staticObjects[staticObjects.size() - 1].mesh);
+		}
 		sConst->normalAvailable = true;
 		webcamTexture::get()->changeFormat(VK_FORMAT_R8G8B8A8_UNORM);
 		sConst->normalIdx = 1;
@@ -516,7 +606,17 @@ private:
 	void loadStaticObject() {
 
 		try {
-			StaticObject newObject;
+			string modelPath;
+			try {
+				modelPath = winFile::OpenFileDialog();
+			}
+			catch (...) {
+				return;
+			}
+			StaticObject newObject(modelPath);
+			//if (newObject.mesh == nullptr) {
+			//	return;
+			//}
 			newObject.mat = sConst->surfaceMat;
 
 			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
@@ -538,6 +638,7 @@ private:
 			ObjectButtons->updateDisplay();
 
 			staticObjects.push_back(newObject);
+			session::get()->currentStudio.modelPaths.push_back(modelPath);
 		}
 		catch (...) {
 			return;
@@ -546,7 +647,7 @@ private:
 
 	void cleanup() {
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
-			staticObjects[i].mesh.cleanup();
+			staticObjects[i].mesh->cleanup();
 		}
 
 		for (uint32_t i = 0; i != canvas.size(); i++) {
@@ -670,18 +771,6 @@ private:
 			throw runtime_error("failed to begin recording command buffer!");
 		}
 
-		if (shouldRenderOSN) {
-			commandBuffer = mapGenerator.drawOSMap(commandBuffer, &staticObjects[staticObjects.size() - 1].mesh);
-			shouldRenderOSN = false;
-			OSNavailable = true;
-		}
-
-		if (shouldConvertOSN) {
-			commandBuffer = mapGenerator.convertOStoTS(commandBuffer, &staticObjects[staticObjects.size() - 1].mesh);
-			shouldConvertOSN = false;
-			TSNavailable = true;
-		}
-
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = engine->renderPass;
@@ -717,16 +806,16 @@ private:
 
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			if (staticObjects[i].isVisible) {
-				VkBuffer vertexBuffers[] = { staticObjects[i].mesh.vertexBuffer };
+				VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
 				VkDeviceSize offsets[] = { 0 };
 
 				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &staticObjects[i].mat->descriptorSets[currentFrame], 0, nullptr);
 
-				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh.indices.size()), 1, 0, 0, 0);
+				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
 			}
 		}
 		
@@ -755,12 +844,12 @@ private:
 
 			for (uint32_t i = 0; i != staticObjects.size(); i++) {
 				if (staticObjects[i].isVisible) {
-					VkBuffer vertexBuffers[] = { staticObjects[i].mesh.vertexBuffer };
+					VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
 					VkDeviceSize offsets[] = { 0 };
 
 					vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-					vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+					vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 					if (sConst->normalAvailable) {
 						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat->descriptorSets[currentFrame], 0, nullptr);
@@ -769,7 +858,7 @@ private:
 						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->surfaceMat->descriptorSets[currentFrame], 0, nullptr);
 					}
 
-					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh.indices.size()), 1, 0, 0, 0);
+					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
 				}
 			}
 		}
@@ -778,12 +867,12 @@ private:
 
 			for (uint32_t i = 0; i != staticObjects.size(); i++) {
 				if (staticObjects[i].isVisible) {
-					VkBuffer vertexBuffers[] = { staticObjects[i].mesh.vertexBuffer };
+					VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
 					VkDeviceSize offsets[] = { 0 };
 
 					vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-					vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+					vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 					if (viewIndex == 1) {
 						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->currentDiffuse()->descriptorSets[currentFrame], 0, nullptr);
@@ -793,7 +882,7 @@ private:
 
 					}
 
-					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh.indices.size()), 1, 0, 0, 0);
+					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
 				}
 			}
 		}
@@ -806,7 +895,7 @@ private:
 	}
 };
 
-
+session* session::sessionInstance = nullptr;
 surfaceConstructor* surfaceConstructor::sinstance = nullptr;
 webcamTexture* webcamTexture::winstance = nullptr;
 Engine* Engine::enginstance = nullptr;
