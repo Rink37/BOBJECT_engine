@@ -59,7 +59,7 @@ struct Vertex {
 	glm::vec3 normal;
 	glm::vec2 texCoord;
 	glm::vec4 tangent;
-	glm::vec3 biTangent;
+	//glm::vec3 biTangent;
 
 	static VkVertexInputBindingDescription getBindingDescription() {
 		VkVertexInputBindingDescription bindingDescription{};
@@ -90,8 +90,8 @@ struct Vertex {
 		return attributeDescriptions;
 	}
 
-	static std::array<VkVertexInputAttributeDescription, 5>getCompleteAttributeDescriptions() {
-		std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions{};
+	static std::array<VkVertexInputAttributeDescription, 4>getCompleteAttributeDescriptions() {
+		std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
 		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -112,10 +112,10 @@ struct Vertex {
 		attributeDescriptions[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		attributeDescriptions[3].offset = offsetof(Vertex, tangent);
 
-		attributeDescriptions[4].binding = 0;
-		attributeDescriptions[4].location = 4;
-		attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[4].offset = offsetof(Vertex, biTangent);
+		//attributeDescriptions[4].binding = 0;
+		//attributeDescriptions[4].location = 4;
+		//attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
+		//attributeDescriptions[4].offset = offsetof(Vertex, biTangent);
 
 		return attributeDescriptions;
 	}

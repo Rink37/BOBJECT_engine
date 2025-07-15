@@ -6,6 +6,7 @@
 #include"Textures.h"
 #include"Materials.h"
 #include"Meshes.h"
+#include"SurfaceConstructor.h"
 #include<iostream>
 #include<vector>
 #include<array>
@@ -14,13 +15,13 @@
 #include"include/ImageDataType.h"
 
 struct UIImage {
+	bool isVisible = true;
 
 	int texHeight = 0;
 	int texWidth = 0;
 
 	std::vector<Material*> mat = { nullptr };
 	uint32_t matidx = 0;
-
 	UIMesh mesh;
 
 	uint32_t mipLevels = 0;
@@ -32,6 +33,24 @@ struct UIImage {
 			indMat->cleanup();
 		}
 		mesh.cleanup();
+	}
+
+	VkCommandBuffer draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		if (!isVisible) {
+			return commandBuffer;
+		}
+		VkBuffer vertexBuffers[] = { mesh.vertexBuffer };
+		VkDeviceSize offsets[] = { 0 };
+
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+		vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Engine::get()->diffusePipelineLayout, 0, 1, &mat[matidx]->descriptorSets[currentFrame], 0, nullptr);
+
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
+
+		return commandBuffer;
 	}
 };
 
@@ -52,6 +71,7 @@ struct UIItem {
 
 	UIImage* image = new UIImage;
 
+	bool isEnabled = true;
 	bool activestate = false;
 
 	virtual void update(float x, float y, float xsize, float ysize) {
@@ -99,6 +119,28 @@ struct UIItem {
 	virtual bool isSpacer() {
 		return false;
 	}
+
+	virtual void setVisibility(bool vis) {
+		image->isVisible = vis;
+	}
+
+	virtual void setIsEnabled(bool enabled) {
+		isEnabled = enabled;
+	}
+
+	virtual void cleanup() {
+		std::vector<UIImage*> images;
+		getImages(images);
+
+		for (UIImage* image : images) {
+			for (Material* mat : image->mat) {
+				if (mat != surfaceConstructor::get()->webcamMaterial && !mat->cleaned) {
+					mat->cleanup();
+				}
+			}
+			image->mesh.cleanup();
+		}
+	}
 };
 
 class ImagePanel : public UIItem {
@@ -137,6 +179,32 @@ public:
 		update(x, -1.0f * y, xsize, ysize);
 	};
 
+	Button(imageData* iDpointer) {
+		Texture* tex = new imageTexture(iDpointer);
+		image->mat[0] = new Material(tex);
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = image->texHeight / image->texWidth;
+
+		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+	}
+
+	Button(imageData* iDpointer, std::function<void(UIItem*)> func) {
+		Texture* tex = new imageTexture(iDpointer);
+		image->mat[0] = new Material(tex);
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = image->texHeight / image->texWidth;
+
+		clickFunction = func;
+
+		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+	}
+
 	bool isInArea(double x, double y) {
 		bool result = false;
 		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
@@ -150,7 +218,7 @@ public:
 	}
 
 	void checkForEvent(double mousex, double mousey, int state) {
-		if (clickFunction != nullptr) {
+		if (clickFunction != nullptr && isEnabled) {
 			if (isInArea(mousex, mousey)) {
 				clickFunction(this);
 			}
@@ -160,8 +228,6 @@ public:
 
 class Checkbox : public UIItem
 {
-//private:
-	//float windowPositions[4] = { 0.0f };
 public:
 	std::function<void(UIItem*)> clickFunction = nullptr;
 
@@ -181,6 +247,24 @@ public:
 		update(x, -1.0f * y, xsize, ysize);
 	};
 
+	Checkbox(imageData* iDon, imageData* iDoff, std::function<void(UIItem*)> func) {
+		Texture* onTex = new imageTexture(iDon);
+		Texture* offTex = new imageTexture(iDoff);
+		image->mat[0] = new Material(onTex);
+		image->mat.push_back(new Material(offTex));
+		image->matidx = 0;
+		this->activestate = true;
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = image->texHeight / image->texWidth;
+
+		update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
+
+		clickFunction = func;
+	}
+
 	bool isInArea(double x, double y) {
 		bool result = false;
 		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
@@ -195,7 +279,7 @@ public:
 
 	void checkForEvent(double mousex, double mousey, int state) {
 		bool check = isInArea(mousex, mousey);
-		if (check && state == 1) {
+		if (check && state == 1 && isEnabled) {
 			activestate = !activestate;
 			if (activestate) {
 				image->matidx = 0;
@@ -227,6 +311,8 @@ public:
 	void checkForEvent(double, double, int) {};
 
 	void calculateScreenPosition() {};
+
+	void setVisibility(bool) {};
 };
 
 class hArrangement : public UIItem {
@@ -280,6 +366,18 @@ public:
 			}
 		}
 	};
+
+	void setVisibility(bool vis) {
+		for (UIItem* item : Items) {
+			item->setVisibility(vis);
+		}
+	}
+
+	void setIsEnabled(bool enabled) {
+		for (UIItem* item : Items) {
+			item->setIsEnabled(enabled);
+		}
+	}
 
 private:
 
@@ -337,6 +435,18 @@ public:
 			}
 		}
 	};
+
+	void setVisibility(bool vis) {
+		for (UIItem* item : Items) {
+			item->setVisibility(vis);
+		}
+	}
+
+	void setIsEnabled(bool enabled) {
+		for (UIItem* item : Items) {
+			item->setIsEnabled(enabled);
+		}
+	}
 
 private:
 

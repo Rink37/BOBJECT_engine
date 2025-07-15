@@ -49,6 +49,40 @@ public:
 	uint8_t normalIdx = 0;
 	uint8_t normalType = 0; // 0 represents the OS normal, 1 represents the TS normal - we can index the correct normal as 1+normalType
 
+	void clearSurface() {
+		if (diffTex != nullptr) {
+			diffTex->cleanup();
+			diffTex = nullptr;
+		}
+		if (OSNormTex != nullptr) {
+			OSNormTex->cleanup();
+			OSNormTex = nullptr;
+		}
+		if (TSNormTex != nullptr) {
+			TSNormTex->cleanup();
+			TSNormTex = nullptr;
+		}
+		for (Material* mat : Diffuse) {
+			if (mat != webcamMaterial) {
+				mat->cleanup();
+			}
+		}
+		for (Material* mat : Normal) {
+			if (mat != webcamMaterial){
+				mat->cleanup();
+			}
+		}
+		Diffuse = { webcamMaterial, webcamMaterial };
+		Normal = { webcamMaterial, webcamMaterial, webcamMaterial };
+		if (surfaceMat != webcamMaterial) {
+			surfaceMat->cleanup();
+		}
+		surfaceMat = webcamMaterial;
+		diffuseIdx = 0;
+		normalIdx = 0;
+		normalType = 0;
+	};
+	
 	Material* currentDiffuse() {
 		return Diffuse[diffuseIdx];
 	}
@@ -82,24 +116,24 @@ public:
 	}
 
 	void loadDiffuse(Texture* diffuse) {
+		if (Diffuse[1] != webcamMaterial) {
+			Diffuse[1]->cleanup();
+		}
 		if (diffTex != nullptr) {
 			diffTex->cleanup();
 		}
 		diffTex = diffuse;
-		if (Diffuse[1] != webcamMaterial) {
-			Diffuse[1]->cleanupDescriptor();
-		}
 		Diffuse[1] = new Material(diffTex);
 		diffuseIdx = 1;
 	}
 
 	void loadNormal(Texture* normal) {
 		if (!normalType) {
+			if (Normal[1] != webcamMaterial) {
+				Normal[1]->cleanup();
+			}
 			if (OSNormTex != nullptr) {
 				OSNormTex->cleanup();
-			}
-			if (Normal[1] != webcamMaterial) {
-				Normal[1]->cleanupDescriptor();
 			}
 			OSNormTex = normal;
 			//OSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -108,11 +142,11 @@ public:
 			TSmatching = false;
 		}
 		else {
+			if (Normal[2] != webcamMaterial) {
+				Normal[2]->cleanup();
+			}
 			if (TSNormTex != nullptr) {
 				TSNormTex->cleanup();
-			}
-			if (Normal[2] != webcamMaterial) {
-				Normal[2]->cleanupDescriptor();
 			}
 			TSNormTex = normal;
 			//TSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -177,26 +211,26 @@ public:
 	}
 
 	void cleanup() {
-		if (diffTex != nullptr && !diffTex->cleaned) {
+		if (diffTex != nullptr) {
 			diffTex->cleanup();
 		}
-		if (OSNormTex != nullptr && !OSNormTex->cleaned) {
+		if (OSNormTex != nullptr) {
 			OSNormTex->cleanup();
 		}
-		if (TSNormTex != nullptr && !TSNormTex->cleaned) {
+		if (TSNormTex != nullptr) {
 			TSNormTex->cleanup();
 		}
 		for (Material* material : Diffuse) {
-			if (material != webcamMaterial && !material->cleaned) {
-				material->cleanupDescriptor();
+			if (material != webcamMaterial) {
+				material->cleanup();
 			}
 		}
 		for (Material* material : Normal) {
-			if (material != webcamMaterial && !material->cleaned) {
-				material->cleanupDescriptor();
+			if (material != webcamMaterial) {
+				material->cleanup();
 			}
 		}
-		surfaceMat->cleanupDescriptor();
+		surfaceMat->cleanup();
 		webcamTexture::get()->cleanup();
 		webcamMaterial->cleanupDescriptor();
 	}

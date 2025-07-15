@@ -19,8 +19,11 @@ public:
 	}
 
 	void cleanup(){
+		if (cleaned) {
+			return;
+		}
 		for (Texture* tex : textures) {
-			if (tex != webcamTexture::get()) {
+			if (tex != webcamTexture::get() && tex != nullptr) {
 				tex->cleanup();
 			}
 		}
@@ -30,6 +33,7 @@ public:
 
 	void cleanupDescriptor() {
 		vkDestroyDescriptorPool(Engine::get()->device, this->descriptorPool, nullptr);
+		cleaned = true;
 	}
 
 	std::vector<Texture*> textures;

@@ -214,7 +214,12 @@ void StaticMesh::computeTangents() {
 	// First we initialise all the tangents and bitangents
 	for (Vertex vert : vertices) {
 		vert.tangent = glm::vec4(0, 0, 0, 0);
-		vert.biTangent = glm::vec3(0, 0, 0);
+		//vert.biTangent = glm::vec3(0, 0, 0);
+	}
+
+	vector<glm::vec3> biTangents;
+	for (size_t i = 0; i != vertices.size(); i++) {
+		biTangents.push_back(glm::vec3(0, 0, 0));
 	}
 
 	// Then we calculate the tangents and bitangents described by the plane of each triangle
@@ -247,9 +252,9 @@ void StaticMesh::computeTangents() {
 		vertices[i1].tangent += fourTan;
 		vertices[i2].tangent += fourTan;
 
-		vertices[i0].biTangent += bitangent;
-		vertices[i1].biTangent += bitangent;
-		vertices[i2].biTangent += bitangent;
+		biTangents[i0] += bitangent;
+		biTangents[i1] += bitangent;
+		biTangents[i2] += bitangent;
 	}
 
 	// Finally we compute the normalized tangent vectors as well as the facing direction
@@ -258,7 +263,7 @@ void StaticMesh::computeTangents() {
 	for (size_t i = 0; i != vertices.size(); i++) {
 		glm::vec3 n = vertices[i].normal;
 		glm::vec3 t0 = vertices[i].tangent;
-		glm::vec3 t1 = vertices[i].biTangent;
+		glm::vec3 t1 = biTangents[i];
 
 		glm::vec3 t = t0 - (n * dot(n, t0));
 		t = normalize(t); // Disabling this normalization will scale the vectors based on the scale of the vertices (perhaps this is more ideal?)
@@ -268,6 +273,6 @@ void StaticMesh::computeTangents() {
 		vertices[i].tangent = glm::vec4(t.x, t.y, t.z, w);
 
 		t = cross(glm::vec3(vertices[i].tangent.x, vertices[i].tangent.y, vertices[i].tangent.z), vertices[i].normal);
-		vertices[i].biTangent = t;
+		//vertices[i].biTangent = t;
 	}
 }

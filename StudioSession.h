@@ -37,6 +37,24 @@ public:
 
 	void saveStudio(std::string);
 	void loadStudio(std::string);
+	
+	void clearStudio() {
+		currentStudio.calibrationSettings[0] = 0;
+		currentStudio.calibrationSettings[1] = 0;
+		currentStudio.calibrationSettings[2] = 0;
+		currentStudio.calibrationSettings[3] = 255;
+		currentStudio.calibrationSettings[4] = 255;
+		currentStudio.calibrationSettings[5] = 255;
+
+		currentStudio.defaultModelPath = "None";
+		currentStudio.defaultImagePath = "None";
+
+		currentStudio.diffusePath = "None";
+		currentStudio.OSPath = "None";
+		currentStudio.TSPath = "None";
+
+		currentStudio.modelPaths.clear();
+	}
 private:
 	static session* sessionInstance;
 	session() = default;

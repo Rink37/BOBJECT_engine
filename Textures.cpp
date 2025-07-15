@@ -34,7 +34,6 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	copy->textureUsage = usage;
 	copy->mipLevels = mipLevels;
 
-	//copy->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	copy->createImage(VK_SAMPLE_COUNT_1_BIT, memFlags);
 
 	VkCommandBuffer copyCmd;

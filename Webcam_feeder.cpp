@@ -12,7 +12,6 @@ Webcam::Webcam() {
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
-	//loadFilter();
 	getFrame();
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
@@ -26,7 +25,6 @@ void Webcam::loadFilter() {
 	for (int k = 0; k != 6; k++) {
 		filter[k] = session::get()->currentStudio.calibrationSettings[k];
 	}
-	//calibrateCornerFilter();
 	getCorners(false);
 }
 
@@ -209,7 +207,6 @@ void Webcam::getCorners(bool show) {
 					cY = 0;
 				}
 				coords.push_back(Point2f(cX, cY));
-				//circle(frame, Point2f(cX, cY), 5, Scalar(0, 255, 0), 8, 0);
 			}
 		}
 		int numCoords = coords.size();
@@ -255,10 +252,6 @@ void Webcam::getCorners(bool show) {
 }
 
 void Webcam::updateCorners() {
-	//if (cropCorners[0] == Point2f(0, 0)) {
-	//	calibrateCornerFilter();
-	//	getCorners();
-	//}
 	Mat frame;
 	resize(webcamFrame, frame, Size(), 0.25, 0.25);
 	Mat cropArea;
@@ -280,7 +273,6 @@ void Webcam::updateCorners() {
 	float l, r, t, b;
 
 	for (int i = 0; i != 4; i++) {
-		//cout << i << " " << cropCorners[i] << endl;
 		
 		t = clamp((cropCorners[i].y)/4 - rectHalf , 0.0f, imgHeight);
 		b = clamp((cropCorners[i].y)/4 + rectHalf, 0.0f, imgHeight);
@@ -297,8 +289,6 @@ void Webcam::updateCorners() {
 			inRange(cropArea, Scalar(filter[0], filter[1], filter[2]), Scalar(filter[3], filter[4], filter[5]), cropArea);
 
 			findContours(cropArea, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
-
-			//imshow("crop", cropArea);
 
 			if (contours.size() >= 1) {
 				Moments m = moments(contours[0]);

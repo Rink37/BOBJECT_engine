@@ -58,7 +58,10 @@ struct Texture {
 	bool cleaned = false;
 
 	virtual void cleanup() {
-		if (textureImage != nullptr) {
+		if (cleaned) {
+			return;
+		}
+		if (textureImage != nullptr && textureImage) {
 			vkDestroyImage(Engine::get()->device, textureImage, nullptr);
 			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
 			vkDestroyImageView(Engine::get()->device, textureImageView, nullptr);
@@ -157,6 +160,9 @@ public:
 	}
 
 	void cleanup() {
+		if (cleaned) {
+			return;
+		}
 		if (textureImage != nullptr) {
 			vkDestroyImage(Engine::get()->device, textureImage, nullptr);
 			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
@@ -165,6 +171,7 @@ public:
 			vkFreeMemory(Engine::get()->device, textureBufferMemory, nullptr);
 		}
 		destruct();
+		cleaned = true;
 	}
 
 	void getCVMat() {
