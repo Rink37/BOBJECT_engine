@@ -421,11 +421,19 @@ void Engine::createGraphicsPipelines() {
 
 	bool isWireframe = false;
 
-	shaderDatas.push_back(new FLATSHADER);
-	shaderDatas.push_back(new BFSHADER);
-	shaderDatas.push_back(new UISHADER);
-	shaderDatas.push_back(new WSHADER);
-	shaderDatas.push_back(new UVSHADER);
+	shaderData flatShader = FLATSHADER;
+	shaderData bfShader = BFSHADER;
+	shaderData uiShader = UISHADER;
+	shaderData wShader = WSHADER;
+	shaderData uvShader = UVSHADER;
+
+	std::vector<shaderData*> shaderDatas;
+
+	shaderDatas.push_back(&flatShader);
+	shaderDatas.push_back(&bfShader);
+	shaderDatas.push_back(&uiShader);
+	shaderDatas.push_back(&wShader);
+	shaderDatas.push_back(&uvShader);
 
 	PipelineMap.insert({ string("FlatShading"), 0 });
 	PipelineMap.insert({ string("BFShading"), 1 });
@@ -574,11 +582,11 @@ void Engine::createGraphicsPipelines() {
 		vkDestroyShaderModule(device, VertShaderModule, nullptr);
 	}
 
-	shaderData* OS_BF = new OS_BFSHADER;
+	shaderData OS_BF = OS_BFSHADER;
 	VkPipeline* CurrentPipeline = new VkPipeline;
 
-	auto VertShaderCode = OS_BF->vertData;
-	auto FragShaderCode = OS_BF->fragData;
+	auto VertShaderCode = OS_BF.vertData;
+	auto FragShaderCode = OS_BF.fragData;
 
 	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
 	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
@@ -601,7 +609,7 @@ void Engine::createGraphicsPipelines() {
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer.depthClampEnable = VK_FALSE;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
-	if (OS_BF->isWireframe) {
+	if (OS_BF.isWireframe) {
 		rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
 	}
 	else {
@@ -636,11 +644,11 @@ void Engine::createGraphicsPipelines() {
 	GraphicsPipelines.push_back(CurrentPipeline);
 	PipelineMap.insert({ string("OSNormBF"), 5 });
 
-	shaderData* TS_BF = new TS_BFSHADER;
+	shaderData TS_BF = TS_BFSHADER;
 	VkPipeline* TangentPipeline = new VkPipeline;
 
-	auto tangentVertShaderCode = TS_BF->vertData;
-	auto tangentFragShaderCode = TS_BF->fragData;
+	auto tangentVertShaderCode = TS_BF.vertData;
+	auto tangentFragShaderCode = TS_BF.fragData;
 
 	VkPipelineVertexInputStateCreateInfo tangentVertexInputInfo{};
 	tangentVertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

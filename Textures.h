@@ -5,7 +5,6 @@
 #include"Webcam_feeder.h"
 #include"include/ImageDataType.h"
 #include<opencv2/opencv.hpp>
-#include<string>
 
 struct Texture {
 	// Structure describing an arbitrary image in the application
@@ -148,19 +147,37 @@ public:
 		winstance = nullptr;
 	}
 
-	Webcam webCam;
+	Webcam *webCam = nullptr;
 	VkBuffer textureBuffer = nullptr;
 	VkDeviceMemory textureBufferMemory = nullptr;
 	void* tBuffer = nullptr;
 	void updateWebcam();
 
 	void setup() {
+		webCam = new Webcam(0);
+		if (!webCam->isValid) {
+			std::cout << "New image created" << std::endl;
+			delete webCam;
+			webCam = nullptr;
+			cv::Mat camNotFoundImg(128, 128, CV_8UC3);
+			camNotFoundImg = cv::Scalar(255, 0, 255);
+			Texture* ptr = new imageTexture(camNotFoundImg);
+			texChannels = ptr->texChannels;
+			texHeight = ptr->texHeight;
+			texWidth = ptr->texWidth;
+			textureImage = ptr->textureImage;
+			textureImageMemory = ptr->textureImageMemory;
+			textureImageView = ptr->textureImageView;
+			delete ptr;
+			camNotFoundImg.release();
+			return;
+		}
 		createWebcamImage();
 		createWebcamTextureImageView();
 	}
 
 	void cleanup() {
-		if (cleaned) {
+		if (cleaned || webCam == nullptr) {
 			return;
 		}
 		if (textureImage != nullptr) {
@@ -175,7 +192,7 @@ public:
 	}
 
 	void getCVMat() {
-		texMat = webCam.webcamFrame;
+		texMat = webCam->webcamFrame;
 	}
 
 	void changeFormat(VkFormat newFormat) {

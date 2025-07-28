@@ -578,11 +578,13 @@ void Texture::transitionMatToImg() {
 }
 
 void webcamTexture::createWebcamImage() {
-
-	webCam.getFrame();
-	uchar* camData = new uchar[webCam.webcamFrame.total() * 4];
-	cv::Mat continuousRGBA(webCam.webcamFrame.size(), CV_8UC4, camData);
-	cv::cvtColor(webCam.webcamFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
+	if (webCam == nullptr) {
+		return;
+	}
+	webCam->getFrame();
+	uchar* camData = new uchar[webCam->webcamFrame.total() * 4];
+	cv::Mat continuousRGBA(webCam->webcamFrame.size(), CV_8UC4, camData);
+	cv::cvtColor(webCam->webcamFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
 
 	texWidth = continuousRGBA.size().width;
 	texHeight = continuousRGBA.size().height;
@@ -608,11 +610,13 @@ void webcamTexture::createWebcamTextureImageView() {
 }
 
 void webcamTexture::updateWebcam() {
-
-	webCam.getFrame();
-	uchar* camData = new uchar[webCam.webcamFrame.total() * 4];
-	cv::Mat continuousRGBA(webCam.webcamFrame.size(), CV_8UC4, camData);
-	cv::cvtColor(webCam.webcamFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
+	if (webCam == nullptr) {
+		return;
+	}
+	webCam->getFrame();
+	uchar* camData = new uchar[webCam->webcamFrame.total() * 4];
+	cv::Mat continuousRGBA(webCam->webcamFrame.size(), CV_8UC4, camData);
+	cv::cvtColor(webCam->webcamFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
 
 	VkDeviceSize imageSize = continuousRGBA.total() * continuousRGBA.elemSize();
 

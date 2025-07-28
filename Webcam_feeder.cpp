@@ -8,7 +8,11 @@ using namespace std;
 using namespace cv;
 
 Webcam::Webcam() {
-	cap.open(0, CAP_DSHOW);
+	cap.open(camIndex, CAP_DSHOW);
+	if (!cap.isOpened()) {
+		isValid = false;
+		return;
+	}
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
@@ -20,6 +24,25 @@ Webcam::Webcam() {
 	targetCorners[2] = Point2f(targetWidth, 0);
 	targetCorners[3] = Point2f(targetWidth, targetHeight);
 } 
+
+Webcam::Webcam(uint8_t idx) {
+	camIndex = idx;
+	cap.open(camIndex, CAP_DSHOW);
+	if (!cap.isOpened()) {
+		isValid = false;
+		return;
+	}
+	for (int i = 0; i != 4; i++) {
+		cropCorners[i] = Point2f(0, 0);
+	}
+	getFrame();
+	targetHeight = webcamFrame.size().height;
+	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	targetCorners[0] = Point2f(0, 0);
+	targetCorners[1] = Point2f(0, targetHeight);
+	targetCorners[2] = Point2f(targetWidth, 0);
+	targetCorners[3] = Point2f(targetWidth, targetHeight);
+}
 
 void Webcam::loadFilter() {
 	for (int k = 0; k != 6; k++) {
@@ -43,7 +66,7 @@ void Webcam::updateFrames() {
 void Webcam::getFrame() {
 	if (isUpdating) {
 		if (!cap.isOpened()) {
-			cout << "Camera error" << endl;
+			isValid = false;
 		}
 		cap >> webcamFrame;
 		updateCorners();
@@ -67,7 +90,6 @@ void Webcam::calibrateCornerFilter() {
 	bool storedShouldUpdate = shouldUpdate;
 	shouldUpdate = true;
 	string windowName = "Calibrate colour filtering";
-	std::cout << "Calibrating" << std::endl;
 	namedWindow(windowName);
 	// Initialise GUI trackbars
 	createTrackbar("Bmin", windowName, 0, 255, nothing);
@@ -225,14 +247,12 @@ void Webcam::getCorners(bool show) {
 				numCoords -= 1;
 			}
 		}
-		//Mat warp = getPerspectiveTransform(corners, targetCorners);
-		//warpPerspective(frame, frame, warp, Size(targetHeight, targetWidth));
 		if (show) {
 			for (int i = 0; i < 4; i++) {
 				cv::circle(frame, corners[i], 10, Scalar(255, 0, 0), 8, 0);
 			}
 			imshow("Transformed Image", frame);
-			char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
+			char c = (char)waitKey(25);
 			if (c == 27) {
 				cv::destroyWindow("Transformed Image");
 				break;
@@ -298,21 +318,6 @@ void Webcam::updateCorners() {
 					cropCorners[i] = Point2f(((cropCorners[i].x)*(smoothness-1) + l*4 + cX)/smoothness, ((cropCorners[i].y)*(smoothness - 1) + t*4 + cY) / smoothness);
 				}
 			}
-			//cv::circle(webcamFrame, cropCorners[i], 10, Scalar(255, 0, 0), 8, 0);
 		}
 	}
 }
-
-//int main()
-//{
-//	int colourMask[6] = { 0, 0, 0, 255, 255, 255 }; // Generate the widest range colour calibration settings
-
-	// We don't currently use the target directory or file name but this is what we will update when we are testing actual tracking
-//	string targetdir = "C:\\Users\\robda\\Documents\\Projects\\Blender_oilpainter\\Blender files\\temp\\";
-//	string filename = "webcam_frame.jpeg";
-	// Mat image = imread(targetdir + filename);
-
-//	calibrateMask(colourMask); // GUI which lets us specify ideal colour ranges
-
-//	return displayMaskedWebcam(colourMask); // Currently as far as the program goes - we just display the masked webcam view 
-//}

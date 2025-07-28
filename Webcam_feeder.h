@@ -7,6 +7,13 @@
 class Webcam {
 public:
 	Webcam();
+
+	Webcam(uint8_t);
+
+	~Webcam() {
+		cap.release();
+		webcamFrame.release();
+	}
 	
 	void getFrame();
 
@@ -26,16 +33,21 @@ public:
 	void saveFilter();
 
 	bool shouldUpdate = true;
+
+	bool isValid = true;
 private:
 	cv::VideoCapture cap;
 
-	uint8_t filter[6];
+	uint8_t filter[6] = { 0, 0, 0, 255, 255, 255 };
 	float sizeRatio = 1.41f;
 
-	uint32_t targetWidth;
-	uint32_t targetHeight;
+	uint32_t targetWidth = 0;
+	uint32_t targetHeight = 0;
+
+	uint8_t camIndex = 0;
 
 	bool isUpdating = true;
+
 };
 
 #endif

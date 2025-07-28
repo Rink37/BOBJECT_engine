@@ -25,6 +25,7 @@
 #include<set>
 #include<cstdint>
 #include<algorithm>
+#include<memory>
 
 #include"include/ShaderDataType.h"
 #include"include/Flat.h"
@@ -52,14 +53,13 @@ const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_N
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance, const VkDebugUtilsMessengerCreateInfoEXT*, const VkAllocationCallbacks*, VkDebugUtilsMessengerEXT*);
 
-static std::vector<char> readFile(const std::string&);
+//static std::vector<char> readFile(const std::string&);
 
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 normal;
 	glm::vec2 texCoord;
 	glm::vec4 tangent;
-	//glm::vec3 biTangent;
 
 	static VkVertexInputBindingDescription getBindingDescription() {
 		VkVertexInputBindingDescription bindingDescription{};
@@ -112,11 +112,6 @@ struct Vertex {
 		attributeDescriptions[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		attributeDescriptions[3].offset = offsetof(Vertex, tangent);
 
-		//attributeDescriptions[4].binding = 0;
-		//attributeDescriptions[4].location = 4;
-		//attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-		//attributeDescriptions[4].offset = offsetof(Vertex, biTangent);
-
 		return attributeDescriptions;
 	}
 
@@ -166,6 +161,7 @@ public:
 	}
 	Engine(const Engine&) = delete;
 	Engine& operator=(const Engine&) = delete;
+	
 	static void destruct() {
 		delete enginstance;
 		enginstance = nullptr;
@@ -213,8 +209,6 @@ public:
 
 	std::map<std::string, int> PipelineMap = {};
 	std::vector<VkPipeline*> GraphicsPipelines = {};
-
-	std::vector<shaderData*> shaderDatas;
 
 	bool framebufferResized = false;
 

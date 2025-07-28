@@ -22,6 +22,7 @@ struct UIImage {
 
 	std::vector<Material*> mat = { nullptr };
 	uint32_t matidx = 0;
+	
 	UIMesh mesh;
 
 	uint32_t mipLevels = 0;
@@ -55,21 +56,23 @@ struct UIImage {
 };
 
 struct UIItem {
-	uint32_t minPixWidth, minPixHeight; // Defines the minimum size of the element on the screen - the maximum size is the image resolution
-
 	float buffer = 50.0;
 	
-	float posx, posy;
-	float extentx, extenty;
-	float anchorx, anchory;
+	float posx, posy = 0.0f;
+	float extentx, extenty = 1.0f;
+	float anchorx, anchory = 0.0f;
 
 	float windowPositions[4] = { 0.0f };
 
-	float sqAxisRatio; // The ratio between axes if the window was perfectly square
+	float sqAxisRatio = 0.0f; // The ratio between axes if the window was perfectly square
 
 	std::string Name = "Unlabelled";
 
-	UIImage* image = new UIImage;
+	UIImage *image = nullptr;// new UIImage;
+
+	std::vector<UIItem*> Items;
+
+	virtual void addItem(UIItem*);
 
 	bool isEnabled = true;
 	bool activestate = false;
@@ -85,7 +88,7 @@ struct UIItem {
 
 		arrangeItems();
 
-		if (image->texWidth > 1) {
+		if (image != nullptr && image->texHeight > 1) {
 			this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
 		}
 		else {
@@ -95,7 +98,9 @@ struct UIItem {
 
 	virtual void updateDisplay() {
 		this->calculateScreenPosition();
-		image->UpdateVertices(posx, posy, extentx, extenty);
+		if (image != nullptr) {
+			image->UpdateVertices(posx, posy, extentx, extenty);
+		}
 	}
 
 	virtual void getSubclasses(std::vector<UIItem*> &scs) {
@@ -103,7 +108,9 @@ struct UIItem {
 	};
 
 	virtual void getImages(std::vector<UIImage*>& images) {
-		images.push_back(image);
+		if (image != nullptr && image->texHeight > 1) {
+			images.push_back(image);
+		}
 	};
 
 	virtual void arrangeItems() {
@@ -128,17 +135,30 @@ struct UIItem {
 		isEnabled = enabled;
 	}
 
+	virtual void draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		std::vector<UIImage*> images;
+		getImages(images);
+
+		for (UIImage* image : images) {
+			image->draw(commandBuffer, currentFrame);
+		}
+	}
+
 	virtual void cleanup() {
 		std::vector<UIImage*> images;
 		getImages(images);
 
 		for (UIImage* image : images) {
 			for (Material* mat : image->mat) {
-				if (mat != surfaceConstructor::get()->webcamMaterial && !mat->cleaned) {
+				if (mat != &surfaceConstructor::get()->webcamMaterial && !mat->cleaned) {
 					mat->cleanup();
+					delete mat;
+					mat = nullptr;
 				}
 			}
 			image->mesh.cleanup();
+			delete image;
+			image = nullptr;
 		}
 	}
 };
@@ -148,8 +168,24 @@ class ImagePanel : public UIItem {
 public:
 	bool isWebcam;
 
+	ImagePanel(Material* surf, bool iW) {
+		update(0.0f, 0.0f, 1.0f, 1.0f);
+
+		image = new UIImage;
+		image->mat[0] = surf;
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+
+		this->isWebcam = iW;
+	}
+	
 	ImagePanel(float x, float y, float xsize, float ysize, Material* surf, bool iW) {
 		update(x, -1.0f * y, xsize, ysize);
+
+		image = new UIImage;
 		image->mat[0] = surf;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -159,6 +195,17 @@ public:
 
 		this->isWebcam = iW;
 	}
+
+	ImagePanel() = default;
+
+	void cleanup() {
+		std::vector<UIImage*> images;
+		getImages(images);
+
+		for (UIImage* image : images) {
+			image->mesh.cleanup();
+		}
+	}
 };
 
 class Button : public UIItem // Here a button is just a rectangle area in screen space which can be queried with coordinates to check if it has been pressed
@@ -167,10 +214,14 @@ public:
 	std::function<void(UIItem*)> clickFunction = nullptr;
 	//std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
+	Button() = default;
+	
 	Button(float x, float y, float xsize, float ysize, imageData* iDpointer) {
 		this->sqAxisRatio = ysize / xsize;
 
 		Texture* tex = new imageTexture(iDpointer);
+
+		image = new UIImage;
 		image->mat[0] = new Material(tex);
 		
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -181,6 +232,8 @@ public:
 
 	Button(imageData* iDpointer) {
 		Texture* tex = new imageTexture(iDpointer);
+
+		image = new UIImage;
 		image->mat[0] = new Material(tex);
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -193,6 +246,8 @@ public:
 
 	Button(imageData* iDpointer, std::function<void(UIItem*)> func) {
 		Texture* tex = new imageTexture(iDpointer);
+
+		image = new UIImage;
 		image->mat[0] = new Material(tex);
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -231,11 +286,15 @@ class Checkbox : public UIItem
 public:
 	std::function<void(UIItem*)> clickFunction = nullptr;
 
+	Checkbox() = default;
+
 	Checkbox(float x, float y, float xsize, float ysize, imageData* iDon, imageData* iDoff) {
 		this->sqAxisRatio = ysize / xsize;
 
 		Texture* onTex = new imageTexture(iDon);
 		Texture* offTex = new imageTexture(iDoff);
+
+		image = new UIImage;
 		image->mat[0] = new Material(onTex);
 		image->mat.push_back(new Material(offTex));
 		image->matidx = 0;
@@ -247,9 +306,29 @@ public:
 		update(x, -1.0f * y, xsize, ysize);
 	};
 
+	Checkbox(imageData* iDon, imageData* iDoff) {
+		Texture* onTex = new imageTexture(iDon);
+		Texture* offTex = new imageTexture(iDoff);
+
+		image = new UIImage;
+		image->mat[0] = new Material(onTex);
+		image->mat.push_back(new Material(offTex));
+		image->matidx = 0;
+		this->activestate = true;
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = image->texHeight / image->texWidth;
+
+		update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
+	}
+
 	Checkbox(imageData* iDon, imageData* iDoff, std::function<void(UIItem*)> func) {
 		Texture* onTex = new imageTexture(iDon);
 		Texture* offTex = new imageTexture(iDoff);
+
+		image = new UIImage;
 		image->mat[0] = new Material(onTex);
 		image->mat.push_back(new Material(offTex));
 		image->matidx = 0;
@@ -319,6 +398,8 @@ class hArrangement : public UIItem {
 public:
 	float spacing;
 	
+	hArrangement() = default;
+
 	hArrangement(float px, float py, float ex, float ey, float spc) {
 		this->posx = px;
 		this->posy = -1.0f * py;
@@ -332,10 +413,6 @@ public:
 	}
 
 	void calculateScreenPosition();
-
-	std::vector<UIItem *> Items;
-
-	void addItem(UIItem *item);
 
 	void removeItem(uint32_t index) {
 		Items.erase(Items.begin() + index);
@@ -388,6 +465,8 @@ class vArrangement : public UIItem{
 public:
 	float spacing;
 
+	vArrangement() = default;
+
 	vArrangement(float px, float py, float ex, float ey, float spc) {
 		posx = px;
 		posy = -1.0f * py;
@@ -401,10 +480,6 @@ public:
 	}
 
 	void calculateScreenPosition();
-
-	std::vector<UIItem*> Items;
-
-	void addItem(UIItem* item);
 
 	void updateDisplay();
 

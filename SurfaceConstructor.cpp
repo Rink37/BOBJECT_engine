@@ -174,7 +174,10 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 	OSNormTex->generateMipmaps();
 	OSNormTex->textureImageView = OSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-	Normal[1] = new Material(OSNormTex);
+	osNormMaterial.~osNormMaterial();
+	new (&osNormMaterial) Material(OSNormTex);
+
+	Normal[1] = &osNormMaterial;
 
 	generator.cleanupOS();
 }
@@ -183,8 +186,49 @@ void surfaceConstructor::contextConvert() {
 	if (diffTex == nullptr || OSNormTex == nullptr) {
 		return;
 	}
+
+	// Commented lines are used to save videos/images of the filter process (used for my tiktok video)
+
+	// string baseName = "ConversionSec"; //
+
+	// filter tempSobelX(diffTex, new SOBELXSHADER); //
+	// tempSobelX.filterImage(); // 
+	// filter tempSobelY(diffTex, new SOBELYSHADER); //
+	// tempSobelY.filterImage(); //
+	// Mat tempxgrad; // 
+	// Mat tempygrad; //
+
+	// tempSobelX.filterTarget[0]->getCVMat(); //
+	// tempSobelY.filterTarget[0]->getCVMat(); //
+
+	// cvtColor(tempSobelX.filterTarget[0]->texMat, tempxgrad, COLOR_RGB2GRAY); //
+	// cvtColor(tempSobelY.filterTarget[0]->texMat, tempygrad, COLOR_RGB2GRAY); //
+
+	// imwrite(baseName + string("NFXgrad.jpeg"), tempxgrad); //
+	// imwrite(baseName + string("NFYgrad.jpeg"), tempygrad); // 
+
 	filter Kuwahara(diffTex, new KUWAHARASHADER);
 	Kuwahara.filterImage();
+
+	// Kuwahara.filterTarget[0]->getCVMat(); //
+	// Mat kuw = Kuwahara.filterTarget[0]->texMat.clone(); //
+
+	// THIS IS A USEFUL OPENCV GAMMA CORRECTION FUNCTION - IT SHOULD BE INCLUDED IN THE TEXTURING
+	
+	// float gamma = 2.2; //
+	// float invGamma = 1 / gamma; //
+
+	// Mat table(1, 256, CV_8U); //
+	// uchar* p = table.ptr(); //
+	// for (int i = 0; i < 256; ++i) { //
+	// 	p[i] = (uchar)(pow(i / 255.0, invGamma) * 255); //
+	// } //
+
+	// LUT(kuw, table, kuw); //
+
+	// END OF GAMMA CORRECT //
+
+	// imwrite(baseName + string("KuwFilteredDiff.jpeg"), kuw); // 
 		
 	filter SobelX(Kuwahara.filterTarget[0], new SOBELXSHADER);
 	SobelX.filterImage();
@@ -199,6 +243,9 @@ void surfaceConstructor::contextConvert() {
 	cvtColor(SobelX.filterTarget[0]->texMat, xgrad, COLOR_RGB2GRAY);
 	cvtColor(SobelY.filterTarget[0]->texMat, ygrad, COLOR_RGB2GRAY);
 
+	// imwrite(baseName + string("FXgrad.jpeg"), xgrad); //
+	// imwrite(baseName + string("FYgrad.jpeg"), ygrad); // 
+
 	xgrad.convertTo(xgrad, CV_32F);
 	ygrad.convertTo(ygrad, CV_32F);
 
@@ -207,12 +254,19 @@ void surfaceConstructor::contextConvert() {
 	SobelY.cleanup();
 
 	diffTex->getCVMat();
-	Mat convertedY = diffTex->texMat.clone();
 
 	int thresh = 15;
 
 	OSNormTex->getCVMat();
-	resize(OSNormTex->texMat, OSNormTex->texMat, Size(convertedY.cols, convertedY.rows));
+	resize(OSNormTex->texMat, OSNormTex->texMat, Size(diffTex->texMat.cols, diffTex->texMat.rows));
+	Mat convertedY = OSNormTex->texMat.clone();
+
+	// VideoWriter convWriter; //
+	// int codec = VideoWriter::fourcc('a', 'v', 'c', '1'); //
+	// double fps = 30.0; //
+	// string filename = baseName + string("Avg.mp4"); //
+	// Size sizeFrame(convertedY.cols, convertedY.rows); //
+	// convWriter.open(filename, codec, fps, sizeFrame, 1); //
 
 	for (int x = 0; x != convertedY.cols; x++) {
 		vector<Vec3f> colours;
@@ -254,6 +308,9 @@ void surfaceConstructor::contextConvert() {
 				}
 			}
 		}
+		// if (x % 10 == 0) {
+		// 	convWriter.write(convertedY); //
+		// }
 	}
 
 	Mat converted = convertedY.clone();
@@ -300,11 +357,20 @@ void surfaceConstructor::contextConvert() {
 				}
 			}
 		}
+		// if (y % 10 == 0) {
+		// 	convWriter.write(converted); //
+		// }
 	}
+
+	// convWriter.release(); //
 
 	convertedY.release();
 
 	Mat scaleFacs = xgrad.clone();
+
+	// VideoWriter smootheWriter; //
+	// filename = baseName + string("Smoother.mp4"); //
+	// smootheWriter.open(filename, codec, fps, sizeFrame, 1); //
 
 	for (int y = 0; y != converted.rows; y++) {
 		vector<uint32_t> indexes;
@@ -345,6 +411,9 @@ void surfaceConstructor::contextConvert() {
 				}
 			}
 		}
+		// if (y % 10 == 0) {
+		// 	smootheWriter.write(converted); //
+		// }
 	}
 
 	for (int x = 0; x != converted.cols; x++) {
@@ -386,7 +455,14 @@ void surfaceConstructor::contextConvert() {
 				}
 			}
 		}
+		// if (x % 10 == 0) {
+		// 	smootheWriter.write(converted); //
+		// }
 	}
+
+	// smootheWriter.release(); //
+
+	// imwrite(baseName + string("Noisy.jpeg"), converted); //
 
 	scaleFacs.release();
 	xgrad.release();
@@ -597,6 +673,9 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 	TSNormTex->generateMipmaps();
 	TSNormTex->textureImageView = TSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-	Normal[2] = new Material(TSNormTex);
+	tsNormMaterial.~tsNormMaterial();
+	new (&tsNormMaterial) Material(TSNormTex);
+
+	Normal[2] = &tsNormMaterial;
 	generator.cleanupTS();
 }

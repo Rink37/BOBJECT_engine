@@ -23,61 +23,55 @@ public:
 	}
 
 	static surfaceConstructor* sinstance;
-	surfaceConstructor() = default; 
+	surfaceConstructor() = default;
 	~surfaceConstructor() = default;
 
-	void setupSurfaceConstructor() {
-		webcamTexture::get()->setup();
-		webcamMaterial = new Material(webcamTexture::get());
-		Diffuse = { webcamMaterial, webcamMaterial };
-		Normal = { webcamMaterial, webcamMaterial, webcamMaterial };
-		surfaceMat = webcamMaterial;
-	}
-
 	// Default state management //
-	Material* webcamMaterial = nullptr;
+	Material webcamMaterial;
+	Material diffuseMaterial;
+	Material osNormMaterial;
+	Material tsNormMaterial;
 
-	Texture* diffTex = nullptr; // The non-webcam texture used as the diffuse on the surface
-	Texture* OSNormTex = nullptr; // The non-webcam texture used as the object-space normal map of the surface
-	Texture* TSNormTex = nullptr; // The non-webcam texture used as the tangent-space normal map of the surface
+	void generateOSMap(Mesh*);
+	void transitionToTS(Mesh*);
+
+	bool normalAvailable = false;
+
+	Material surfaceMat;
+	std::string renderPipeline = "BFShading";
+
+	webcamTexture* webTex = nullptr;
+	Texture *diffTex = nullptr; // The non-webcam texture used as the diffuse on the surface
+	Texture *OSNormTex = nullptr; // The non-webcam texture used as the object-space normal map of the surface
+	Texture *TSNormTex = nullptr; // The non-webcam texture used as the tangent-space normal map of the surface
 	bool TSmatching = false;
 
 	// Materials used by the display panels //
-	std::array<Material*, 2> Diffuse = { }; // The material used as a diffuse - none if we don't load any image
+	std::array<Material*, 2> Diffuse{}; 
 	uint8_t diffuseIdx = 0;
-	std::array<Material*, 3> Normal = { } ; // The material used as the normal map
+	std::array<Material*, 3> Normal{} ;
 	uint8_t normalIdx = 0;
-	uint8_t normalType = 0; // 0 represents the OS normal, 1 represents the TS normal - we can index the correct normal as 1+normalType
+	uint8_t normalType = 0; 
 
 	void clearSurface() {
 		if (diffTex != nullptr) {
 			diffTex->cleanup();
+			delete diffTex;
 			diffTex = nullptr;
 		}
 		if (OSNormTex != nullptr) {
 			OSNormTex->cleanup();
+			delete OSNormTex;
 			OSNormTex = nullptr;
 		}
 		if (TSNormTex != nullptr) {
 			TSNormTex->cleanup();
+			delete TSNormTex;
 			TSNormTex = nullptr;
 		}
-		for (Material* mat : Diffuse) {
-			if (mat != webcamMaterial) {
-				mat->cleanup();
-			}
-		}
-		for (Material* mat : Normal) {
-			if (mat != webcamMaterial){
-				mat->cleanup();
-			}
-		}
-		Diffuse = { webcamMaterial, webcamMaterial };
-		Normal = { webcamMaterial, webcamMaterial, webcamMaterial };
-		if (surfaceMat != webcamMaterial) {
-			surfaceMat->cleanup();
-		}
-		surfaceMat = webcamMaterial;
+		Diffuse = { &webcamMaterial, &webcamMaterial };
+		Normal = { &webcamMaterial, &webcamMaterial, &webcamMaterial };
+		surfaceMat.init(webTex);
 		diffuseIdx = 0;
 		normalIdx = 0;
 		normalType = 0;
@@ -116,123 +110,124 @@ public:
 	}
 
 	void loadDiffuse(Texture* diffuse) {
-		if (Diffuse[1] != webcamMaterial) {
-			Diffuse[1]->cleanup();
-		}
 		if (diffTex != nullptr) {
 			diffTex->cleanup();
+			delete diffTex;
+			diffTex = nullptr;
 		}
 		diffTex = diffuse;
-		Diffuse[1] = new Material(diffTex);
+		diffuseMaterial.init(diffTex);
+		Diffuse[1] = &diffuseMaterial;
 		diffuseIdx = 1;
 	}
 
 	void loadNormal(Texture* normal) {
 		if (!normalType) {
-			if (Normal[1] != webcamMaterial) {
-				Normal[1]->cleanup();
-			}
 			if (OSNormTex != nullptr) {
 				OSNormTex->cleanup();
+				delete OSNormTex;
+				OSNormTex = nullptr;
 			}
 			OSNormTex = normal;
-			//OSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
-			Normal[1] = new Material(OSNormTex);
+			osNormMaterial.init(OSNormTex);
+			Normal[1] = &osNormMaterial;
 			normalIdx = 1;
 			TSmatching = false;
 		}
 		else {
-			if (Normal[2] != webcamMaterial) {
-				Normal[2]->cleanup();
-			}
 			if (TSNormTex != nullptr) {
 				TSNormTex->cleanup();
+				delete TSNormTex;
+				TSNormTex = nullptr;
 			}
 			TSNormTex = normal;
-			//TSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
-			Normal[2] = new Material(TSNormTex);
+			tsNormMaterial.init(TSNormTex);
+			Normal[2] = &tsNormMaterial; 
 			normalIdx = 2;
 		}
 	}
 
-	void generateOSMap(Mesh*);
-	void transitionToTS(Mesh*);
-
-	bool normalAvailable = false;
-
-	Material* surfaceMat = nullptr;
-	std::string renderPipeline = "BFShading";
-
+	void setupSurfaceConstructor() {
+		webTex = webcamTexture::get();
+		webTex->setup();
+		webcamMaterial.init(webTex);
+		Diffuse = { &webcamMaterial, &webcamMaterial };
+		Normal = { &webcamMaterial, &webcamMaterial, &webcamMaterial };
+		surfaceMat.init(webTex);
+	}
+	
 	void updateSurfaceMat() {
-		if (surfaceMat != nullptr && surfaceMat != webcamMaterial) {
-			surfaceMat->cleanupDescriptor();
-		}
-		Texture* d;
+		Texture* d = nullptr;
 		if (diffuseIdx == 0 || diffTex == nullptr) {
-			d = webcamTexture::get();
+			d = webTex;
 		}
 		else {
 			d = diffTex;
 		}
 		if (normalAvailable) {
 			Texture* n = nullptr;
-			switch (normalIdx) {
+			switch (normalType) {
 			case 0:
-				n = webcamTexture::get();
+				renderPipeline = "OSNormBF";
 				break;
+			case 1:
+				renderPipeline = "TSNormBF";
+				break;
+			default:
+				renderPipeline = "OSNormBF";
+				break;
+			}
+			switch (normalIdx) {
 			case 1:
 				if (OSNormTex != nullptr) {
 					n = OSNormTex;
 				}
 				else {
-					n = webcamTexture::get();
+					n = webTex;
 				}
-				renderPipeline = "OSNormBF";
 				break;
 			case 2:
 				if (TSNormTex != nullptr) {
 					n = TSNormTex;
 				}
 				else {
-					n = webcamTexture::get();
+					n = webTex;
 				}
-				renderPipeline = "TSNormBF";
 				break;
 			default:
-				n = webcamTexture::get();
+				n = webTex;
 				break;
 			}
-			surfaceMat = new Material(d, n);
+			surfaceMat.init(d, n);
 		}
 		else {
 			renderPipeline = "BFShading";
-			surfaceMat = new Material(d);
+			surfaceMat.init(d);
 		}
 	}
 
 	void cleanup() {
 		if (diffTex != nullptr) {
 			diffTex->cleanup();
+			delete diffTex;
+			diffTex = nullptr;
 		}
 		if (OSNormTex != nullptr) {
 			OSNormTex->cleanup();
+			delete OSNormTex;
+			OSNormTex = nullptr;
 		}
 		if (TSNormTex != nullptr) {
 			TSNormTex->cleanup();
+			delete TSNormTex;
+			TSNormTex = nullptr;
 		}
-		for (Material* material : Diffuse) {
-			if (material != webcamMaterial) {
-				material->cleanup();
-			}
-		}
-		for (Material* material : Normal) {
-			if (material != webcamMaterial) {
-				material->cleanup();
-			}
-		}
-		surfaceMat->cleanup();
+		diffuseMaterial.cleanupDescriptor();
+		osNormMaterial.cleanupDescriptor();
+		tsNormMaterial.cleanupDescriptor();
+		surfaceMat.cleanupDescriptor();
 		webcamTexture::get()->cleanup();
-		webcamMaterial->cleanupDescriptor();
+		webcamMaterial.cleanupDescriptor();
 	}
 };
 

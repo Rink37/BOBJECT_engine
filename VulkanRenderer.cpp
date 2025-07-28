@@ -67,9 +67,13 @@ public:
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		sConst->setupSurfaceConstructor();
 		createCanvas();
-		webcamTexture::get()->webCam.loadFilter();
+		if (sConst->webTex->webCam != nullptr) {
+			sConst->webTex->webCam->loadFilter();
+		}
 		mainLoop();
 		cleanup();
+		surfaceConstructor::destruct();
+		webcamTexture::destruct();
 		Engine::destruct();
 	}
 private:
@@ -77,11 +81,11 @@ private:
 	surfaceConstructor* sConst = surfaceConstructor::get();
 
 	Camera camera;
-	ImagePanel* diffuseView = nullptr;
-	ImagePanel* normalView = nullptr;
+	ImagePanel *diffuseView = nullptr;
+	ImagePanel *normalView = nullptr;
 
-	imageData* ub = new UNRENDEREDBUTTON;
-	imageData* tcb = new TESTCHECKBOXBUTTON;
+	imageData ub = UNRENDEREDBUTTON;
+	imageData tcb = TESTCHECKBOXBUTTON;
 
 	vector<UIItem*> canvas{};
 
@@ -95,10 +99,8 @@ private:
 	vector<StaticObject> staticObjects = {};
 	map<string, int> ObjectMap = {};
 
-	bool webcamObjectView = true;
-
 	hArrangement *NormalButtons = nullptr;
-	vArrangement* SurfacePanel = nullptr;
+	vArrangement *SurfacePanel = nullptr;
 
 	Checkbox* diffuseTog = nullptr;
 	Checkbox* normalTog = nullptr;
@@ -145,11 +147,11 @@ private:
 
 		std::function<void(UIItem*)> addNormalButton = bind(&Application::createNormalButtons, this, placeholders::_1);
 
-		imageData* normal = new NORMALTEXT;
-		imageData* plusButton = new PLUSBUTTON;
+		imageData normal = NORMALTEXT;
+		imageData plusButton = PLUSBUTTON;
 
-		Button* normalTextPanel = new Button(normal);
-		Button* normalPlus = new Button(plusButton, addNormalButton);
+		Button* normalTextPanel = new Button(&normal);
+		Button* normalPlus = new Button(&plusButton, addNormalButton);
 
 		spacer* Spacer = new spacer;
 
@@ -158,9 +160,6 @@ private:
 		NormalButtons->addItem(Spacer);
 
 		SurfacePanel->updateDisplay();
-
-		delete normal;
-		delete plusButton;
 	}
 	
 	void loadSave(UIItem* owner) {
@@ -172,23 +171,13 @@ private:
 		}
 		newSession(owner);
 		session::get()->loadStudio(saveLocation);
-		//webcamTexture::get()->webCam.loadFilter();
-		//for (StaticObject obj : staticObjects) {
-		//	obj.mesh->cleanup();
-		//}
-		//staticObjects.clear();
-		//for (UIItem* item : ObjectButtons->Items) {
-		//	item->image->cleanup();
-		//}
-		//ObjectButtons->Items.clear();
-		//ObjectMap.clear();
 		for (string path : session::get()->currentStudio.modelPaths) {
 			StaticObject newObject(path);
-			newObject.mat = sConst->surfaceMat;
+			newObject.mat = &sConst->surfaceMat;
 
 			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
 
-			Checkbox* objectButton = new Checkbox(0.0f, 0.0f, 0.15f, 0.15f, tcb, ub);
+			Checkbox* objectButton = new Checkbox(0.0f, 0.0f, 0.15f, 0.15f, &tcb, &ub);
 
 			objectButton->updateDisplay();
 			objectButton->setClickFunction(testfunction);
@@ -221,11 +210,11 @@ private:
 			}
 			sConst->normalType = 0;
 			sConst->loadNormal(loadedTexture);
-			sConst->normalIdx = 1;
 			normalView->image->mat[0] = sConst->currentNormal();
 			normalTog->activestate = false;
 			normalTog->image->matidx = 1;
-
+			NormalButtons->Items[2]->activestate = true;
+			NormalButtons->Items[2]->image->matidx = 0;
 		}
 		if (session::get()->currentStudio.TSPath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.TSPath, VK_FORMAT_R8G8B8A8_UNORM);
@@ -234,7 +223,6 @@ private:
 			}
 			sConst->normalType = 1;
 			sConst->loadNormal(loadedTexture);
-			sConst->normalIdx = 2;
 			sConst->TSmatching = true;
 			normalView->image->mat[0] = sConst->currentNormal();
 			normalTog->activestate = false;
@@ -243,7 +231,7 @@ private:
 			NormalButtons->Items[2]->image->matidx = 1;
 		}
 		sConst->updateSurfaceMat();
-		webcamTexture::get()->webCam.saveFilter();
+		webcamTexture::get()->webCam->saveFilter();
 	}
 
 	void save(UIItem* owner) {
@@ -258,50 +246,42 @@ private:
 	void createCanvas() {
 		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
 		hArrangement *Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
-
-		hArrangement* SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f);
+		hArrangement *SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f);
 
 		SurfacePanel = new vArrangement(1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 
 		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this, placeholders::_1);
 		std::function<void(UIItem*)> lightingFunction = bind(&Application::toggleLighting, this, placeholders::_1);
-
-		std::function<void(UIItem*)> enableWebcamFunct = bind(&Application::enableWebcam, this, placeholders::_1);
-		std::function<void(UIItem*)> disableWebcamFunct = bind(&Application::disableWebcam, this, placeholders::_1);
 		std::function<void(UIItem*)> toggleWebcamFunct = bind(&Application::toggleWebcam, this, placeholders::_1);
 		std::function<void(UIItem*)> configureWebcamFunct = bind(&Application::calibrateWebcam, this, placeholders::_1);
-
 		std::function<void(UIItem*)> loadObjectFunct = bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
-
 		std::function<void(UIItem*)> addNormalButton = bind(&Application::createNormalButtons, this, placeholders::_1);
-
 		std::function<void(UIItem*)> toggleDiffuse = bind(&Application::toggleDiffuseCam, this, placeholders::_1);
 		std::function<void(UIItem*)> loadDiffuse = bind(&Application::loadDiffuseImage, this, placeholders::_1);
 		std::function<void(UIItem*)> saveWebcam = bind(&Application::saveDiffuseImage, this, placeholders::_1);
-
 		std::function<void(UIItem*)> saveSessionFunc = bind(&Application::save, this, placeholders::_1);
 		std::function<void(UIItem*)> loadSessionFunc = bind(&Application::loadSave, this, placeholders::_1);
 		std::function<void(UIItem*)> newSessionFunc = bind(&Application::newSession, this, placeholders::_1);
 
-		imageData* lb = new LOADBUTTON;
-		imageData* rb = new RENDEREDBUTTON;
-		imageData* fb = new UNRENDEREDBUTTON;
-		imageData* ub = new WEBCAMVIEWBUTTON;
-		imageData* wb = new WIREFRAMEBUTTON;
-		imageData* plb = new PLAYBUTTON;
-		imageData* pb = new PAUSEBUTTON;
-		imageData* sb = new SETTINGSBUTTON;
-		imageData* diffuse = new DIFFUSETEXT;
-		imageData* normal = new NORMALTEXT;
-		imageData* webcamOn = new WEBCAMONBUTTON;
-		imageData* webcamOff = new WEBCAMOFFBUTTON;
-		imageData* OpenButton = new OPENBUTTON;
-		imageData* SaveButton = new SAVEBUTTON;
-		imageData* plusButton = new PLUSBUTTON;
+		imageData lb = LOADBUTTON;
+		imageData rb = RENDEREDBUTTON;
+		imageData fb = UNRENDEREDBUTTON;
+		imageData ub = WEBCAMVIEWBUTTON;
+		imageData wb = WIREFRAMEBUTTON;
+		imageData plb = PLAYBUTTON;
+		imageData pb = PAUSEBUTTON;
+		imageData sb = SETTINGSBUTTON;
+		imageData diffuse = DIFFUSETEXT;
+		imageData normal = NORMALTEXT;
+		imageData webcamOn = WEBCAMONBUTTON;
+		imageData webcamOff = WEBCAMOFFBUTTON;
+		imageData OpenButton = OPENBUTTON;
+		imageData SaveButton = SAVEBUTTON;
+		imageData plusButton = PLUSBUTTON;
 
-		Button* newSession = new Button(plusButton, newSessionFunc);
-		Button* loadSession = new Button(OpenButton, loadSessionFunc);
-		Button* saveSession = new Button(SaveButton, saveSessionFunc);
+		Button* newSession = new Button(&plusButton, newSessionFunc);
+		Button* loadSession = new Button(&OpenButton, loadSessionFunc);
+		Button* saveSession = new Button(&SaveButton, saveSessionFunc);
 
 		SessionButtons->addItem(newSession);
 		SessionButtons->addItem(loadSession);
@@ -309,28 +289,25 @@ private:
 
 		canvas.push_back(SessionButtons);
 
-		Button* diffuseTextPanel = new Button(diffuse);
+		Button* diffuseTextPanel = new Button(&diffuse);
 		
-		diffuseTog = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, webcamOn, webcamOff);
+		diffuseTog = new Checkbox(0.0f, 0.0f, 1.0f, 1.0f, &webcamOn, &webcamOff);
 		diffuseTog->Name = "ToggleDiffuseWebcam";
 		diffuseTog->setClickFunction(toggleDiffuse);
 
-		Button* diffLoad = new Button(OpenButton, loadDiffuse);
-
-		Button* diffSave = new Button(SaveButton, saveWebcam);
+		Button* diffLoad = new Button(&OpenButton, loadDiffuse);
+		Button* diffSave = new Button(&SaveButton, saveWebcam);
 
 		hArrangement* DiffuseButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
-		Button* normalTextPanel = new Button(normal);
-		Button* normalPlus = new Button(plusButton, addNormalButton);
+		Button* normalTextPanel = new Button(&normal);
+		Button* normalPlus = new Button(&plusButton, addNormalButton);
 
 		NormalButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
-		spacer* testSpacer = new spacer;
-
 		NormalButtons->addItem(normalTextPanel);
 		NormalButtons->addItem(normalPlus);
-		NormalButtons->addItem(testSpacer);
+		NormalButtons->addItem(new spacer);
 
 		DiffuseButtons->addItem(diffuseTextPanel);
 		DiffuseButtons->addItem(diffuseTog);
@@ -338,14 +315,14 @@ private:
 		DiffuseButtons->addItem(diffLoad);
 		DiffuseButtons->addItem(diffSave);
 		
-		Button* loadObjectButton = new Button(lb, loadObjectFunct);
+		Button* loadObjectButton = new Button(&lb, loadObjectFunct);
 		
-		Button* litRenderingButton = new Button(rb);
-		Button* unlitRenderingButton = new Button(ub);
-		Button* wireframeRenderingButton = new Button(wb);
+		Button* litRenderingButton = new Button(&rb);
+		Button* unlitRenderingButton = new Button(&ub);
+		Button* wireframeRenderingButton = new Button(&wb);
 		
-		Checkbox* webcamToggle = new Checkbox(plb, pb, toggleWebcamFunct);
-		Button* settingsButton = new Button(sb, configureWebcamFunct);
+		Checkbox* webcamToggle = new Checkbox(&plb, &pb, toggleWebcamFunct);
+		Button* settingsButton = new Button(&sb, configureWebcamFunct);
 
 		unlitRenderingButton->Name = "WebcamMat";
 		unlitRenderingButton->setClickFunction(pipelinefunction);
@@ -360,9 +337,9 @@ private:
 		Renderbuttons->addItem(litRenderingButton);
 		Renderbuttons->addItem(wireframeRenderingButton);
 
-		Button* webcamImage = new Button(webcamOn);
+		Button* webcamImage = new Button(&webcamOn);
 
-		Checkbox* litCheckbox = new Checkbox(rb, fb, lightingFunction);
+		Checkbox* litCheckbox = new Checkbox(&rb, &fb, lightingFunction);
 
 		Videobuttons->addItem(webcamImage);
 		Videobuttons->addItem(webcamToggle);
@@ -382,7 +359,7 @@ private:
 
 		canvas.push_back(buttons);
 
-		diffuseView = new ImagePanel(0.0f, 0.0f, 1.0f, 0.71f, sConst->currentDiffuse(), true);
+		diffuseView = new ImagePanel(sConst->currentDiffuse(), true);
 		SurfacePanel->addItem(DiffuseButtons);
 		SurfacePanel->addItem(diffuseView);
 		SurfacePanel->addItem(NormalButtons);
@@ -393,22 +370,6 @@ private:
 		for (UIItem* item : canvas) {
 			item->updateDisplay();
 		}
-
-		delete lb;
-		delete rb;
-		delete fb;
-		delete ub;
-		delete wb;
-		delete plb;
-		delete pb;
-		delete sb;
-		delete diffuse;
-		delete normal;
-		delete webcamOn;
-		delete webcamOff;
-		delete OpenButton;
-		delete SaveButton;
-		delete plusButton;
 	}
 
 	void mainLoop() {
@@ -418,7 +379,7 @@ private:
 			webcamTexture::get()->updateWebcam();
 			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
 			if (state == GLFW_PRESS) {
-				mouseDown = 1;
+				mouseDown = true;
 			}
 			else if (~state && mouseDown){
 				for (UIItem* item : canvas) {
@@ -428,7 +389,7 @@ private:
 						sitem->checkForEvent(mouseX, mouseY, GLFW_PRESS);
 					}
 				}
-				mouseDown = 0;
+				mouseDown = false;
 			}
 			drawFrame();
 		}
@@ -470,9 +431,13 @@ private:
 			sConst->loadNormal(loadedTexture);
 			sConst->normalIdx = 1 + sConst->normalType;
 			normalView->image->mat[0] = sConst->currentNormal();
+			normalView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
+			normalView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
+			normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
 			normalTog->activestate = false;
 			normalTog->image->matidx = 1;
 			sConst->updateSurfaceMat();
+			SurfacePanel->arrangeItems();
 			if (!sConst->normalType) {
 				session::get()->currentStudio.OSPath = fileName;
 			}
@@ -485,7 +450,7 @@ private:
 	void saveNormalImage(UIItem* owner) {
 		Mat saveNormal;
 		if (sConst->normalIdx == 0) {
-			saveNormal = webcamTexture::get()->webCam.webcamFrame;
+			saveNormal = webcamTexture::get()->webCam->webcamFrame;
 		}
 		else {
 			if (sConst->normalType) {
@@ -518,9 +483,13 @@ private:
 			sConst->loadDiffuse(loadedTexture);
 			sConst->diffuseIdx = 1;
 			diffuseView->image->mat[0] = sConst->currentDiffuse();
+			diffuseView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
+			diffuseView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
+			diffuseView->sqAxisRatio = static_cast<float>(diffuseView->image->texHeight) / static_cast<float>(diffuseView->image->texWidth);
 			diffuseTog->activestate = false;
 			diffuseTog->image->matidx = 1;
 			sConst->updateSurfaceMat();
+			SurfacePanel->arrangeItems();
 			session::get()->currentStudio.diffusePath = fileName;
 		}
 	}
@@ -528,7 +497,7 @@ private:
 	void saveDiffuseImage(UIItem* owner) {
 		Mat saveDiffuse;
 		if (sConst->diffuseIdx == 0) {
-			saveDiffuse = webcamTexture::get()->webCam.webcamFrame;
+			saveDiffuse = webcamTexture::get()->webCam->webcamFrame;
 		}
 		else {
 			sConst->diffTex->getCVMat();
@@ -577,36 +546,30 @@ private:
 		NormalButtons->getImages(images);
 
 		for (UIImage* image : images) {
-			//for (Material* mat : image->mat) {
-			//	if (mat != sConst->webcamMaterial) {
-			//		mat->cleanup();
-			//	}
-			//}
-			//image->mesh.cleanup();
 			image->cleanup();
 		}
 		
 		NormalButtons->Items.clear();
 
-		imageData* normal = new NORMALTEXT;
-		imageData* webcamOn = new WEBCAMONBUTTON;
-		imageData* webcamOff = new WEBCAMOFFBUTTON;
-		imageData* OpenButton = new OPENBUTTON;
-		imageData* SaveButton = new SAVEBUTTON;
-		imageData* osType = new OSBUTTON;
-		imageData* tsType = new TANGENTSPACE;
-		imageData* diffToNorm = new D2NBUTTON;
+		imageData normal = NORMALTEXT;
+		imageData webcamOn = WEBCAMONBUTTON;
+		imageData webcamOff = WEBCAMOFFBUTTON;
+		imageData OpenButton = OPENBUTTON;
+		imageData SaveButton = SAVEBUTTON;
+		imageData osType = OSBUTTON;
+		imageData tsType = TANGENTSPACE;
+		imageData diffToNorm = D2NBUTTON;
 
-		Button* normalText = new Button(normal);
+		Button* normalText = new Button(&normal);
 
-		normalTog = new Checkbox(webcamOn, webcamOff, toggleWebcam);
+		normalTog = new Checkbox(&webcamOn, &webcamOff, toggleWebcam);
 		normalTog->activestate = false;
 		normalTog->image->matidx = 1;
 
-		Checkbox* mapTypeToggle = new Checkbox(osType, tsType, toggleType);
-		Button* copyLayout = new Button(diffToNorm, convertImg);
-		Button* normalLoad = new Button(OpenButton, loadNorm);
-		Button* normalSave = new Button(SaveButton, saveNorm);
+		Checkbox* mapTypeToggle = new Checkbox(&osType, &tsType, toggleType);
+		Button* copyLayout = new Button(&diffToNorm, convertImg);
+		Button* normalLoad = new Button(&OpenButton, loadNorm);
+		Button* normalSave = new Button(&SaveButton, saveNorm);
 
 		NormalButtons->addItem(normalText);
 		NormalButtons->addItem(normalTog);
@@ -618,38 +581,27 @@ private:
 		NormalButtons->arrangeItems();
 		NormalButtons->updateDisplay();
 
-		normalView = new ImagePanel(0.0f, 0.0f, 1.0f, 0.71f, sConst->currentNormal(), true);
-		normalView->image->texHeight = static_cast<uint32_t>(0.71f * normalView->image->texWidth);
+		normalView = new ImagePanel(sConst->currentNormal(), true);
+		normalView->image->texHeight = diffuseView->image->texHeight;
+		normalView->image->texWidth = diffuseView->image->texWidth;
+		normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
 		normalView->updateDisplay();
 
 		SurfacePanel->addItem(normalView);
 		SurfacePanel->addItem(new spacer);
 		SurfacePanel->arrangeItems();
-
-		delete normal;
-		delete webcamOn;
-		delete webcamOff;
-		delete OpenButton;
-		delete SaveButton;
-		delete osType;
-		delete tsType;
-		delete diffToNorm;
-	}
-
-	void enableWebcam(UIItem* owner) {
-		webcamTexture::get()->webCam.shouldUpdate = true;
-	}
-
-	void disableWebcam(UIItem* owner) {
-		webcamTexture::get()->webCam.shouldUpdate = false;
 	}
 
 	void toggleWebcam(UIItem* owner) {
-		webcamTexture::get()->webCam.shouldUpdate = owner->activestate;
+		if (webcamTexture::get()->webCam != nullptr) {
+			webcamTexture::get()->webCam->shouldUpdate = owner->activestate;
+		}
 	}
 
 	void calibrateWebcam(UIItem* owner) {
-		webcamTexture::get()->webCam.calibrateCornerFilter();
+		if (webcamTexture::get()->webCam != nullptr) {
+			webcamTexture::get()->webCam->calibrateCornerFilter();
+		}
 	}
 
 	void buttonLoadStaticObject(UIItem* owner) {
@@ -707,14 +659,11 @@ private:
 				return;
 			}
 			StaticObject newObject(modelPath);
-			//if (newObject.mesh == nullptr) {
-			//	return;
-			//}
-			newObject.mat = sConst->surfaceMat;
+			newObject.mat = &sConst->surfaceMat;
 
 			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
 
-			Checkbox* objectButton = new Checkbox(0.0f, 0.0f, 0.15f, 0.15f, tcb, ub);
+			Checkbox* objectButton = new Checkbox(0.0f, 0.0f, 0.15f, 0.15f, &tcb, &ub);
 
 			objectButton->updateDisplay();
 			objectButton->setClickFunction(testfunction);
@@ -749,7 +698,7 @@ private:
 
 			for (UIImage *image : images) {
 				for (Material* mat : image->mat) {
-					if (mat != sConst->webcamMaterial && !mat->cleaned) {
+					if (mat != &sConst->webcamMaterial && !mat->cleaned) {
 						mat->cleanup();
 					}
 				}
@@ -894,33 +843,11 @@ private:
 		scissor.offset = { 0,0 };
 		scissor.extent = engine->swapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-		//vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UVWireframe")]);
-
-		//for (uint32_t i = 0; i != staticObjects.size(); i++) {
-		//	if (staticObjects[i].isVisible) {
-		//		VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
-		//		VkDeviceSize offsets[] = { 0 };
-
-		//		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-		//		vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-		//		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &staticObjects[i].mat->descriptorSets[currentFrame], 0, nullptr);
-
-		//		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
-		//	}
-		//}
 		
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UIShading")]);
 
 		for (uint32_t i = 0; i != canvas.size(); i++) {
-			vector<UIImage*> images;
-			canvas[i]->getImages(images);
-
-			for (UIImage *image : images) {
-				image->draw(commandBuffer, currentFrame);
-			}
+			canvas[i]->draw(commandBuffer, currentFrame);
 		}
 
 		if (viewIndex == 1 && lit) {
@@ -936,10 +863,10 @@ private:
 					vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 					if (sConst->normalAvailable) {
-						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat->descriptorSets[currentFrame], 0, nullptr);
+						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
 					}
 					else {
-						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->surfaceMat->descriptorSets[currentFrame], 0, nullptr);
+						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
 					}
 
 					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
@@ -962,7 +889,7 @@ private:
 						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->currentDiffuse()->descriptorSets[currentFrame], 0, nullptr);
 					}
 					else {
-						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->webcamMaterial->descriptorSets[currentFrame], 0, nullptr);
+						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->webcamMaterial.descriptorSets[currentFrame], 0, nullptr);
 
 					}
 

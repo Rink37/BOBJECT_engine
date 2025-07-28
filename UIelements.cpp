@@ -86,11 +86,7 @@ void vArrangement::calculateScreenPosition() {
 	this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H;
 }
 
-void hArrangement::addItem(UIItem *item) {
-	Items.push_back(item);
-}
-
-void vArrangement::addItem(UIItem* item) {
+void UIItem::addItem(UIItem *item) {
 	Items.push_back(item);
 }
 
@@ -178,6 +174,7 @@ void vArrangement::arrangeItems() {
 
 	for (size_t i = 0; i != Items.size(); i++) {
 		if (!Items[i]->isSpacer()) {
+			// sf = static_cast<float>(texHeights[i]) / static_cast<float>(totalTexHeight);
 			extents.push_back(this->extentx * (1 - this->spacing) * Items[i]->sqAxisRatio);
 			totalHeight += extents[i] * 2 * W / H;
 		}
