@@ -1,0 +1,8 @@
+/CMakeLists.txt
+/CMakePresets.json
+/tiny_obj_loader.h
+models/
+savefiles/
+textures/
+.vs/
+out/
