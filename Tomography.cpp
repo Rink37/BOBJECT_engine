@@ -188,10 +188,10 @@ void matrixInverse(vector<vector<float>> matrix, vector<vector<float>>& inverse)
 	}
 }
 
-void calculateNormal(vector<Mat> images, vector<vector<float>> D) {
-	// Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
+void calculateNormal(vector<Mat> images, vector<vector<float>> D, Mat &normal) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
 	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
 	// D represents the list of light vectors for each image
+	// Assumes that the painting is a lambertian surface
 
 	assert(images.size() == D.size(), "Input vectors must be the same size");
 
@@ -213,25 +213,39 @@ void calculateNormal(vector<Mat> images, vector<vector<float>> D) {
 	matrixDot(DdotInverse, D, transformationD);
 	// transformationD = images.size() x 3 matrix
 
-	Mat normal = images[0].clone();
-	normal = Scalar(0, 0, 0);
+	normal = images[0].clone();
+	normal = Scalar(128, 128, 128);
+
+	vector<Mat> grayImages;
+	for (int i = 0; i != images.size(); i++) {
+		Mat gray;
+		cvtColor(images[i], gray, COLOR_RGB2GRAY);
+		grayImages.push_back(gray);
+	}
 
 	for (int y = 0; y != images[0].rows; y++) {
 		for (int x = 0; x != images[0].cols; x++) {
 			vector<vector<float>> L;
+			vector<float> Lcol;
 			for (int i = 0; i != images.size(); i++) {
-				vector<float> col;
-				Vec3f pixel = static_cast<Vec3f>(images[i].at<Vec3b>(x, y));
-				col.push_back(pixel[0]);
-				col.push_back(pixel[1]);
-				col.push_back(pixel[2]);
-				L.push_back(col);
+				Lcol.push_back(grayImages[i].at<int>(x, y));
 			}
-			// L = 3 x images.size() matrix
+			L.push_back(Lcol);
+			// L = 1 x images.size() matrix
 			// transformationD = images.size() x 3 matrix
-			vector<vector<float>> normalVector;
-			matrixDot(transformationD, L, normalVector);
+			vector<vector<float>> normalMatrix;
+			matrixDot(transformationD, L, normalMatrix);
 
+			assert(normalMatrix.size() == 1 && normalMatrix[0].size() == 3);
+
+			vector<float> normalVector = normalMatrix[0];
+			float normalLength = sqrt(normalVector[0] * normalVector[0] + normalVector[1] * normalVector[1] + normalVector[2] * normalVector[2]);
+
+			vector<int> normalPixel;
+			for (int i = 0; i != 3; i++) {
+				normalPixel.push_back(static_cast<int>(-((normalVector[i] / normalLength) - 1.0) / 2.0 * 255.0));
+			}
+			normal.at<Vec3b>(x, y) = Vec3b(normalPixel[0], normalPixel[1], normalPixel[2]);
 		}
 	}
 }
