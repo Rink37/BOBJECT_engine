@@ -48,6 +48,8 @@ public:
 	Texture *TSNormTex = nullptr; // The non-webcam texture used as the tangent-space normal map of the surface
 	bool TSmatching = false;
 
+	Texture surfaceNorm;
+
 	// Materials used by the display panels //
 	std::array<Material*, 2> Diffuse{}; 
 	uint8_t diffuseIdx = 0;

@@ -8,36 +8,49 @@ float eucDist(Point a, Point b) {
 	return sqrtf(powf(a.x - b.x, 2) + powf(a.y - b.y, 2));
 }
 
-void match_template(Mat src, Mat &target) {
+void match_template(Mat src, Mat* target, Size outdims) {
 
 	// Untested 
 
-	int division = 64;
+	int division = 128;
 	uint8_t offset = 2;
-	
-	int xdivs = src.rows / division;
-	int ydivs = src.cols / division;
 
-	vector<Point> initialPositions = {};
-	vector<Point> matchedPositions = {};
+	Mat downscaled;
+	resize(*target, downscaled, Size(src.cols, src.rows));
 
+	int xdivs = downscaled.cols / division;
+	int ydivs = downscaled.rows / division;
+
+	cout << xdivs << " " << ydivs << endl;
+
+	vector<Point2f> initialPositions = {};
+	vector<Point2f> matchedPositions = {};
+
+	int count = 0;
 	for (uint16_t y = 0; y != ydivs; y++) {
 		for (uint16_t x = 0; x != xdivs; x++) {
+			cout << count << "/" << ydivs * xdivs << endl;
+			count++;
 			for (uint8_t dy = 0; dy != offset; dy++) {
 				for (uint8_t dx = 0; dx != offset; dx++) {
-					if (((y + 1) * division + dy * division / offset) < src.cols && ((x + 1) * division + dx * division / offset) < src.rows) {
-						Mat temp = src(Range(x * division + dx * division / offset, (x + 1) * division + dx * division / offset), Range(y * division + dy * division / offset, (y + 1) * division + dy * division / offset));
+					if ((((y + 1) * division + dy * division / offset) <= src.rows) && (((x + 1) * division + dx * division / offset) <= src.cols)) {
+						
+						Mat temp = src(Range(y * division + dy * division / offset, (y + 1) * division + dy * division / offset), Range(x * division + dx * division / offset, (x + 1) * division + dx * division / offset));
+						
 						Mat res;
-						matchTemplate(target, temp, res, TM_CCORR_NORMED);
+						
+						matchTemplate(downscaled, temp, res, TM_CCORR_NORMED);
 
 						double min_val;
 						double max_val;
 						Point min_loc;
-						Point matchedPosition;
+						Point max_loc;
 
-						minMaxLoc(res, &min_val, &max_val, &min_loc, &matchedPosition);
+						minMaxLoc(res, &min_val, &max_val, &min_loc, &max_loc);
 
-						Point initialPosition(Vec2i(x * division + dx * division / offset, y * division + dy * division / offset));
+						Point2f matchedPosition(static_cast<float>(max_loc.x) * static_cast<float>(target->cols) / static_cast<float>(downscaled.cols), static_cast<float>(max_loc.y) * static_cast<float>(target->rows) / static_cast<float>(downscaled.rows));
+
+						Point2f initialPosition((x * division + dx * division / offset) * static_cast<float>(target->cols) / static_cast<float>(downscaled.cols), (y * division + dy * division / offset) * static_cast<float>(target->rows) / static_cast<float>(downscaled.rows) );
 
 						if (eucDist(initialPosition, matchedPosition) < division * 2) {
 							initialPositions.push_back(initialPosition);
@@ -45,14 +58,21 @@ void match_template(Mat src, Mat &target) {
 						}
 
 					}
-				}
+				} 
 			}
 		}
 	}
-	Mat M;
-	findHomography(initialPositions, matchedPositions, M, RANSAC, 5.0);
 
-	warpPerspective(target, target, M, Size(src.rows, src.cols));
+	Mat M = findHomography(matchedPositions, initialPositions);
+
+	target->convertTo(*target, CV_32FC3);
+
+	warpPerspective(*target, *target, M, Size(outdims.width, outdims.height));
+
+	target->convertTo(*target, CV_8UC3);
+	
+	//imshow("matched", target);
+	//waitKey(0);
 }
 
 void calculateVector(vector<float>& lightVec, float phi, float theta) {
@@ -77,6 +97,7 @@ void calculateVector(vector<float>& lightVec, float phi, float theta) {
 
 void matrixTranspose(vector<vector<float>> src, vector<vector<float>>& out) {
 	// switches the rows and columns of the src matrix
+	// Does not fail
 	
 	int width = src.size();
 	int height = src[0].size();
@@ -90,6 +111,7 @@ void matrixTranspose(vector<vector<float>> src, vector<vector<float>>& out) {
 		}
 		out.push_back(col);
 	}
+
 }
 
 void matrixDot(vector<vector<float>> a, vector<vector<float>> b, vector<vector<float>>& out) {
@@ -108,9 +130,11 @@ void matrixDot(vector<vector<float>> a, vector<vector<float>> b, vector<vector<f
 		}
 		out.push_back(col);
 	}
+
 }
 
 float matrixDeterminant(vector<vector<float>> matrix) {
+	// Does not fail
 	if (matrix.size() == 1 && matrix[0].size() == 1) {
 		return matrix[0][0];
 	}
@@ -168,6 +192,7 @@ void calculateCofactor(vector<vector<float>> matrix, vector<vector<float>>& out)
 				cofactorCol.push_back(-1*matrixDeterminant(tempMatrix));
 			}
 		}
+		out.push_back(cofactorCol);
 	}
 }
 
@@ -188,33 +213,65 @@ void matrixInverse(vector<vector<float>> matrix, vector<vector<float>>& inverse)
 	}
 }
 
-void calculateNormal(vector<Mat> images, vector<vector<float>> D, Mat *normal) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
+void printMatrix(vector<vector<float>> matrix) {
+	for (int y = 0; y != matrix[0].size(); y++) {
+		for (int x = 0; x != matrix.size(); x++) {
+			cout << matrix[x][y] << " ";
+		}
+		cout << endl;
+	}
+	cout << endl;
+}
+
+Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
 	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
+	// Seems like CPU compute takes a few minutes so worth investigating GPU
 	// D represents the list of light vectors for each image
 	// Assumes that the painting is a lambertian surface
 
 	assert(images.size() == D.size(), "Input vectors must be the same size");
 
 	// D = images.size() x 3 matrix
+
+	printMatrix(D);
 	
 	vector<vector<float>> DT;
 	matrixTranspose(D, DT);
 	// DT = 3 x images.size() matrix
 
+	printMatrix(DT);
+
 	vector<vector<float>> Ddot;
 	matrixDot(DT, D, Ddot);
-	// DT = 3x3 matrix
+	// Ddot = 3x3 matrix
+
+	printMatrix(Ddot);
 
 	vector<vector<float>> DdotInverse;
 	matrixInverse(Ddot, DdotInverse);
 	// DdotInverse = 3x3 matrix
 
+	printMatrix(DdotInverse);
+
 	vector<vector<float>> transformationD;
-	matrixDot(DdotInverse, D, transformationD);
+	matrixDot(DdotInverse, DT, transformationD);
 	// transformationD = images.size() x 3 matrix
 
-	*normal = images[0].clone();
-	*normal = Scalar(128, 128, 128);
+	printMatrix(transformationD);
+
+	matrixTranspose(transformationD, D);
+
+	printMatrix(D);
+
+	for (int y = 0; y != D[0].size(); y++) {
+		for (int x = 0; x != D.size(); x++) {
+			cout << D[x][y] << " ";
+		}
+		cout << endl;
+	}
+
+	Mat normal = images[0].clone();
+	normal = Scalar(0, 0, 0);
 
 	vector<Mat> grayImages;
 	for (int i = 0; i != images.size(); i++) {
@@ -223,36 +280,45 @@ void calculateNormal(vector<Mat> images, vector<vector<float>> D, Mat *normal) {
 		grayImages.push_back(gray);
 	}
 
-	for (int y = 0; y != images[0].rows; y++) {
-		for (int x = 0; x != images[0].cols; x++) {
+	for (int y = 0; y != normal.cols; y++) {
+		cout << y << endl;
+		for (int x = 0; x != normal.rows; x++) {
 			vector<vector<float>> L;
 			vector<float> Lcol;
 			for (int i = 0; i != images.size(); i++) {
-				Lcol.push_back(grayImages[i].at<int>(x, y));
+				Lcol.push_back(grayImages[i].at<uint8_t>(x, y));
 			}
 			L.push_back(Lcol);
-			// L = 1 x images.size() matrix
-			// transformationD = images.size() x 3 matrix
+
 			vector<vector<float>> normalMatrix;
-			matrixDot(transformationD, L, normalMatrix);
+
+			matrixDot(D, L, normalMatrix);
 
 			assert(normalMatrix.size() == 1 && normalMatrix[0].size() == 3);
 
 			vector<float> normalVector = normalMatrix[0];
+
 			float normalLength = sqrt(normalVector[0] * normalVector[0] + normalVector[1] * normalVector[1] + normalVector[2] * normalVector[2]);
 
-			vector<int> normalPixel;
-			for (int i = 0; i != 3; i++) {
-				normalPixel.push_back(static_cast<int>(-((normalVector[i] / normalLength) - 1.0) / 2.0 * 255.0));
+			vector<int> normalPixel = { 128, 128, 128 };
+
+			if (normalLength != 0.0f) {
+				//cout << normalVector[0] / normalLength << " " << normalVector[1] / normalLength << " " << normalVector[2] / normalLength << endl;
+				for (int i = 0; i != 3; i++) {
+					normalPixel[i] = static_cast<uint8_t>(((normalVector[i] / normalLength) + 1.0) / 2.0 * 255.0);
+				}
 			}
-			normal->at<Vec3b>(x, y) = Vec3b(normalPixel[0], normalPixel[1], normalPixel[2]);
+			
+			//cout << normalPixel[0] << " " << normalPixel[1] << " " << normalPixel[2] << endl;
+			normal.at<Vec3b>(x, y) = Vec3b(normalPixel[0], normalPixel[1], normalPixel[2]);
 		}
 	}
+
+	return normal;
 }
 
 void Tomographer::add_image(string filename, float phi, float theta) {
 	Mat image = imread(filename);
-	cvtColor(image, image, COLOR_BGR2RGB);
 
 	vector<float> lightVec;
 	calculateVector(lightVec, phi, theta);
@@ -264,13 +330,19 @@ void Tomographer::add_image(string filename, float phi, float theta) {
 void Tomographer::calculate_normal() {
 	if (alignRequired && (alignTemplate != nullptr)) {
 		// perform template matching for each image in the set
-		for (int i = 0; i != images.size(); i++) {
-			match_template(*alignTemplate, images[i]);
-		}
-	}
-	calculateNormal(images, vectors, &surfaceNormal->texMat);
+		Mat scaledAlign = alignTemplate->clone();
+		Size dims(scaledAlign.cols, scaledAlign.rows);
+		resize(scaledAlign, scaledAlign, Size(512 * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), 512));
 
-	imshow("Calculated normal", surfaceNormal->texMat);
+		for (int i = 0; i != images.size(); i++) {
+			match_template(scaledAlign, &images[i], dims);
+		}
+
+	}
+	Mat test = calculateNormal(images, vectors);
+
+	imshow("Calculated normal", test);
 	waitKey(0);
+
 	return;
 }

@@ -9,6 +9,7 @@
 #include"Meshes.h"
 #include"SurfaceConstructor.h"
 #include"StudioSession.h"
+#include"Tomography.h"
 
 #include"include/LoadButton.h"
 #include"include/PauseButton.h"
@@ -72,6 +73,7 @@ private:
 	surfaceConstructor* sConst = surfaceConstructor::get();
 
 	Camera camera;
+	Tomographer tomographer;
 	ImagePanel *diffuseView = nullptr;
 	ImagePanel *normalView = nullptr;
 
@@ -362,6 +364,9 @@ private:
 			glfwGetCursorPos(engine->window, &mouseX, &mouseY);
 			webcamTexture::get()->updateWebcam();
 			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
+			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L)) {
+				createTomogUI();
+			}
 			if (state == GLFW_PRESS) {
 				mouseDown = true;
 			}
@@ -571,6 +576,71 @@ private:
 		SurfacePanel->addItem(normalView);
 		SurfacePanel->addItem(new spacer);
 		SurfacePanel->arrangeItems();
+	}
+
+	void createTomogUI() {
+		imageData OpenButton = OPENBUTTON;
+		imageData normal = NORMALTEXT;
+
+		std::function<void(UIItem*)> tomogLoadTop = bind(&Application::loadTop, this, placeholders::_1);
+		std::function<void(UIItem*)> tomogLoadBottom = bind(&Application::loadBottom, this, placeholders::_1);
+		std::function<void(UIItem*)> tomogLoadLeft = bind(&Application::loadLeft, this, placeholders::_1);
+		std::function<void(UIItem*)> tomogLoadRight = bind(&Application::loadRight, this, placeholders::_1);
+		std::function<void(UIItem*)> computeNormal = bind(&Application::performTomog, this, placeholders::_1);
+
+		Button* loadTop = new Button(&OpenButton, tomogLoadTop);
+		Button* loadBottom = new Button(&OpenButton, tomogLoadBottom);
+		Button* loadLeft = new Button(&OpenButton, tomogLoadLeft);
+		Button* loadRight = new Button(&OpenButton, tomogLoadRight);
+		Button* run = new Button(&normal, computeNormal);
+
+		vArrangement* tomogButtons = new vArrangement(0.0, 0.0, 0.1, 0.4, 0.01);
+
+		tomogButtons->addItem(loadTop);
+		tomogButtons->addItem(loadBottom);
+		tomogButtons->addItem(loadLeft);
+		tomogButtons->addItem(loadRight);
+		tomogButtons->addItem(run);
+
+		tomogButtons->updateDisplay();
+
+		canvas.push_back(tomogButtons);
+	}
+
+	void loadTop(UIItem* owner) {
+		string fileName = winFile::OpenFileDialog();
+		if (fileName != string("fail")) {
+			tomographer.add_image(fileName, 90.0, 50.0);
+		}
+	}
+
+	void loadBottom(UIItem* owner) {
+		string fileName = winFile::OpenFileDialog();
+		if (fileName != string("fail")) {
+			tomographer.add_image(fileName, 270.0, 50.0);
+		}
+	}
+
+	void loadLeft(UIItem* owner) {
+		string fileName = winFile::OpenFileDialog();
+		if (fileName != string("fail")) {
+			tomographer.add_image(fileName, 180.0, 50.0);
+		}
+	}
+
+	void loadRight(UIItem* owner) {
+		string fileName = winFile::OpenFileDialog();
+		if (fileName != string("fail")) {
+			tomographer.add_image(fileName, 0.0, 50.0);
+		}
+	}
+
+	void performTomog(UIItem* owner) {
+		sConst->diffTex->getCVMat();
+		tomographer.outdims = Size(sConst->diffTex->texMat.cols, sConst->diffTex->texMat.rows);
+		tomographer.alignTemplate = &sConst->diffTex->texMat;
+		tomographer.alignRequired = true;
+		tomographer.calculate_normal();
 	}
 
 	void toggleWebcam(UIItem* owner) {
