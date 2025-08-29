@@ -13,10 +13,10 @@ void match_template(Mat src, Mat* target, Size outdims) {
 	// Untested 
 
 	int division = 128;
-	uint8_t offset = 2;
+	uint8_t offset = 4;
 
 	Mat downscaled;
-	resize(*target, downscaled, Size(src.cols, src.rows));
+	resize(*target, downscaled, Size(src.rows * target->cols / target->rows, src.rows));
 
 	int xdivs = downscaled.cols / division;
 	int ydivs = downscaled.rows / division;
@@ -73,6 +73,17 @@ void match_template(Mat src, Mat* target, Size outdims) {
 	
 	//imshow("matched", target);
 	//waitKey(0);
+}
+
+const int MAX_FEATURES = 500;
+const float GOOD_MATCH_PERCENT = 0.15f;
+
+void match_template_new(Mat src, Mat* target, Size outdims) {
+	Mat srcGray, targetGray;
+	cvtColor(src, srcGray, COLOR_BGR2GRAY);
+	cvtColor(*target, targetGray, COLOR_BGR2GRAY);
+
+	resize(targetGray, targetGray, Size(src.rows * target->cols/target->rows, src.rows));
 }
 
 void calculateVector(vector<float>& lightVec, float phi, float theta) {
@@ -133,6 +144,17 @@ void matrixDot(vector<vector<float>> a, vector<vector<float>> b, vector<vector<f
 
 }
 
+void printMatrix(vector<vector<float>> matrix) {
+	for (int y = 0; y != matrix[0].size(); y++) {
+		for (int x = 0; x != matrix.size(); x++) {
+			cout << matrix[x][y] << " ";
+		}
+		cout << endl;
+	}
+	cout << endl;
+}
+
+
 float matrixDeterminant(vector<vector<float>> matrix) {
 	// Does not fail
 	if (matrix.size() == 1 && matrix[0].size() == 1) {
@@ -160,6 +182,7 @@ float matrixDeterminant(vector<vector<float>> matrix) {
 			determinant -= matrix[x][0] * matrixDeterminant(subMatrix);
 		}
 	}
+	return determinant;
 }
 
 void calculateCofactor(vector<vector<float>> matrix, vector<vector<float>>& out) {
@@ -213,16 +236,6 @@ void matrixInverse(vector<vector<float>> matrix, vector<vector<float>>& inverse)
 	}
 }
 
-void printMatrix(vector<vector<float>> matrix) {
-	for (int y = 0; y != matrix[0].size(); y++) {
-		for (int x = 0; x != matrix.size(); x++) {
-			cout << matrix[x][y] << " ";
-		}
-		cout << endl;
-	}
-	cout << endl;
-}
-
 Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
 	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
 	// Seems like CPU compute takes a few minutes so worth investigating GPU
@@ -232,17 +245,13 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 	assert(images.size() == D.size(), "Input vectors must be the same size");
 
 	// D = images.size() x 3 matrix
-
-	printMatrix(D);
 	
 	vector<vector<float>> DT;
 	matrixTranspose(D, DT);
 	// DT = 3 x images.size() matrix
 
-	printMatrix(DT);
-
 	vector<vector<float>> Ddot;
-	matrixDot(DT, D, Ddot);
+	matrixDot(D, DT, Ddot);
 	// Ddot = 3x3 matrix
 
 	printMatrix(Ddot);
@@ -254,7 +263,7 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 	printMatrix(DdotInverse);
 
 	vector<vector<float>> transformationD;
-	matrixDot(DdotInverse, DT, transformationD);
+	matrixDot(DT, DdotInverse, transformationD);
 	// transformationD = images.size() x 3 matrix
 
 	printMatrix(transformationD);
@@ -262,13 +271,6 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 	matrixTranspose(transformationD, D);
 
 	printMatrix(D);
-
-	for (int y = 0; y != D[0].size(); y++) {
-		for (int x = 0; x != D.size(); x++) {
-			cout << D[x][y] << " ";
-		}
-		cout << endl;
-	}
 
 	Mat normal = images[0].clone();
 	normal = Scalar(0, 0, 0);
@@ -278,6 +280,8 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 		Mat gray;
 		cvtColor(images[i], gray, COLOR_RGB2GRAY);
 		grayImages.push_back(gray);
+		imshow("Gray", grayImages[i]);
+		waitKey(0);
 	}
 
 	for (int y = 0; y != normal.cols; y++) {
