@@ -1,4 +1,4 @@
-#include"ImageProcessor.h"
+#include"Tomography.h"
 #include<cassert>
 
 using namespace cv;
@@ -8,7 +8,7 @@ float eucDist(Point a, Point b) {
 	return sqrtf(powf(a.x - b.x, 2) + powf(a.y - b.y, 2));
 }
 
-void match_templates(Mat src, Mat target, Mat& out) {
+void match_template(Mat src, Mat &target) {
 
 	// Untested 
 
@@ -52,7 +52,7 @@ void match_templates(Mat src, Mat target, Mat& out) {
 	Mat M;
 	findHomography(initialPositions, matchedPositions, M, RANSAC, 5.0);
 
-	warpPerspective(target, out, M, Size(src.rows, src.cols));
+	warpPerspective(target, target, M, Size(src.rows, src.cols));
 }
 
 void calculateVector(vector<float>& lightVec, float phi, float theta) {
@@ -188,7 +188,7 @@ void matrixInverse(vector<vector<float>> matrix, vector<vector<float>>& inverse)
 	}
 }
 
-void calculateNormal(vector<Mat> images, vector<vector<float>> D, Mat &normal) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
+void calculateNormal(vector<Mat> images, vector<vector<float>> D, Mat *normal) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
 	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
 	// D represents the list of light vectors for each image
 	// Assumes that the painting is a lambertian surface
@@ -213,8 +213,8 @@ void calculateNormal(vector<Mat> images, vector<vector<float>> D, Mat &normal) {
 	matrixDot(DdotInverse, D, transformationD);
 	// transformationD = images.size() x 3 matrix
 
-	normal = images[0].clone();
-	normal = Scalar(128, 128, 128);
+	*normal = images[0].clone();
+	*normal = Scalar(128, 128, 128);
 
 	vector<Mat> grayImages;
 	for (int i = 0; i != images.size(); i++) {
@@ -245,7 +245,32 @@ void calculateNormal(vector<Mat> images, vector<vector<float>> D, Mat &normal) {
 			for (int i = 0; i != 3; i++) {
 				normalPixel.push_back(static_cast<int>(-((normalVector[i] / normalLength) - 1.0) / 2.0 * 255.0));
 			}
-			normal.at<Vec3b>(x, y) = Vec3b(normalPixel[0], normalPixel[1], normalPixel[2]);
+			normal->at<Vec3b>(x, y) = Vec3b(normalPixel[0], normalPixel[1], normalPixel[2]);
 		}
 	}
+}
+
+void Tomographer::add_image(string filename, float phi, float theta) {
+	Mat image = imread(filename);
+	cvtColor(image, image, COLOR_BGR2RGB);
+
+	vector<float> lightVec;
+	calculateVector(lightVec, phi, theta);
+
+	images.push_back(image);
+	vectors.push_back(lightVec);
+}
+
+void Tomographer::calculate_normal() {
+	if (alignRequired && (alignTemplate != nullptr)) {
+		// perform template matching for each image in the set
+		for (int i = 0; i != images.size(); i++) {
+			match_template(*alignTemplate, images[i]);
+		}
+	}
+	calculateNormal(images, vectors, &surfaceNormal->texMat);
+
+	imshow("Calculated normal", surfaceNormal->texMat);
+	waitKey(0);
+	return;
 }

@@ -35,6 +35,8 @@ public:
 	void generateOSMap(Mesh*);
 	void transitionToTS(Mesh*);
 
+	void contextConvert();
+
 	bool normalAvailable = false;
 
 	Material surfaceMat;
@@ -84,8 +86,6 @@ public:
 	Material* currentNormal() {
 		return Normal[normalIdx];
 	}
-
-	void contextConvert();
 	
 	void toggleDiffWebcam() {
 		// Simple function to flip whether the diffuse is a webcam view or not
