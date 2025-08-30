@@ -8,7 +8,7 @@ float eucDist(Point a, Point b) {
 	return sqrtf(powf(a.x - b.x, 2) + powf(a.y - b.y, 2));
 }
 
-void match_template(Mat src, Mat* target, Size outdims) {
+void match_template_old(Mat src, Mat* target, Size outdims) {
 
 	// Untested 
 
@@ -75,15 +75,74 @@ void match_template(Mat src, Mat* target, Size outdims) {
 	//waitKey(0);
 }
 
-const int MAX_FEATURES = 500;
+const int MAX_FEATURES = 5000;
 const float GOOD_MATCH_PERCENT = 0.15f;
 
-void match_template_new(Mat src, Mat* target, Size outdims) {
+void change_contrast(Mat* img, float alpha, int beta) {
+	if (img->channels() == 3) {
+		for (int y = 0; y < img->rows; y++) {
+			for (int x = 0; x < img->cols; x++) {
+				for (int c = 0; c < img->channels(); c++) {
+					img->at<Vec3b>(y, x)[c] = saturate_cast<uchar>(alpha * img->at<Vec3b>(y, x)[c] + beta);
+				}
+			}
+		}
+	}
+	else {
+		for (int y = 0; y < img->rows; y++) {
+			for (int x = 0; x < img->cols; x++) {
+				img->at<uchar>(y, x) = saturate_cast<uchar>(alpha * img->at<uchar>(y, x) + beta);
+			}
+		}
+	}
+}
+
+void match_template(Mat src, Mat* target, Size outdims) {
 	Mat srcGray, targetGray;
 	cvtColor(src, srcGray, COLOR_BGR2GRAY);
 	cvtColor(*target, targetGray, COLOR_BGR2GRAY);
 
-	resize(targetGray, targetGray, Size(src.rows * target->cols/target->rows, src.rows));
+	resize(targetGray, targetGray, Size(src.rows * target->cols / target->rows, src.rows));
+	
+	change_contrast(&srcGray, 1.6f, -40);
+	change_contrast(&targetGray, 1.6f, -40);
+
+	vector<KeyPoint> keypoints1, keypoints2;
+	Mat descriptors1, descriptors2;
+
+	Ptr<Feature2D> orb = ORB::create(MAX_FEATURES);
+	orb->detectAndCompute(srcGray, Mat(), keypoints1, descriptors1);
+	orb->detectAndCompute(targetGray, Mat(), keypoints2, descriptors2);
+
+	vector<DMatch> matches;
+	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
+	matcher->match(descriptors1, descriptors2, matches, Mat());
+
+	sort(matches.begin(), matches.end());
+
+	const int numGoodMatches = matches.size() * GOOD_MATCH_PERCENT;
+	matches.erase(matches.begin() + numGoodMatches, matches.end());
+
+	Mat imMatches;
+	drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
+
+	imshow("Matches", imMatches);
+	waitKey(0);
+
+	vector<Point2f> srcPoints, matchPoints;
+	for (size_t i = 0; i < matches.size(); i++) {
+		srcPoints.push_back(keypoints1[matches[i].queryIdx].pt);
+		matchPoints.push_back(keypoints2[matches[i].trainIdx].pt);
+	}
+
+	for (size_t i = 0; i < srcPoints.size(); i++) {
+		srcPoints[i] = Point2f(srcPoints[i].x * outdims.width / src.cols, srcPoints[i].y * outdims.height / src.rows);
+		matchPoints[i] = Point2f(matchPoints[i].x * target->cols / targetGray.cols, matchPoints[i].y * target->rows / targetGray.rows);
+	}
+
+	Mat h = findHomography(matchPoints, srcPoints, RANSAC);
+
+	warpPerspective(*target, *target, h, outdims);
 }
 
 void calculateVector(vector<float>& lightVec, float phi, float theta) {
