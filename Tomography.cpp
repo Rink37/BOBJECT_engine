@@ -8,75 +8,8 @@ float eucDist(Point a, Point b) {
 	return sqrtf(powf(a.x - b.x, 2) + powf(a.y - b.y, 2));
 }
 
-void match_template_old(Mat src, Mat* target, Size outdims) {
-
-	// Untested 
-
-	int division = 128;
-	uint8_t offset = 4;
-
-	Mat downscaled;
-	resize(*target, downscaled, Size(src.rows * target->cols / target->rows, src.rows));
-
-	int xdivs = downscaled.cols / division;
-	int ydivs = downscaled.rows / division;
-
-	cout << xdivs << " " << ydivs << endl;
-
-	vector<Point2f> initialPositions = {};
-	vector<Point2f> matchedPositions = {};
-
-	int count = 0;
-	for (uint16_t y = 0; y != ydivs; y++) {
-		for (uint16_t x = 0; x != xdivs; x++) {
-			cout << count << "/" << ydivs * xdivs << endl;
-			count++;
-			for (uint8_t dy = 0; dy != offset; dy++) {
-				for (uint8_t dx = 0; dx != offset; dx++) {
-					if ((((y + 1) * division + dy * division / offset) <= src.rows) && (((x + 1) * division + dx * division / offset) <= src.cols)) {
-						
-						Mat temp = src(Range(y * division + dy * division / offset, (y + 1) * division + dy * division / offset), Range(x * division + dx * division / offset, (x + 1) * division + dx * division / offset));
-						
-						Mat res;
-						
-						matchTemplate(downscaled, temp, res, TM_CCORR_NORMED);
-
-						double min_val;
-						double max_val;
-						Point min_loc;
-						Point max_loc;
-
-						minMaxLoc(res, &min_val, &max_val, &min_loc, &max_loc);
-
-						Point2f matchedPosition(static_cast<float>(max_loc.x) * static_cast<float>(target->cols) / static_cast<float>(downscaled.cols), static_cast<float>(max_loc.y) * static_cast<float>(target->rows) / static_cast<float>(downscaled.rows));
-
-						Point2f initialPosition((x * division + dx * division / offset) * static_cast<float>(target->cols) / static_cast<float>(downscaled.cols), (y * division + dy * division / offset) * static_cast<float>(target->rows) / static_cast<float>(downscaled.rows) );
-
-						if (eucDist(initialPosition, matchedPosition) < division * 2) {
-							initialPositions.push_back(initialPosition);
-							matchedPositions.push_back(matchedPosition);
-						}
-
-					}
-				} 
-			}
-		}
-	}
-
-	Mat M = findHomography(matchedPositions, initialPositions);
-
-	target->convertTo(*target, CV_32FC3);
-
-	warpPerspective(*target, *target, M, Size(outdims.width, outdims.height));
-
-	target->convertTo(*target, CV_8UC3);
-	
-	//imshow("matched", target);
-	//waitKey(0);
-}
-
 const int MAX_FEATURES = 5000;
-const float GOOD_MATCH_PERCENT = 0.15f;
+const float GOOD_MATCH_PERCENT = 0.1f;
 
 void change_contrast(Mat* img, float alpha, int beta) {
 	if (img->channels() == 3) {
@@ -104,8 +37,8 @@ void match_template(Mat src, Mat* target, Size outdims) {
 
 	resize(targetGray, targetGray, Size(src.rows * target->cols / target->rows, src.rows));
 	
-	change_contrast(&srcGray, 1.6f, -40);
-	change_contrast(&targetGray, 1.6f, -40);
+	change_contrast(&srcGray, 1.4f, -20);
+	change_contrast(&targetGray, 1.4f, -20);
 
 	vector<KeyPoint> keypoints1, keypoints2;
 	Mat descriptors1, descriptors2;
@@ -368,7 +301,7 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 			if (normalLength != 0.0f) {
 				//cout << normalVector[0] / normalLength << " " << normalVector[1] / normalLength << " " << normalVector[2] / normalLength << endl;
 				for (int i = 0; i != 3; i++) {
-					normalPixel[i] = static_cast<uint8_t>(((normalVector[i] / normalLength) + 1.0) / 2.0 * 255.0);
+					normalPixel[i] = static_cast<uint8_t>(((normalVector[i] / normalLength) - 1.0) /-2.0 * 255.0);
 				}
 			}
 			
@@ -376,6 +309,8 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 			normal.at<Vec3b>(x, y) = Vec3b(normalPixel[0], normalPixel[1], normalPixel[2]);
 		}
 	}
+
+	cvtColor(normal, normal, COLOR_RGB2BGR);
 
 	return normal;
 }
@@ -385,6 +320,7 @@ void Tomographer::add_image(string filename, float phi, float theta) {
 
 	vector<float> lightVec;
 	calculateVector(lightVec, phi, theta);
+	cout << lightVec[0] << " " << lightVec[1] << " " << lightVec[2] << endl;
 
 	images.push_back(image);
 	vectors.push_back(lightVec);
