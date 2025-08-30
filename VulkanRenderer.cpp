@@ -50,14 +50,45 @@ public:
 	Material* mat = nullptr;
 };
 
+class SaveMenu : public Widget {
+public:
+	void setup(std::function<void(UIItem*)> loadSessionFunc, std::function<void(UIItem*)> newSessionFunc) {
+		if (isSetup) {
+			return;
+		}
+		hArrangement* SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f);
+
+		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
+
+		imageData OpenButton = OPENBUTTON;
+		imageData SaveButton = SAVEBUTTON;
+		imageData plusButton = PLUSBUTTON;
+
+		SessionButtons->addItem(getPtr(new Button(&plusButton, newSessionFunc)));
+		SessionButtons->addItem(getPtr(new Button(&OpenButton, loadSessionFunc)));
+		SessionButtons->addItem(getPtr(new Button(&SaveButton, saveSessionFunc)));
+
+		SessionButtons->arrangeItems();
+
+		canvas.push_back(getPtr(SessionButtons));
+
+		isSetup = true;
+	}
+private:
+	void save(UIItem* owner) {
+		string saveLocation;
+		saveLocation = winFile::SaveFileDialog();
+		if (saveLocation == "fail") {
+			return;
+		}
+		session::get()->saveStudio(saveLocation);
+	}
+};
+
 class TomographyMenu : public Widget {
 public:
 	TomographyMenu(surfaceConstructor* sConst) {
 		surface = sConst;
-	}
-
-	~TomographyMenu() {
-		cleanup();
 	}
 
 	void setup() {
@@ -167,6 +198,9 @@ private:
 	vector<UIItem*> canvas{};
 
 	TomographyMenu tomogUI{ sConst };
+	SaveMenu saveMenu;
+
+	vector<Widget*> widgets;
 
 	vArrangement* ObjectButtons = nullptr;
 
@@ -322,7 +356,7 @@ private:
 	void createCanvas() {
 		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
 		hArrangement *Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
-		hArrangement *SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f);
+		//hArrangement *SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f);
 
 		SurfacePanel = new vArrangement(1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 
@@ -335,9 +369,12 @@ private:
 		std::function<void(UIItem*)> toggleDiffuse = bind(&Application::toggleDiffuseCam, this, placeholders::_1);
 		std::function<void(UIItem*)> loadDiffuse = bind(&Application::loadDiffuseImage, this, placeholders::_1);
 		std::function<void(UIItem*)> saveWebcam = bind(&Application::saveDiffuseImage, this, placeholders::_1);
-		std::function<void(UIItem*)> saveSessionFunc = bind(&Application::save, this, placeholders::_1);
+		//std::function<void(UIItem*)> saveSessionFunc = bind(&Application::save, this, placeholders::_1);
 		std::function<void(UIItem*)> loadSessionFunc = bind(&Application::loadSave, this, placeholders::_1);
 		std::function<void(UIItem*)> newSessionFunc = bind(&Application::newSession, this, placeholders::_1);
+
+		saveMenu.setup(loadSessionFunc, newSessionFunc);
+		widgets.push_back(&saveMenu);
 
 		imageData lb = LOADBUTTON;
 		imageData rb = RENDEREDBUTTON;
@@ -355,11 +392,11 @@ private:
 		imageData SaveButton = SAVEBUTTON;
 		imageData plusButton = PLUSBUTTON;
 
-		SessionButtons->addItem(new Button(&plusButton, newSessionFunc));
-		SessionButtons->addItem(new Button(&OpenButton, loadSessionFunc));
-		SessionButtons->addItem(new Button(&SaveButton, saveSessionFunc));
+		//SessionButtons->addItem(new Button(&plusButton, newSessionFunc));
+		//SessionButtons->addItem(new Button(&OpenButton, loadSessionFunc));
+		//SessionButtons->addItem(new Button(&SaveButton, saveSessionFunc));
 
-		canvas.push_back(SessionButtons);
+		//canvas.push_back(SessionButtons);
 
 		Button* diffuseTextPanel = new Button(&diffuse);
 		
@@ -452,12 +489,15 @@ private:
 			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
 			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L)) {
 				tomogUI.setup();
+				widgets.push_back(&tomogUI);
 			}
 			if (state == GLFW_PRESS) {
 				mouseDown = true;
 			}
 			else if (~state && mouseDown){
-				tomogUI.checkForEvent(mouseX, mouseY, GLFW_PRESS);
+				for (size_t i = 0; i != widgets.size(); i++) {
+					widgets[i]->checkForEvent(mouseX, mouseY, GLFW_PRESS);
+				}
 				for (UIItem* item : canvas) {
 					vector<UIItem*> scs;
 					item->getSubclasses(scs);
@@ -911,7 +951,9 @@ private:
 			canvas[i]->draw(commandBuffer, currentFrame);
 		}
 
-		tomogUI.draw(commandBuffer, currentFrame);
+		for (size_t i = 0; i != widgets.size(); i++) {
+			widgets[i]->draw(commandBuffer, currentFrame);
+		}
 
 		if (viewIndex == 1 && lit) {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(sConst->renderPipeline)]);

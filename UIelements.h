@@ -532,6 +532,10 @@ struct Widget {
 	// Individual widgets should be classes with their own setup scripts, functions etc. which are called in the application with a standard constructor
 	// UI is managed based on pointers, but the widget must explicitly manage the resources so that we don't have any memory leaks
 
+	~Widget() {
+		cleanup();
+	}
+	
 	void draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->draw(commandBuffer, currentFrame);
