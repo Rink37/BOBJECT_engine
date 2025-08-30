@@ -50,6 +50,90 @@ public:
 	Material* mat = nullptr;
 };
 
+class TomographyMenu : public Widget {
+public:
+	TomographyMenu(surfaceConstructor* sConst) {
+		surface = sConst;
+	}
+
+	~TomographyMenu() {
+		cleanup();
+	}
+
+	void setup() {
+		if (isSetup) {
+			return;
+		}
+		imageData OpenButton = OPENBUTTON;
+		imageData normal = NORMALTEXT;
+
+		std::function<void(UIItem*)> tomogLoadTop = bind(&TomographyMenu::loadTop, this, placeholders::_1);
+		std::function<void(UIItem*)> tomogLoadBottom = bind(&TomographyMenu::loadBottom, this, placeholders::_1);
+		std::function<void(UIItem*)> tomogLoadLeft = bind(&TomographyMenu::loadLeft, this, placeholders::_1);
+		std::function<void(UIItem*)> tomogLoadRight = bind(&TomographyMenu::loadRight, this, placeholders::_1);
+		std::function<void(UIItem*)> computeNormal = bind(&TomographyMenu::performTomog, this, placeholders::_1);
+
+		vArrangement* tomogButtons = new vArrangement(0.0, 0.0, 0.1, 0.4, 0.01);
+
+		tomogButtons->addItem(getPtr(new Button(&OpenButton, tomogLoadTop)));
+		tomogButtons->addItem(getPtr(new Button(&OpenButton, tomogLoadBottom)));
+		tomogButtons->addItem(getPtr(new Button(&OpenButton, tomogLoadLeft)));
+		tomogButtons->addItem(getPtr(new Button(&OpenButton, tomogLoadRight)));
+		tomogButtons->addItem(getPtr(new Button(&normal, computeNormal)));
+
+		tomogButtons->updateDisplay();
+
+		canvas.push_back(getPtr(tomogButtons));
+
+		isSetup = true;
+	}
+private:
+	Tomographer tomographer;
+
+	surfaceConstructor* surface;
+
+	void loadTop(UIItem* owner) {
+		string fileName = winFile::OpenFileDialog();
+		if (fileName != string("fail")) {
+			tomographer.add_image(fileName, 90.0, 50.0);
+		}
+	}
+
+	void loadBottom(UIItem* owner) {
+		string fileName = winFile::OpenFileDialog();
+		if (fileName != string("fail")) {
+			tomographer.add_image(fileName, 270.0, 50.0);
+		}
+	}
+
+	void loadLeft(UIItem* owner) {
+		string fileName = winFile::OpenFileDialog();
+		if (fileName != string("fail")) {
+			tomographer.add_image(fileName, 180.0, 50.0);
+		}
+	}
+
+	void loadRight(UIItem* owner) {
+		string fileName = winFile::OpenFileDialog();
+		if (fileName != string("fail")) {
+			tomographer.add_image(fileName, 0.0, 50.0);
+		}
+	}
+
+	void performTomog(UIItem* owner) {
+		surface->diffTex->getCVMat();
+		tomographer.outdims = Size(surface->diffTex->texMat.cols, surface->diffTex->texMat.rows);
+		tomographer.alignTemplate = &surface->diffTex->texMat;
+		tomographer.alignRequired = true;
+		tomographer.calculate_normal();
+		string saveName = winFile::SaveFileDialog();
+		if (saveName != string("fail")) {
+			imwrite(saveName, tomographer.computedNormal);
+		}
+		tomographer.clearData();
+	}
+};
+
 class Application {
 public:
 	void run() {
@@ -81,6 +165,8 @@ private:
 	imageData tcb = TESTCHECKBOXBUTTON;
 
 	vector<UIItem*> canvas{};
+
+	TomographyMenu tomogUI{ sConst };
 
 	vArrangement* ObjectButtons = nullptr;
 
@@ -365,12 +451,13 @@ private:
 			webcamTexture::get()->updateWebcam();
 			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
 			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L)) {
-				createTomogUI();
+				tomogUI.setup();
 			}
 			if (state == GLFW_PRESS) {
 				mouseDown = true;
 			}
 			else if (~state && mouseDown){
+				tomogUI.checkForEvent(mouseX, mouseY, GLFW_PRESS);
 				for (UIItem* item : canvas) {
 					vector<UIItem*> scs;
 					item->getSubclasses(scs);
@@ -576,71 +663,6 @@ private:
 		SurfacePanel->addItem(normalView);
 		SurfacePanel->addItem(new spacer);
 		SurfacePanel->arrangeItems();
-	}
-
-	void createTomogUI() {
-		imageData OpenButton = OPENBUTTON;
-		imageData normal = NORMALTEXT;
-
-		std::function<void(UIItem*)> tomogLoadTop = bind(&Application::loadTop, this, placeholders::_1);
-		std::function<void(UIItem*)> tomogLoadBottom = bind(&Application::loadBottom, this, placeholders::_1);
-		std::function<void(UIItem*)> tomogLoadLeft = bind(&Application::loadLeft, this, placeholders::_1);
-		std::function<void(UIItem*)> tomogLoadRight = bind(&Application::loadRight, this, placeholders::_1);
-		std::function<void(UIItem*)> computeNormal = bind(&Application::performTomog, this, placeholders::_1);
-
-		Button* loadTop = new Button(&OpenButton, tomogLoadTop);
-		Button* loadBottom = new Button(&OpenButton, tomogLoadBottom);
-		Button* loadLeft = new Button(&OpenButton, tomogLoadLeft);
-		Button* loadRight = new Button(&OpenButton, tomogLoadRight);
-		Button* run = new Button(&normal, computeNormal);
-
-		vArrangement* tomogButtons = new vArrangement(0.0, 0.0, 0.1, 0.4, 0.01);
-
-		tomogButtons->addItem(loadTop);
-		tomogButtons->addItem(loadBottom);
-		tomogButtons->addItem(loadLeft);
-		tomogButtons->addItem(loadRight);
-		tomogButtons->addItem(run);
-
-		tomogButtons->updateDisplay();
-
-		canvas.push_back(tomogButtons);
-	}
-
-	void loadTop(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
-			tomographer.add_image(fileName, 90.0, 50.0);
-		}
-	}
-
-	void loadBottom(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
-			tomographer.add_image(fileName, 270.0, 50.0);
-		}
-	}
-
-	void loadLeft(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
-			tomographer.add_image(fileName, 180.0, 50.0);
-		}
-	}
-
-	void loadRight(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
-			tomographer.add_image(fileName, 0.0, 50.0);
-		}
-	}
-
-	void performTomog(UIItem* owner) {
-		sConst->diffTex->getCVMat();
-		tomographer.outdims = Size(sConst->diffTex->texMat.cols, sConst->diffTex->texMat.rows);
-		tomographer.alignTemplate = &sConst->diffTex->texMat;
-		tomographer.alignRequired = true;
-		tomographer.calculate_normal();
 	}
 
 	void toggleWebcam(UIItem* owner) {
@@ -888,6 +910,8 @@ private:
 		for (uint32_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->draw(commandBuffer, currentFrame);
 		}
+
+		tomogUI.draw(commandBuffer, currentFrame);
 
 		if (viewIndex == 1 && lit) {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(sConst->renderPipeline)]);

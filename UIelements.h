@@ -528,4 +528,86 @@ private:
 	int method = 0;
 };
 
+struct Widget {
+	// Individual widgets should be classes with their own setup scripts, functions etc. which are called in the application with a standard constructor
+	// UI is managed based on pointers, but the widget must explicitly manage the resources so that we don't have any memory leaks
+
+	void draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		for (size_t i = 0; i != canvas.size(); i++) {
+			canvas[i]->draw(commandBuffer, currentFrame);
+		}
+	}
+
+	void checkForEvent(double mouseX, double mouseY, bool state) {
+		for (UIItem* item : canvas) {
+			std::vector<UIItem*> scs;
+			item->getSubclasses(scs);
+			for (UIItem* sitem : scs) {
+				sitem->checkForEvent(mouseX, mouseY, state);
+			}
+		}
+	}
+
+	void cleanup() {
+		for (size_t i = 0; i != canvas.size(); i++) {
+			canvas[i]->cleanup();
+		}
+	}
+
+	void hideWidget() {
+		for (size_t i = 0; i != canvas.size(); i++) {
+			canvas[i]->setVisibility(false);
+		}
+	}
+
+	void showWidget() {
+		for (size_t i = 0; i != canvas.size(); i++) {
+			canvas[i]->setVisibility(true);
+		}
+	}
+
+	UIItem* getPtr(ImagePanel* ip) {
+		imagePanels.emplace_back(ip);
+		return imagePanels[imagePanels.size()-1].get();
+	}
+
+	UIItem* getPtr(Button* b) {
+		buttons.emplace_back(b);
+		return buttons[buttons.size() - 1].get();
+	}
+
+	UIItem* getPtr(Checkbox* c) {
+		checkboxes.emplace_back(c);
+		return checkboxes[checkboxes.size() - 1].get();
+	}
+
+	UIItem* getPtr(spacer* s) {
+		spacers.emplace_back(s);
+		return spacers[spacers.size() - 1].get();
+	}
+
+	UIItem* getPtr(vArrangement* v) {
+		vArrangements.emplace_back(v);
+		return vArrangements[vArrangements.size() - 1].get();
+	}
+
+	UIItem* getPtr(hArrangement* h) {
+		hArrangements.emplace_back(h);
+		return hArrangements[hArrangements.size() - 1].get();
+	}
+
+	std::vector<UIItem*> canvas;
+	bool isSetup = false;
+private:
+	// Array of pointers which manages the actual structure of the UI
+
+	// Widgets own all UI classes which appear in the UI, although widget functions use only pointers
+	std::vector<std::shared_ptr<ImagePanel>> imagePanels;
+	std::vector<std::shared_ptr<Button>> buttons;
+	std::vector<std::shared_ptr<Checkbox>> checkboxes;
+	std::vector<std::shared_ptr<spacer>> spacers;
+	std::vector<std::shared_ptr<vArrangement>> vArrangements;
+	std::vector<std::shared_ptr<hArrangement>> hArrangements;
+};
+
 #endif

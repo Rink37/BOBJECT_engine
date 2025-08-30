@@ -56,11 +56,11 @@ void match_template(Mat src, Mat* target, Size outdims) {
 	const int numGoodMatches = matches.size() * GOOD_MATCH_PERCENT;
 	matches.erase(matches.begin() + numGoodMatches, matches.end());
 
-	Mat imMatches;
-	drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
+	//Mat imMatches;
+	//drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
 
-	imshow("Matches", imMatches);
-	waitKey(0);
+	//imshow("Matches", imMatches);
+	//waitKey(0);
 
 	vector<Point2f> srcPoints, matchPoints;
 	for (size_t i = 0; i < matches.size(); i++) {
@@ -272,8 +272,8 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 		Mat gray;
 		cvtColor(images[i], gray, COLOR_RGB2GRAY);
 		grayImages.push_back(gray);
-		imshow("Gray", grayImages[i]);
-		waitKey(0);
+		//imshow("Gray", grayImages[i]);
+		//waitKey(0);
 	}
 
 	for (int y = 0; y != normal.cols; y++) {
@@ -338,10 +338,8 @@ void Tomographer::calculate_normal() {
 		}
 
 	}
-	Mat test = calculateNormal(images, vectors);
+	computedNormal = calculateNormal(images, vectors);
 
-	imshow("Calculated normal", test);
+	imshow("Calculated normal", computedNormal);
 	waitKey(0);
-
-	return;
 }
