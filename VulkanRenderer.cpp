@@ -11,25 +11,7 @@
 #include"StudioSession.h"
 #include"Tomography.h"
 
-#include"include/LoadButton.h"
-#include"include/PauseButton.h"
-#include"include/PlayButton.h"
-#include"include/RenderedButton.h"
-#include"include/SettingsButton.h"
-#include"include/UnrenderedButton.h"
-#include"include/WireframeButton.h"
-#include"include/TestCheckboxButton.h"
-#include"include/WebcamOffButton.h"
-#include"include/WebcamOnButton.h"
-#include"include/WebcamViewButton.h"
-#include"include/D2NButton.h"
-#include"include/DiffuseText.h"
-#include"include/NormalText.h"
-#include"include/PlusButton.h"
-#include"include/SaveButton.h"
-#include"include/TangentSpace.h"
-#include"include/OSButton.h"
-#include"include/OpenButton.h"
+#include"include/BakedImages.h"
 
 using namespace cv;
 using namespace std;
@@ -38,17 +20,6 @@ vector<int> keybinds = { GLFW_KEY_L, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_U, GLFW_KE
 
 std::vector<KeyInput*> KeyInput::_instances;
 KeyInput defaultKeyBinds(keybinds);
-
-class StaticObject {
-public:
-	StaticObject(string name) {
-		mesh = new StaticMesh(name);
-	}
-	
-	bool isVisible = false;
-	StaticMesh* mesh = nullptr;
-	Material* mat = nullptr;
-};
 
 class SaveMenu : public Widget {
 public:
@@ -85,16 +56,143 @@ private:
 	}
 };
 
-class TomographyMenu : public Widget {
+class RenderMenu : public Widget {
 public:
-	TomographyMenu(surfaceConstructor* sConst) {
-		surface = sConst;
-	}
+	void setup(std::function<void(UIItem*)> loadObjectFunct, std::function<void(UIItem*)> pipelinefunction){
+		if (isSetup) {
+			return;
+		}
+		imageData lb = LOADBUTTON;
+		imageData rb = RENDEREDBUTTON;
+		imageData fb = UNRENDEREDBUTTON;
+		imageData ub = WEBCAMVIEWBUTTON;
+		imageData wb = WIREFRAMEBUTTON;
+		imageData plb = PLAYBUTTON;
+		imageData pb = PAUSEBUTTON;
+		imageData sb = SETTINGSBUTTON;
+		imageData diffuse = DIFFUSETEXT;
+		imageData normal = NORMALTEXT;
+		imageData webcamOn = WEBCAMONBUTTON;
+		imageData webcamOff = WEBCAMOFFBUTTON;
+		imageData OpenButton = OPENBUTTON;
+		imageData SaveButton = SAVEBUTTON;
+		imageData plusButton = PLUSBUTTON;
 
+		hArrangement* Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
+
+		Button* litRenderingButton = new Button(&rb);
+		Button* unlitRenderingButton = new Button(&ub);
+		Button* wireframeRenderingButton = new Button(&wb);
+
+		unlitRenderingButton->Name = "WebcamMat";
+		unlitRenderingButton->setClickFunction(pipelinefunction);
+
+		litRenderingButton->Name = "SurfaceMat";
+		litRenderingButton->setClickFunction(pipelinefunction);
+
+		wireframeRenderingButton->Name = "Wireframe";
+		wireframeRenderingButton->setClickFunction(pipelinefunction);
+
+		Renderbuttons->addItem(getPtr(unlitRenderingButton));
+		Renderbuttons->addItem(getPtr(litRenderingButton));
+		Renderbuttons->addItem(getPtr(wireframeRenderingButton));
+
+		vArrangement* buttons = new vArrangement(-1.0f, 1.0f, 0.15f, 0.15f, 0.0f);
+
+		buttons->addItem(getPtr(new Button(&lb, loadObjectFunct)));
+		buttons->addItem(getPtr(Renderbuttons));
+
+		buttons->arrangeItems();
+		
+		canvas.push_back(getPtr(buttons));
+
+		isSetup = true;
+	}
+};
+
+class ObjectMenu : public Widget {
+public:
 	void setup() {
 		if (isSetup) {
 			return;
 		}
+
+		canvas.push_back(getPtr(new vArrangement(-0.9f, -0.5f, 0.05f, 0.5f, 0.01f)));
+
+		ObjectButtons = canvas[0];
+		
+		isSetup = true;
+	}
+
+	void addObject(std::function<void(UIItem*)> toggleFunction) {
+
+		Checkbox* objectButton = new Checkbox(&tcb, &ub, toggleFunction);
+		objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
+
+		ObjectMap.insert({ objectButton->Name, ObjectButtons->Items.size() });
+
+		ObjectButtons->addItem(objectButton);
+		ObjectButtons->arrangeItems();
+	}
+
+	map<string, int> ObjectMap = {};
+private:
+	UIItem* ObjectButtons = nullptr;
+
+	imageData ub = UNRENDEREDBUTTON;
+	imageData tcb = TESTCHECKBOXBUTTON;
+};
+
+class WebcamMenu : public Widget {
+public:
+	void setup(std::function<void(UIItem*)> lightingFunction) {
+		if (isSetup) {
+			return;
+		}
+		imageData rb = RENDEREDBUTTON;
+		imageData fb = UNRENDEREDBUTTON;
+		imageData plb = PLAYBUTTON;
+		imageData pb = PAUSEBUTTON;
+		imageData sb = SETTINGSBUTTON;
+		imageData webcamOn = WEBCAMONBUTTON;
+
+		std::function<void(UIItem*)> toggleWebcamFunct = bind(&WebcamMenu::toggleWebcam, this, placeholders::_1);
+		std::function<void(UIItem*)> configureWebcamFunct = bind(&WebcamMenu::calibrateWebcam, this, placeholders::_1);
+
+		hArrangement* Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
+
+		Videobuttons->addItem(getPtr(new Button(&webcamOn)));
+		Videobuttons->addItem(getPtr(new Checkbox(&plb, &pb, toggleWebcamFunct)));
+		Videobuttons->addItem(getPtr(new Button(&sb, configureWebcamFunct)));
+		Videobuttons->addItem(getPtr(new Checkbox(&rb, &fb, lightingFunction)));
+
+		Videobuttons->arrangeItems();
+
+		canvas.push_back(getPtr(Videobuttons));
+
+		isSetup = true;
+	}
+private:
+	void toggleWebcam(UIItem* owner) {
+		if (webcamTexture::get()->webCam != nullptr) {
+			webcamTexture::get()->webCam->shouldUpdate = owner->activestate;
+		}
+	}
+
+	void calibrateWebcam(UIItem* owner) {
+		if (webcamTexture::get()->webCam != nullptr) {
+			webcamTexture::get()->webCam->calibrateCornerFilter();
+		}
+	}
+};
+
+class TomographyMenu : public Widget {
+public:
+	void setup(surfaceConstructor* sConst) {
+		if (isSetup) {
+			return;
+		}
+		surface = sConst;
 		imageData OpenButton = OPENBUTTON;
 		imageData normal = NORMALTEXT;
 
@@ -189,16 +287,17 @@ private:
 
 	Camera camera;
 	Tomographer tomographer;
-	ImagePanel *diffuseView = nullptr;
-	ImagePanel *normalView = nullptr;
-
-	imageData ub = UNRENDEREDBUTTON;
-	imageData tcb = TESTCHECKBOXBUTTON;
+	//ImagePanel *diffuseView = nullptr;
+	//ImagePanel *normalView = nullptr;
 
 	vector<UIItem*> canvas{};
 
-	TomographyMenu tomogUI{ sConst };
+	TomographyMenu tomogUI;
 	SaveMenu saveMenu;
+	WebcamMenu webcamMenu;
+	RenderMenu renderMenu;
+	ObjectMenu objectMenu;
+	SurfaceMenu surfaceMenu;
 
 	vector<Widget*> widgets;
 
@@ -212,11 +311,11 @@ private:
 	vector<StaticObject> staticObjects = {};
 	map<string, int> ObjectMap = {};
 
-	hArrangement *NormalButtons = nullptr;
-	vArrangement *SurfacePanel = nullptr;
+	//hArrangement *NormalButtons = nullptr;
+	//vArrangement *SurfacePanel = nullptr;
 
-	Checkbox* diffuseTog = nullptr;
-	Checkbox* normalTog = nullptr;
+	//Checkbox* diffuseTog = nullptr;
+	//Checkbox* normalTog = nullptr;
 
 	bool lit = true;
 
@@ -238,40 +337,40 @@ private:
 		session::get()->clearStudio();
 		
 		// Clear all studio material data
-		resetNormalUI(owner);
+		surfaceMenu.removeNormalMenu(owner);
 		sConst->clearSurface();
 		sConst->normalAvailable = false;
-		diffuseView->image->mat[0] = sConst->currentDiffuse();
+		surfaceMenu.setDiffuse(sConst->currentDiffuse());
 
 		sConst->renderPipeline = "BFShading";
 		sConst->updateSurfaceMat();
 	}
 
-	void resetNormalUI(UIItem* owner) {
-		if (!sConst->normalAvailable) {
-			return;
-		}
-		// Clear UI related to the normal component of the surface panel
-		SurfacePanel->Items[SurfacePanel->Items.size() - 2]->cleanup();
-		SurfacePanel->removeItem(SurfacePanel->Items.size() - 2);
-		
-		NormalButtons->cleanup();
-		NormalButtons->Items.clear();
+	//void resetNormalUI(UIItem* owner) {
+	//	if (!sConst->normalAvailable) {
+	//		return;
+	//	}
+	//	// Clear UI related to the normal component of the surface panel
+	//	SurfacePanel->Items[SurfacePanel->Items.size() - 2]->cleanup();
+	//	SurfacePanel->removeItem(SurfacePanel->Items.size() - 2);
+	//	
+	//	NormalButtons->cleanup();
+	//	NormalButtons->Items.clear();
 
-		std::function<void(UIItem*)> addNormalButton = bind(&Application::createNormalButtons, this, placeholders::_1);
+	//	std::function<void(UIItem*)> addNormalButton = bind(&Application::createNormalButtons, this, placeholders::_1);
 
-		imageData normal = NORMALTEXT;
-		imageData plusButton = PLUSBUTTON;
+	//	imageData normal = NORMALTEXT;
+	//	imageData plusButton = PLUSBUTTON;
 
-		Button* normalTextPanel = new Button(&normal);
-		Button* normalPlus = new Button(&plusButton, addNormalButton);
+	//	Button* normalTextPanel = new Button(&normal);
+	//	Button* normalPlus = new Button(&plusButton, addNormalButton);
 
-		NormalButtons->addItem(normalTextPanel);
-		NormalButtons->addItem(normalPlus);
-		NormalButtons->addItem(new spacer);
+	//	NormalButtons->addItem(normalTextPanel);
+	//	NormalButtons->addItem(normalPlus);
+	//	NormalButtons->addItem(new spacer);
 
-		SurfacePanel->updateDisplay();
-	}
+	//	SurfacePanel->updateDisplay();
+	//}
 	
 	void loadSave(UIItem* owner) {
 
@@ -288,20 +387,22 @@ private:
 
 			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
 
-			Checkbox* objectButton = new Checkbox(0.0f, 0.0f, 0.15f, 0.15f, &tcb, &ub);
+			objectMenu.addObject(testfunction);
 
-			objectButton->updateDisplay();
-			objectButton->setClickFunction(testfunction);
+			//Checkbox* objectButton = new Checkbox(0.0f, 0.0f, 0.15f, 0.15f, &tcb, &ub);
 
-			newObject.isVisible = objectButton->activestate;
+			//objectButton->updateDisplay();
+			//objectButton->setClickFunction(testfunction);
 
-			objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
+			newObject.isVisible = true;
 
-			ObjectMap.insert({ objectButton->Name, staticObjects.size() });
+			//objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
 
-			ObjectButtons->addItem(objectButton);
-			ObjectButtons->arrangeItems();
-			ObjectButtons->updateDisplay();
+			//ObjectMap.insert({ objectButton->Name, staticObjects.size() });
+
+			//ObjectButtons->addItem(objectButton);
+			//ObjectButtons->arrangeItems();
+			//ObjectButtons->updateDisplay();
 
 			staticObjects.push_back(newObject);
 		}
@@ -309,72 +410,68 @@ private:
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
 			sConst->loadDiffuse(loadedTexture);
 			sConst->diffuseIdx = 1;
-			diffuseView->image->mat[0] = sConst->currentDiffuse();
-			diffuseTog->activestate = false;
-			diffuseTog->image->matidx = 1;
+			surfaceMenu.setDiffuse(sConst->currentDiffuse());
+			surfaceMenu.resetDiffuseTog();
 		}
 		if (session::get()->currentStudio.OSPath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.OSPath, VK_FORMAT_R8G8B8A8_UNORM);
 			if (!sConst->normalAvailable) {
-				createNormalButtons(new UIItem);
+				surfaceMenu.createNormalMenu(new UIItem);
 			}
 			sConst->normalType = 0;
 			sConst->loadNormal(loadedTexture);
-			normalView->image->mat[0] = sConst->currentNormal();
-			normalTog->activestate = false;
-			normalTog->image->matidx = 1;
-			NormalButtons->Items[2]->activestate = true;
-			NormalButtons->Items[2]->image->matidx = 0;
+			surfaceMenu.setNormal(sConst->currentNormal());
+			surfaceMenu.resetNormalTog();
+			surfaceMenu.toggleNormalState(true);
+			//NormalButtons->Items[2]->activestate = true;
+			//NormalButtons->Items[2]->image->matidx = 0;
 		}
 		if (session::get()->currentStudio.TSPath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.TSPath, VK_FORMAT_R8G8B8A8_UNORM);
 			if (!sConst->normalAvailable) {
-				createNormalButtons(new UIItem);
+				surfaceMenu.createNormalMenu(new UIItem);
 			}
 			sConst->normalType = 1;
 			sConst->loadNormal(loadedTexture);
 			sConst->TSmatching = true;
-			normalView->image->mat[0] = sConst->currentNormal();
-			normalTog->activestate = false;
-			normalTog->image->matidx = 1;
-			NormalButtons->Items[2]->activestate = false;
-			NormalButtons->Items[2]->image->matidx = 1;
+			surfaceMenu.setNormal(sConst->currentNormal());
+			surfaceMenu.resetNormalTog();
+			surfaceMenu.toggleNormalState(false);
+			//NormalButtons->Items[2]->activestate = false;
+			//NormalButtons->Items[2]->image->matidx = 1;
 		}
 		sConst->updateSurfaceMat();
 		webcamTexture::get()->webCam->saveFilter();
 	}
-
-	void save(UIItem* owner) {
-		string saveLocation;
-		saveLocation = winFile::SaveFileDialog();
-		if (saveLocation == "fail") {
-			return;
-		}
-		session::get()->saveStudio(saveLocation);
-	}
 	
 	void createCanvas() {
-		hArrangement *Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
-		hArrangement *Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
-		//hArrangement *SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f);
 
-		SurfacePanel = new vArrangement(1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
+		//SurfacePanel = new vArrangement(1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 
 		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this, placeholders::_1);
 		std::function<void(UIItem*)> lightingFunction = bind(&Application::toggleLighting, this, placeholders::_1);
-		std::function<void(UIItem*)> toggleWebcamFunct = bind(&Application::toggleWebcam, this, placeholders::_1);
-		std::function<void(UIItem*)> configureWebcamFunct = bind(&Application::calibrateWebcam, this, placeholders::_1);
 		std::function<void(UIItem*)> loadObjectFunct = bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
-		std::function<void(UIItem*)> addNormalButton = bind(&Application::createNormalButtons, this, placeholders::_1);
-		std::function<void(UIItem*)> toggleDiffuse = bind(&Application::toggleDiffuseCam, this, placeholders::_1);
-		std::function<void(UIItem*)> loadDiffuse = bind(&Application::loadDiffuseImage, this, placeholders::_1);
-		std::function<void(UIItem*)> saveWebcam = bind(&Application::saveDiffuseImage, this, placeholders::_1);
-		//std::function<void(UIItem*)> saveSessionFunc = bind(&Application::save, this, placeholders::_1);
+		//std::function<void(UIItem*)> addNormalButton = bind(&Application::createNormalButtons, this, placeholders::_1);
+		//std::function<void(UIItem*)> toggleDiffuse = bind(&Application::toggleDiffuseCam, this, placeholders::_1);
+		//std::function<void(UIItem*)> loadDiffuse = bind(&Application::loadDiffuseImage, this, placeholders::_1);
+		//std::function<void(UIItem*)> saveWebcam = bind(&Application::saveDiffuseImage, this, placeholders::_1);
 		std::function<void(UIItem*)> loadSessionFunc = bind(&Application::loadSave, this, placeholders::_1);
 		std::function<void(UIItem*)> newSessionFunc = bind(&Application::newSession, this, placeholders::_1);
 
 		saveMenu.setup(loadSessionFunc, newSessionFunc);
 		widgets.push_back(&saveMenu);
+
+		webcamMenu.setup(lightingFunction);
+		widgets.push_back(&webcamMenu);
+
+		renderMenu.setup(loadObjectFunct, pipelinefunction);
+		widgets.push_back(&renderMenu);
+
+		objectMenu.setup();
+		widgets.push_back(&objectMenu);
+
+		surfaceMenu.setup(sConst, &staticObjects);
+		widgets.push_back(&surfaceMenu);
 
 		imageData lb = LOADBUTTON;
 		imageData rb = RENDEREDBUTTON;
@@ -392,93 +489,43 @@ private:
 		imageData SaveButton = SAVEBUTTON;
 		imageData plusButton = PLUSBUTTON;
 
-		//SessionButtons->addItem(new Button(&plusButton, newSessionFunc));
-		//SessionButtons->addItem(new Button(&OpenButton, loadSessionFunc));
-		//SessionButtons->addItem(new Button(&SaveButton, saveSessionFunc));
-
-		//canvas.push_back(SessionButtons);
-
-		Button* diffuseTextPanel = new Button(&diffuse);
+		//Button* diffuseTextPanel = new Button(&diffuse);
 		
-		diffuseTog = new Checkbox(&webcamOn, &webcamOff, toggleDiffuse);
-		diffuseTog->Name = "ToggleDiffuseWebcam";
-		diffuseTog->setClickFunction(toggleDiffuse);
+		//diffuseTog = new Checkbox(&webcamOn, &webcamOff, toggleDiffuse);
+		//diffuseTog->Name = "ToggleDiffuseWebcam";
+		//diffuseTog->setClickFunction(toggleDiffuse);
 
-		Button* diffLoad = new Button(&OpenButton, loadDiffuse);
-		Button* diffSave = new Button(&SaveButton, saveWebcam);
+		//Button* diffLoad = new Button(&OpenButton, loadDiffuse);
+		//Button* diffSave = new Button(&SaveButton, saveWebcam);
 
-		hArrangement* DiffuseButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+		//hArrangement* DiffuseButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
-		Button* normalTextPanel = new Button(&normal);
-		Button* normalPlus = new Button(&plusButton, addNormalButton);
+		//Button* normalTextPanel = new Button(&normal);
+		//Button* normalPlus = new Button(&plusButton, addNormalButton);
 
-		NormalButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+		//NormalButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
-		NormalButtons->addItem(normalTextPanel);
-		NormalButtons->addItem(normalPlus);
-		NormalButtons->addItem(new spacer);
+		//NormalButtons->addItem(normalTextPanel);
+		//NormalButtons->addItem(normalPlus);
+		//NormalButtons->addItem(new spacer);
 
-		DiffuseButtons->addItem(diffuseTextPanel);
-		DiffuseButtons->addItem(diffuseTog);
-		DiffuseButtons->addItem(new spacer);
-		DiffuseButtons->addItem(diffLoad);
-		DiffuseButtons->addItem(diffSave);
-		
-		Button* loadObjectButton = new Button(&lb, loadObjectFunct);
-		
-		Button* litRenderingButton = new Button(&rb);
-		Button* unlitRenderingButton = new Button(&ub);
-		Button* wireframeRenderingButton = new Button(&wb);
-		
-		Checkbox* webcamToggle = new Checkbox(&plb, &pb, toggleWebcamFunct);
-		Button* settingsButton = new Button(&sb, configureWebcamFunct);
+		//DiffuseButtons->addItem(diffuseTextPanel);
+		//DiffuseButtons->addItem(diffuseTog);
+		//DiffuseButtons->addItem(new spacer);
+		//DiffuseButtons->addItem(diffLoad);
+		//DiffuseButtons->addItem(diffSave);
 
-		unlitRenderingButton->Name = "WebcamMat";
-		unlitRenderingButton->setClickFunction(pipelinefunction);
-		
-		litRenderingButton->Name = "SurfaceMat";
-		litRenderingButton->setClickFunction(pipelinefunction);
-		
-		wireframeRenderingButton->Name = "Wireframe";
-		wireframeRenderingButton->setClickFunction(pipelinefunction);
+		//diffuseView = new ImagePanel(sConst->currentDiffuse(), true);
+		//SurfacePanel->addItem(DiffuseButtons);
+		//SurfacePanel->addItem(diffuseView);
+		//SurfacePanel->addItem(NormalButtons);
+		//SurfacePanel->addItem(new spacer);
 
-		Renderbuttons->addItem(unlitRenderingButton);
-		Renderbuttons->addItem(litRenderingButton);
-		Renderbuttons->addItem(wireframeRenderingButton);
+		//canvas.push_back(SurfacePanel);
 
-		Button* webcamImage = new Button(&webcamOn);
-
-		Checkbox* litCheckbox = new Checkbox(&rb, &fb, lightingFunction);
-
-		Videobuttons->addItem(webcamImage);
-		Videobuttons->addItem(webcamToggle);
-		Videobuttons->addItem(settingsButton);
-		Videobuttons->addItem(litCheckbox);
-
-		canvas.push_back(Videobuttons);
-
-		vArrangement* buttons = new vArrangement(-1.0f, 1.0f, 0.15f, 0.15f, 0.0f);
-
-		buttons->addItem(loadObjectButton);
-		buttons->addItem(Renderbuttons);
-
-		ObjectButtons = new vArrangement(-0.9f, -0.5f, 0.05f, 0.5f, 0.01f);
-
-		canvas.push_back(ObjectButtons);
-
-		canvas.push_back(buttons);
-
-		diffuseView = new ImagePanel(sConst->currentDiffuse(), true);
-		SurfacePanel->addItem(DiffuseButtons);
-		SurfacePanel->addItem(diffuseView);
-		SurfacePanel->addItem(NormalButtons);
-		SurfacePanel->addItem(new spacer);
-
-		canvas.push_back(SurfacePanel);
-
-		for (UIItem* item : canvas) {
-			item->updateDisplay();
-		}
+		//for (UIItem* item : canvas) {
+		//	item->updateDisplay();
+		//}
 	}
 
 	void mainLoop() {
@@ -488,7 +535,7 @@ private:
 			webcamTexture::get()->updateWebcam();
 			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
 			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L)) {
-				tomogUI.setup();
+				tomogUI.setup(sConst);
 				widgets.push_back(&tomogUI);
 			}
 			if (state == GLFW_PRESS) {
@@ -512,234 +559,236 @@ private:
 		vkDeviceWaitIdle(engine->device);
 	}
 
-	void toggleDiffuseCam(UIItem* owner) {
-		sConst->toggleDiffWebcam();
-		diffuseView->image->mat[0] = sConst->currentDiffuse();
-	}
+	//void toggleDiffuseCam(UIItem* owner) {
+	//	sConst->toggleDiffWebcam();
+	//	diffuseView->image->mat[0] = sConst->currentDiffuse();
+	//}
 
-	void toggleNormalCam(UIItem* owner) {
-		sConst->toggleNormWebcam();
-		normalView->image->mat[0] = sConst->currentNormal();
-	}
+	//void toggleNormalCam(UIItem* owner) {
+	//	sConst->toggleNormWebcam();
+	//	normalView->image->mat[0] = sConst->currentNormal();
+	//}
 
-	void toggleNormalType(UIItem* owner) {
-		sConst->toggleNormType();
-		if (sConst->normalType == 1 && sConst->OSNormTex != nullptr && !sConst->TSmatching) {
-			if (sConst->TSNormTex != nullptr) {
-				sConst->TSNormTex->cleanup();
-			}
-			sConst->transitionToTS(staticObjects[staticObjects.size() - 1].mesh);
-			sConst->TSmatching = true;
-			normalView->image->mat[0] = sConst->currentNormal();
-		}
-		else {
-			normalView->image->mat[0] = sConst->currentNormal();
-		}
-	}
+	//void toggleNormalType(UIItem* owner) {
+	//	sConst->toggleNormType();
+	//	if (sConst->normalType == 1 && sConst->OSNormTex != nullptr && !sConst->TSmatching) {
+	//		if (sConst->TSNormTex != nullptr) {
+	//			sConst->TSNormTex->cleanup();
+	//		}
+	//		sConst->transitionToTS(staticObjects[staticObjects.size() - 1].mesh);
+	//		sConst->TSmatching = true;
+	//		normalView->image->mat[0] = sConst->currentNormal();
+	//	}
+	//	else {
+	//		normalView->image->mat[0] = sConst->currentNormal();
+	//	}
+	//}
 
-	void loadNormalImage(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
-			imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
-			sConst->loadNormal(loadedTexture);
-			sConst->normalIdx = 1 + sConst->normalType;
-			normalView->image->mat[0] = sConst->currentNormal();
-			normalView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
-			normalView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
-			normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
-			normalTog->activestate = false;
-			normalTog->image->matidx = 1;
-			sConst->updateSurfaceMat();
-			SurfacePanel->arrangeItems();
-			if (!sConst->normalType) {
-				session::get()->currentStudio.OSPath = fileName;
-			}
-			else {
-				session::get()->currentStudio.TSPath = fileName;
-			}
-		}
-	}
+	//void loadNormalImage(UIItem* owner) {
+	//	string fileName = winFile::OpenFileDialog();
+	//	if (fileName != string("fail")) {
+	//		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
+	//		sConst->loadNormal(loadedTexture);
+	//		sConst->normalIdx = 1 + sConst->normalType;
+	//		normalView->image->mat[0] = sConst->currentNormal();
+	//		normalView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
+	//		normalView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
+	//		normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
+	//		normalTog->activestate = false;
+	//		normalTog->image->matidx = 1;
+	//		sConst->updateSurfaceMat();
+	//		SurfacePanel->arrangeItems();
+	//		if (!sConst->normalType) {
+	//			session::get()->currentStudio.OSPath = fileName;
+	//		}
+	//		else {
+	//			session::get()->currentStudio.TSPath = fileName;
+	//		}
+	//	}
+	//}
 
-	void saveNormalImage(UIItem* owner) {
-		Mat saveNormal;
-		if (sConst->normalIdx == 0) {
-			saveNormal = webcamTexture::get()->webCam->webcamFrame;
-		}
-		else {
-			if (sConst->normalType) {
-				sConst->TSNormTex->getCVMat();
-				saveNormal = sConst->TSNormTex->texMat.clone();
-				sConst->TSNormTex->destroyCVMat();
-			}
-			else {
-				sConst->OSNormTex->getCVMat();
-				saveNormal = sConst->OSNormTex->texMat.clone();
-				sConst->OSNormTex->destroyCVMat();
-			}
-		}
-		string saveName = winFile::SaveFileDialog();
-		if (saveName != string("fail")) {
-			if (sConst->normalIdx == 1) {
-				session::get()->currentStudio.OSPath = saveName;
-			}
-			else if (sConst->normalIdx == 2) {
-				session::get()->currentStudio.TSPath = saveName;
-			}
-			imwrite(saveName, saveNormal);
-		}
-	}
+	//void saveNormalImage(UIItem* owner) {
+	//	Mat saveNormal;
+	//	if (sConst->normalIdx == 0) {
+	//		saveNormal = webcamTexture::get()->webCam->webcamFrame;
+	//	}
+	//	else {
+	//		if (sConst->normalType) {
+	//			sConst->TSNormTex->getCVMat();
+	//			saveNormal = sConst->TSNormTex->texMat.clone();
+	//			sConst->TSNormTex->destroyCVMat();
+	//		}
+	//		else {
+	//			sConst->OSNormTex->getCVMat();
+	//			saveNormal = sConst->OSNormTex->texMat.clone();
+	//			sConst->OSNormTex->destroyCVMat();
+	//		}
+	//	}
+	//	string saveName = winFile::SaveFileDialog();
+	//	if (saveName != string("fail")) {
+	//		if (sConst->normalIdx == 1) {
+	//			session::get()->currentStudio.OSPath = saveName;
+	//		}
+	//		else if (sConst->normalIdx == 2) {
+	//			session::get()->currentStudio.TSPath = saveName;
+	//		}
+	//		imwrite(saveName, saveNormal);
+	//	}
+	//}
 
-	void loadDiffuseImage(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
-			imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
-			sConst->loadDiffuse(loadedTexture);
-			sConst->diffuseIdx = 1;
-			diffuseView->image->mat[0] = sConst->currentDiffuse();
-			diffuseView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
-			diffuseView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
-			diffuseView->sqAxisRatio = static_cast<float>(diffuseView->image->texHeight) / static_cast<float>(diffuseView->image->texWidth);
-			diffuseTog->activestate = false;
-			diffuseTog->image->matidx = 1;
-			sConst->updateSurfaceMat();
-			SurfacePanel->arrangeItems();
-			session::get()->currentStudio.diffusePath = fileName;
-		}
-	}
+	//void loadDiffuseImage(UIItem* owner) {
+	//	string fileName = winFile::OpenFileDialog();
+	//	if (fileName != string("fail")) {
+	//		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
+	//		sConst->loadDiffuse(loadedTexture);
+	//		sConst->diffuseIdx = 1;
+	//		diffuseView->image->mat[0] = sConst->currentDiffuse();
+	//		diffuseView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
+	//		diffuseView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
+	//		diffuseView->sqAxisRatio = static_cast<float>(diffuseView->image->texHeight) / static_cast<float>(diffuseView->image->texWidth);
+	//		diffuseTog->activestate = false;
+	//		diffuseTog->image->matidx = 1;
+	//		sConst->updateSurfaceMat();
+	//		SurfacePanel->arrangeItems();
+	//		session::get()->currentStudio.diffusePath = fileName;
+	//	}
+	//}
 
-	void saveDiffuseImage(UIItem* owner) {
-		Mat saveDiffuse;
-		if (sConst->diffuseIdx == 0) {
-			saveDiffuse = webcamTexture::get()->webCam->webcamFrame;
-		}
-		else {
-			sConst->diffTex->getCVMat();
-			saveDiffuse = sConst->diffTex->texMat.clone();
-			sConst->diffTex->destroyCVMat();
-		}
-		string saveName = winFile::SaveFileDialog();
-		if (saveName != string("fail")) {
-			session::get()->currentStudio.diffusePath = saveName;
-			imwrite(saveName, saveDiffuse);
-		}
-	}
+	//void saveDiffuseImage(UIItem* owner) {
+	//	Mat saveDiffuse;
+	//	if (sConst->diffuseIdx == 0) {
+	//		saveDiffuse = webcamTexture::get()->webCam->webcamFrame;
+	//	}
+	//	else {
+	//		sConst->diffTex->getCVMat();
+	//		saveDiffuse = sConst->diffTex->texMat.clone();
+	//		sConst->diffTex->destroyCVMat();
+	//	}
+	//	string saveName = winFile::SaveFileDialog();
+	//	if (saveName != string("fail")) {
+	//		session::get()->currentStudio.diffusePath = saveName;
+	//		imwrite(saveName, saveDiffuse);
+	//	}
+	//}
 
-	void contextConvertMap(UIItem* owner) {
-		sConst->contextConvert();
-		sConst->normalIdx = 1 + sConst->normalType;
-		normalView->image->mat[0] = sConst->currentNormal();
-		normalTog->activestate = false;
-		normalTog->image->matidx = 1;
-	}
+	//void contextConvertMap(UIItem* owner) {
+	//	sConst->contextConvert();
+	//	sConst->normalIdx = 1 + sConst->normalType;
+	//	normalView->image->mat[0] = sConst->currentNormal();
+	//	normalTog->activestate = false;
+	//	normalTog->image->matidx = 1;
+	//}
 
-	void createNormalButtons(UIItem* owner) {
+	//void createNormalButtons(UIItem* owner) {
 
-		if (staticObjects.size() == 0) {
-			return;
-		}
+	//	if (staticObjects.size() == 0) {
+	//		return;
+	//	}
 
-		std::function<void(UIItem*)> toggleWebcam = bind(&Application::toggleNormalCam, this, placeholders::_1);
-		std::function<void(UIItem*)> toggleType = bind(&Application::toggleNormalType, this, placeholders::_1);
-		std::function<void(UIItem*)> saveNorm = bind(&Application::saveNormalImage, this, placeholders::_1);
-		std::function<void(UIItem*)> loadNorm = bind(&Application::loadNormalImage, this, placeholders::_1);
-		std::function<void(UIItem*)> convertImg = bind(&Application::contextConvertMap, this, placeholders::_1);
+	//	std::function<void(UIItem*)> toggleWebcam = bind(&Application::toggleNormalCam, this, placeholders::_1);
+	//	std::function<void(UIItem*)> toggleType = bind(&Application::toggleNormalType, this, placeholders::_1);
+	//	std::function<void(UIItem*)> saveNorm = bind(&Application::saveNormalImage, this, placeholders::_1);
+	//	std::function<void(UIItem*)> loadNorm = bind(&Application::loadNormalImage, this, placeholders::_1);
+	//	std::function<void(UIItem*)> convertImg = bind(&Application::contextConvertMap, this, placeholders::_1);
 
-		sConst->normalType = 0;
-		if (sConst->OSNormTex == nullptr) {
-			sConst->generateOSMap(staticObjects[staticObjects.size() - 1].mesh);
-		}
-		sConst->normalAvailable = true;
-		webcamTexture::get()->changeFormat(VK_FORMAT_R8G8B8A8_UNORM);
-		sConst->normalIdx = 1;
-		sConst->updateSurfaceMat();
+	//	sConst->normalType = 0;
+	//	if (sConst->OSNormTex == nullptr) {
+	//		sConst->generateOSMap(staticObjects[staticObjects.size() - 1].mesh);
+	//	}
+	//	sConst->normalAvailable = true;
+	//	webcamTexture::get()->changeFormat(VK_FORMAT_R8G8B8A8_UNORM);
+	//	sConst->normalIdx = 1;
+	//	sConst->updateSurfaceMat();
 
-		SurfacePanel->removeItem(3);
+	//	SurfacePanel->removeItem(3);
 		
-		vector<UIImage*> images;
-		NormalButtons->getImages(images);
+	//	vector<UIImage*> images;
+	//	NormalButtons->getImages(images);
 
-		for (UIImage* image : images) {
-			image->cleanup();
-		}
+	//	for (UIImage* image : images) {
+	//		image->cleanup();
+	//	}
 		
-		NormalButtons->Items.clear();
+	//	NormalButtons->Items.clear();
 
-		imageData normal = NORMALTEXT;
-		imageData webcamOn = WEBCAMONBUTTON;
-		imageData webcamOff = WEBCAMOFFBUTTON;
-		imageData OpenButton = OPENBUTTON;
-		imageData SaveButton = SAVEBUTTON;
-		imageData osType = OSBUTTON;
-		imageData tsType = TANGENTSPACE;
-		imageData diffToNorm = D2NBUTTON;
+	//	imageData normal = NORMALTEXT;
+	//	imageData webcamOn = WEBCAMONBUTTON;
+	//	imageData webcamOff = WEBCAMOFFBUTTON;
+	//	imageData OpenButton = OPENBUTTON;
+	//	imageData SaveButton = SAVEBUTTON;
+	//	imageData osType = OSBUTTON;
+	//	imageData tsType = TANGENTSPACE;
+	//	imageData diffToNorm = D2NBUTTON;
 
-		Button* normalText = new Button(&normal);
+	//	Button* normalText = new Button(&normal);
 
-		normalTog = new Checkbox(&webcamOn, &webcamOff, toggleWebcam);
-		normalTog->activestate = false;
-		normalTog->image->matidx = 1;
+	//	normalTog = new Checkbox(&webcamOn, &webcamOff, toggleWebcam);
+	//	normalTog->activestate = false;
+	//	normalTog->image->matidx = 1;
 
-		Checkbox* mapTypeToggle = new Checkbox(&osType, &tsType, toggleType);
-		Button* copyLayout = new Button(&diffToNorm, convertImg);
-		Button* normalLoad = new Button(&OpenButton, loadNorm);
-		Button* normalSave = new Button(&SaveButton, saveNorm);
+	//	Checkbox* mapTypeToggle = new Checkbox(&osType, &tsType, toggleType);
+	//	Button* copyLayout = new Button(&diffToNorm, convertImg);
+	//	Button* normalLoad = new Button(&OpenButton, loadNorm);
+	//	Button* normalSave = new Button(&SaveButton, saveNorm);
 
-		NormalButtons->addItem(normalText);
-		NormalButtons->addItem(normalTog);
-		NormalButtons->addItem(mapTypeToggle);
-		NormalButtons->addItem(copyLayout);
-		NormalButtons->addItem(normalLoad);
-		NormalButtons->addItem(normalSave);
+	//	NormalButtons->addItem(normalText);
+	//	NormalButtons->addItem(normalTog);
+	//	NormalButtons->addItem(mapTypeToggle);
+	//	NormalButtons->addItem(copyLayout);
+	//	NormalButtons->addItem(normalLoad);
+	//	NormalButtons->addItem(normalSave);
 
-		NormalButtons->arrangeItems();
-		NormalButtons->updateDisplay();
+	//	NormalButtons->arrangeItems();
+	//	NormalButtons->updateDisplay();
 
-		normalView = new ImagePanel(sConst->currentNormal(), true);
-		normalView->image->texHeight = diffuseView->image->texHeight;
-		normalView->image->texWidth = diffuseView->image->texWidth;
-		normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
-		normalView->updateDisplay();
+	//	normalView = new ImagePanel(sConst->currentNormal(), true);
+	//	normalView->image->texHeight = diffuseView->image->texHeight;
+	//	normalView->image->texWidth = diffuseView->image->texWidth;
+	//	normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
+	//	normalView->updateDisplay();
 
-		SurfacePanel->addItem(normalView);
-		SurfacePanel->addItem(new spacer);
-		SurfacePanel->arrangeItems();
-	}
+	//	SurfacePanel->addItem(normalView);
+	//	SurfacePanel->addItem(new spacer);
+	//	SurfacePanel->arrangeItems();
+	//}
 
-	void toggleWebcam(UIItem* owner) {
-		if (webcamTexture::get()->webCam != nullptr) {
-			webcamTexture::get()->webCam->shouldUpdate = owner->activestate;
-		}
-	}
+	//void toggleWebcam(UIItem* owner) {
+	//	if (webcamTexture::get()->webCam != nullptr) {
+	//		webcamTexture::get()->webCam->shouldUpdate = owner->activestate;
+	//	}
+	//}
 
-	void calibrateWebcam(UIItem* owner) {
-		if (webcamTexture::get()->webCam != nullptr) {
-			webcamTexture::get()->webCam->calibrateCornerFilter();
-		}
-	}
+	//void calibrateWebcam(UIItem* owner) {
+	//	if (webcamTexture::get()->webCam != nullptr) {
+	//		webcamTexture::get()->webCam->calibrateCornerFilter();
+	//	}
+	//}
 
 	void buttonLoadStaticObject(UIItem* owner) {
 		loadStaticObject();
 	}
 
 	void setObjectVisibility(UIItem* owner) {
-		staticObjects[ObjectMap.at(owner->Name)].isVisible = owner->activestate;
+		staticObjects[objectMenu.ObjectMap.at(owner->Name)].isVisible = owner->activestate;
 	}
 
 	void setPipelineIndex(UIItem* owner) {
 		if (owner->Name == string("WebcamMat")) {
 			viewIndex = 0;
-			SurfacePanel->setVisibility(false);
-			SurfacePanel->setIsEnabled(false);
+			surfaceMenu.hide();
+			//SurfacePanel->setIsEnabled(false);
 		}
 		else if (owner->Name == string("SurfaceMat")) {
 			viewIndex = 1;
-			SurfacePanel->setVisibility(true);
-			SurfacePanel->setIsEnabled(true);
+			surfaceMenu.show();
+			//SurfacePanel->setVisibility(true);
+			//SurfacePanel->setIsEnabled(true);
 		}
 		else if (owner->Name == string("Wireframe")) {
 			viewIndex = 2;
-			SurfacePanel->setVisibility(false);
-			SurfacePanel->setIsEnabled(false);
+			surfaceMenu.hide();
+			//SurfacePanel->setVisibility(false);
+			//SurfacePanel->setIsEnabled(false);
 		}
 		updatePipelineIndex();
 	}
@@ -776,19 +825,20 @@ private:
 
 			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
 
-			Checkbox* objectButton = new Checkbox(0.0f, 0.0f, 0.15f, 0.15f, &tcb, &ub);
+			objectMenu.addObject(testfunction);
+			//Checkbox* objectButton = new Checkbox(0.0f, 0.0f, 0.15f, 0.15f, &tcb, &ub);
 
-			objectButton->updateDisplay();
-			objectButton->setClickFunction(testfunction);
+			//objectButton->updateDisplay();
+			//objectButton->setClickFunction(testfunction);
 
-			newObject.isVisible = objectButton->activestate;
+			newObject.isVisible = true;
 
-			objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
+			//objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
 
-			ObjectMap.insert({ objectButton->Name, staticObjects.size() });
+			//ObjectMap.insert({ objectButton->Name, staticObjects.size() });
 
-			ObjectButtons->addItem(objectButton);
-			ObjectButtons->arrangeItems();
+			//ObjectButtons->addItem(objectButton);
+			//ObjectButtons->arrangeItems();
 
 			staticObjects.push_back(newObject);
 			session::get()->currentStudio.modelPaths.push_back(modelPath);
@@ -805,6 +855,10 @@ private:
 
 		for (uint32_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->cleanup();
+		}
+
+		for (size_t i = 0; i != widgets.size(); i++) {
+			widgets[i]->cleanup();
 		}
 
 		sConst->cleanup();
@@ -894,10 +948,10 @@ private:
 		ubo.proj = glm::perspective(glm::radians(camera.fov), engine->swapChainExtent.width / (float)engine->swapChainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
-		ubo.UVdistort[0] = 2*diffuseView->extentx;
-		ubo.UVdistort[1] = (diffuseView->posx) - diffuseView->extentx;
-		ubo.UVdistort[2] = 2*diffuseView->extenty;
-		ubo.UVdistort[3] = (diffuseView->posy) - diffuseView->extenty;
+		ubo.UVdistort[0] = 2*surfaceMenu.diffuseView->extentx;
+		ubo.UVdistort[1] = (surfaceMenu.diffuseView->posx) - surfaceMenu.diffuseView->extentx;
+		ubo.UVdistort[2] = 2*surfaceMenu.diffuseView->extenty;
+		ubo.UVdistort[3] = (surfaceMenu.diffuseView->posy) - surfaceMenu.diffuseView->extenty;
 
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 

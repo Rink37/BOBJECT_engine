@@ -5,6 +5,20 @@
 #include"Textures.h"
 #include"Materials.h"
 #include"Meshes.h"
+#include"UIelements.h"
+
+#include"include/BakedImages.h"
+
+class StaticObject {
+public:
+	StaticObject(std::string name) {
+		mesh = new StaticMesh(name);
+	}
+
+	bool isVisible = false;
+	StaticMesh* mesh = nullptr;
+	Material* mat = nullptr;
+};
 
 class surfaceConstructor {
 public:
@@ -234,6 +248,69 @@ public:
 		webcamTexture::get()->cleanup();
 		webcamMaterial.cleanupDescriptor();
 	}
+};
+
+class SurfaceMenu : public Widget {
+public:
+	void setup(surfaceConstructor*, std::vector<StaticObject>*);
+
+	void createNormalMenu(UIItem*);
+
+	void removeNormalMenu(UIItem*);
+
+	void setDiffuse(Material* img) {
+		diffuseView->image->mat[0] = img;
+	}
+
+	void resetDiffuseTog() {
+		diffuseTog->activestate = false;
+		diffuseTog->image->matidx = 1;
+	}
+
+	void setNormal(Material* img) {
+		normalView->image->mat[0] = img;
+	}
+
+	void resetNormalTog() {
+		normalTog->activestate = false;
+		normalTog->image->matidx = 1;
+	}
+
+	void toggleNormalState(bool state) {
+		NormalButtons->Items[2]->activestate = state;
+		NormalButtons->Items[2]->image->matidx = static_cast<int>(!state);
+	}
+
+	ImagePanel* diffuseView = nullptr;
+
+private:
+	std::vector<StaticObject>* staticObjects;
+
+	Checkbox* diffuseTog = nullptr;
+	Checkbox* normalTog = nullptr;
+
+	ImagePanel* normalView = nullptr;
+
+	hArrangement* NormalButtons = nullptr;
+	vArrangement* SurfacePanel = nullptr;
+
+	surfaceConstructor* sConst = nullptr;
+
+	void toggleDiffuseCam(UIItem*);
+
+	void loadDiffuseImage(UIItem*);
+
+	void saveDiffuseImage(UIItem*);
+
+	void toggleNormalCam(UIItem*);
+
+	void toggleNormalType(UIItem*);
+
+	void loadNormalImage(UIItem*);
+
+	void saveNormalImage(UIItem*);
+
+	void contextConvertMap(UIItem*);
 };
 
 #endif

@@ -6,7 +6,7 @@
 #include"Textures.h"
 #include"Materials.h"
 #include"Meshes.h"
-#include"SurfaceConstructor.h"
+//#include"SurfaceConstructor.h"
 #include<iostream>
 #include<vector>
 #include<array>
@@ -150,7 +150,8 @@ struct UIItem {
 
 		for (UIImage* image : images) {
 			for (Material* mat : image->mat) {
-				if (mat != &surfaceConstructor::get()->webcamMaterial && !mat->cleaned) {
+				//if (mat != &surfaceConstructor::get()->webcamMaterial && !mat->cleaned) {
+				if (!mat->cleaned) {
 					mat->cleanup();
 					delete mat;
 					mat = nullptr;
@@ -531,10 +532,6 @@ private:
 struct Widget {
 	// Individual widgets should be classes with their own setup scripts, functions etc. which are called in the application with a standard constructor
 	// UI is managed based on pointers, but the widget must explicitly manage the resources so that we don't have any memory leaks
-
-	~Widget() {
-		cleanup();
-	}
 	
 	void draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
 		for (size_t i = 0; i != canvas.size(); i++) {
@@ -558,15 +555,17 @@ struct Widget {
 		}
 	}
 
-	void hideWidget() {
+	void hide() {
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->setVisibility(false);
+			canvas[i]->setIsEnabled(false);
 		}
 	}
 
-	void showWidget() {
+	void show() {
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->setVisibility(true);
+			canvas[i]->setIsEnabled(false);
 		}
 	}
 

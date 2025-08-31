@@ -1,6 +1,8 @@
 #include"SurfaceConstructor.h"
 #include"GenerateNormalMap.h"
 #include"ImageProcessor.h"
+#include"WindowsFileManager.h"
+
 #include"include/Kuwahara.h"
 #include"include/SobelX.h"
 #include"include/SobelY.h"
@@ -678,4 +680,288 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 
 	Normal[2] = &tsNormMaterial;
 	generator.cleanupTS();
+}
+
+void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>* objects) {
+
+	sConst = surfConst;
+	staticObjects = objects;
+
+	std::function<void(UIItem*)> addNormalButton = bind(&SurfaceMenu::createNormalMenu, this, placeholders::_1);
+	std::function<void(UIItem*)> toggleDiffuse = bind(&SurfaceMenu::toggleDiffuseCam, this, placeholders::_1);
+	std::function<void(UIItem*)> loadDiffuse = bind(&SurfaceMenu::loadDiffuseImage, this, placeholders::_1);
+	std::function<void(UIItem*)> saveWebcam = bind(&SurfaceMenu::saveDiffuseImage, this, placeholders::_1);
+
+	imageData lb = LOADBUTTON;
+	imageData rb = RENDEREDBUTTON;
+	imageData fb = UNRENDEREDBUTTON;
+	imageData ub = WEBCAMVIEWBUTTON;
+	imageData wb = WIREFRAMEBUTTON;
+	imageData plb = PLAYBUTTON;
+	imageData pb = PAUSEBUTTON;
+	imageData sb = SETTINGSBUTTON;
+	imageData diffuse = DIFFUSETEXT;
+	imageData normal = NORMALTEXT;
+	imageData webcamOn = WEBCAMONBUTTON;
+	imageData webcamOff = WEBCAMOFFBUTTON;
+	imageData OpenButton = OPENBUTTON;
+	imageData SaveButton = SAVEBUTTON;
+	imageData plusButton = PLUSBUTTON;
+
+	Button* diffuseTextPanel = new Button(&diffuse);
+
+	diffuseTog = new Checkbox(&webcamOn, &webcamOff, toggleDiffuse);
+	diffuseTog->Name = "ToggleDiffuseWebcam";
+	diffuseTog->setClickFunction(toggleDiffuse);
+
+	Button* diffLoad = new Button(&OpenButton, loadDiffuse);
+	Button* diffSave = new Button(&SaveButton, saveWebcam);
+
+	hArrangement* DiffuseButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+
+	Button* normalTextPanel = new Button(&normal);
+	Button* normalPlus = new Button(&plusButton, addNormalButton);
+
+	NormalButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+
+	NormalButtons->addItem(getPtr(normalTextPanel));
+	NormalButtons->addItem(getPtr(normalPlus));
+	NormalButtons->addItem(getPtr(new spacer));
+
+	DiffuseButtons->addItem(getPtr(diffuseTextPanel));
+	DiffuseButtons->addItem(getPtr(diffuseTog));
+	DiffuseButtons->addItem(getPtr(new spacer));
+	DiffuseButtons->addItem(getPtr(diffLoad));
+	DiffuseButtons->addItem(getPtr(diffSave));
+
+	SurfacePanel = new vArrangement(1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
+
+	diffuseView = new ImagePanel(sConst->currentDiffuse(), true);
+	SurfacePanel->addItem(getPtr(DiffuseButtons));
+	SurfacePanel->addItem(getPtr(diffuseView));
+	SurfacePanel->addItem(getPtr(NormalButtons));
+	SurfacePanel->addItem(getPtr(new spacer));
+
+	SurfacePanel->updateDisplay();
+
+	canvas.push_back(getPtr(SurfacePanel));
+}
+
+void SurfaceMenu::removeNormalMenu(UIItem* owner) {
+	if (!sConst->normalAvailable) {
+		return;
+	}
+	// Clear UI related to the normal component of the surface panel
+	SurfacePanel->Items[SurfacePanel->Items.size() - 2]->cleanup();
+	SurfacePanel->removeItem(SurfacePanel->Items.size() - 2);
+
+	NormalButtons->cleanup();
+	NormalButtons->Items.clear();
+
+	std::function<void(UIItem*)> addNormalButton = bind(&SurfaceMenu::createNormalMenu, this, placeholders::_1);
+
+	imageData normal = NORMALTEXT;
+	imageData plusButton = PLUSBUTTON;
+
+	Button* normalTextPanel = new Button(&normal);
+	Button* normalPlus = new Button(&plusButton, addNormalButton);
+
+	NormalButtons->addItem(getPtr(normalTextPanel));
+	NormalButtons->addItem(getPtr(normalPlus));
+	NormalButtons->addItem(getPtr(new spacer));
+
+	SurfacePanel->updateDisplay();
+}
+
+void SurfaceMenu::toggleDiffuseCam(UIItem* owner) {
+	sConst->toggleDiffWebcam();
+	diffuseView->image->mat[0] = sConst->currentDiffuse();
+}
+
+void SurfaceMenu::loadDiffuseImage(UIItem* owner) {
+	string fileName = winFile::OpenFileDialog();
+	if (fileName != string("fail")) {
+		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
+		sConst->loadDiffuse(loadedTexture);
+		sConst->diffuseIdx = 1;
+		diffuseView->image->mat[0] = sConst->currentDiffuse();
+		diffuseView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
+		diffuseView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
+		diffuseView->sqAxisRatio = static_cast<float>(diffuseView->image->texHeight) / static_cast<float>(diffuseView->image->texWidth);
+		diffuseTog->activestate = false;
+		diffuseTog->image->matidx = 1;
+		sConst->updateSurfaceMat();
+		SurfacePanel->arrangeItems();
+		session::get()->currentStudio.diffusePath = fileName;
+	}
+}
+
+void SurfaceMenu::saveDiffuseImage(UIItem* owner) {
+	Mat saveDiffuse;
+	if (sConst->diffuseIdx == 0) {
+		saveDiffuse = webcamTexture::get()->webCam->webcamFrame;
+	}
+	else {
+		sConst->diffTex->getCVMat();
+		saveDiffuse = sConst->diffTex->texMat.clone();
+		sConst->diffTex->destroyCVMat();
+	}
+	string saveName = winFile::SaveFileDialog();
+	if (saveName != string("fail")) {
+		session::get()->currentStudio.diffusePath = saveName;
+		imwrite(saveName, saveDiffuse);
+	}
+}
+
+void SurfaceMenu::toggleNormalCam(UIItem* owner) {
+	sConst->toggleNormWebcam();
+	normalView->image->mat[0] = sConst->currentNormal();
+}
+
+void SurfaceMenu::toggleNormalType(UIItem* owner) {
+	sConst->toggleNormType();
+	if (sConst->normalType == 1 && sConst->OSNormTex != nullptr && !sConst->TSmatching) {
+		if (sConst->TSNormTex != nullptr) {
+			sConst->TSNormTex->cleanup();
+		}
+		sConst->transitionToTS((*staticObjects)[staticObjects->size() - 1].mesh);
+		sConst->TSmatching = true;
+		normalView->image->mat[0] = sConst->currentNormal();
+	}
+	else {
+		normalView->image->mat[0] = sConst->currentNormal();
+	}
+}
+
+void SurfaceMenu::loadNormalImage(UIItem* owner) {
+	string fileName = winFile::OpenFileDialog();
+	if (fileName != string("fail")) {
+		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
+		sConst->loadNormal(loadedTexture);
+		sConst->normalIdx = 1 + sConst->normalType;
+		normalView->image->mat[0] = sConst->currentNormal();
+		normalView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
+		normalView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
+		normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
+		normalTog->activestate = false;
+		normalTog->image->matidx = 1;
+		sConst->updateSurfaceMat();
+		SurfacePanel->arrangeItems();
+		if (!sConst->normalType) {
+			session::get()->currentStudio.OSPath = fileName;
+		}
+		else {
+			session::get()->currentStudio.TSPath = fileName;
+		}
+	}
+}
+
+void SurfaceMenu::saveNormalImage(UIItem* owner) {
+	Mat saveNormal;
+	if (sConst->normalIdx == 0) {
+		saveNormal = webcamTexture::get()->webCam->webcamFrame;
+	}
+	else {
+		if (sConst->normalType) {
+			sConst->TSNormTex->getCVMat();
+			saveNormal = sConst->TSNormTex->texMat.clone();
+			sConst->TSNormTex->destroyCVMat();
+		}
+		else {
+			sConst->OSNormTex->getCVMat();
+			saveNormal = sConst->OSNormTex->texMat.clone();
+			sConst->OSNormTex->destroyCVMat();
+		}
+	}
+	string saveName = winFile::SaveFileDialog();
+	if (saveName != string("fail")) {
+		if (sConst->normalIdx == 1) {
+			session::get()->currentStudio.OSPath = saveName;
+		}
+		else if (sConst->normalIdx == 2) {
+			session::get()->currentStudio.TSPath = saveName;
+		}
+		imwrite(saveName, saveNormal);
+	}
+}
+
+void SurfaceMenu::contextConvertMap(UIItem* owner) {
+	sConst->contextConvert();
+	sConst->normalIdx = 1 + sConst->normalType;
+	normalView->image->mat[0] = sConst->currentNormal();
+	normalTog->activestate = false;
+	normalTog->image->matidx = 1;
+}
+
+void SurfaceMenu::createNormalMenu(UIItem* owner) {
+
+	if (staticObjects->size() == 0) {
+		return;
+	}
+
+	std::function<void(UIItem*)> toggleWebcam = bind(&SurfaceMenu::toggleNormalCam, this, placeholders::_1);
+	std::function<void(UIItem*)> toggleType = bind(&SurfaceMenu::toggleNormalType, this, placeholders::_1);
+	std::function<void(UIItem*)> saveNorm = bind(&SurfaceMenu::saveNormalImage, this, placeholders::_1);
+	std::function<void(UIItem*)> loadNorm = bind(&SurfaceMenu::loadNormalImage, this, placeholders::_1);
+	std::function<void(UIItem*)> convertImg = bind(&SurfaceMenu::contextConvertMap, this, placeholders::_1);
+
+	sConst->normalType = 0;
+	if (sConst->OSNormTex == nullptr) {
+		sConst->generateOSMap((*staticObjects)[staticObjects->size() - 1].mesh);
+	}
+	sConst->normalAvailable = true;
+	webcamTexture::get()->changeFormat(VK_FORMAT_R8G8B8A8_UNORM);
+	sConst->normalIdx = 1;
+	sConst->updateSurfaceMat();
+
+	SurfacePanel->removeItem(3);
+
+	vector<UIImage*> images;
+	NormalButtons->getImages(images);
+
+	for (UIImage* image : images) {
+		image->cleanup();
+	}
+
+	NormalButtons->Items.clear();
+
+	imageData normal = NORMALTEXT;
+	imageData webcamOn = WEBCAMONBUTTON;
+	imageData webcamOff = WEBCAMOFFBUTTON;
+	imageData OpenButton = OPENBUTTON;
+	imageData SaveButton = SAVEBUTTON;
+	imageData osType = OSBUTTON;
+	imageData tsType = TANGENTSPACE;
+	imageData diffToNorm = D2NBUTTON;
+
+	Button* normalText = new Button(&normal);
+
+	normalTog = new Checkbox(&webcamOn, &webcamOff, toggleWebcam);
+	normalTog->activestate = false;
+	normalTog->image->matidx = 1;
+
+	Checkbox* mapTypeToggle = new Checkbox(&osType, &tsType, toggleType);
+	Button* copyLayout = new Button(&diffToNorm, convertImg);
+	Button* normalLoad = new Button(&OpenButton, loadNorm);
+	Button* normalSave = new Button(&SaveButton, saveNorm);
+
+	NormalButtons->addItem(getPtr(normalText));
+	NormalButtons->addItem(getPtr(normalTog));
+	NormalButtons->addItem(getPtr(mapTypeToggle));
+	NormalButtons->addItem(getPtr(copyLayout));
+	NormalButtons->addItem(getPtr(normalLoad));
+	NormalButtons->addItem(getPtr(normalSave));
+
+	NormalButtons->arrangeItems();
+	NormalButtons->updateDisplay();
+
+	normalView = new ImagePanel(sConst->currentNormal(), true);
+	normalView->image->texHeight = diffuseView->image->texHeight;
+	normalView->image->texWidth = diffuseView->image->texWidth;
+	normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
+	normalView->updateDisplay();
+
+	SurfacePanel->addItem(getPtr(normalView));
+	SurfacePanel->addItem(getPtr(new spacer));
+	SurfacePanel->arrangeItems();
 }
