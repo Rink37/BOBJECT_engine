@@ -42,7 +42,6 @@ void Material::createDescriptorPool() {
 	
 }
 
-
 void Material::createDescriptorSets() {
 	VkDescriptorSetAllocateInfo allocInfo{};
 

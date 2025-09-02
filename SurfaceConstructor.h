@@ -38,13 +38,16 @@ public:
 
 	static surfaceConstructor* sinstance;
 	surfaceConstructor() = default;
-	~surfaceConstructor() = default;
+	~surfaceConstructor() {
+		cleanup();
+	};
 
 	// Default state management //
-	Material webcamMaterial;
-	Material diffuseMaterial;
-	Material osNormMaterial;
-	Material tsNormMaterial;
+	Material webcamMaterial{};
+	std::shared_ptr<Material> webcamPtr;
+	Material diffuseMaterial{};
+	Material osNormMaterial{};
+	Material tsNormMaterial{};
 
 	void generateOSMap(Mesh*);
 	void transitionToTS(Mesh*);
@@ -64,10 +67,12 @@ public:
 
 	Texture surfaceNorm;
 
+	LoadList* loadList = nullptr;
+
 	// Materials used by the display panels //
-	std::array<Material*, 2> Diffuse{}; 
+	std::array<std::shared_ptr<Material>, 2> Diffuse{}; 
 	uint8_t diffuseIdx = 0;
-	std::array<Material*, 3> Normal{} ;
+	std::array<std::shared_ptr<Material>, 3> Normal{} ;
 	uint8_t normalIdx = 0;
 	uint8_t normalType = 0; 
 
@@ -87,19 +92,19 @@ public:
 			delete TSNormTex;
 			TSNormTex = nullptr;
 		}
-		Diffuse = { &webcamMaterial, &webcamMaterial };
-		Normal = { &webcamMaterial, &webcamMaterial, &webcamMaterial };
+		Diffuse = { webcamPtr, webcamPtr };
+		Normal = { webcamPtr, webcamPtr, webcamPtr };
 		surfaceMat.init(webTex);
 		diffuseIdx = 0;
 		normalIdx = 0;
 		normalType = 0;
 	};
 	
-	Material* currentDiffuse() {
+	std::shared_ptr<Material> currentDiffuse() {
 		return Diffuse[diffuseIdx];
 	}
 
-	Material* currentNormal() {
+	std::shared_ptr<Material> currentNormal() {
 		return Normal[normalIdx];
 	}
 	
@@ -136,7 +141,7 @@ public:
 		}
 		diffTex = diffuse;
 		diffuseMaterial.init(diffTex);
-		Diffuse[1] = &diffuseMaterial;
+		Diffuse[1] = std::make_unique<Material>(diffuseMaterial);
 		diffuseIdx = 1;
 	}
 
@@ -149,7 +154,7 @@ public:
 			}
 			OSNormTex = normal;
 			osNormMaterial.init(OSNormTex);
-			Normal[1] = &osNormMaterial;
+			Normal[1] = std::make_unique<Material>(osNormMaterial);
 			normalIdx = 1;
 			TSmatching = false;
 		}
@@ -161,7 +166,7 @@ public:
 			}
 			TSNormTex = normal;
 			tsNormMaterial.init(TSNormTex);
-			Normal[2] = &tsNormMaterial; 
+			Normal[2] = std::make_unique<Material>(tsNormMaterial); 
 			normalIdx = 2;
 		}
 	}
@@ -170,8 +175,9 @@ public:
 		webTex = webcamTexture::get();
 		webTex->setup();
 		webcamMaterial.init(webTex);
-		Diffuse = { &webcamMaterial, &webcamMaterial };
-		Normal = { &webcamMaterial, &webcamMaterial, &webcamMaterial };
+		webcamPtr = std::make_unique<Material>(webcamMaterial);
+		Diffuse = { webcamPtr, webcamPtr };
+		Normal = { webcamPtr, webcamPtr, webcamPtr };
 		surfaceMat.init(webTex);
 	}
 	
@@ -228,23 +234,24 @@ public:
 	void cleanup() {
 		if (diffTex != nullptr) {
 			diffTex->cleanup();
-			delete diffTex;
+			//delete diffTex;
 			diffTex = nullptr;
 		}
 		if (OSNormTex != nullptr) {
 			OSNormTex->cleanup();
-			delete OSNormTex;
+			//delete OSNormTex;
 			OSNormTex = nullptr;
 		}
 		if (TSNormTex != nullptr) {
 			TSNormTex->cleanup();
-			delete TSNormTex;
+			//delete TSNormTex;
 			TSNormTex = nullptr;
 		}
 		diffuseMaterial.cleanupDescriptor();
 		osNormMaterial.cleanupDescriptor();
 		tsNormMaterial.cleanupDescriptor();
 		surfaceMat.cleanupDescriptor();
+
 		webcamTexture::get()->cleanup();
 		webcamMaterial.cleanupDescriptor();
 	}
@@ -252,6 +259,10 @@ public:
 
 class SurfaceMenu : public Widget {
 public:
+	SurfaceMenu(LoadList* assets) {
+		loadList = assets;
+	}
+
 	void setup(surfaceConstructor*, std::vector<StaticObject>*);
 
 	void createNormalMenu(UIItem*);
@@ -259,7 +270,7 @@ public:
 	void removeNormalMenu(UIItem*);
 
 	void setDiffuse(Material* img) {
-		diffuseView->image->mat[0] = std::make_unique<Material>(img);
+		diffuseView->image->mat[0] = img;
 	}
 
 	void resetDiffuseTog() {
@@ -268,7 +279,7 @@ public:
 	}
 
 	void setNormal(Material* img) {
-		normalView->image->mat[0] = std::make_unique<Material>(img);
+		normalView->image->mat[0] = img;
 	}
 
 	void resetNormalTog() {
@@ -284,7 +295,7 @@ public:
 	ImagePanel* diffuseView = nullptr;
 
 private:
-	std::vector<StaticObject>* staticObjects;
+	std::vector<StaticObject>* staticObjects = nullptr;
 
 	bool hasNormal = false;
 

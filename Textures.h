@@ -52,28 +52,32 @@ struct Texture {
 		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
 		generateMipmaps();
 		textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		cleaned = false;
 	}
 
-	bool cleaned = false;
+	bool cleaned = true;
 
 	virtual void cleanup() {
 		if (cleaned) {
 			return;
 		}
-		if (textureImage != nullptr && textureImage) {
+		if (textureImage != nullptr) {
 			vkDestroyImage(Engine::get()->device, textureImage, nullptr);
 			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
 			vkDestroyImageView(Engine::get()->device, textureImageView, nullptr);
 		}
+		textureImage = nullptr;
+		textureImageMemory = nullptr;
+		textureImageView = nullptr;
 		destroyCVMat();
 		cleaned = true;
 	}
 
 	Texture() = default;
 	
-	~Texture() {
-		cleanup();
-	}
+	//~Texture() {
+	//	cleanup();
+	//}
 };
 
 class imageTexture : public Texture {
@@ -94,6 +98,7 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
+		cleaned = false;
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t ml) {
@@ -107,6 +112,7 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
+		cleaned = false;
 	}
 
 	imageTexture(std::string filename, VkFormat format) {
@@ -116,6 +122,7 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
+		cleaned = false;
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format) {
@@ -125,12 +132,14 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
+		cleaned = false;
 	}
 
 	imageTexture(imageData* imageBytes) {
 		// Built-in image texture
 		createTextureImage(imageBytes);
 		createTextureImageView();
+		cleaned = false;
 	};
 
 	void setup() {
@@ -184,6 +193,7 @@ public:
 		}
 		createWebcamImage();
 		createWebcamTextureImageView();
+		cleaned = false;
 	}
 
 	void cleanup() {
@@ -197,6 +207,7 @@ public:
 			vkDestroyBuffer(Engine::get()->device, textureBuffer, nullptr);
 			vkFreeMemory(Engine::get()->device, textureBufferMemory, nullptr);
 		}
+		textureImage = nullptr;
 		destruct();
 		cleaned = true;
 	}

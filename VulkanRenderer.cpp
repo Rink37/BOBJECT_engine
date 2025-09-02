@@ -10,7 +10,7 @@
 #include"SurfaceConstructor.h"
 #include"StudioSession.h"
 #include"Tomography.h"
-//#include"LoadLists.h"
+#include"LoadLists.h"
 
 #include"include/BakedImages.h"
 
@@ -24,6 +24,10 @@ KeyInput defaultKeyBinds(keybinds);
 
 class SaveMenu : public Widget {
 public:
+	SaveMenu(LoadList* assets) {
+		loadList = assets;
+	}
+
 	void setup(std::function<void(UIItem*)> loadSessionFunc, std::function<void(UIItem*)> newSessionFunc) {
 		if (isSetup) {
 			return;
@@ -33,12 +37,17 @@ public:
 		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
 
 		imageData OpenButton = OPENBUTTON;
+		Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton), "OpenBtnTex")), "OpenBtnMat");
+		
 		imageData SaveButton = SAVEBUTTON;
-		imageData plusButton = PLUSBUTTON;
+		Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton), "SaveBtnTex")), "SaveBtnMat");
 
-		SessionButtons->addItem(getPtr(new Button(&plusButton, newSessionFunc)));
-		SessionButtons->addItem(getPtr(new Button(&OpenButton, loadSessionFunc)));
-		SessionButtons->addItem(getPtr(new Button(&SaveButton, saveSessionFunc)));
+		imageData plusButton = PLUSBUTTON;
+		Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton), "PlusBtnTex")), "PlusBtnMat");
+
+		SessionButtons->addItem(getPtr(new Button(plusMat, newSessionFunc)));
+		SessionButtons->addItem(getPtr(new Button(openMat, loadSessionFunc)));
+		SessionButtons->addItem(getPtr(new Button(saveMat, saveSessionFunc)));
 
 		SessionButtons->arrangeItems();
 
@@ -59,31 +68,32 @@ private:
 
 class RenderMenu : public Widget {
 public:
+	RenderMenu(LoadList* assets) {
+		loadList = assets;
+	}
+
 	void setup(std::function<void(UIItem*)> loadObjectFunct, std::function<void(UIItem*)> pipelinefunction){
 		if (isSetup) {
 			return;
 		}
-		imageData lb = LOADBUTTON;
+
 		imageData rb = RENDEREDBUTTON;
-		imageData fb = UNRENDEREDBUTTON;
+		Material* renderedMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&rb), "RenderBtnTex")), "RenderBtnMat");
+
 		imageData ub = WEBCAMVIEWBUTTON;
+		Material* webcamViewMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&ub), "WebcamBtnTex")), "WebcamBtnMat");
+
 		imageData wb = WIREFRAMEBUTTON;
-		imageData plb = PLAYBUTTON;
-		imageData pb = PAUSEBUTTON;
-		imageData sb = SETTINGSBUTTON;
-		imageData diffuse = DIFFUSETEXT;
-		imageData normal = NORMALTEXT;
-		imageData webcamOn = WEBCAMONBUTTON;
-		imageData webcamOff = WEBCAMOFFBUTTON;
-		imageData OpenButton = OPENBUTTON;
-		imageData SaveButton = SAVEBUTTON;
-		imageData plusButton = PLUSBUTTON;
+		Material* wireframeViewMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&wb), "WireframeBtnTex")), "WireframeBtnMat");
+
+		imageData lb = LOADBUTTON;
+		Material* LoadBtnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&lb), "LoadBtnTex")), "LoadBtnMat");
 
 		hArrangement* Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
 
-		Button* litRenderingButton = new Button(&rb);
-		Button* unlitRenderingButton = new Button(&ub);
-		Button* wireframeRenderingButton = new Button(&wb);
+		Button* litRenderingButton = new Button(renderedMat);
+		Button* unlitRenderingButton = new Button(webcamViewMat);
+		Button* wireframeRenderingButton = new Button(wireframeViewMat);
 
 		unlitRenderingButton->Name = "WebcamMat";
 		unlitRenderingButton->setClickFunction(pipelinefunction);
@@ -100,7 +110,7 @@ public:
 
 		vArrangement* buttons = new vArrangement(-1.0f, 1.0f, 0.15f, 0.15f, 0.0f);
 
-		buttons->addItem(getPtr(new Button(&lb, loadObjectFunct)));
+		buttons->addItem(getPtr(new Button(LoadBtnMat, loadObjectFunct)));
 		buttons->addItem(getPtr(Renderbuttons));
 
 		buttons->arrangeItems();
@@ -113,10 +123,20 @@ public:
 
 class ObjectMenu : public Widget {
 public:
+	ObjectMenu(LoadList* assets) {
+		loadList = assets;
+	}
+
 	void setup() {
 		if (isSetup) {
 			return;
 		}
+
+		imageData ub = UNRENDEREDBUTTON;
+		visibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&ub), "UnrenderedBtnTex")), "UnrenderedBtnMat");
+
+		imageData tcb = TESTCHECKBOXBUTTON;
+		invisibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tcb), "TestCheckBtnTex")), "TestCheckBtnMat");
 
 		canvas.push_back(getPtr(new vArrangement(-0.9f, -0.5f, 0.05f, 0.5f, 0.01f)));
 
@@ -127,7 +147,7 @@ public:
 
 	void addObject(std::function<void(UIItem*)> toggleFunction) {
 
-		Checkbox* objectButton = new Checkbox(&tcb, &ub, toggleFunction);
+		Checkbox* objectButton = new Checkbox(visibleMat, invisibleMat, toggleFunction);
 		objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
 
 		ObjectMap.insert({ objectButton->Name, ObjectButtons->Items.size() });
@@ -149,32 +169,47 @@ public:
 private:
 	UIItem* ObjectButtons = nullptr;
 
-	imageData ub = UNRENDEREDBUTTON;
-	imageData tcb = TESTCHECKBOXBUTTON;
+	Material* visibleMat = nullptr;
+	Material* invisibleMat = nullptr;
 };
 
 class WebcamMenu : public Widget {
 public:
+	WebcamMenu(LoadList* assets) {
+		loadList = assets;
+	}
+
 	void setup(std::function<void(UIItem*)> lightingFunction) {
 		if (isSetup) {
 			return;
 		}
 		imageData rb = RENDEREDBUTTON;
+		Material* renderedMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&rb), "RenderBtnTex")), "RenderBtnMat");
+		
 		imageData fb = UNRENDEREDBUTTON;
+		Material* unrenderedMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&fb), "UnrenderedBtnTex")), "UnrenderedBtnMat");
+
 		imageData plb = PLAYBUTTON;
+		Material* playMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plb), "PlayBtnTex")), "PlayBtnMat");
+
 		imageData pb = PAUSEBUTTON;
+		Material* pauseMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&pb), "PauseBtnTex")), "PauseBtnMat");
+
 		imageData sb = SETTINGSBUTTON;
+		Material* settingsMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&sb), "SettingsBtnTex")), "SettingsBtnMat");
+
 		imageData webcamOn = WEBCAMONBUTTON;
+		Material* webcamMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn), "WebcamOnBtnTex")), "WebcamOnBtnMat");
 
 		std::function<void(UIItem*)> toggleWebcamFunct = bind(&WebcamMenu::toggleWebcam, this, placeholders::_1);
 		std::function<void(UIItem*)> configureWebcamFunct = bind(&WebcamMenu::calibrateWebcam, this, placeholders::_1);
 
 		hArrangement* Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
 
-		Videobuttons->addItem(getPtr(new Button(&webcamOn)));
-		Videobuttons->addItem(getPtr(new Checkbox(&plb, &pb, toggleWebcamFunct)));
-		Videobuttons->addItem(getPtr(new Button(&sb, configureWebcamFunct)));
-		Videobuttons->addItem(getPtr(new Checkbox(&rb, &fb, lightingFunction)));
+		Videobuttons->addItem(getPtr(new Button(webcamMat)));
+		Videobuttons->addItem(getPtr(new Checkbox(playMat, pauseMat, toggleWebcamFunct)));
+		Videobuttons->addItem(getPtr(new Button(settingsMat, configureWebcamFunct)));
+		Videobuttons->addItem(getPtr(new Checkbox(renderedMat, unrenderedMat, lightingFunction)));
 
 		Videobuttons->arrangeItems();
 
@@ -198,13 +233,20 @@ private:
 
 class TomographyMenu : public Widget {
 public:
+	TomographyMenu(LoadList* assets) {
+		loadList = assets;
+	}
+
 	void setup(surfaceConstructor* sConst) {
 		if (isSetup) {
 			return;
 		}
 		surface = sConst;
 		imageData OpenButton = OPENBUTTON;
+		Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton), "OpenBtnTex")), "OpenBtnMat");
+		
 		imageData normal = NORMALTEXT;
+		Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal), "NormalBtnTex")), "NormalBtnMat");
 
 		std::function<void(UIItem*)> tomogLoadTop = bind(&TomographyMenu::loadTop, this, placeholders::_1);
 		std::function<void(UIItem*)> tomogLoadBottom = bind(&TomographyMenu::loadBottom, this, placeholders::_1);
@@ -214,11 +256,11 @@ public:
 
 		vArrangement* tomogButtons = new vArrangement(0.0f, 0.0f, 0.1f, 0.4f, 0.01f);
 
-		tomogButtons->addItem(getPtr(new Button(&OpenButton, tomogLoadTop)));
-		tomogButtons->addItem(getPtr(new Button(&OpenButton, tomogLoadBottom)));
-		tomogButtons->addItem(getPtr(new Button(&OpenButton, tomogLoadLeft)));
-		tomogButtons->addItem(getPtr(new Button(&OpenButton, tomogLoadRight)));
-		tomogButtons->addItem(getPtr(new Button(&normal, computeNormal)));
+		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadTop)));
+		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadBottom)));
+		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadLeft)));
+		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadRight)));
+		tomogButtons->addItem(getPtr(new Button(normalMat, computeNormal)));
 
 		tomogButtons->updateDisplay();
 
@@ -229,7 +271,7 @@ public:
 private:
 	Tomographer tomographer;
 
-	surfaceConstructor* surface;
+	surfaceConstructor* surface = nullptr;
 
 	void loadTop(UIItem* owner) {
 		string fileName = winFile::OpenFileDialog();
@@ -292,18 +334,21 @@ public:
 		Engine::destruct();
 	}
 private:
+	LoadList UIElements{};
+	LoadList ObjectElements{};
+
 	Engine* engine = Engine::get();
 	surfaceConstructor* sConst = surfaceConstructor::get();
 
 	Camera camera;
 	Tomographer tomographer;
 
-	TomographyMenu tomogUI;
-	SaveMenu saveMenu;
-	WebcamMenu webcamMenu;
-	RenderMenu renderMenu;
-	ObjectMenu objectMenu;
-	SurfaceMenu surfaceMenu;
+	TomographyMenu tomogUI = TomographyMenu(&UIElements);
+	SaveMenu saveMenu = SaveMenu(&UIElements);
+	WebcamMenu webcamMenu = WebcamMenu(&UIElements);
+	RenderMenu renderMenu = RenderMenu(&UIElements);
+	ObjectMenu objectMenu = ObjectMenu(&UIElements);
+	SurfaceMenu surfaceMenu = SurfaceMenu(&ObjectElements);
 
 	vector<Widget*> widgets;
 
@@ -335,7 +380,7 @@ private:
 		surfaceMenu.removeNormalMenu(owner);
 		sConst->clearSurface();
 		sConst->normalAvailable = false;
-		surfaceMenu.setDiffuse(sConst->currentDiffuse());
+		surfaceMenu.setDiffuse(sConst->currentDiffuse().get());
 
 		sConst->renderPipeline = "BFShading";
 		sConst->updateSurfaceMat();
@@ -366,7 +411,7 @@ private:
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
 			sConst->loadDiffuse(loadedTexture);
 			sConst->diffuseIdx = 1;
-			surfaceMenu.setDiffuse(sConst->currentDiffuse());
+			surfaceMenu.setDiffuse(sConst->currentDiffuse().get());
 			surfaceMenu.resetDiffuseTog();
 		}
 		if (session::get()->currentStudio.OSPath != "None") {
@@ -376,7 +421,7 @@ private:
 			}
 			sConst->normalType = 0;
 			sConst->loadNormal(loadedTexture);
-			surfaceMenu.setNormal(sConst->currentNormal());
+			surfaceMenu.setNormal(sConst->currentNormal().get());
 			surfaceMenu.resetNormalTog();
 			surfaceMenu.toggleNormalState(true);
 		}
@@ -388,7 +433,7 @@ private:
 			sConst->normalType = 1;
 			sConst->loadNormal(loadedTexture);
 			sConst->TSmatching = true;
-			surfaceMenu.setNormal(sConst->currentNormal());
+			surfaceMenu.setNormal(sConst->currentNormal().get());
 			surfaceMenu.resetNormalTog();
 			surfaceMenu.toggleNormalState(false);
 		}
@@ -418,22 +463,6 @@ private:
 
 		surfaceMenu.setup(sConst, &staticObjects);
 		widgets.push_back(&surfaceMenu);
-
-		imageData lb = LOADBUTTON;
-		imageData rb = RENDEREDBUTTON;
-		imageData fb = UNRENDEREDBUTTON;
-		imageData ub = WEBCAMVIEWBUTTON;
-		imageData wb = WIREFRAMEBUTTON;
-		imageData plb = PLAYBUTTON;
-		imageData pb = PAUSEBUTTON;
-		imageData sb = SETTINGSBUTTON;
-		imageData diffuse = DIFFUSETEXT;
-		imageData normal = NORMALTEXT;
-		imageData webcamOn = WEBCAMONBUTTON;
-		imageData webcamOff = WEBCAMOFFBUTTON;
-		imageData OpenButton = OPENBUTTON;
-		imageData SaveButton = SAVEBUTTON;
-		imageData plusButton = PLUSBUTTON;
 
 	}
 
@@ -541,12 +570,12 @@ private:
 			staticObjects[i].mesh->cleanup();
 		}
 
-		//for (uint32_t i = 0; i != canvas.size(); i++) {
-		//	canvas[i]->cleanup();
-		//}
+		UIElements.empty();
+		ObjectElements.empty();
 
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->cleanup();
+			widgets[i]->~Widget();
 		}
 
 		sConst->cleanup();

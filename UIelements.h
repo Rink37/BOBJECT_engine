@@ -11,7 +11,7 @@
 #include<array>
 #include<chrono>
 
-//#include"LoadLists.h"
+#include"LoadLists.h"
 #include"include/ImageDataType.h"
 
 struct UIImage {
@@ -20,7 +20,7 @@ struct UIImage {
 	int texHeight = 0;
 	int texWidth = 0;
 
-	std::vector<std::shared_ptr<Material>> mat;
+	std::vector<Material*> mat;
 	uint32_t matidx = 0;
 	
 	UIMesh mesh;
@@ -30,7 +30,7 @@ struct UIImage {
 	void UpdateVertices(float, float, float, float);
 
 	void cleanup() {
-		for (std::shared_ptr<Material> indMat : mat) {
+		for (Material* indMat : mat) {
 			indMat->cleanup();
 		}
 		mesh.cleanup();
@@ -71,6 +71,12 @@ struct UIItem {
 	std::shared_ptr<UIImage> image = nullptr; // new UIImage;
 
 	std::vector<UIItem*> Items; // These items are managed by owning widgets, pointers reference a vector of objects
+	std::vector<std::unique_ptr<Texture>> textures;
+
+	Texture* getPtr(Texture* tex) {
+		textures.emplace_back(tex);
+		return textures[textures.size() - 1].get();
+	}
 
 	virtual void addItem(UIItem*);
 
@@ -149,7 +155,7 @@ struct UIItem {
 		getImages(images);
 
 		for (UIImage* image : images) {
-			for (std::shared_ptr<Material> mat : image->mat) {
+			for (Material* mat : image->mat) {
 				//if (mat != &surfaceConstructor::get()->webcamMaterial && !mat->cleaned) {
 				if (mat != nullptr && !mat->cleaned) {
 					mat->cleanup();
@@ -216,40 +222,10 @@ public:
 	//std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
 	Button() = default;
-	
-	Button(float x, float y, float xsize, float ysize, imageData* iDpointer) {
-		this->sqAxisRatio = ysize / xsize;
 
-		Texture* tex = new imageTexture(iDpointer);
-
+	Button(Material* mat, std::function<void(UIItem*)> func) {
 		image = std::make_shared<UIImage>(new UIImage);
-		image->mat.emplace_back(new Material(tex));
-		
-		image->texWidth = image->mat[0]->textures[0]->texWidth;
-		image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-		update(x, -1.0f * y, xsize, ysize);
-	};
-
-	Button(imageData* iDpointer) {
-		Texture* tex = new imageTexture(iDpointer);
-
-		image = std::make_shared<UIImage>(new UIImage);
-		image->mat.emplace_back(new Material(tex));
-
-		image->texWidth = image->mat[0]->textures[0]->texWidth;
-		image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
-
-		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
-	}
-
-	Button(imageData* iDpointer, std::function<void(UIItem*)> func) {
-		Texture* tex = new imageTexture(iDpointer);
-
-		image = std::make_shared<UIImage>(new UIImage);
-		image->mat.emplace_back(new Material(tex));
+		image->mat.push_back(mat);
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -260,6 +236,64 @@ public:
 
 		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
 	}
+
+	Button(Material* mat) {
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.push_back(mat);
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+
+		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+	}
+	
+	Button(float x, float y, float xsize, float ysize, imageData* iDpointer) {
+		this->sqAxisRatio = ysize / xsize;
+
+		Texture* tex = getPtr(new imageTexture(iDpointer));
+
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.push_back(new Material(tex));
+		
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		update(x, -1.0f * y, xsize, ysize);
+	};
+
+	Button(imageData* iDpointer) {
+		Texture* tex = getPtr(new imageTexture(iDpointer));
+
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.push_back(new Material(tex));
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+
+		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+	}
+
+	Button(imageData* iDpointer, std::function<void(UIItem*)> func) {
+		Texture* tex = getPtr(new imageTexture(iDpointer));
+
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.push_back(new Material(tex));
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+
+		clickFunction = func;
+
+		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+	}
+
+
 
 	bool isInArea(double x, double y) {
 		bool result = false;
@@ -289,15 +323,32 @@ public:
 
 	Checkbox() = default;
 
+	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func) {
+		image = std::unique_ptr<UIImage>(new UIImage);
+		image->mat.push_back(onMat);
+		image->mat.push_back(offMat);
+		image->matidx = 0;
+		this->activestate = true;
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+
+		update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
+
+		clickFunction = func;
+	}
+
 	Checkbox(float x, float y, float xsize, float ysize, imageData* iDon, imageData* iDoff) {
 		this->sqAxisRatio = ysize / xsize;
 
-		Texture* onTex = new imageTexture(iDon);
-		Texture* offTex = new imageTexture(iDoff);
+		Texture* onTex = getPtr(new imageTexture(iDon));
+		Texture* offTex = getPtr(new imageTexture(iDoff));
 
 		image = std::unique_ptr<UIImage>(new UIImage);
-		image->mat.emplace_back(new Material(onTex));
-		image->mat.emplace_back(new Material(offTex));
+		image->mat.push_back(new Material(onTex));
+		image->mat.push_back(new Material(offTex));
 		image->matidx = 0;
 		this->activestate = true;
 
@@ -308,12 +359,12 @@ public:
 	};
 
 	Checkbox(imageData* iDon, imageData* iDoff) {
-		Texture* onTex = new imageTexture(iDon);
-		Texture* offTex = new imageTexture(iDoff);
+		Texture* onTex = getPtr(new imageTexture(iDon));
+		Texture* offTex = getPtr(new imageTexture(iDoff));
 
 		image = std::unique_ptr<UIImage>(new UIImage);
-		image->mat.emplace_back(new Material(onTex));
-		image->mat.emplace_back(new Material(offTex));
+		image->mat.push_back(new Material(onTex));
+		image->mat.push_back(new Material(offTex));
 		image->matidx = 0;
 		this->activestate = true;
 
@@ -326,12 +377,12 @@ public:
 	}
 
 	Checkbox(imageData* iDon, imageData* iDoff, std::function<void(UIItem*)> func) {
-		Texture* onTex = new imageTexture(iDon);
-		Texture* offTex = new imageTexture(iDoff);
+		Texture* onTex = getPtr(new imageTexture(iDon));
+		Texture* offTex = getPtr(new imageTexture(iDoff));
 
 		image = std::unique_ptr<UIImage>(new UIImage);
-		image->mat.emplace_back(new Material(onTex));
-		image->mat.emplace_back(new Material(offTex));
+		image->mat.push_back(new Material(onTex));
+		image->mat.push_back(new Material(offTex));
 		image->matidx = 0;
 		this->activestate = true;
 
@@ -558,7 +609,9 @@ struct Widget {
 	void cleanup() {
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->cleanup();
+			canvas[i]->~UIItem();
 		}
+		canvas.clear();
 	}
 
 	void hide() {
@@ -607,6 +660,8 @@ struct Widget {
 
 	std::vector<UIItem*> canvas;
 	bool isSetup = false;
+
+	LoadList* loadList = nullptr;
 private:
 	// Array of pointers which manages the actual structure of the UI
 

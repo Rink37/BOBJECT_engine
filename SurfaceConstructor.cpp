@@ -179,7 +179,7 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 	osNormMaterial.~osNormMaterial();
 	new (&osNormMaterial) Material(OSNormTex);
 
-	Normal[1] = &osNormMaterial;
+	Normal[1] = make_unique<Material>(osNormMaterial);
 
 	generator.cleanupOS();
 }
@@ -678,13 +678,14 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 	tsNormMaterial.~tsNormMaterial();
 	new (&tsNormMaterial) Material(TSNormTex);
 
-	Normal[2] = &tsNormMaterial;
+	Normal[2] = make_unique<Material>(tsNormMaterial);
 	generator.cleanupTS();
 }
 
 void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>* objects) {
 
 	sConst = surfConst;
+	sConst->loadList = loadList;
 	staticObjects = objects;
 
 	std::function<void(UIItem*)> addNormalButton = bind(&SurfaceMenu::createNormalMenu, this, placeholders::_1);
@@ -736,7 +737,7 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 
 	SurfacePanel = new vArrangement(1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 
-	diffuseView = new ImagePanel(sConst->currentDiffuse(), true);
+	diffuseView = new ImagePanel(sConst->currentDiffuse().get(), true);
 	SurfacePanel->addItem(getPtr(DiffuseButtons));
 	SurfacePanel->addItem(getPtr(diffuseView));
 	SurfacePanel->addItem(getPtr(NormalButtons));
@@ -778,7 +779,7 @@ void SurfaceMenu::removeNormalMenu(UIItem* owner) {
 
 void SurfaceMenu::toggleDiffuseCam(UIItem* owner) {
 	sConst->toggleDiffWebcam();
-	diffuseView->image->mat[0] = std::make_unique<Material>(sConst->currentDiffuse());
+	diffuseView->image->mat[0] = sConst->currentDiffuse().get();
 }
 
 void SurfaceMenu::loadDiffuseImage(UIItem* owner) {
@@ -787,7 +788,7 @@ void SurfaceMenu::loadDiffuseImage(UIItem* owner) {
 		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
 		sConst->loadDiffuse(loadedTexture);
 		sConst->diffuseIdx = 1;
-		diffuseView->image->mat[0] = std::make_unique<Material>(sConst->currentDiffuse());
+		diffuseView->image->mat[0] = sConst->currentDiffuse().get();
 		diffuseView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
 		diffuseView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
 		diffuseView->sqAxisRatio = static_cast<float>(diffuseView->image->texHeight) / static_cast<float>(diffuseView->image->texWidth);
@@ -818,7 +819,7 @@ void SurfaceMenu::saveDiffuseImage(UIItem* owner) {
 
 void SurfaceMenu::toggleNormalCam(UIItem* owner) {
 	sConst->toggleNormWebcam();
-	normalView->image->mat[0] = std::make_unique<Material>(sConst->currentNormal());
+	normalView->image->mat[0] = sConst->currentNormal().get();
 }
 
 void SurfaceMenu::toggleNormalType(UIItem* owner) {
@@ -829,10 +830,10 @@ void SurfaceMenu::toggleNormalType(UIItem* owner) {
 		}
 		sConst->transitionToTS((*staticObjects)[staticObjects->size() - 1].mesh);
 		sConst->TSmatching = true;
-		normalView->image->mat[0] = std::make_unique<Material>(sConst->currentNormal());
+		normalView->image->mat[0] = sConst->currentNormal().get();
 	}
 	else {
-		normalView->image->mat[0] = std::make_unique<Material>(sConst->currentNormal());
+		normalView->image->mat[0] = sConst->currentNormal().get();
 	}
 }
 
@@ -842,7 +843,7 @@ void SurfaceMenu::loadNormalImage(UIItem* owner) {
 		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
 		sConst->loadNormal(loadedTexture);
 		sConst->normalIdx = 1 + sConst->normalType;
-		normalView->image->mat[0] = std::make_unique<Material>(sConst->currentNormal());
+		normalView->image->mat[0] = sConst->currentNormal().get();
 		normalView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
 		normalView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
 		normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
@@ -891,7 +892,7 @@ void SurfaceMenu::saveNormalImage(UIItem* owner) {
 void SurfaceMenu::contextConvertMap(UIItem* owner) {
 	sConst->contextConvert();
 	sConst->normalIdx = 1 + sConst->normalType;
-	normalView->image->mat[0] = std::make_unique<Material>(sConst->currentNormal());
+	normalView->image->mat[0] = sConst->currentNormal().get();
 	normalTog->activestate = false;
 	normalTog->image->matidx = 1;
 }
@@ -955,7 +956,7 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	NormalButtons->addItem(getPtr(normalLoad));
 	NormalButtons->addItem(getPtr(normalSave));
 
-	normalView = new ImagePanel(sConst->currentNormal(), true);
+	normalView = new ImagePanel(sConst->currentNormal().get(), true);
 	normalView->image->texHeight = diffuseView->image->texHeight;
 	normalView->image->texWidth = diffuseView->image->texWidth;
 	normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
