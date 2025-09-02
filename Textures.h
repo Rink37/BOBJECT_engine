@@ -68,6 +68,12 @@ struct Texture {
 		destroyCVMat();
 		cleaned = true;
 	}
+
+	Texture() = default;
+	
+	~Texture() {
+		cleanup();
+	}
 };
 
 class imageTexture : public Texture {
@@ -77,6 +83,10 @@ class imageTexture : public Texture {
 	// If it won't be, we can destroy the matrix using destroyCVMat();
 public:
 	imageTexture() = default;
+
+	~imageTexture() {
+		cleanup();
+	}
 
 	imageTexture(cv::Mat initMat) {
 		// Image texture which is created using a given openCV image
@@ -202,7 +212,9 @@ public:
 private:
 	static webcamTexture* winstance;
 	webcamTexture() = default;
-	~webcamTexture() = default;
+	~webcamTexture() = default;// {
+	//	cleanup();
+	//};
 
 	void updateWebcamImage();
 	void createWebcamImage();

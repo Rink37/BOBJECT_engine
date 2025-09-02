@@ -259,7 +259,7 @@ public:
 	void removeNormalMenu(UIItem*);
 
 	void setDiffuse(Material* img) {
-		diffuseView->image->mat[0] = img;
+		diffuseView->image->mat[0] = std::make_unique<Material>(img);
 	}
 
 	void resetDiffuseTog() {
@@ -268,7 +268,7 @@ public:
 	}
 
 	void setNormal(Material* img) {
-		normalView->image->mat[0] = img;
+		normalView->image->mat[0] = std::make_unique<Material>(img);
 	}
 
 	void resetNormalTog() {
@@ -285,6 +285,8 @@ public:
 
 private:
 	std::vector<StaticObject>* staticObjects;
+
+	bool hasNormal = false;
 
 	Checkbox* diffuseTog = nullptr;
 	Checkbox* normalTog = nullptr;

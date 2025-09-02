@@ -6,12 +6,12 @@
 #include"Textures.h"
 #include"Materials.h"
 #include"Meshes.h"
-//#include"SurfaceConstructor.h"
 #include<iostream>
 #include<vector>
 #include<array>
 #include<chrono>
 
+//#include"LoadLists.h"
 #include"include/ImageDataType.h"
 
 struct UIImage {
@@ -20,7 +20,7 @@ struct UIImage {
 	int texHeight = 0;
 	int texWidth = 0;
 
-	std::vector<Material*> mat = { nullptr };
+	std::vector<std::shared_ptr<Material>> mat;
 	uint32_t matidx = 0;
 	
 	UIMesh mesh;
@@ -30,7 +30,7 @@ struct UIImage {
 	void UpdateVertices(float, float, float, float);
 
 	void cleanup() {
-		for (Material* indMat : mat) {
+		for (std::shared_ptr<Material> indMat : mat) {
 			indMat->cleanup();
 		}
 		mesh.cleanup();
@@ -68,9 +68,9 @@ struct UIItem {
 
 	std::string Name = "Unlabelled";
 
-	UIImage *image = nullptr;// new UIImage;
+	std::shared_ptr<UIImage> image = nullptr; // new UIImage;
 
-	std::vector<UIItem*> Items;
+	std::vector<UIItem*> Items; // These items are managed by owning widgets, pointers reference a vector of objects
 
 	virtual void addItem(UIItem*);
 
@@ -109,7 +109,7 @@ struct UIItem {
 
 	virtual void getImages(std::vector<UIImage*>& images) {
 		if (image != nullptr && image->texHeight > 1) {
-			images.push_back(image);
+			images.push_back(image.get());
 		}
 	};
 
@@ -149,16 +149,16 @@ struct UIItem {
 		getImages(images);
 
 		for (UIImage* image : images) {
-			for (Material* mat : image->mat) {
+			for (std::shared_ptr<Material> mat : image->mat) {
 				//if (mat != &surfaceConstructor::get()->webcamMaterial && !mat->cleaned) {
-				if (!mat->cleaned) {
+				if (mat != nullptr && !mat->cleaned) {
 					mat->cleanup();
-					delete mat;
+					//delete mat;
 					mat = nullptr;
 				}
 			}
 			image->mesh.cleanup();
-			delete image;
+			//delete image;
 			image = nullptr;
 		}
 	}
@@ -172,8 +172,8 @@ public:
 	ImagePanel(Material* surf, bool iW) {
 		update(0.0f, 0.0f, 1.0f, 1.0f);
 
-		image = new UIImage;
-		image->mat[0] = surf;
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(surf);
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -186,8 +186,8 @@ public:
 	ImagePanel(float x, float y, float xsize, float ysize, Material* surf, bool iW) {
 		update(x, -1.0f * y, xsize, ysize);
 
-		image = new UIImage;
-		image->mat[0] = surf;
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(surf);
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -222,8 +222,8 @@ public:
 
 		Texture* tex = new imageTexture(iDpointer);
 
-		image = new UIImage;
-		image->mat[0] = new Material(tex);
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(new Material(tex));
 		
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -234,13 +234,13 @@ public:
 	Button(imageData* iDpointer) {
 		Texture* tex = new imageTexture(iDpointer);
 
-		image = new UIImage;
-		image->mat[0] = new Material(tex);
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(new Material(tex));
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
-		this->sqAxisRatio = image->texHeight / image->texWidth;
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
 
 		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
 	}
@@ -248,13 +248,13 @@ public:
 	Button(imageData* iDpointer, std::function<void(UIItem*)> func) {
 		Texture* tex = new imageTexture(iDpointer);
 
-		image = new UIImage;
-		image->mat[0] = new Material(tex);
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(new Material(tex));
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
-		this->sqAxisRatio = image->texHeight / image->texWidth;
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
 
 		clickFunction = func;
 
@@ -295,9 +295,9 @@ public:
 		Texture* onTex = new imageTexture(iDon);
 		Texture* offTex = new imageTexture(iDoff);
 
-		image = new UIImage;
-		image->mat[0] = new Material(onTex);
-		image->mat.push_back(new Material(offTex));
+		image = std::unique_ptr<UIImage>(new UIImage);
+		image->mat.emplace_back(new Material(onTex));
+		image->mat.emplace_back(new Material(offTex));
 		image->matidx = 0;
 		this->activestate = true;
 
@@ -311,16 +311,16 @@ public:
 		Texture* onTex = new imageTexture(iDon);
 		Texture* offTex = new imageTexture(iDoff);
 
-		image = new UIImage;
-		image->mat[0] = new Material(onTex);
-		image->mat.push_back(new Material(offTex));
+		image = std::unique_ptr<UIImage>(new UIImage);
+		image->mat.emplace_back(new Material(onTex));
+		image->mat.emplace_back(new Material(offTex));
 		image->matidx = 0;
 		this->activestate = true;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
-		this->sqAxisRatio = image->texHeight / image->texWidth;
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
 
 		update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
 	}
@@ -329,16 +329,16 @@ public:
 		Texture* onTex = new imageTexture(iDon);
 		Texture* offTex = new imageTexture(iDoff);
 
-		image = new UIImage;
-		image->mat[0] = new Material(onTex);
-		image->mat.push_back(new Material(offTex));
+		image = std::unique_ptr<UIImage>(new UIImage);
+		image->mat.emplace_back(new Material(onTex));
+		image->mat.emplace_back(new Material(offTex));
 		image->matidx = 0;
 		this->activestate = true;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
-		this->sqAxisRatio = image->texHeight / image->texWidth;
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
 
 		update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
 
@@ -532,7 +532,7 @@ private:
 struct Widget {
 	// Individual widgets should be classes with their own setup scripts, functions etc. which are called in the application with a standard constructor
 	// UI is managed based on pointers, but the widget must explicitly manage the resources so that we don't have any memory leaks
-	
+
 	void draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->draw(commandBuffer, currentFrame);
@@ -546,6 +546,12 @@ struct Widget {
 			for (UIItem* sitem : scs) {
 				sitem->checkForEvent(mouseX, mouseY, state);
 			}
+		}
+	}
+
+	void update() {
+		for (size_t i = 0; i != canvas.size(); i++) {
+			canvas[i]->updateDisplay();
 		}
 	}
 

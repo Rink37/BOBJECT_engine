@@ -6,18 +6,18 @@
 struct Mesh {
 	std::vector<Vertex> vertices;
 	
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
+	VkBuffer vertexBuffer{};
+	VkDeviceMemory vertexBufferMemory{};
 
 	std::vector<uint32_t> indices;
 
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
+	VkBuffer indexBuffer{};
+	VkDeviceMemory indexBufferMemory{};
 
-	std::vector<uint32_t> uniqueTexindices;
+	std::vector<uint32_t> uniqueTexindices{};
 
-	VkBuffer texCoordIndexBuffer;
-	VkDeviceMemory texCoordIndexBufferMemory;
+	VkBuffer texCoordIndexBuffer{};
+	VkDeviceMemory texCoordIndexBufferMemory{};
 
 	virtual void createVertexBuffer();
 	virtual void computeTangents() {};

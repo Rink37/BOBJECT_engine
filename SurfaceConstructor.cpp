@@ -109,7 +109,7 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 
 	if (supportsBlit)
 	{
-		VkOffset3D blitSize;
+		VkOffset3D blitSize{};
 		blitSize.x = generator.objectSpaceMap.colour->texWidth;
 		blitSize.y = generator.objectSpaceMap.colour->texHeight;
 		blitSize.z = 1;
@@ -283,11 +283,11 @@ void surfaceConstructor::contextConvert() {
 				if (gradindexes.size() > 0) {
 					vector<float> cs;
 					cs.push_back(ygrad.at<float>(gradindexes[0], x));
-					for (int k = 1; k != gradindexes.size(); k++) {
+					for (size_t k = 1; k != gradindexes.size(); k++) {
 						cs.push_back(cs[k - 1] + ygrad.at<float>(gradindexes[k], x));
 					}
 					float max = cs[cs.size() - 1];
-					for (int k = 0; k != cs.size(); k++) {
+					for (size_t k = 0; k != cs.size(); k++) {
 						ygrad.at<float>(gradindexes[k], x) = cs[k]/max;
 					}
 					gradindexes.clear();
@@ -332,11 +332,11 @@ void surfaceConstructor::contextConvert() {
 				if (gradindexes.size() > 0) {
 					vector<float> cs;
 					cs.push_back(xgrad.at<float>(y, gradindexes[0]));
-					for (int k = 1; k != gradindexes.size(); k++) {
+					for (size_t k = 1; k != gradindexes.size(); k++) {
 						cs.push_back(cs[k - 1] + xgrad.at<float>(y, gradindexes[k]));
 					}
 					float max = cs[cs.size() - 1];
-					for (int k = 0; k != cs.size(); k++) {
+					for (size_t k = 0; k != cs.size(); k++) {
 						xgrad.at<float>(y, gradindexes[k]) = cs[k] / max;
 					}
 					gradindexes.clear();
@@ -608,7 +608,7 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 
 	if (supportsBlit)
 	{
-		VkOffset3D blitSize;
+		VkOffset3D blitSize{};
 		blitSize.x = generator.tangentSpaceMap.colour->texWidth;
 		blitSize.y = generator.tangentSpaceMap.colour->texHeight;
 		blitSize.z = 1;
@@ -745,15 +745,17 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 	SurfacePanel->updateDisplay();
 
 	canvas.push_back(getPtr(SurfacePanel));
+
+	hasNormal = false;
 }
 
 void SurfaceMenu::removeNormalMenu(UIItem* owner) {
-	if (!sConst->normalAvailable) {
+	if (!hasNormal) {
 		return;
 	}
 	// Clear UI related to the normal component of the surface panel
 	SurfacePanel->Items[SurfacePanel->Items.size() - 2]->cleanup();
-	SurfacePanel->removeItem(SurfacePanel->Items.size() - 2);
+	SurfacePanel->removeItem(static_cast<uint32_t>(SurfacePanel->Items.size() - 2));
 
 	NormalButtons->cleanup();
 	NormalButtons->Items.clear();
@@ -771,11 +773,12 @@ void SurfaceMenu::removeNormalMenu(UIItem* owner) {
 	NormalButtons->addItem(getPtr(new spacer));
 
 	SurfacePanel->updateDisplay();
+	hasNormal = false;
 }
 
 void SurfaceMenu::toggleDiffuseCam(UIItem* owner) {
 	sConst->toggleDiffWebcam();
-	diffuseView->image->mat[0] = sConst->currentDiffuse();
+	diffuseView->image->mat[0] = std::make_unique<Material>(sConst->currentDiffuse());
 }
 
 void SurfaceMenu::loadDiffuseImage(UIItem* owner) {
@@ -784,7 +787,7 @@ void SurfaceMenu::loadDiffuseImage(UIItem* owner) {
 		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
 		sConst->loadDiffuse(loadedTexture);
 		sConst->diffuseIdx = 1;
-		diffuseView->image->mat[0] = sConst->currentDiffuse();
+		diffuseView->image->mat[0] = std::make_unique<Material>(sConst->currentDiffuse());
 		diffuseView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
 		diffuseView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
 		diffuseView->sqAxisRatio = static_cast<float>(diffuseView->image->texHeight) / static_cast<float>(diffuseView->image->texWidth);
@@ -815,7 +818,7 @@ void SurfaceMenu::saveDiffuseImage(UIItem* owner) {
 
 void SurfaceMenu::toggleNormalCam(UIItem* owner) {
 	sConst->toggleNormWebcam();
-	normalView->image->mat[0] = sConst->currentNormal();
+	normalView->image->mat[0] = std::make_unique<Material>(sConst->currentNormal());
 }
 
 void SurfaceMenu::toggleNormalType(UIItem* owner) {
@@ -826,10 +829,10 @@ void SurfaceMenu::toggleNormalType(UIItem* owner) {
 		}
 		sConst->transitionToTS((*staticObjects)[staticObjects->size() - 1].mesh);
 		sConst->TSmatching = true;
-		normalView->image->mat[0] = sConst->currentNormal();
+		normalView->image->mat[0] = std::make_unique<Material>(sConst->currentNormal());
 	}
 	else {
-		normalView->image->mat[0] = sConst->currentNormal();
+		normalView->image->mat[0] = std::make_unique<Material>(sConst->currentNormal());
 	}
 }
 
@@ -839,7 +842,7 @@ void SurfaceMenu::loadNormalImage(UIItem* owner) {
 		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
 		sConst->loadNormal(loadedTexture);
 		sConst->normalIdx = 1 + sConst->normalType;
-		normalView->image->mat[0] = sConst->currentNormal();
+		normalView->image->mat[0] = std::make_unique<Material>(sConst->currentNormal());
 		normalView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
 		normalView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
 		normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
@@ -888,7 +891,7 @@ void SurfaceMenu::saveNormalImage(UIItem* owner) {
 void SurfaceMenu::contextConvertMap(UIItem* owner) {
 	sConst->contextConvert();
 	sConst->normalIdx = 1 + sConst->normalType;
-	normalView->image->mat[0] = sConst->currentNormal();
+	normalView->image->mat[0] = std::make_unique<Material>(sConst->currentNormal());
 	normalTog->activestate = false;
 	normalTog->image->matidx = 1;
 }
@@ -952,16 +955,14 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	NormalButtons->addItem(getPtr(normalLoad));
 	NormalButtons->addItem(getPtr(normalSave));
 
-	NormalButtons->arrangeItems();
-	NormalButtons->updateDisplay();
-
 	normalView = new ImagePanel(sConst->currentNormal(), true);
 	normalView->image->texHeight = diffuseView->image->texHeight;
 	normalView->image->texWidth = diffuseView->image->texWidth;
 	normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
-	normalView->updateDisplay();
 
 	SurfacePanel->addItem(getPtr(normalView));
 	SurfacePanel->addItem(getPtr(new spacer));
-	SurfacePanel->arrangeItems();
+	SurfacePanel->updateDisplay();
+
+	hasNormal = true;
 }

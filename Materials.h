@@ -4,7 +4,6 @@
 #include"Bobject_Engine.h"
 #include"Textures.h"
 
-
 class Material {
 public:
 	Material() = default;
@@ -87,5 +86,6 @@ public:
 
 	bool cleaned = false;
 };
+
 
 #endif
