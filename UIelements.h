@@ -71,12 +71,12 @@ struct UIItem {
 	std::shared_ptr<UIImage> image = nullptr; // new UIImage;
 
 	std::vector<UIItem*> Items; // These items are managed by owning widgets, pointers reference a vector of objects
-	std::vector<std::unique_ptr<Texture>> textures;
+	std::vector<Texture*> textures;
 
-	Texture* getPtr(Texture* tex) {
-		textures.emplace_back(tex);
-		return textures[textures.size() - 1].get();
-	}
+	//Texture* getPtr(Texture* tex) {
+	//	textures.emplace_back(tex);
+	//	return textures[textures.size() - 1].get();
+	//}
 
 	virtual void addItem(UIItem*);
 
@@ -252,7 +252,7 @@ public:
 	Button(float x, float y, float xsize, float ysize, imageData* iDpointer) {
 		this->sqAxisRatio = ysize / xsize;
 
-		Texture* tex = getPtr(new imageTexture(iDpointer));
+		Texture* tex = new imageTexture(iDpointer);
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.push_back(new Material(tex));
@@ -264,7 +264,7 @@ public:
 	};
 
 	Button(imageData* iDpointer) {
-		Texture* tex = getPtr(new imageTexture(iDpointer));
+		Texture* tex = new imageTexture(iDpointer);
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.push_back(new Material(tex));
@@ -278,7 +278,7 @@ public:
 	}
 
 	Button(imageData* iDpointer, std::function<void(UIItem*)> func) {
-		Texture* tex = getPtr(new imageTexture(iDpointer));
+		Texture* tex = new imageTexture(iDpointer);
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.push_back(new Material(tex));
@@ -343,8 +343,8 @@ public:
 	Checkbox(float x, float y, float xsize, float ysize, imageData* iDon, imageData* iDoff) {
 		this->sqAxisRatio = ysize / xsize;
 
-		Texture* onTex = getPtr(new imageTexture(iDon));
-		Texture* offTex = getPtr(new imageTexture(iDoff));
+		Texture* onTex = new imageTexture(iDon);
+		Texture* offTex = new imageTexture(iDoff);
 
 		image = std::unique_ptr<UIImage>(new UIImage);
 		image->mat.push_back(new Material(onTex));
@@ -359,8 +359,8 @@ public:
 	};
 
 	Checkbox(imageData* iDon, imageData* iDoff) {
-		Texture* onTex = getPtr(new imageTexture(iDon));
-		Texture* offTex = getPtr(new imageTexture(iDoff));
+		Texture* onTex = new imageTexture(iDon);
+		Texture* offTex = new imageTexture(iDoff);
 
 		image = std::unique_ptr<UIImage>(new UIImage);
 		image->mat.push_back(new Material(onTex));
@@ -377,8 +377,8 @@ public:
 	}
 
 	Checkbox(imageData* iDon, imageData* iDoff, std::function<void(UIItem*)> func) {
-		Texture* onTex = getPtr(new imageTexture(iDon));
-		Texture* offTex = getPtr(new imageTexture(iDoff));
+		Texture* onTex = new imageTexture(iDon);
+		Texture* offTex = new imageTexture(iDoff);
 
 		image = std::unique_ptr<UIImage>(new UIImage);
 		image->mat.push_back(new Material(onTex));

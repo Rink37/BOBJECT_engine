@@ -10,8 +10,10 @@ public:
 
 	Webcam(uint8_t);
 
-	~Webcam() {
-		cap.release();
+	void cleanup() {
+		if (cap.isOpened()) {
+			cap.release();
+		}
 		webcamFrame.release();
 	}
 	

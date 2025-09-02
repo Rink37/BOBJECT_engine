@@ -693,35 +693,40 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 	std::function<void(UIItem*)> loadDiffuse = bind(&SurfaceMenu::loadDiffuseImage, this, placeholders::_1);
 	std::function<void(UIItem*)> saveWebcam = bind(&SurfaceMenu::saveDiffuseImage, this, placeholders::_1);
 
-	imageData lb = LOADBUTTON;
-	imageData rb = RENDEREDBUTTON;
-	imageData fb = UNRENDEREDBUTTON;
-	imageData ub = WEBCAMVIEWBUTTON;
-	imageData wb = WIREFRAMEBUTTON;
-	imageData plb = PLAYBUTTON;
-	imageData pb = PAUSEBUTTON;
-	imageData sb = SETTINGSBUTTON;
 	imageData diffuse = DIFFUSETEXT;
+	Material* diffuseMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffuse), "DiffuseBtnTex")), "DiffuseBtnMat");
+
 	imageData normal = NORMALTEXT;
+	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal), "NormalBtnTex")), "NormalBtnMat");
+
 	imageData webcamOn = WEBCAMONBUTTON;
+	Material* webcamOnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn), "WebcamOnBtnTex")), "WebcamOnBtnMat");
+
 	imageData webcamOff = WEBCAMOFFBUTTON;
+	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff), "WebcamOnBtnTex")), "WebcamOnBtnMat");
+
 	imageData OpenButton = OPENBUTTON;
+	Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton), "OpenBtnTex")), "OpenBtnMat");
+
 	imageData SaveButton = SAVEBUTTON;
+	Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton), "SaveBtnTex")), "SaveBtnMat");
+
 	imageData plusButton = PLUSBUTTON;
+	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton), "PlusBtnTex")), "PlusBtnMat");
 
-	Button* diffuseTextPanel = new Button(&diffuse);
+	Button* diffuseTextPanel = new Button(diffuseMat);
 
-	diffuseTog = new Checkbox(&webcamOn, &webcamOff, toggleDiffuse);
+	diffuseTog = new Checkbox(webcamOnMat, webcamOffMat, toggleDiffuse);
 	diffuseTog->Name = "ToggleDiffuseWebcam";
 	diffuseTog->setClickFunction(toggleDiffuse);
 
-	Button* diffLoad = new Button(&OpenButton, loadDiffuse);
-	Button* diffSave = new Button(&SaveButton, saveWebcam);
+	Button* diffLoad = new Button(openMat, loadDiffuse);
+	Button* diffSave = new Button(saveMat, saveWebcam);
 
 	hArrangement* DiffuseButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
-	Button* normalTextPanel = new Button(&normal);
-	Button* normalPlus = new Button(&plusButton, addNormalButton);
+	Button* normalTextPanel = new Button(normalMat);
+	Button* normalPlus = new Button(plusMat, addNormalButton);
 
 	NormalButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
@@ -764,10 +769,13 @@ void SurfaceMenu::removeNormalMenu(UIItem* owner) {
 	std::function<void(UIItem*)> addNormalButton = bind(&SurfaceMenu::createNormalMenu, this, placeholders::_1);
 
 	imageData normal = NORMALTEXT;
-	imageData plusButton = PLUSBUTTON;
+	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal), "NormalBtnTex")), "NormalBtnMat");
 
-	Button* normalTextPanel = new Button(&normal);
-	Button* normalPlus = new Button(&plusButton, addNormalButton);
+	imageData plusButton = PLUSBUTTON;
+	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton), "PlusBtnTex")), "PlusBtnMat");
+
+	Button* normalTextPanel = new Button(normalMat);
+	Button* normalPlus = new Button(plusMat, addNormalButton);
 
 	NormalButtons->addItem(getPtr(normalTextPanel));
 	NormalButtons->addItem(getPtr(normalPlus));
@@ -930,24 +938,42 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	NormalButtons->Items.clear();
 
 	imageData normal = NORMALTEXT;
+	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal), "NormalBtnTex")), "NormalBtnMat");
+
 	imageData webcamOn = WEBCAMONBUTTON;
+	Material* webcamOnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn), "WebcamOnBtnTex")), "WebcamOnBtnMat");
+
 	imageData webcamOff = WEBCAMOFFBUTTON;
+	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff), "WebcamOnBtnTex")), "WebcamOnBtnMat");
+
 	imageData OpenButton = OPENBUTTON;
+	Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton), "OpenBtnTex")), "OpenBtnMat");
+
 	imageData SaveButton = SAVEBUTTON;
+	Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton), "SaveBtnTex")), "SaveBtnMat");
+
+	imageData plusButton = PLUSBUTTON;
+	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton), "PlusBtnTex")), "PlusBtnMat");
+
 	imageData osType = OSBUTTON;
+	Material* osMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&osType), "OSBtnTex")), "OSBtnMat");
+
 	imageData tsType = TANGENTSPACE;
+	Material* tsMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tsType), "TSBtnTex")), "TSBtnMat");
+
 	imageData diffToNorm = D2NBUTTON;
+	Material* dtnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffToNorm), "DiffToNormBtnTex")), "DiffToNormBtnMat");
 
-	Button* normalText = new Button(&normal);
+	Button* normalText = new Button(normalMat);
 
-	normalTog = new Checkbox(&webcamOn, &webcamOff, toggleWebcam);
+	normalTog = new Checkbox(webcamOnMat, webcamOffMat, toggleWebcam);
 	normalTog->activestate = false;
 	normalTog->image->matidx = 1;
 
-	Checkbox* mapTypeToggle = new Checkbox(&osType, &tsType, toggleType);
-	Button* copyLayout = new Button(&diffToNorm, convertImg);
-	Button* normalLoad = new Button(&OpenButton, loadNorm);
-	Button* normalSave = new Button(&SaveButton, saveNorm);
+	Checkbox* mapTypeToggle = new Checkbox(osMat, tsMat, toggleType);
+	Button* copyLayout = new Button(dtnMat, convertImg);
+	Button* normalLoad = new Button(openMat, loadNorm);
+	Button* normalSave = new Button(saveMat, saveNorm);
 
 	NormalButtons->addItem(getPtr(normalText));
 	NormalButtons->addItem(getPtr(normalTog));

@@ -133,10 +133,10 @@ public:
 		}
 
 		imageData ub = UNRENDEREDBUTTON;
-		visibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&ub), "UnrenderedBtnTex")), "UnrenderedBtnMat");
+		invisibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&ub), "UnrenderedBtnTex")), "UnrenderedBtnMat");
 
 		imageData tcb = TESTCHECKBOXBUTTON;
-		invisibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tcb), "TestCheckBtnTex")), "TestCheckBtnMat");
+		visibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tcb), "TestCheckBtnTex")), "TestCheckBtnMat");
 
 		canvas.push_back(getPtr(new vArrangement(-0.9f, -0.5f, 0.05f, 0.5f, 0.01f)));
 
@@ -348,7 +348,7 @@ private:
 	WebcamMenu webcamMenu = WebcamMenu(&UIElements);
 	RenderMenu renderMenu = RenderMenu(&UIElements);
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
-	SurfaceMenu surfaceMenu = SurfaceMenu(&ObjectElements);
+	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 
 	vector<Widget*> widgets;
 

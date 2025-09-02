@@ -8,7 +8,7 @@ struct LoadList {
 	Texture* getPtr(Texture* tex, std::string name) {
 		if (checkForTexture(name)) {
 			tex->cleanup();
-			delete tex;
+			//delete tex;
 			return textures[textureMap.at(name)].get();
 		}
 		textures.emplace_back(tex);
@@ -19,7 +19,7 @@ struct LoadList {
 	Material* getPtr(Material* tex, std::string name) {
 		if (checkForMaterial(name)) {
 			tex->cleanupDescriptor();
-			delete tex;
+			//delete tex;
 			return materials[materialMap.at(name)].get();
 		}
 		materials.emplace_back(tex);
@@ -45,35 +45,16 @@ struct LoadList {
 
 	void empty() {
 		for (size_t i = 0; i != textures.size(); i++) {
-			//std::cout << textures[i].get() << std::endl;
 			textures[i].get()->cleanup();
 		}
 		textures.clear();
 		for (size_t i = 0; i != materials.size(); i++) {
-			//std::cout << materials[i].get() << std::endl;
 			materials[i].get()->cleanupDescriptor();
 		}
 		materials.clear();
-		//for (auto& item : textureMap) {
-		//	std::cout << item.first << " " << item.second << std::endl;
-		//}
 		textureMap.clear();
-		//for (auto& item : materialMap) {
-		//	std::cout << item.first << " " << item.second << std::endl;
-		//}
 		materialMap.clear();
 	}
-
-	//~LoadList() {
-	//	if (textures.size() > 0) {
-	//		textureMap.clear();
-	//		textures.clear();
-	//	}
-	//	if (materials.size() > 0) {
-	//		materialMap.clear();
-	//		materials.clear();
-	//	}
-	//}
 
 private:
 	std::map<std::string, int> textureMap = {};

@@ -208,7 +208,9 @@ public:
 			vkFreeMemory(Engine::get()->device, textureBufferMemory, nullptr);
 		}
 		textureImage = nullptr;
-		destruct();
+		webCam->cleanup();
+		delete webCam;
+		webCam = nullptr;
 		cleaned = true;
 	}
 
@@ -223,9 +225,7 @@ public:
 private:
 	static webcamTexture* winstance;
 	webcamTexture() = default;
-	~webcamTexture() = default;// {
-	//	cleanup();
-	//};
+	~webcamTexture() = default;
 
 	void updateWebcamImage();
 	void createWebcamImage();
