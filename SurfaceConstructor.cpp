@@ -15,7 +15,7 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 
 	// This function can potentially be simplified using default image operations
 
-	NormalGen generator;
+	NormalGen generator(loadList);
 	generator.setupOSExtractor();
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 	commandBuffer = generator.drawOSMap(commandBuffer, inputMesh);
@@ -512,7 +512,7 @@ void surfaceConstructor::contextConvert() {
 //}
 
 void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
-	NormalGen generator;
+	NormalGen generator(loadList);
 	OSNormTex->getCVMat();
 	generator.createOSImageFromMat(OSNormTex->texMat);
 	generator.setupTSExtractor();

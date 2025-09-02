@@ -156,31 +156,31 @@ void Webcam::calibrateCornerFilter() {
 	getCorners(true);
 }
 
-int displayMaskedWebcam(int arr[6]) {
-	Mat webcamFrame;
-	namedWindow("Calibrated webcam viewer");
-	VideoCapture cap(0);
-	if (!cap.isOpened()) {
-		cout << "No camera detected" << endl;
-		system("pause");
-		return -1;
-	}
-	while (true) {
-		cap >> webcamFrame;
-		if (webcamFrame.empty()) {
-			break;
-		}
-		blur(webcamFrame, webcamFrame, Size(5, 5));
-		inRange(webcamFrame, Scalar(arr[0], arr[1], arr[2]), Scalar(arr[3], arr[4], arr[5]), webcamFrame);
-		imshow("Calibrated webcam viewer", webcamFrame);
-		char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
-		if (c == 27) {
-			break;
-		}
-	}
-	cap.release();
-	return 0;
-}
+//int displayMaskedWebcam(int arr[6]) {
+//	Mat webcamFrame;
+//	namedWindow("Calibrated webcam viewer");
+//	VideoCapture cap(0);
+//	if (!cap.isOpened()) {
+//		cout << "No camera detected" << endl;
+//		system("pause");
+//		return -1;
+//	}
+//	while (true) {
+//		cap >> webcamFrame;
+//		if (webcamFrame.empty()) {
+//			break;
+//		}
+//		blur(webcamFrame, webcamFrame, Size(5, 5));
+//		inRange(webcamFrame, Scalar(arr[0], arr[1], arr[2]), Scalar(arr[3], arr[4], arr[5]), webcamFrame);
+//		imshow("Calibrated webcam viewer", webcamFrame);
+//		char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
+//		if (c == 27) {
+//			break;
+//		}
+//	}
+//	cap.release();
+//	return 0;
+//}
 
 float dist(Point2f A, Point2f B) {
 	return sqrt(pow(A.x - B.x, 2) + pow(A.y - B.y, 2));

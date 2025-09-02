@@ -299,13 +299,11 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 			vector<int> normalPixel = { 128, 128, 128 };
 
 			if (normalLength != 0.0f) {
-				//cout << normalVector[0] / normalLength << " " << normalVector[1] / normalLength << " " << normalVector[2] / normalLength << endl;
 				for (int i = 0; i != 3; i++) {
 					normalPixel[i] = static_cast<uint8_t>(((normalVector[i] / normalLength) - 1.0) /-2.0 * 255.0);
 				}
 			}
 			
-			//cout << normalPixel[0] << " " << normalPixel[1] << " " << normalPixel[2] << endl;
 			normal.at<Vec3b>(x, y) = Vec3b(normalPixel[0], normalPixel[1], normalPixel[2]);
 		}
 	}

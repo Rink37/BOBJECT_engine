@@ -38,9 +38,7 @@ public:
 
 	static surfaceConstructor* sinstance;
 	surfaceConstructor() = default;
-	~surfaceConstructor() {
-		cleanup();
-	};
+	~surfaceConstructor() = default;
 
 	// Default state management //
 	Material webcamMaterial{};

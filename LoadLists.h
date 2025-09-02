@@ -8,7 +8,7 @@ struct LoadList {
 	Texture* getPtr(Texture* tex, std::string name) {
 		if (checkForTexture(name)) {
 			tex->cleanup();
-			//delete tex;
+			delete tex;
 			return textures[textureMap.at(name)].get();
 		}
 		textures.emplace_back(tex);
@@ -19,7 +19,7 @@ struct LoadList {
 	Material* getPtr(Material* tex, std::string name) {
 		if (checkForMaterial(name)) {
 			tex->cleanupDescriptor();
-			//delete tex;
+			delete tex;
 			return materials[materialMap.at(name)].get();
 		}
 		materials.emplace_back(tex);
@@ -52,6 +52,7 @@ struct LoadList {
 			materials[i].get()->cleanupDescriptor();
 		}
 		materials.clear();
+
 		textureMap.clear();
 		materialMap.clear();
 	}

@@ -5,7 +5,7 @@
 using namespace std;
 
 void NormalGen::prepareOSMap() {
-	objectSpaceMap.colour = new Texture;
+	objectSpaceMap.colour = loadList->getPtr(new Texture, "OSMapTex");
 
 	objectSpaceMap.colour->texWidth = MAPDIM;
 	objectSpaceMap.colour->texHeight = MAPDIM;
@@ -190,6 +190,8 @@ void NormalGen::createOSPipeline() {
 
 	vkDestroyShaderModule(Engine::get()->device, FragShaderModule, nullptr);
 	vkDestroyShaderModule(Engine::get()->device, VertShaderModule, nullptr);
+
+	delete sD;
 }
 
 VkCommandBuffer NormalGen::drawOSMap(VkCommandBuffer commandbuffer, Mesh* mesh) {

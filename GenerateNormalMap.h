@@ -2,6 +2,7 @@
 #define NORMALGEN
 
 #include"Bobject_Engine.h"
+#include"LoadLists.h"
 #include"Meshes.h"
 #include"Textures.h"
 #include <opencv2/opencv.hpp>
@@ -11,6 +12,10 @@
 
 class NormalGen {
 public:
+	NormalGen(LoadList* assets) {
+		loadList = assets;
+	}
+
 	cv::Mat OSNormalMap;
 	cv::Mat TSNormalMap;
 
@@ -53,6 +58,8 @@ public:
 	void cleanupTS();
 
 private:
+	LoadList* loadList = nullptr;
+
 	VkPipelineLayout OSpipelineLayout;
 	VkPipeline OSpipeline;
 

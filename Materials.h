@@ -46,10 +46,6 @@ public:
 		cleaned = false;
 	}
 
-	//~Material() {
-	//	cleanupDescriptor();
-	//}
-
 	void cleanup(){
 		if (cleaned || this->descriptorPool == nullptr) {
 			return;
