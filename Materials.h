@@ -77,6 +77,7 @@ public:
 	void createMaterial() {
 		createDescriptorPool();
 		createDescriptorSets();
+		cleaned = false;
 	}
 
 	void createDescriptorPool();

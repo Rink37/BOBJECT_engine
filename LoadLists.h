@@ -17,12 +17,10 @@ struct LoadList {
 	}
 
 	Texture* replacePtr(Texture* tex, std::string name) {
-		if (!checkForTexture(name)) {
-			return getPtr(tex, name);
+		if (checkForTexture(name)) {
+			deleteTexture(name);
 		}
-		textures[textureMap.at(name)].get()->cleanup();
-		textures[textureMap.at(name)] = std::make_unique<Texture>(*tex);
-		return textures[textureMap.at(name)].get();
+		return getPtr(tex, name);
 	}
 
 	void cleanup(std::string name) {
@@ -46,12 +44,10 @@ struct LoadList {
 	}
 
 	Material* replacePtr(Material* tex, std::string name) {
-		if (!checkForMaterial(name)) {
-			return getPtr(tex, name);
+		if (checkForMaterial(name)) {
+			deleteMaterial(name);
 		}
-		materials[materialMap.at(name)].get()->cleanupDescriptor();
-		materials[materialMap.at(name)] = std::make_unique<Material>(*tex);
-		return materials[materialMap.at(name)].get();
+		return getPtr(tex, name);
 	}
 
 	Texture* getTexture(std::string name) {
@@ -108,11 +104,11 @@ struct LoadList {
 
 	void empty() {
 		for (size_t i = 0; i != textures.size(); i++) {
-			textures[i].get()->cleanup();
+			textures[i]->cleanup();
 		}
 		textures.clear();
 		for (size_t i = 0; i != materials.size(); i++) {
-			materials[i].get()->cleanupDescriptor();
+			materials[i]->cleanupDescriptor();
 		}
 		materials.clear();
 

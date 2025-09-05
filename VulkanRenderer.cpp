@@ -579,7 +579,6 @@ private:
 
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->cleanup();
-			widgets[i]->~Widget();
 		}
 
 		sConst->cleanup();
