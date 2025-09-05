@@ -61,11 +61,41 @@ struct LoadList {
 		return nullptr;
 	}
 
+	void deleteTexture(std::string name) {
+		if (!checkForTexture(name)) {
+			return;
+		}
+		int index = textureMap.at(name);
+		textures[index]->cleanup();
+		textures.erase(textures.begin() + index);
+		textureMap.erase(name);
+		for (auto const& [key, val] : textureMap) {
+			if (val > index) {
+				textureMap.at(key)--;
+			}
+		}
+	}
+
 	Material* getMaterial(std::string name) {
 		if (checkForMaterial(name)) {
 			return materials[materialMap.at(name)].get();
 		}
 		return nullptr;
+	}
+
+	void deleteMaterial (std::string name) {
+		if (!checkForMaterial(name)) {
+			return;
+		}
+		int index = materialMap.at(name);
+		materials[index]->cleanupDescriptor();
+		materials.erase(materials.begin() + index);
+		materialMap.erase(name);
+		for (auto const& [key, val] : materialMap) {
+			if (val > index) {
+				materialMap.at(key)--;
+			}
+		}
 	}
 
 	bool checkForTexture(std::string name) {

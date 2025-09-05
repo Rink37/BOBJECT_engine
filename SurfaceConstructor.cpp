@@ -540,7 +540,7 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 		supportsBlit = false;
 	}
 
-	TSNormTex = loadList->getPtr(new imageTexture, "TSMapTex");
+	TSNormTex = loadList->replacePtr(new Texture, "TSMapTex");
 	TSNormTex->texWidth = generator.tangentSpaceMap.colour->texWidth;
 	TSNormTex->texHeight = generator.tangentSpaceMap.colour->texHeight;
 	TSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -675,9 +675,6 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 	TSNormTex->generateMipmaps();
 	TSNormTex->textureImageView = TSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-	//tsNormMaterial.~tsNormMaterial();
-	//new (&tsNormMaterial) Material(TSNormTex);
-
 	Normal[2] = make_unique<Material>(TSNormTex);
 	generator.cleanupTS();
 }
@@ -703,7 +700,7 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 	Material* webcamOnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn), "WebcamOnBtnTex")), "WebcamOnBtnMat");
 
 	imageData webcamOff = WEBCAMOFFBUTTON;
-	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff), "WebcamOnBtnTex")), "WebcamOnBtnMat");
+	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff), "WebcamOffBtnTex")), "WebcamOffBtnMat");
 
 	imageData OpenButton = OPENBUTTON;
 	Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton), "OpenBtnTex")), "OpenBtnMat");
@@ -832,17 +829,25 @@ void SurfaceMenu::toggleNormalCam(UIItem* owner) {
 
 void SurfaceMenu::toggleNormalType(UIItem* owner) {
 	sConst->toggleNormType();
+	cout << static_cast<int>(sConst->normalIdx) << " " << static_cast<int>(sConst->normalType) << endl;
 	if (sConst->normalType == 1 && sConst->OSNormTex != nullptr && !sConst->TSmatching) {
 		if (sConst->TSNormTex != nullptr) {
 			sConst->TSNormTex->cleanup();
 		}
 		sConst->transitionToTS((*staticObjects)[staticObjects->size() - 1].mesh);
 		sConst->TSmatching = true;
-		normalView->image->mat[0] = sConst->currentNormal().get();
+
+		std::cout << "Converted" << std::endl;
+
+		//setNormal(sConst->currentNormal().get());
+		//normalView->image->mat[0] = sConst->currentNormal().get();
 	}
-	else {
-		normalView->image->mat[0] = sConst->currentNormal().get();
-	}
+	//else {
+	//	setNormal(sConst->currentNormal().get());
+	//	normalView->image->mat[0] = sConst->currentNormal().get();
+	//}
+	sConst->updateSurfaceMat();
+	setNormal(sConst->currentNormal().get());
 }
 
 void SurfaceMenu::loadNormalImage(UIItem* owner) {
@@ -850,7 +855,7 @@ void SurfaceMenu::loadNormalImage(UIItem* owner) {
 	if (fileName != string("fail")) {
 		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
 		sConst->loadNormal(loadedTexture);
-		sConst->normalIdx = 1 + sConst->normalType;
+		sConst->normalIdx = 1;
 		normalView->image->mat[0] = sConst->currentNormal().get();
 		normalView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
 		normalView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
@@ -887,10 +892,10 @@ void SurfaceMenu::saveNormalImage(UIItem* owner) {
 	}
 	string saveName = winFile::SaveFileDialog();
 	if (saveName != string("fail")) {
-		if (sConst->normalIdx == 1) {
+		if (sConst->normalType == 0) {
 			session::get()->currentStudio.OSPath = saveName;
 		}
-		else if (sConst->normalIdx == 2) {
+		else if (sConst->normalType == 1) {
 			session::get()->currentStudio.TSPath = saveName;
 		}
 		imwrite(saveName, saveNormal);
@@ -899,7 +904,7 @@ void SurfaceMenu::saveNormalImage(UIItem* owner) {
 
 void SurfaceMenu::contextConvertMap(UIItem* owner) {
 	sConst->contextConvert();
-	sConst->normalIdx = 1 + sConst->normalType;
+	sConst->normalIdx = 1;
 	normalView->image->mat[0] = sConst->currentNormal().get();
 	normalTog->activestate = false;
 	normalTog->image->matidx = 1;
@@ -944,7 +949,7 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	Material* webcamOnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn), "WebcamOnBtnTex")), "WebcamOnBtnMat");
 
 	imageData webcamOff = WEBCAMOFFBUTTON;
-	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff), "WebcamOnBtnTex")), "WebcamOnBtnMat");
+	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff), "WebcamOffBtnTex")), "WebcamOffBtnMat");
 
 	imageData OpenButton = OPENBUTTON;
 	Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton), "OpenBtnTex")), "OpenBtnMat");

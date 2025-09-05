@@ -379,6 +379,10 @@ private:
 		// Clear all studio material data
 		surfaceMenu.removeNormalMenu(owner);
 		sConst->clearSurface();
+		surfaceMenu.resetDiffuseTog(false);
+		if (sConst->normalAvailable) {
+			surfaceMenu.resetNormalTog(false);
+		}
 		sConst->normalAvailable = false;
 		surfaceMenu.setDiffuse(sConst->currentDiffuse().get());
 
@@ -412,7 +416,7 @@ private:
 			sConst->loadDiffuse(loadedTexture);
 			sConst->diffuseIdx = 1;
 			surfaceMenu.setDiffuse(sConst->currentDiffuse().get());
-			surfaceMenu.resetDiffuseTog();
+			surfaceMenu.resetDiffuseTog(true);
 		}
 		if (session::get()->currentStudio.OSPath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.OSPath, VK_FORMAT_R8G8B8A8_UNORM);
@@ -422,7 +426,7 @@ private:
 			sConst->normalType = 0;
 			sConst->loadNormal(loadedTexture);
 			surfaceMenu.setNormal(sConst->currentNormal().get());
-			surfaceMenu.resetNormalTog();
+			surfaceMenu.resetNormalTog(true);
 			surfaceMenu.toggleNormalState(true);
 		}
 		if (session::get()->currentStudio.TSPath != "None") {
@@ -434,7 +438,7 @@ private:
 			sConst->loadNormal(loadedTexture);
 			sConst->TSmatching = true;
 			surfaceMenu.setNormal(sConst->currentNormal().get());
-			surfaceMenu.resetNormalTog();
+			surfaceMenu.resetNormalTog(true);
 			surfaceMenu.toggleNormalState(false);
 		}
 		sConst->updateSurfaceMat();

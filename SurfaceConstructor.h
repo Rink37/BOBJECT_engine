@@ -75,30 +75,23 @@ public:
 	uint8_t normalType = 0; 
 
 	void clearSurface() {
-		//if (diffTex != nullptr) {
-		//	diffTex->cleanup();
-		//	delete diffTex;
-		//	diffTex = nullptr;
-		//}
-		//if (OSNormTex != nullptr) {
-		//	OSNormTex->cleanup();
-		//	delete OSNormTex;
-		//	OSNormTex = nullptr;
-		//}
-		//if (TSNormTex != nullptr) {
-		//	TSNormTex->cleanup();
-		//	delete TSNormTex;
-		//	TSNormTex = nullptr;
-		//}
-		loadList->cleanup("DiffuseTex");
-		loadList->cleanup("OSNormalTex");
-		loadList->cleanup("TSNormalTex");
+		loadList->deleteTexture("DiffuseTex");
+		loadList->deleteTexture("OSNormalTex");
+		loadList->deleteTexture("TSNormalTex");
+		loadList->deleteTexture("TSGenTex");
+		loadList->deleteTexture("OSGenTex");
+		loadList->deleteTexture("OS-TSGenTex");
+		diffTex = nullptr;
+		OSNormTex = nullptr;
+		TSNormTex = nullptr;
+		TSmatching = false;
 		Diffuse = { webcamPtr, webcamPtr };
 		Normal = { webcamPtr, webcamPtr, webcamPtr };
 		surfaceMat.init(webTex);
 		diffuseIdx = 0;
 		normalIdx = 0;
 		normalType = 0;
+		updateSurfaceMat();
 	};
 	
 	std::shared_ptr<Material> currentDiffuse() {
@@ -106,7 +99,7 @@ public:
 	}
 
 	std::shared_ptr<Material> currentNormal() {
-		return Normal[normalIdx];
+		return Normal[normalIdx*(normalIdx+normalType)];
 	}
 	
 	void toggleDiffWebcam() {
@@ -117,20 +110,21 @@ public:
 
 	void toggleNormWebcam() {
 		// Simple function to flip whether the normal is a webcam view or not
-		if (!normalIdx) {
-			normalIdx += 1 + normalType;
-		}
-		else {
-			normalIdx = 0;
-		}
+		normalIdx = (normalIdx + 1) % 2;
+		//if (!normalIdx) {
+		//	normalIdx = 1;
+		//}
+		//else {
+		//	normalIdx = 0;
+		//}
 		updateSurfaceMat();
 	}
 
 	void toggleNormType() {
 		normalType = (normalType + 1) % 2;
-		if (normalIdx != 0) {
-			normalIdx = 1 + normalType;
-		}
+		//if (normalIdx != 0) {
+		//	normalIdx = 1 + normalType;
+		//}
 		updateSurfaceMat();
 	}
 
@@ -147,9 +141,11 @@ public:
 		diffTex = loadList->replacePtr(diffuse, "DiffuseTex");
 		Diffuse[1] = std::make_unique<Material>(diffTex);
 		diffuseIdx = 1;
+		updateSurfaceMat();
 	}
 
 	void loadNormal(Texture* normal) {
+		normalIdx = 1;
 		if (!normalType) {
 			//if (OSNormTex != nullptr) {
 			//	OSNormTex->cleanup();
@@ -161,7 +157,6 @@ public:
 			//osNormMaterial.init(OSNormTex);
 			//Normal[1] = std::make_unique<Material>(osNormMaterial);
 			Normal[1] = std::make_unique<Material>(OSNormTex);
-			normalIdx = 1;
 			TSmatching = false;
 		}
 		else {
@@ -174,9 +169,9 @@ public:
 			//tsNormMaterial.cleanupDescriptor();
 			//tsNormMaterial.init(TSNormTex);
 			//Normal[2] = std::make_unique<Material>(tsNormMaterial); 
-			Normal[1] = std::make_unique<Material>(TSNormTex);
-			normalIdx = 2;
+			Normal[2] = std::make_unique<Material>(TSNormTex);
 		}
+		updateSurfaceMat();
 	}
 
 	void setupSurfaceConstructor() {
@@ -211,11 +206,11 @@ public:
 				renderPipeline = "OSNormBF";
 				break;
 			}
-			switch (normalIdx) {
+			std::cout << static_cast<int>(normalIdx) << " " << static_cast<int>(normalType) << std::endl;
+			switch (normalIdx*(normalIdx + normalType)) {
 			case 1:
 				if (OSNormTex != nullptr) {
 					n = OSNormTex;
-					//n = loadList->getTexture("OSNormalTex");
 				}
 				else {
 					n = webTex;
@@ -224,7 +219,6 @@ public:
 			case 2:
 				if (TSNormTex != nullptr) {
 					n = TSNormTex;
-					//n = loadList->getTexture("OSNormalTex");
 				}
 				else {
 					n = webTex;
@@ -243,21 +237,6 @@ public:
 	}
 
 	void cleanup() {
-		//if (diffTex != nullptr) {
-		//	diffTex->cleanup();
-		//	//delete diffTex;
-		//	diffTex = nullptr;
-		//}
-		//if (OSNormTex != nullptr) {
-		//	OSNormTex->cleanup();
-			//delete OSNormTex;
-		//	OSNormTex = nullptr;
-		//}
-		//if (TSNormTex != nullptr) {
-		//	TSNormTex->cleanup();
-			//delete TSNormTex;
-		//	TSNormTex = nullptr;
-		//}
 		loadList->cleanup("DiffuseTex");
 		loadList->cleanup("OSNormalTex");
 		loadList->cleanup("TSNormalTex");
@@ -274,14 +253,10 @@ public:
 				mat.get()->cleanupDescriptor();
 			}
 		}
-		//diffuseMaterial.cleanupDescriptor();
-		//osNormMaterial.cleanupDescriptor();
-		//tsNormMaterial.cleanupDescriptor();
 		surfaceMat.cleanupDescriptor();
 
 		webcamTexture::get()->cleanup();
 		webcamPtr->cleanupDescriptor();
-		//webcamMaterial.cleanupDescriptor();
 	}
 };
 
@@ -301,18 +276,18 @@ public:
 		diffuseView->image->mat[0] = img;
 	}
 
-	void resetDiffuseTog() {
-		diffuseTog->activestate = false;
-		diffuseTog->image->matidx = 1;
+	void resetDiffuseTog(bool state) {
+		diffuseTog->activestate = !state;
+		diffuseTog->image->matidx = static_cast<int>(state);
 	}
 
 	void setNormal(Material* img) {
 		normalView->image->mat[0] = img;
 	}
 
-	void resetNormalTog() {
-		normalTog->activestate = false;
-		normalTog->image->matidx = 1;
+	void resetNormalTog(bool state) {
+		normalTog->activestate = !state;
+		normalTog->image->matidx = static_cast<int>(state);
 	}
 
 	void toggleNormalState(bool state) {
