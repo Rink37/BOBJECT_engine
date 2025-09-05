@@ -41,7 +41,7 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 		supportsBlit = false;
 	}
 
-	OSNormTex = new imageTexture;
+	OSNormTex = loadList->replacePtr(new imageTexture, "OSMapTex");
 	OSNormTex->texWidth = generator.objectSpaceMap.colour->texWidth;
 	OSNormTex->texHeight = generator.objectSpaceMap.colour->texHeight;
 	OSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -176,10 +176,10 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 	OSNormTex->generateMipmaps();
 	OSNormTex->textureImageView = OSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-	osNormMaterial.~osNormMaterial();
-	new (&osNormMaterial) Material(OSNormTex);
+	//osNormMaterial.~osNormMaterial();
+	//new (&osNormMaterial) Material(OSNormTex);
 
-	Normal[1] = make_unique<Material>(osNormMaterial);
+	Normal[1] = make_unique<Material>(OSNormTex);
 
 	generator.cleanupOS();
 }
@@ -540,7 +540,7 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 		supportsBlit = false;
 	}
 
-	TSNormTex = new imageTexture;
+	TSNormTex = loadList->getPtr(new imageTexture, "TSMapTex");
 	TSNormTex->texWidth = generator.tangentSpaceMap.colour->texWidth;
 	TSNormTex->texHeight = generator.tangentSpaceMap.colour->texHeight;
 	TSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -675,10 +675,10 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 	TSNormTex->generateMipmaps();
 	TSNormTex->textureImageView = TSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-	tsNormMaterial.~tsNormMaterial();
-	new (&tsNormMaterial) Material(TSNormTex);
+	//tsNormMaterial.~tsNormMaterial();
+	//new (&tsNormMaterial) Material(TSNormTex);
 
-	Normal[2] = make_unique<Material>(tsNormMaterial);
+	Normal[2] = make_unique<Material>(TSNormTex);
 	generator.cleanupTS();
 }
 

@@ -7,12 +7,12 @@ using namespace std;
 
 void NormalGen::createOSImageFromMat(Mat srcImg) {
 	
-	objectSpaceMap.colour = new imageTexture(srcImg, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+	objectSpaceMap.colour = loadList->replacePtr(new imageTexture(srcImg, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), "OS-TSGenTex");
 
 }
 
 void NormalGen::prepareTSMap() {
-	tangentSpaceMap.colour = new Texture;
+	tangentSpaceMap.colour = loadList->replacePtr(new Texture, "TSGenTex");
 
 	tangentSpaceMap.colour->texWidth = objectSpaceMap.colour->texWidth;
 	tangentSpaceMap.colour->texHeight = objectSpaceMap.colour->texHeight;
@@ -195,6 +195,8 @@ void NormalGen::createTSPipeline() {
 
 	vkDestroyShaderModule(Engine::get()->device, FragShaderModule, nullptr);
 	vkDestroyShaderModule(Engine::get()->device, VertShaderModule, nullptr);
+
+	delete sD;
 }
 
 void NormalGen::prepareTSDescriptor() {

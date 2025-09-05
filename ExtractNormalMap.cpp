@@ -5,7 +5,7 @@
 using namespace std;
 
 void NormalGen::prepareOSMap() {
-	objectSpaceMap.colour = loadList->getPtr(new Texture, "OSMapTex");
+	objectSpaceMap.colour = loadList->replacePtr(new Texture, "OSGenTex");
 
 	objectSpaceMap.colour->texWidth = MAPDIM;
 	objectSpaceMap.colour->texHeight = MAPDIM;

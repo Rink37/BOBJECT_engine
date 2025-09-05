@@ -16,6 +16,24 @@ struct LoadList {
 		return textures[textures.size() - 1].get();
 	}
 
+	Texture* replacePtr(Texture* tex, std::string name) {
+		if (!checkForTexture(name)) {
+			return getPtr(tex, name);
+		}
+		textures[textureMap.at(name)].get()->cleanup();
+		textures[textureMap.at(name)] = std::make_unique<Texture>(*tex);
+		return textures[textureMap.at(name)].get();
+	}
+
+	void cleanup(std::string name) {
+		if (checkForTexture(name)) {
+			textures[textureMap.at(name)].get()->cleanup();
+		}
+		if (checkForMaterial(name)) {
+			materials[materialMap.at(name)].get()->cleanup();
+		}
+	}
+
 	Material* getPtr(Material* tex, std::string name) {
 		if (checkForMaterial(name)) {
 			tex->cleanupDescriptor();
@@ -27,12 +45,27 @@ struct LoadList {
 		return materials[materials.size() - 1].get();
 	}
 
+	Material* replacePtr(Material* tex, std::string name) {
+		if (!checkForMaterial(name)) {
+			return getPtr(tex, name);
+		}
+		materials[materialMap.at(name)].get()->cleanupDescriptor();
+		materials[materialMap.at(name)] = std::make_unique<Material>(*tex);
+		return materials[materialMap.at(name)].get();
+	}
+
 	Texture* getTexture(std::string name) {
-		return textures[textureMap.at(name)].get();
+		if (checkForTexture(name)) {
+			return textures[textureMap.at(name)].get();
+		}
+		return nullptr;
 	}
 
 	Material* getMaterial(std::string name) {
-		return materials[materialMap.at(name)].get();
+		if (checkForMaterial(name)) {
+			return materials[materialMap.at(name)].get();
+		}
+		return nullptr;
 	}
 
 	bool checkForTexture(std::string name) {
