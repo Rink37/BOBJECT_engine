@@ -327,6 +327,9 @@ public:
 		if (sConst->webTex->webCam != nullptr) {
 			sConst->webTex->webCam->loadFilter();
 		}
+		webcamTexture::get()->webCam->shouldUpdate = false;
+		webcamMenu.canvas[0]->Items[1]->activestate = false;
+		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
 		mainLoop();
 		cleanup();
 		surfaceConstructor::destruct();
@@ -487,13 +490,6 @@ private:
 				for (size_t i = 0; i != widgets.size(); i++) {
 					widgets[i]->checkForEvent(mouseX, mouseY, GLFW_PRESS);
 				}
-				//for (UIItem* item : canvas) {
-				//	vector<UIItem*> scs;
-				//	item->getSubclasses(scs);
-				//	for (UIItem* sitem : scs) {
-				//		sitem->checkForEvent(mouseX, mouseY, GLFW_PRESS);
-				//	}
-				//}
 				mouseDown = false;
 			}
 			drawFrame();
@@ -647,10 +643,6 @@ private:
 			for (size_t i = 0; i != widgets.size(); i++) {
 				widgets[i]->update();
 			}
-			
-			//for (size_t i = 0; i != canvas.size(); i++) {
-			//	canvas[i]->updateDisplay();
-			//}
 
 			engine->recreateSwapChain();
 			return;

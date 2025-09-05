@@ -240,52 +240,6 @@ public:
 
 		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
 	}
-	
-	//Button(float x, float y, float xsize, float ysize, imageData* iDpointer) {
-	//	this->sqAxisRatio = ysize / xsize;
-
-	//	Texture* tex = new imageTexture(iDpointer);
-
-	//	image = std::make_shared<UIImage>(new UIImage);
-	//	image->mat.push_back(new Material(tex));
-		
-	//	image->texWidth = image->mat[0]->textures[0]->texWidth;
-	//	image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-	//	update(x, -1.0f * y, xsize, ysize);
-	//};
-
-	//Button(imageData* iDpointer) {
-	//	Texture* tex = new imageTexture(iDpointer);
-
-	//	image = std::make_shared<UIImage>(new UIImage);
-	//	image->mat.push_back(new Material(tex));
-
-	//	image->texWidth = image->mat[0]->textures[0]->texWidth;
-	//	image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-	//	this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
-
-	//	update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
-	//}
-
-	//Button(imageData* iDpointer, std::function<void(UIItem*)> func) {
-	//	Texture* tex = new imageTexture(iDpointer);
-
-	//	image = std::make_shared<UIImage>(new UIImage);
-	//	image->mat.push_back(new Material(tex));
-
-	//	image->texWidth = image->mat[0]->textures[0]->texWidth;
-	//	image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-	//	this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
-
-	//	clickFunction = func;
-
-	//	update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
-	//}
-
-
 
 	bool isInArea(double x, double y) {
 		bool result = false;
@@ -331,62 +285,6 @@ public:
 
 		clickFunction = func;
 	}
-
-	//Checkbox(float x, float y, float xsize, float ysize, imageData* iDon, imageData* iDoff) {
-	//	this->sqAxisRatio = ysize / xsize;
-
-	//	Texture* onTex = new imageTexture(iDon);
-	//	Texture* offTex = new imageTexture(iDoff);
-
-	//	image = std::unique_ptr<UIImage>(new UIImage);
-	//	image->mat.push_back(new Material(onTex));
-	//	image->mat.push_back(new Material(offTex));
-	//	image->matidx = 0;
-	//	this->activestate = true;
-
-	//	image->texWidth = image->mat[0]->textures[0]->texWidth;
-	//	image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-	//	update(x, -1.0f * y, xsize, ysize);
-	//};
-
-	//Checkbox(imageData* iDon, imageData* iDoff) {
-	//	Texture* onTex = new imageTexture(iDon);
-	//	Texture* offTex = new imageTexture(iDoff);
-
-	//	image = std::unique_ptr<UIImage>(new UIImage);
-	//	image->mat.push_back(new Material(onTex));
-	//	image->mat.push_back(new Material(offTex));
-	//	image->matidx = 0;
-	//	this->activestate = true;
-
-	//	image->texWidth = image->mat[0]->textures[0]->texWidth;
-	//	image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-	//	this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
-
-	//	update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
-	//}
-
-	//Checkbox(imageData* iDon, imageData* iDoff, std::function<void(UIItem*)> func) {
-	//	Texture* onTex = new imageTexture(iDon);
-	//	Texture* offTex = new imageTexture(iDoff);
-
-	//	image = std::unique_ptr<UIImage>(new UIImage);
-	//	image->mat.push_back(new Material(onTex));
-	//	image->mat.push_back(new Material(offTex));
-	//	image->matidx = 0;
-	//	this->activestate = true;
-
-	//	image->texWidth = image->mat[0]->textures[0]->texWidth;
-	//	image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-	//	this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
-
-	//	update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
-
-	//	clickFunction = func;
-	//}
 
 	bool isInArea(double x, double y) {
 		bool result = false;
@@ -599,9 +497,6 @@ struct Widget {
 	}
 
 	void cleanup() {
-		//for (size_t i = 0; i != canvas.size(); i++) {
-		//	canvas[i]->cleanup();
-		//}
 		canvas.clear();
 		for (size_t i = 0; i != imagePanels.size(); i++) {
 			imagePanels[i]->cleanup();
