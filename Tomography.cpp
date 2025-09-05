@@ -9,7 +9,7 @@ float eucDist(Point a, Point b) {
 }
 
 const int MAX_FEATURES = 5000;
-const float GOOD_MATCH_PERCENT = 0.1f;
+const float GOOD_MATCH_PERCENT = 0.5f;
 
 void change_contrast(Mat* img, float alpha, int beta) {
 	if (img->channels() == 3) {
@@ -32,50 +32,66 @@ void change_contrast(Mat* img, float alpha, int beta) {
 
 void match_template(Mat src, Mat* target, Size outdims) {
 	Mat srcGray, targetGray;
-	cvtColor(src, srcGray, COLOR_BGR2GRAY);
-	cvtColor(*target, targetGray, COLOR_BGR2GRAY);
+	Mat srcChannels[3], targetChannels[3];
 
-	resize(targetGray, targetGray, Size(src.rows * target->cols / target->rows, src.rows));
-	
-	change_contrast(&srcGray, 1.4f, -20);
-	change_contrast(&targetGray, 1.4f, -20);
-
-	vector<KeyPoint> keypoints1, keypoints2;
-	Mat descriptors1, descriptors2;
-
-	Ptr<Feature2D> orb = ORB::create(MAX_FEATURES);
-	orb->detectAndCompute(srcGray, Mat(), keypoints1, descriptors1);
-	orb->detectAndCompute(targetGray, Mat(), keypoints2, descriptors2);
-
-	vector<DMatch> matches;
-	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
-	matcher->match(descriptors1, descriptors2, matches, Mat());
-
-	sort(matches.begin(), matches.end());
-
-	const int numGoodMatches = matches.size() * GOOD_MATCH_PERCENT;
-	matches.erase(matches.begin() + numGoodMatches, matches.end());
-
-	//Mat imMatches;
-	//drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
-
-	//imshow("Matches", imMatches);
-	//waitKey(0);
+	split(src, srcChannels);
+	split(*target, targetChannels);
 
 	vector<Point2f> srcPoints, matchPoints;
-	for (size_t i = 0; i < matches.size(); i++) {
-		srcPoints.push_back(keypoints1[matches[i].queryIdx].pt);
-		matchPoints.push_back(keypoints2[matches[i].trainIdx].pt);
-	}
+	
+		cvtColor(src, srcGray, COLOR_BGR2GRAY);
+		cvtColor(*target, targetGray, COLOR_BGR2GRAY);
+
+		//srcGray = srcChannels[c];
+		//targetGray = targetChannels[c];
+
+		resize(targetGray, targetGray, Size(src.rows * target->cols / target->rows, src.rows));
+
+		normalize(srcGray, srcGray, 0, 255, NORM_MINMAX);
+		normalize(targetGray, targetGray, 0, 255, NORM_MINMAX);
+		
+		//change_contrast(&srcGray, 1.4f, -20);
+		//change_contrast(&targetGray, 1.4f, -20);
+
+		vector<KeyPoint> keypoints1, keypoints2;
+		Mat descriptors1, descriptors2;
+
+		Ptr<Feature2D> orb = ORB::create(MAX_FEATURES);
+		orb->detectAndCompute(srcGray, Mat(), keypoints1, descriptors1);
+		orb->detectAndCompute(targetGray, Mat(), keypoints2, descriptors2);
+
+		vector<DMatch> matches;
+		Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
+		matcher->match(descriptors1, descriptors2, matches, Mat());
+
+		sort(matches.begin(), matches.end());
+
+		const int numGoodMatches = matches.size() * GOOD_MATCH_PERCENT;
+		matches.erase(matches.begin() + numGoodMatches, matches.end());
+
+		//Mat imMatches;
+		//drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
+
+		//imshow("Matches", imMatches);
+		//waitKey(0);
+
+		for (size_t i = 0; i < matches.size(); i++) {
+			if (norm(keypoints1[matches[i].queryIdx].pt - keypoints2[matches[i].trainIdx].pt) < 100) {
+				srcPoints.push_back(keypoints1[matches[i].queryIdx].pt);
+				matchPoints.push_back(keypoints2[matches[i].trainIdx].pt);
+			}
+		}
 
 	for (size_t i = 0; i < srcPoints.size(); i++) {
 		srcPoints[i] = Point2f(srcPoints[i].x * outdims.width / src.cols, srcPoints[i].y * outdims.height / src.rows);
 		matchPoints[i] = Point2f(matchPoints[i].x * target->cols / targetGray.cols, matchPoints[i].y * target->rows / targetGray.rows);
 	}
 
-	Mat h = findHomography(matchPoints, srcPoints, RANSAC);
+	//Mat h = findHomography(matchPoints, srcPoints, RANSAC);
+	Mat h = estimateAffine2D(matchPoints, srcPoints);
 
-	warpPerspective(*target, *target, h, outdims);
+	//warpPerspective(*target, *target, h, outdims);
+	warpAffine(*target, *target, h, outdims);
 }
 
 void calculateVector(vector<float>& lightVec, float phi, float theta) {
@@ -313,12 +329,66 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 	return normal;
 }
 
+Mat calculateDiffuse(vector<Mat> images, vector<vector<float>> D, Mat normal) {
+
+	Mat diffuse = images[0].clone();
+	diffuse = Scalar(0, 0, 0);
+
+	for (int y = 0; y != diffuse.cols; y++) {
+		cout << y << endl;
+		for (int x = 0; x != diffuse.rows; x++) {
+			Vec3f normalVector = static_cast<Vec3f>(normal.at<Vec3b>(x, y));
+			for (int k = 0; k != 3; k++) {
+				normalVector[k] /= 128.0f;
+				normalVector[k]--;
+			}
+			Vec2f xyNormal = Vec2f(normalVector[0], normalVector[1]);
+			float normalLength = sqrt(normalVector[0] * normalVector[0] + normalVector[1] * normalVector[1]);
+			if (normalLength == 0) {
+				diffuse.at<Vec3b>(x, y) = images[0].at<Vec3b>(x, y);
+				continue;
+			}
+			xyNormal[0] /= normalLength;
+			xyNormal[1] /= normalLength;
+
+			vector<float> weights;
+			float total = 0;
+			
+			for (int k = 0; k != images.size(); k++) {
+				Vec2f imageVector = Vec2f(D[k][0], D[k][1]);
+				float imageVectorLength = sqrt(imageVector[0] * imageVector[0] + imageVector[1] * imageVector[1]);
+				imageVector[0] /= imageVectorLength;
+				imageVector[1] /= imageVectorLength;
+
+				float comp = abs(xyNormal[0] * imageVector[0] + xyNormal[1] * imageVector[1]);
+
+				weights.push_back(1.0f - comp);
+				total += weights[weights.size() - 1];
+				if (x == 256) {
+					cout << weights[k] << endl;
+				}
+			}
+
+			Vec3f floatPixel = Vec3f(0.0f, 0.0f, 0.0f);
+
+			for (int k = 0; k != images.size(); k++) {
+				Vec3f pixel = static_cast<Vec3f>(images[k].at<Vec3b>(x, y));
+				floatPixel[0] += pixel[0] * weights[k] / total;
+				floatPixel[1] += pixel[1] * weights[k] / total;
+				floatPixel[2] += pixel[2] * weights[k] / total;
+			}
+
+			diffuse.at<Vec3b>(x, y) = static_cast<Vec3b>(floatPixel);
+		}
+	}
+	return diffuse;
+}
+
 void Tomographer::add_image(string filename, float phi, float theta) {
 	Mat image = imread(filename);
 
 	vector<float> lightVec;
 	calculateVector(lightVec, phi, theta);
-	cout << lightVec[0] << " " << lightVec[1] << " " << lightVec[2] << endl;
 
 	images.push_back(image);
 	vectors.push_back(lightVec);
@@ -329,7 +399,8 @@ void Tomographer::calculate_normal() {
 		// perform template matching for each image in the set
 		Mat scaledAlign = alignTemplate->clone();
 		Size dims(scaledAlign.cols, scaledAlign.rows);
-		resize(scaledAlign, scaledAlign, Size(512 * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), 512));
+		int height = 512;
+		resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
 
 		for (int i = 0; i != images.size(); i++) {
 			match_template(scaledAlign, &images[i], dims);
@@ -337,7 +408,21 @@ void Tomographer::calculate_normal() {
 
 	}
 	computedNormal = calculateNormal(images, vectors);
+	normalExists = true;
 
 	imshow("Calculated normal", computedNormal);
+	waitKey(0);
+
+	//calculate_diffuse(); // Debug
+}
+
+void Tomographer::calculate_diffuse() {
+	if (!normalExists) {
+		calculate_normal();
+	}
+	// As far as I know the images will be auto-matched by this process
+	computedDiffuse = calculateDiffuse(images, vectors, computedNormal);
+
+	imshow("Calculated diffuse", computedDiffuse);
 	waitKey(0);
 }

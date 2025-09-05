@@ -248,11 +248,15 @@ public:
 		imageData normal = NORMALTEXT;
 		Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal), "NormalBtnTex")), "NormalBtnMat");
 
+		imageData diffuse = DIFFUSETEXT;
+		Material* diffuseMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffuse), "DiffuseBtnTex")), "DiffuseBtnMat");
+
 		std::function<void(UIItem*)> tomogLoadTop = bind(&TomographyMenu::loadTop, this, placeholders::_1);
 		std::function<void(UIItem*)> tomogLoadBottom = bind(&TomographyMenu::loadBottom, this, placeholders::_1);
 		std::function<void(UIItem*)> tomogLoadLeft = bind(&TomographyMenu::loadLeft, this, placeholders::_1);
 		std::function<void(UIItem*)> tomogLoadRight = bind(&TomographyMenu::loadRight, this, placeholders::_1);
-		std::function<void(UIItem*)> computeNormal = bind(&TomographyMenu::performTomog, this, placeholders::_1);
+		std::function<void(UIItem*)> computeNormal = bind(&TomographyMenu::performNormTomog, this, placeholders::_1);
+		std::function<void(UIItem*)> computeDiffuse = bind(&TomographyMenu::performDiffTomog, this, placeholders::_1);
 
 		vArrangement* tomogButtons = new vArrangement(0.0f, 0.0f, 0.1f, 0.4f, 0.01f);
 
@@ -261,6 +265,7 @@ public:
 		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadLeft)));
 		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadRight)));
 		tomogButtons->addItem(getPtr(new Button(normalMat, computeNormal)));
+		tomogButtons->addItem(getPtr(new Button(diffuseMat, computeDiffuse)));
 
 		tomogButtons->updateDisplay();
 
@@ -301,7 +306,7 @@ private:
 		}
 	}
 
-	void performTomog(UIItem* owner) {
+	void performNormTomog(UIItem* owner) {
 		surface->diffTex->getCVMat();
 		tomographer.outdims = Size(surface->diffTex->texMat.cols, surface->diffTex->texMat.rows);
 		tomographer.alignTemplate = &surface->diffTex->texMat;
@@ -310,6 +315,19 @@ private:
 		string saveName = winFile::SaveFileDialog();
 		if (saveName != string("fail")) {
 			imwrite(saveName, tomographer.computedNormal);
+		}
+		//tomographer.clearData();
+	}
+
+	void performDiffTomog(UIItem* owner) {
+		surface->diffTex->getCVMat();
+		tomographer.outdims = Size(surface->diffTex->texMat.cols, surface->diffTex->texMat.rows);
+		tomographer.alignTemplate = &surface->diffTex->texMat;
+		tomographer.alignRequired = true;
+		tomographer.calculate_diffuse();
+		string saveName = winFile::SaveFileDialog();
+		if (saveName != string("fail")) {
+			imwrite(saveName, tomographer.computedDiffuse);
 		}
 		tomographer.clearData();
 	}
@@ -359,6 +377,7 @@ private:
 	double mouseY = 0.0;
 
 	bool mouseDown = false;
+	bool tomogActive = false;
 
 	vector<StaticObject> staticObjects = {};
 	map<string, int> ObjectMap = {};
@@ -479,9 +498,10 @@ private:
 			glfwGetCursorPos(engine->window, &mouseX, &mouseY);
 			webcamTexture::get()->updateWebcam();
 			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
-			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L)) {
+			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L) && !tomogActive) {
 				tomogUI.setup(sConst);
 				widgets.push_back(&tomogUI);
+				tomogActive = true;
 			}
 			if (state == GLFW_PRESS) {
 				mouseDown = true;

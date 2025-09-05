@@ -196,15 +196,6 @@ public:
 	}
 
 	ImagePanel() = default;
-
-	//void cleanup() {
-	//	std::vector<UIImage*> images;
-	//	getImages(images);
-
-	//	for (UIImage* image : images) {
-	//		image->mesh.cleanup();
-	//	}
-	//}
 };
 
 class Button : public UIItem // Here a button is just a rectangle area in screen space which can be queried with coordinates to check if it has been pressed
