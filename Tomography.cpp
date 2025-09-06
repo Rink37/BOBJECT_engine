@@ -84,7 +84,6 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 			matchedLoc = maxLoc;
 			index = i;
 			correlation = maxCorr;
-			cout << i << endl;
 		}
 	}
 
@@ -95,13 +94,13 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 	else {
 		scaleFactor = static_cast<float>(stepsPerIter) / static_cast<float>(index + 1) * target->cols / src.cols;
 	}
-	cout << "Scale factor = " << scaleFactor << endl;
+	//cout << "Scale factor = " << scaleFactor << endl;
 
 	Mat matched = src.clone();
 
 	resize(matched, matched, Size(matched.cols * scaleFactor, matched.rows * scaleFactor));
 
-	matched = Scalar(0, 0, 0);
+	matched = Scalar(0, 0, 0, 0);
 
 	target->copyTo(matched.colRange(matchedLoc.x * scaleFactor, matchedLoc.x * scaleFactor + target->cols).rowRange(matchedLoc.y * scaleFactor, matchedLoc.y * scaleFactor + target->rows));
 
@@ -120,16 +119,10 @@ void match_template(Mat src, Mat* target, Size outdims) {
 	cvtColor(src, srcGray, COLOR_BGR2GRAY);
 	cvtColor(*target, targetGray, COLOR_BGR2GRAY);
 
-	//srcGray = srcChannels[c];
-	//targetGray = targetChannels[c];
-
 	resize(targetGray, targetGray, Size(src.rows * target->cols / target->rows, src.rows));
 
 	normalize(srcGray, srcGray, 0, 255, NORM_MINMAX);
 	normalize(targetGray, targetGray, 0, 255, NORM_MINMAX);
-		
-	//change_contrast(&srcGray, 1.4f, -20);
-	//change_contrast(&targetGray, 1.4f, -20);
 
 	vector<KeyPoint> keypoints1, keypoints2;
 	Mat descriptors1, descriptors2;
@@ -322,22 +315,21 @@ void matrixInverse(vector<vector<float>> matrix, vector<vector<float>>& inverse)
 	}
 }
 
-Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
-	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
-	// Seems like CPU compute takes a few minutes so worth investigating GPU
-	// D represents the list of light vectors for each image
-	// Assumes that the painting is a lambertian surface
+vector<vector<float>> constructTomogMatrix(vector<int> indexes, vector<vector<float>> D) {
+	vector<vector<float>> reducedD;
 
-	assert(images.size() == D.size(), "Input vectors must be the same size");
+	for (int i = 0; i != D.size(); i++) {
+		if (find(indexes.begin(), indexes.end(), i) != indexes.end()) {
+			reducedD.push_back(D[i]);
+		}
+	}
 
-	// D = images.size() x 3 matrix
-	
 	vector<vector<float>> DT;
-	matrixTranspose(D, DT);
-	// DT = 3 x images.size() matrix
+	matrixTranspose(reducedD, DT);
+	// DT = 3 x reducedD.size() matrix
 
 	vector<vector<float>> Ddot;
-	matrixDot(D, DT, Ddot);
+	matrixDot(reducedD, DT, Ddot);
 	// Ddot = 3x3 matrix
 
 	printMatrix(Ddot);
@@ -350,16 +342,45 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 
 	vector<vector<float>> transformationD;
 	matrixDot(DT, DdotInverse, transformationD);
-	// transformationD = images.size() x 3 matrix
+	// transformationD = reducedD.size() x 3 matrix
 
-	printMatrix(transformationD);
+	vector<vector<float>> tomogMatrix;
+	matrixTranspose(transformationD, tomogMatrix);
 
-	matrixTranspose(transformationD, D);
+	return tomogMatrix;
+}
 
-	printMatrix(D);
+bool checkForEmptyInArea(Mat img, int x, int y, int range) {
+	for (int dx = x - range; dx != x + range + 1; dx++) {
+		for (int dy = y - range; dy != y + range + 1; dy++) {
+			if (dy < 0 || dy >= img.rows) {
+				continue;
+			}
+			if (dx < 0 || dx >= img.rows) {
+				continue;
+			}
+			if (img.at<uint8_t>(dx, dy) == 0) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
+	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
+	// Seems like CPU compute takes a few minutes so worth investigating GPU
+	// D represents the list of light vectors for each image
+	// Assumes that the painting is a lambertian surface
+
+	assert(images.size() == D.size(), "Input vectors must be the same size");
+
+	vector<vector<float>> tomogMatrix;
 
 	Mat normal = images[0].clone();
 	normal = Scalar(0, 0, 0);
+
+	map <string, vector<vector<float>>> tomogMatrices;
 
 	vector<Mat> grayImages;
 	for (int i = 0; i != images.size(); i++) {
@@ -373,14 +394,31 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 		for (int x = 0; x != normal.rows; x++) {
 			vector<vector<float>> L;
 			vector<float> Lcol;
+			vector<int> validIndexes;
+			string keyName = "";
 			for (int i = 0; i != images.size(); i++) {
-				Lcol.push_back(grayImages[i].at<uint8_t>(x, y));
+				if (!checkForEmptyInArea(grayImages[i], x, y, 2)) {
+					validIndexes.push_back(i);
+					Lcol.push_back(grayImages[i].at<uint8_t>(x, y));
+					keyName += to_string(i);
+				}
 			}
+			if (validIndexes.size() == 0) {
+				normal.at<Vec3b>(x, y) = Vec3b(127, 127, 255);
+				continue;
+			}
+
+			if (tomogMatrices.find(keyName) == tomogMatrices.end()) {
+				tomogMatrices.insert({ keyName, constructTomogMatrix(validIndexes, D) });
+			}
+			
+			tomogMatrix = tomogMatrices.at(keyName);
+			
 			L.push_back(Lcol);
 
 			vector<vector<float>> normalMatrix;
 
-			matrixDot(D, L, normalMatrix);
+			matrixDot(tomogMatrix, L, normalMatrix);
 
 			assert(normalMatrix.size() == 1 && normalMatrix[0].size() == 3);
 
@@ -410,6 +448,13 @@ Mat calculateDiffuse(vector<Mat> images, vector<vector<float>> D, Mat normal) {
 	Mat diffuse = images[0].clone();
 	diffuse = Scalar(0, 0, 0);
 
+	vector<Mat> grayImages;
+	for (int k = 0; k != images.size(); k++) {
+		Mat grayImg;
+		cvtColor(images[k], grayImg, COLOR_RGB2GRAY);
+		grayImages.push_back(grayImg);
+	}
+
 	for (int y = 0; y != diffuse.cols; y++) {
 		cout << y << endl;
 		for (int x = 0; x != diffuse.rows; x++) {
@@ -431,6 +476,10 @@ Mat calculateDiffuse(vector<Mat> images, vector<vector<float>> D, Mat normal) {
 			float total = 0;
 			
 			for (int k = 0; k != images.size(); k++) {
+				if (checkForEmptyInArea(grayImages[k], x, y, 2)) {
+					weights.push_back(0.0f);
+					continue;
+				}
 				Vec2f imageVector = Vec2f(D[k][0], D[k][1]);
 				float imageVectorLength = sqrt(imageVector[0] * imageVector[0] + imageVector[1] * imageVector[1]);
 				imageVector[0] /= imageVectorLength;
@@ -440,7 +489,6 @@ Mat calculateDiffuse(vector<Mat> images, vector<vector<float>> D, Mat normal) {
 
 				weights.push_back(1.0f - comp);
 				total += weights[weights.size() - 1];
-				
 			}
 
 			Vec3f floatPixel = Vec3f(0.0f, 0.0f, 0.0f);
