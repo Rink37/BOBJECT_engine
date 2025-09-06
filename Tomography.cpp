@@ -33,7 +33,10 @@ void change_contrast(Mat* img, float alpha, int beta) {
 void match_partial(Mat src, Mat* target, Size outdims) {
 
 	int defaultHeight = src.rows;
+	int defaultWidth = src.cols;
 	int stepsPerIter = 8;
+
+	bool vertical = (target->rows >= target->cols);
 
 	int index = 0;
 	int secondIndex;
@@ -41,16 +44,28 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 	float secondCorrelation = 0.0f;
 
 	Mat shrunkTarget;
-	resize(*target, shrunkTarget, Size(defaultHeight * static_cast<float>(target->cols) / static_cast<float>(target->rows), defaultHeight));
+	if (!vertical) {
+		resize(*target, shrunkTarget, Size(defaultWidth, defaultWidth * static_cast<float>(target->rows) / static_cast<float>(target->cols)));
+	}
+	else {
+		resize(*target, shrunkTarget, Size(defaultHeight * static_cast<float>(target->cols) / static_cast<float>(target->rows), defaultHeight));
+	}
 
 	Point matchedLoc;
 
 	for (int i = 0; i != stepsPerIter; i++) {
-		int iterHeight = defaultHeight * static_cast<float>(i + 1) / static_cast<float>(stepsPerIter);
+		
 
 		Mat downscaled;
-		resize(shrunkTarget, downscaled, Size(iterHeight * static_cast<float>(shrunkTarget.cols) / static_cast<float>(shrunkTarget.rows), iterHeight));
-
+		if (!vertical) {
+			int iterWidth = defaultWidth * static_cast<float>(i + 1) / static_cast<float>(stepsPerIter);
+			resize(shrunkTarget, downscaled, Size(iterWidth, iterWidth * static_cast<float>(shrunkTarget.rows) / static_cast<float>(shrunkTarget.cols)));
+		}
+		else {
+			int iterHeight = defaultHeight * static_cast<float>(i + 1) / static_cast<float>(stepsPerIter);
+			resize(shrunkTarget, downscaled, Size(iterHeight * static_cast<float>(shrunkTarget.cols) / static_cast<float>(shrunkTarget.rows), iterHeight));
+		}
+		
 		Mat res;
 		int result_cols = src.cols - downscaled.cols + 1;
 		int result_rows = src.rows - downscaled.rows + 1;
@@ -58,13 +73,6 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 		res.create(result_rows, result_cols, CV_32FC1);
 
 		matchTemplate(src, downscaled, res, TM_CCORR_NORMED);
-
-		//normalize(res, res, 0, 1);
-		//imshow("Shrunk target", downscaled);
-		//waitKey(0);
-
-		//imshow("Match map", res);
-		//waitKey(0);
 
 		double min, max;
 		Point minLoc, maxLoc;
@@ -80,21 +88,24 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 		}
 	}
 
-	int bestMatchHeight = defaultHeight * static_cast<float>(index + 1) / static_cast<float>(stepsPerIter);
-	//int secondMatchHeight = defaultHeight * static_cast<float>(secondIndex + 1) / 4.0f;
+	float scaleFactor;
+	if (vertical) {
+		scaleFactor = static_cast<float>(stepsPerIter) / static_cast<float>(index + 1) * target->rows / src.rows;
+	}
+	else {
+		scaleFactor = static_cast<float>(stepsPerIter) / static_cast<float>(index + 1) * target->cols / src.cols;
+	}
+	cout << "Scale factor = " << scaleFactor << endl;
 
 	Mat matched = src.clone();
+
+	resize(matched, matched, Size(matched.cols * scaleFactor, matched.rows * scaleFactor));
+
 	matched = Scalar(0, 0, 0);
 
-	Mat scaled;
-	resize(*target, scaled, Size(bestMatchHeight * static_cast<float>(target->cols) / static_cast<float>(target->rows), bestMatchHeight));
+	target->copyTo(matched.colRange(matchedLoc.x * scaleFactor, matchedLoc.x * scaleFactor + target->cols).rowRange(matchedLoc.y * scaleFactor, matchedLoc.y * scaleFactor + target->rows));
 
-	scaled.copyTo(matched.colRange(matchedLoc.x, matchedLoc.x + scaled.cols).rowRange(matchedLoc.y, matchedLoc.y + scaled.rows));
-
-	//imshow("Best match", matched);
-	//waitKey(0);
-
-	*target = matched;
+	*target = matched.clone();
 }
 
 void match_template(Mat src, Mat* target, Size outdims) {
@@ -106,48 +117,48 @@ void match_template(Mat src, Mat* target, Size outdims) {
 
 	vector<Point2f> srcPoints, matchPoints;
 	
-		cvtColor(src, srcGray, COLOR_BGR2GRAY);
-		cvtColor(*target, targetGray, COLOR_BGR2GRAY);
+	cvtColor(src, srcGray, COLOR_BGR2GRAY);
+	cvtColor(*target, targetGray, COLOR_BGR2GRAY);
 
-		//srcGray = srcChannels[c];
-		//targetGray = targetChannels[c];
+	//srcGray = srcChannels[c];
+	//targetGray = targetChannels[c];
 
-		resize(targetGray, targetGray, Size(src.rows * target->cols / target->rows, src.rows));
+	resize(targetGray, targetGray, Size(src.rows * target->cols / target->rows, src.rows));
 
-		normalize(srcGray, srcGray, 0, 255, NORM_MINMAX);
-		normalize(targetGray, targetGray, 0, 255, NORM_MINMAX);
+	normalize(srcGray, srcGray, 0, 255, NORM_MINMAX);
+	normalize(targetGray, targetGray, 0, 255, NORM_MINMAX);
 		
-		//change_contrast(&srcGray, 1.4f, -20);
-		//change_contrast(&targetGray, 1.4f, -20);
+	//change_contrast(&srcGray, 1.4f, -20);
+	//change_contrast(&targetGray, 1.4f, -20);
 
-		vector<KeyPoint> keypoints1, keypoints2;
-		Mat descriptors1, descriptors2;
+	vector<KeyPoint> keypoints1, keypoints2;
+	Mat descriptors1, descriptors2;
 
-		Ptr<Feature2D> orb = ORB::create(MAX_FEATURES);
-		orb->detectAndCompute(srcGray, Mat(), keypoints1, descriptors1);
-		orb->detectAndCompute(targetGray, Mat(), keypoints2, descriptors2);
+	Ptr<Feature2D> orb = ORB::create(MAX_FEATURES);
+	orb->detectAndCompute(srcGray, Mat(), keypoints1, descriptors1);
+	orb->detectAndCompute(targetGray, Mat(), keypoints2, descriptors2);
 
-		vector<DMatch> matches;
-		Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
-		matcher->match(descriptors1, descriptors2, matches, Mat());
+	vector<DMatch> matches;
+	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
+	matcher->match(descriptors1, descriptors2, matches, Mat());
 
-		sort(matches.begin(), matches.end());
+	sort(matches.begin(), matches.end());
 
-		const int numGoodMatches = matches.size() * GOOD_MATCH_PERCENT;
-		matches.erase(matches.begin() + numGoodMatches, matches.end());
+	const int numGoodMatches = matches.size() * GOOD_MATCH_PERCENT;
+	matches.erase(matches.begin() + numGoodMatches, matches.end());
 
-		Mat imMatches;
-		drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
+	Mat imMatches;
+	drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
 
-		//imshow("Matches", imMatches);
-		//waitKey(0);
+	//imshow("Matches", imMatches);
+	//waitKey(0);
 
-		for (size_t i = 0; i < matches.size(); i++) {
-			if (norm(keypoints1[matches[i].queryIdx].pt - keypoints2[matches[i].trainIdx].pt) < 100) {
-				srcPoints.push_back(keypoints1[matches[i].queryIdx].pt);
-				matchPoints.push_back(keypoints2[matches[i].trainIdx].pt);
-			}
+	for (size_t i = 0; i < matches.size(); i++) {
+		if (norm(keypoints1[matches[i].queryIdx].pt - keypoints2[matches[i].trainIdx].pt) < 100) {
+			srcPoints.push_back(keypoints1[matches[i].queryIdx].pt);
+			matchPoints.push_back(keypoints2[matches[i].trainIdx].pt);
 		}
+	}
 
 	for (size_t i = 0; i < srcPoints.size(); i++) {
 		srcPoints[i] = Point2f(srcPoints[i].x * outdims.width / src.cols, srcPoints[i].y * outdims.height / src.rows);
@@ -469,22 +480,21 @@ void Tomographer::calculate_normal() {
 			match_partial(scaledAlign, &images[i], dims);
 			match_template(scaledAlign, &images[i], dims);
 		}
-
+		cout << "All templates matched" << endl;
+		imshow("Example", images[0]);
+		waitKey(0);
 	}
 	computedNormal = calculateNormal(images, vectors);
 	normalExists = true;
 
 	imshow("Calculated normal", computedNormal);
 	waitKey(0);
-
-	//calculate_diffuse(); // Debug
 }
 
 void Tomographer::calculate_diffuse() {
 	if (!normalExists) {
-		calculate_normal();
+		calculate_normal(); // This will also match the image layouts
 	}
-	// As far as I know the images will be auto-matched by this process
 	computedDiffuse = calculateDiffuse(images, vectors, computedNormal);
 
 	imshow("Calculated diffuse", computedDiffuse);
