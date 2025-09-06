@@ -31,5 +31,9 @@ find_package(OpenCV REQUIRED)
 target_include_directories(VulkanRenderer PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(VulkanRenderer PRIVATE ${OpenCV_LIBS})
 
-target_link_libraries(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\opencv\\build\\x64\\vc16\\lib\\opencv_world4110d.lib")
+target_link_libraries(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\opencv\\build\\x64\\vc16\\lib\\opencv_world4120d.lib")
 
+add_custom_command(TARGET VulkanRenderer POST_BUILD
+				   COMMAND ${CMAKE_COMMAND} -E copy
+				   "C:\\Users\\robda\\Documents\\opencv\\build\\x64\\vc16\\bin\\opencv_world4120d.dll"
+				   $<TARGET_FILE_DIR:VulkanRenderer>)

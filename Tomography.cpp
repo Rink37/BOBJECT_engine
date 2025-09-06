@@ -30,6 +30,73 @@ void change_contrast(Mat* img, float alpha, int beta) {
 	}
 }
 
+void match_partial(Mat src, Mat* target, Size outdims) {
+
+	int defaultHeight = src.rows;
+	int stepsPerIter = 8;
+
+	int index = 0;
+	int secondIndex;
+	float correlation = 0.0f;
+	float secondCorrelation = 0.0f;
+
+	Mat shrunkTarget;
+	resize(*target, shrunkTarget, Size(defaultHeight * static_cast<float>(target->cols) / static_cast<float>(target->rows), defaultHeight));
+
+	Point matchedLoc;
+
+	for (int i = 0; i != stepsPerIter; i++) {
+		int iterHeight = defaultHeight * static_cast<float>(i + 1) / static_cast<float>(stepsPerIter);
+
+		Mat downscaled;
+		resize(shrunkTarget, downscaled, Size(iterHeight * static_cast<float>(shrunkTarget.cols) / static_cast<float>(shrunkTarget.rows), iterHeight));
+
+		Mat res;
+		int result_cols = src.cols - downscaled.cols + 1;
+		int result_rows = src.rows - downscaled.rows + 1;
+
+		res.create(result_rows, result_cols, CV_32FC1);
+
+		matchTemplate(src, downscaled, res, TM_CCORR_NORMED);
+
+		//normalize(res, res, 0, 1);
+		//imshow("Shrunk target", downscaled);
+		//waitKey(0);
+
+		//imshow("Match map", res);
+		//waitKey(0);
+
+		double min, max;
+		Point minLoc, maxLoc;
+		minMaxLoc(res, &min, &max, &minLoc, &maxLoc);
+
+		float maxCorr = max;
+		
+		if (maxCorr > correlation) {
+			matchedLoc = maxLoc;
+			index = i;
+			correlation = maxCorr;
+			cout << i << endl;
+		}
+	}
+
+	int bestMatchHeight = defaultHeight * static_cast<float>(index + 1) / static_cast<float>(stepsPerIter);
+	//int secondMatchHeight = defaultHeight * static_cast<float>(secondIndex + 1) / 4.0f;
+
+	Mat matched = src.clone();
+	matched = Scalar(0, 0, 0);
+
+	Mat scaled;
+	resize(*target, scaled, Size(bestMatchHeight * static_cast<float>(target->cols) / static_cast<float>(target->rows), bestMatchHeight));
+
+	scaled.copyTo(matched.colRange(matchedLoc.x, matchedLoc.x + scaled.cols).rowRange(matchedLoc.y, matchedLoc.y + scaled.rows));
+
+	//imshow("Best match", matched);
+	//waitKey(0);
+
+	*target = matched;
+}
+
 void match_template(Mat src, Mat* target, Size outdims) {
 	Mat srcGray, targetGray;
 	Mat srcChannels[3], targetChannels[3];
@@ -69,8 +136,8 @@ void match_template(Mat src, Mat* target, Size outdims) {
 		const int numGoodMatches = matches.size() * GOOD_MATCH_PERCENT;
 		matches.erase(matches.begin() + numGoodMatches, matches.end());
 
-		//Mat imMatches;
-		//drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
+		Mat imMatches;
+		drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
 
 		//imshow("Matches", imMatches);
 		//waitKey(0);
@@ -288,8 +355,6 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 		Mat gray;
 		cvtColor(images[i], gray, COLOR_RGB2GRAY);
 		grayImages.push_back(gray);
-		//imshow("Gray", grayImages[i]);
-		//waitKey(0);
 	}
 
 	for (int y = 0; y != normal.cols; y++) {
@@ -364,9 +429,7 @@ Mat calculateDiffuse(vector<Mat> images, vector<vector<float>> D, Mat normal) {
 
 				weights.push_back(1.0f - comp);
 				total += weights[weights.size() - 1];
-				if (x == 256) {
-					cout << weights[k] << endl;
-				}
+				
 			}
 
 			Vec3f floatPixel = Vec3f(0.0f, 0.0f, 0.0f);
@@ -399,10 +462,11 @@ void Tomographer::calculate_normal() {
 		// perform template matching for each image in the set
 		Mat scaledAlign = alignTemplate->clone();
 		Size dims(scaledAlign.cols, scaledAlign.rows);
-		int height = 512;
+		int height = 1024;
 		resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
 
 		for (int i = 0; i != images.size(); i++) {
+			match_partial(scaledAlign, &images[i], dims);
 			match_template(scaledAlign, &images[i], dims);
 		}
 

@@ -22,6 +22,8 @@ public:
 	void clearData() {
 		images.clear();
 		vectors.clear();
+		computedNormal.release();
+		computedDiffuse.release();
 	}
 private:
 	bool normalExists = false;
