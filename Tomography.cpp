@@ -30,6 +30,125 @@ void change_contrast(Mat* img, float alpha, int beta) {
 	}
 }
 
+vector<float> calculateCDF(Mat hist) {
+	vector<float> cdf;
+	uint32_t currentSum = 0;
+	for (int i = 0; i != 256; i++) {
+		currentSum += static_cast<uint32_t>(hist.at<float>(i));
+		cdf.push_back(currentSum);
+	}
+	for (int i = 0; i != 256; i++) {
+		cdf[i] /= currentSum;
+	}
+	return cdf;
+}
+
+vector<uint8_t> calculateLUT(vector<float> refCDF, vector<float>srcCDF) {
+	vector<uint8_t> lookup;
+	uint8_t lookup_val = 0;
+	for (int i = 0; i != 256; i++) {
+		for (int j = 0; j != 256; j++) {
+			if (refCDF[j] >= srcCDF[i]) {
+				lookup_val = j;
+				break;
+			}
+		}
+		lookup.push_back(lookup_val);
+	}
+	return lookup;
+}
+
+Mat getDiffuseGray(Mat img) {
+	Mat PSF_img = img.clone();
+
+	uint32_t IminTotal = 0;
+
+	Mat Imins;
+	cvtColor(img, Imins, COLOR_BGR2GRAY);
+
+	for (int x = 0; x != img.cols; x++) {
+		for (int y = 0; y != img.rows; y++) {
+			Vec3b I;
+			uint8_t I_min = 255;
+			I = img.at<Vec3b>(x, y);
+			for (int k = 0; k != 3; k++) {
+				if (I[k] < I_min) {
+					I_min = I[k];
+				}
+			}
+			IminTotal += I_min;
+			PSF_img.at<Vec3b>(x, y) = Vec3b(I[0] - I_min, I[1] - I_min, I[2] - I_min);
+		}
+	}
+
+	float beta = static_cast<float>(IminTotal) / static_cast<float>(img.rows * img.cols);
+
+	cvtColor(img, img, COLOR_BGR2YCrCb);
+	cvtColor(PSF_img, PSF_img, COLOR_BGR2YCrCb);
+
+	vector<Mat> img_channels(3);
+	split(img, img_channels);
+
+	vector<Mat> PSF_img_channels(3);
+	split(PSF_img, PSF_img_channels);
+
+	Mat U = img_channels[0].clone();
+
+	for (int x = 0; x != img.cols; x++) {
+		for (int y = 0; y != img.rows; y++) {
+			U.at<uint8_t>(x, y) = static_cast<uint8_t>((Imins.at<uint8_t>(x, y) < 4 * beta));
+		}
+	}
+
+	threshold(U, U, 0.5, 255, THRESH_BINARY);
+
+	Mat imgHist;
+	Mat PSFimgHist;
+
+	float range[] = { 0, 256 };
+	const float* histRange[] = { range };
+	int histSize = 256;
+
+	bool uniform = true, accumulate = false;
+
+	calcHist(&img_channels[0], 1, 0, U, imgHist, 1, &histSize, histRange, uniform, accumulate);
+	calcHist(&PSF_img_channels[0], 1, 0, U, PSFimgHist, 1, &histSize, histRange, uniform, accumulate);
+
+	vector<float> imgHistCDF = calculateCDF(imgHist);
+	vector<float> PSFimgHistCDF = calculateCDF(PSFimgHist);
+
+	vector<uint8_t> lookup = calculateLUT(imgHistCDF, PSFimgHistCDF);
+
+	Mat imgMatched = PSF_img_channels[0].clone();
+	LUT(imgMatched, lookup, imgMatched);
+
+	cout << "Image matched" << endl;
+
+	imshow("Matched", imgMatched);
+	waitKey(0);
+
+	Mat diffuse = imgMatched.clone();
+
+	for (int x = 0; x != img.cols; x++) {
+		for (int y = 0; y != img.rows; y++) {
+			if (imgMatched.at<uint8_t>(x, y) < img_channels[0].at<uint8_t>(x, y)) {
+				diffuse.at<uint8_t>(x, y) = imgMatched.at<uint8_t>(x, y);
+			}
+			else {
+				diffuse.at<uint8_t>(x, y) = img_channels[0].at<uint8_t>(x, y);
+			}
+		}
+	}
+
+	imshow("Original", img_channels[0]);
+	waitKey(0);
+
+	imshow("Diffuse", diffuse);
+	waitKey(0);
+
+	return diffuse;
+}
+
 void match_partial(Mat src, Mat* target, Size outdims) {
 
 	int defaultHeight = src.rows;
@@ -383,9 +502,10 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 	map <string, vector<vector<float>>> tomogMatrices;
 
 	vector<Mat> grayImages;
+
 	for (int i = 0; i != images.size(); i++) {
-		Mat gray;
-		cvtColor(images[i], gray, COLOR_RGB2GRAY);
+		Mat gray = getDiffuseGray(images[i]);
+		//cvtColor(images[i], gray, COLOR_RGB2GRAY);
 		grayImages.push_back(gray);
 	}
 
@@ -450,8 +570,9 @@ Mat calculateDiffuse(vector<Mat> images, vector<vector<float>> D, Mat normal) {
 
 	vector<Mat> grayImages;
 	for (int k = 0; k != images.size(); k++) {
-		Mat grayImg;
-		cvtColor(images[k], grayImg, COLOR_RGB2GRAY);
+		//Mat grayImg;
+		Mat grayImg = getDiffuseGray(images[k]);
+		//cvtColor(images[k], grayImg, COLOR_RGB2GRAY);
 		grayImages.push_back(grayImg);
 	}
 
@@ -528,8 +649,8 @@ void Tomographer::calculate_normal() {
 			match_partial(scaledAlign, &images[i], dims);
 			match_template(scaledAlign, &images[i], dims);
 		}
-		cout << "All templates matched" << endl;
-		imshow("Example", images[0]);
+		//cout << "All templates matched" << endl;
+		//imshow("Example", images[0]);
 		waitKey(0);
 	}
 	computedNormal = calculateNormal(images, vectors);
