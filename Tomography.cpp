@@ -59,6 +59,10 @@ vector<uint8_t> calculateLUT(vector<float> refCDF, vector<float>srcCDF) {
 }
 
 Mat getDiffuseGray(Mat img) {
+
+	// This is a functional implementation of the algorithm but success will depend on the image being adequately illuminantly normalized
+	// This also does not appear to play very nicely with naturally light brushstrokes, so I'm not sure what to do about that
+
 	Mat PSF_img = img.clone();
 
 	uint32_t IminTotal = 0;
@@ -354,7 +358,6 @@ void printMatrix(vector<vector<float>> matrix) {
 
 
 float matrixDeterminant(vector<vector<float>> matrix) {
-	// Does not fail
 	if (matrix.size() == 1 && matrix[0].size() == 1) {
 		return matrix[0][0];
 	}
@@ -504,8 +507,8 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 	vector<Mat> grayImages;
 
 	for (int i = 0; i != images.size(); i++) {
-		Mat gray = getDiffuseGray(images[i]);
-		//cvtColor(images[i], gray, COLOR_RGB2GRAY);
+		Mat gray;// = getDiffuseGray(images[i]);
+		cvtColor(images[i], gray, COLOR_RGB2GRAY);
 		grayImages.push_back(gray);
 	}
 
@@ -571,8 +574,8 @@ Mat calculateDiffuse(vector<Mat> images, vector<vector<float>> D, Mat normal) {
 	vector<Mat> grayImages;
 	for (int k = 0; k != images.size(); k++) {
 		//Mat grayImg;
-		Mat grayImg = getDiffuseGray(images[k]);
-		//cvtColor(images[k], grayImg, COLOR_RGB2GRAY);
+		Mat grayImg;// = getDiffuseGray(images[k]);
+		cvtColor(images[k], grayImg, COLOR_RGB2GRAY);
 		grayImages.push_back(grayImg);
 	}
 

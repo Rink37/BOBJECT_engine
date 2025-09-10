@@ -379,6 +379,8 @@ private:
 	bool mouseDown = false;
 	bool tomogActive = false;
 
+	bool showWireframe = true;
+
 	vector<StaticObject> staticObjects = {};
 	map<string, int> ObjectMap = {};
 
@@ -734,9 +736,30 @@ private:
 		scissor.offset = { 0,0 };
 		scissor.extent = engine->swapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+		if (showWireframe) {
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UVWireframe")]);
+
+			for (uint32_t i = 0; i != staticObjects.size(); i++) {
+				if (staticObjects[i].isVisible) {
+
+					VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
+					VkDeviceSize offsets[] = { 0 };
+
+					vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+					vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->webcamPtr->descriptorSets[currentFrame], 0, nullptr);
+
+					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
+				}
+			}
+		}
 		
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UIShading")]);
-
+		
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->draw(commandBuffer, currentFrame);
 		}
