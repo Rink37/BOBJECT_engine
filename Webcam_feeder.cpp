@@ -299,11 +299,15 @@ void Webcam::getCorners(bool show) {
 			}
 		}
 	}
+	cropCorners[0] = corners[0];
+	cropCorners[1] = corners[1];
+	cropCorners[2] = corners[2];
+	cropCorners[3] = corners[3];
 }
 
 void Webcam::updateCorners() {
 	Mat frame;
-	resize(webcamFrame, frame, Size(), 0.25, 0.25);
+	resize(webcamFrame, frame, Size(), 0.25f, 0.25f);
 	Mat cropArea;
 	vector<vector<Point>> contours;
 	vector<Vec4i> hierarchy;
@@ -313,7 +317,7 @@ void Webcam::updateCorners() {
 
 	float rectHalf = 10.0f;
 
-	float smoothness = 0.04f;
+	float smoothness = 0.04f; // Equivalent to 1/25
 
 	float imgWidth = static_cast<float>(frame.cols);
 	float imgHeight = static_cast<float>(frame.rows);
@@ -345,7 +349,8 @@ void Webcam::updateCorners() {
 				if (m.m00 != 0) {
 					cX = m.m10 / m.m00 * 4;
 					cY = m.m01 / m.m00 * 4;
-					cropCorners[i] = Point2f(((cropCorners[i].x)*(smoothness-1) + l*4 + cX) * smoothness, ((cropCorners[i].y)*(smoothness - 1) + t*4 + cY) * smoothness);
+					// Here 24 is substituted for (1/smoothness - 1) since hard-coding is much more efficient than division
+					cropCorners[i] = Point2f(((cropCorners[i].x)*(24) + l*4 + cX) * smoothness, ((cropCorners[i].y)*(24) + t*4 + cY) * smoothness);
 				}
 			}
 		}
