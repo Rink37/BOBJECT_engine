@@ -722,15 +722,6 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 
 	hArrangement* DiffuseButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
-	Button* normalTextPanel = new Button(normalMat);
-	Button* normalPlus = new Button(plusMat, addNormalButton);
-
-	NormalButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
-
-	NormalButtons->addItem(getPtr(normalTextPanel));
-	NormalButtons->addItem(getPtr(normalPlus));
-	NormalButtons->addItem(getPtr(new spacer));
-
 	DiffuseButtons->addItem(getPtr(diffuseTextPanel));
 	DiffuseButtons->addItem(getPtr(diffuseTog));
 	DiffuseButtons->addItem(getPtr(new spacer));
@@ -742,7 +733,19 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 	diffuseView = new ImagePanel(sConst->currentDiffuse().get(), true);
 	SurfacePanel->addItem(getPtr(DiffuseButtons));
 	SurfacePanel->addItem(getPtr(diffuseView));
-	SurfacePanel->addItem(getPtr(NormalButtons));
+	
+	if (normalsEnabled) {
+		Button* normalTextPanel = new Button(normalMat);
+		Button* normalPlus = new Button(plusMat, addNormalButton);
+
+		NormalButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+
+		NormalButtons->addItem(getPtr(normalTextPanel));
+		NormalButtons->addItem(getPtr(normalPlus));
+		NormalButtons->addItem(getPtr(new spacer));
+		SurfacePanel->addItem(getPtr(NormalButtons));
+	}
+	
 	SurfacePanel->addItem(getPtr(new spacer));
 
 	SurfacePanel->updateDisplay();

@@ -72,7 +72,7 @@ public:
 	uint8_t diffuseIdx = 0;
 	std::array<std::shared_ptr<Material>, 3> Normal{} ;
 	uint8_t normalIdx = 0;
-	uint8_t normalType = 0; 
+	uint8_t normalType = 0;
 
 	void clearSurface() {
 		loadList->deleteTexture("DiffuseTex");
@@ -301,6 +301,7 @@ private:
 	std::vector<StaticObject>* staticObjects = nullptr;
 
 	bool hasNormal = false;
+	bool normalsEnabled = false; // DEBUG - lets us disable any UI for normals
 
 	Checkbox* diffuseTog = nullptr;
 	Checkbox* normalTog = nullptr;

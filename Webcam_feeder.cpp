@@ -194,8 +194,10 @@ void Webcam::getCorners(bool show) {
 	cap >> frame;
 	Point2f corners[4] = {Point2f(0, 0), Point2f(0, frame.size[0]), Point2f(frame.size[1], 0), Point2f(frame.size[1], frame.size[0])};
 
+	string windowName = "Live webcam view";
+
 	if (show) {
-		namedWindow("Transformed Image");
+		namedWindow(windowName);
 	}
 	
 	float cX = 0;
@@ -205,6 +207,11 @@ void Webcam::getCorners(bool show) {
 		cout << "No camera detected" << endl;
 		system("pause");
 	}
+
+	bool masked = false;
+	bool circle = false;
+	bool cropped = false;
+
 	while (true) {
 		cap >> frame;
 		if (frame.empty()) {
@@ -247,28 +254,51 @@ void Webcam::getCorners(bool show) {
 				numCoords -= 1;
 			}
 		}
-		if (show) {
-			for (int i = 0; i < 4; i++) {
-				cv::circle(frame, corners[i], 10, Scalar(255, 0, 0), 8, 0);
-			}
-			imshow("Transformed Image", frame);
-			char c = (char)waitKey(25);
-			if (c == 27) {
-				cv::destroyWindow("Transformed Image");
-				break;
-			}
-			if (getWindowProperty("Transformed Image", WND_PROP_VISIBLE) < 1) {
-				break;
-			}
-		}
-		else {
-			break;
-		}
+		break;
 	}
 	cropCorners[0] = corners[0];
 	cropCorners[1] = corners[1];
 	cropCorners[2] = corners[2];
 	cropCorners[3] = corners[3];
+	
+	if (show) {
+		while (true) {
+			updateCorners();
+			cap >> frame;
+			if (cropped) {
+				Mat warp = getPerspectiveTransform(cropCorners, targetCorners);
+				warpPerspective(frame, frame, warp, Size(targetWidth, targetHeight));
+			}
+			if (masked) {
+				blur(frame, frame, Size(5, 5));
+				inRange(frame, Scalar(filter[0], filter[1], filter[2]), Scalar(filter[3], filter[4], filter[5]), frame);
+				cvtColor(frame, frame, COLOR_GRAY2RGB);
+			}
+			if (circle) {
+				for (int i = 0; i < 4; i++) {
+					cv::circle(frame, corners[i], 10, Scalar(255, 0, 0), 8, 0);
+				}
+			}
+			imshow(windowName, frame);
+			char c = (char)waitKey(5);
+			if (c == 27) {
+				cv::destroyWindow(windowName);
+				break;
+			}
+			if (c == 109) { // m
+				masked = !masked;
+			}
+			if (c == 99) { // c
+				circle = !circle;
+			}
+			if (c == 97) { // a
+				cropped = !cropped;
+			}
+			if (getWindowProperty(windowName, WND_PROP_VISIBLE) < 1) {
+				break;
+			}
+		}
+	}
 }
 
 void Webcam::updateCorners() {
@@ -281,9 +311,9 @@ void Webcam::updateCorners() {
 	float cX = 0;
 	float cY = 0;
 
-	float rectHalf = 20 / 2;
+	float rectHalf = 10.0f;
 
-	float smoothness = 25.0f;
+	float smoothness = 0.04f;
 
 	float imgWidth = static_cast<float>(frame.cols);
 	float imgHeight = static_cast<float>(frame.rows);
@@ -294,10 +324,10 @@ void Webcam::updateCorners() {
 
 	for (int i = 0; i != 4; i++) {
 		
-		t = clamp((cropCorners[i].y)/4 - rectHalf , 0.0f, imgHeight);
-		b = clamp((cropCorners[i].y)/4 + rectHalf, 0.0f, imgHeight);
-		l = clamp((cropCorners[i].x)/4 - rectHalf , 0.0f, imgWidth);
-		r = clamp((cropCorners[i].x)/4 + rectHalf, 0.0f, imgWidth);
+		t = clamp((cropCorners[i].y) * 0.25f - rectHalf , 0.0f, imgHeight);
+		b = clamp((cropCorners[i].y) * 0.25f + rectHalf, 0.0f, imgHeight);
+		l = clamp((cropCorners[i].x) * 0.25f - rectHalf , 0.0f, imgWidth);
+		r = clamp((cropCorners[i].x) * 0.25f + rectHalf, 0.0f, imgWidth);
 
 		cropHeight = b - t;
 		cropWidth = r - l;
@@ -315,7 +345,7 @@ void Webcam::updateCorners() {
 				if (m.m00 != 0) {
 					cX = m.m10 / m.m00 * 4;
 					cY = m.m01 / m.m00 * 4;
-					cropCorners[i] = Point2f(((cropCorners[i].x)*(smoothness-1) + l*4 + cX)/smoothness, ((cropCorners[i].y)*(smoothness - 1) + t*4 + cY) / smoothness);
+					cropCorners[i] = Point2f(((cropCorners[i].x)*(smoothness-1) + l*4 + cX) * smoothness, ((cropCorners[i].y)*(smoothness - 1) + t*4 + cY) * smoothness);
 				}
 			}
 		}
