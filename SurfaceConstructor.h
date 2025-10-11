@@ -137,7 +137,7 @@ public:
 		//diffTex = loadList->replacePtr(diffuse, "DiffuseTex");
 		//diffuseMaterial.init(diffTex);
 		//Diffuse[1] = std::make_unique<Material>(diffuseMaterial);
-		Diffuse[1]->cleanupDescriptor();
+		//Diffuse[1]->cleanupDescriptor();
 		diffTex = loadList->replacePtr(diffuse, "DiffuseTex");
 		Diffuse[1] = std::make_unique<Material>(diffTex);
 		diffuseIdx = 1;

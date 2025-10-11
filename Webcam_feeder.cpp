@@ -16,6 +16,7 @@ Webcam::Webcam() {
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
+	frameIntCount = frameInterval;
 	getFrame();
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
@@ -35,6 +36,7 @@ Webcam::Webcam(uint8_t idx) {
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
+	frameIntCount = frameInterval;
 	getFrame();
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
@@ -53,7 +55,7 @@ void Webcam::loadFilter() {
 
 void Webcam::saveFilter() {
 	for (int k = 0; k != 6; k++) {
-		session::get()->currentStudio.calibrationSettings[k]  = filter[k];
+		session::get()->currentStudio.calibrationSettings[k] = filter[k];
 	}
 }
 
@@ -69,8 +71,17 @@ void Webcam::getFrame() {
 			isValid = false;
 		}
 		cap >> webcamFrame;
-		updateCorners();
-		Mat warp = getPerspectiveTransform(cropCorners, targetCorners);
+		if (frameIntCount >= frameInterval) {
+			updateCorners();
+			warp = getPerspectiveTransform(cropCorners, targetCorners);
+			frameIntCount = 0;
+			//std::cout << "Updating" << std::endl;
+		}
+		else {
+			frameIntCount++;
+		}
+		//updateCorners();
+		//warp = getPerspectiveTransform(cropCorners, targetCorners);
 		warpPerspective(webcamFrame, webcamFrame, warp, Size(targetWidth, targetHeight));
 		if (!shouldUpdate) {
 			isUpdating = false;
@@ -156,33 +167,7 @@ void Webcam::calibrateCornerFilter() {
 	getCorners(true);
 }
 
-//int displayMaskedWebcam(int arr[6]) {
-//	Mat webcamFrame;
-//	namedWindow("Calibrated webcam viewer");
-//	VideoCapture cap(0);
-//	if (!cap.isOpened()) {
-//		cout << "No camera detected" << endl;
-//		system("pause");
-//		return -1;
-//	}
-//	while (true) {
-//		cap >> webcamFrame;
-//		if (webcamFrame.empty()) {
-//			break;
-//		}
-//		blur(webcamFrame, webcamFrame, Size(5, 5));
-//		inRange(webcamFrame, Scalar(arr[0], arr[1], arr[2]), Scalar(arr[3], arr[4], arr[5]), webcamFrame);
-//		imshow("Calibrated webcam viewer", webcamFrame);
-//		char c = (char)waitKey(25); //Waits for us to press 'Esc', then exits
-//		if (c == 27) {
-//			break;
-//		}
-//	}
-//	cap.release();
-//	return 0;
-//}
-
-float dist(Point2f A, Point2f B) {
+static float dist(Point2f A, Point2f B) {
 	return sqrt(pow(A.x - B.x, 2) + pow(A.y - B.y, 2));
 }
 
@@ -256,17 +241,13 @@ void Webcam::getCorners(bool show) {
 		}
 		break;
 	}
-	cropCorners[0] = corners[0];
-	cropCorners[1] = corners[1];
-	cropCorners[2] = corners[2];
-	cropCorners[3] = corners[3];
 	
 	if (show) {
 		while (true) {
 			updateCorners();
 			cap >> frame;
 			if (cropped) {
-				Mat warp = getPerspectiveTransform(cropCorners, targetCorners);
+				warp = getPerspectiveTransform(cropCorners, targetCorners);
 				warpPerspective(frame, frame, warp, Size(targetWidth, targetHeight));
 			}
 			if (masked) {
@@ -281,17 +262,17 @@ void Webcam::getCorners(bool show) {
 			}
 			imshow(windowName, frame);
 			char c = (char)waitKey(5);
-			if (c == 27) {
+			if (c == 27) { // ASCII code for Esc
 				cv::destroyWindow(windowName);
 				break;
 			}
-			if (c == 109) { // m
+			if (c == 109) { // ASCII code for m
 				masked = !masked;
 			}
-			if (c == 99) { // c
+			if (c == 99) { // ASCII code for c
 				circle = !circle;
 			}
-			if (c == 97) { // a
+			if (c == 97) { // ASCII code for a
 				cropped = !cropped;
 			}
 			if (getWindowProperty(windowName, WND_PROP_VISIBLE) < 1) {

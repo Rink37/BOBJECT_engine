@@ -38,10 +38,15 @@ public:
 
 	bool isValid = true;
 private:
+	cv::Mat warp;
+
 	cv::VideoCapture cap;
 
 	uint8_t filter[6] = { 0, 0, 0, 255, 255, 255 };
 	float sizeRatio = 1.41f;
+
+	uint8_t frameInterval = 5;
+	uint8_t frameIntCount = 0;
 
 	uint32_t targetWidth = 0;
 	uint32_t targetHeight = 0;

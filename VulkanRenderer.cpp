@@ -437,9 +437,9 @@ private:
 		}
 		if (session::get()->currentStudio.diffusePath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
-			sConst->loadDiffuse(loadedTexture);
+			sConst->loadDiffuse(loadedTexture); // This function currently produces errors
 			sConst->diffuseIdx = 1;
-			surfaceMenu.setDiffuse(sConst->currentDiffuse().get());
+			surfaceMenu.setDiffuse(sConst->currentDiffuse().get()); // This function currently produces errors
 			surfaceMenu.resetDiffuseTog(true);
 		}
 		if (session::get()->currentStudio.OSPath != "None") {
@@ -466,7 +466,7 @@ private:
 			surfaceMenu.toggleNormalState(false);
 		}
 		sConst->updateSurfaceMat();
-		webcamTexture::get()->webCam->saveFilter();
+		webcamTexture::get()->webCam->loadFilter();
 	}
 	
 	void createCanvas() {

@@ -756,7 +756,7 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 }
 
 void SurfaceMenu::removeNormalMenu(UIItem* owner) {
-	if (!hasNormal) {
+	if (!hasNormal || !normalsEnabled) {
 		return;
 	}
 	// Clear UI related to the normal component of the surface panel
