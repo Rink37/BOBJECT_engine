@@ -1,4 +1,5 @@
 #include"StudioSession.h"
+#include <cstdint>
 
 using namespace std;
 

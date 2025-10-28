@@ -1,6 +1,6 @@
 #include"Bobject_Engine.h"
 #include"InputManager.h"
-#include"WindowsFileManager.h"
+#include"FileManager.h"
 #include"CameraController.h"
 #include"UIelements.h"
 #include"Webcam_feeder.h"
@@ -15,9 +15,8 @@
 #include"include/BakedImages.h"
 
 using namespace cv;
-using namespace std;
 
-vector<int> keybinds = { GLFW_KEY_L, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_U, GLFW_KEY_I };
+std::vector<int> keybinds = { GLFW_KEY_L, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_U, GLFW_KEY_I };
 
 std::vector<KeyInput*> KeyInput::_instances;
 KeyInput defaultKeyBinds(keybinds);
@@ -34,7 +33,7 @@ public:
 		}
 		hArrangement* SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f);
 
-		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
+		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, std::placeholders::_1);
 
 		imageData OpenButton = OPENBUTTON;
 		Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton), "OpenBtnTex")), "OpenBtnMat");
@@ -57,8 +56,8 @@ public:
 	}
 private:
 	void save(UIItem* owner) {
-		string saveLocation;
-		saveLocation = winFile::SaveFileDialog();
+		std::string saveLocation;
+		saveLocation = FileManager::SaveFileDialog();
 		if (saveLocation == "fail") {
 			return;
 		}
@@ -165,7 +164,7 @@ public:
 		ObjectButtons->arrangeItems();
 	}
 
-	map<string, int> ObjectMap = {};
+	std::map<std::string, int> ObjectMap = {};
 private:
 	UIItem* ObjectButtons = nullptr;
 
@@ -201,8 +200,8 @@ public:
 		imageData webcamOn = WEBCAMONBUTTON;
 		Material* webcamMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn), "WebcamOnBtnTex")), "WebcamOnBtnMat");
 
-		std::function<void(UIItem*)> toggleWebcamFunct = bind(&WebcamMenu::toggleWebcam, this, placeholders::_1);
-		std::function<void(UIItem*)> configureWebcamFunct = bind(&WebcamMenu::calibrateWebcam, this, placeholders::_1);
+		std::function<void(UIItem*)> toggleWebcamFunct = bind(&WebcamMenu::toggleWebcam, this, std::placeholders::_1);
+		std::function<void(UIItem*)> configureWebcamFunct = bind(&WebcamMenu::calibrateWebcam, this, std::placeholders::_1);
 
 		hArrangement* Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
 
@@ -251,12 +250,12 @@ public:
 		imageData diffuse = DIFFUSETEXT;
 		Material* diffuseMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffuse), "DiffuseBtnTex")), "DiffuseBtnMat");
 
-		std::function<void(UIItem*)> tomogLoadTop = bind(&TomographyMenu::loadTop, this, placeholders::_1);
-		std::function<void(UIItem*)> tomogLoadBottom = bind(&TomographyMenu::loadBottom, this, placeholders::_1);
-		std::function<void(UIItem*)> tomogLoadLeft = bind(&TomographyMenu::loadLeft, this, placeholders::_1);
-		std::function<void(UIItem*)> tomogLoadRight = bind(&TomographyMenu::loadRight, this, placeholders::_1);
-		std::function<void(UIItem*)> computeNormal = bind(&TomographyMenu::performNormTomog, this, placeholders::_1);
-		std::function<void(UIItem*)> computeDiffuse = bind(&TomographyMenu::performDiffTomog, this, placeholders::_1);
+		std::function<void(UIItem*)> tomogLoadTop = bind(&TomographyMenu::loadTop, this,std::placeholders::_1);
+		std::function<void(UIItem*)> tomogLoadBottom = bind(&TomographyMenu::loadBottom, this,std::placeholders::_1);
+		std::function<void(UIItem*)> tomogLoadLeft = bind(&TomographyMenu::loadLeft, this,std::placeholders::_1);
+		std::function<void(UIItem*)> tomogLoadRight = bind(&TomographyMenu::loadRight, this,std::placeholders::_1);
+		std::function<void(UIItem*)> computeNormal = bind(&TomographyMenu::performNormTomog, this,std::placeholders::_1);
+		std::function<void(UIItem*)> computeDiffuse = bind(&TomographyMenu::performDiffTomog, this,std::placeholders::_1);
 
 		vArrangement* tomogButtons = new vArrangement(0.0f, 0.0f, 0.1f, 0.4f, 0.01f);
 
@@ -279,29 +278,29 @@ private:
 	surfaceConstructor* surface = nullptr;
 
 	void loadTop(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
+	std::string fileName = FileManager::OpenFileDialog();
+		if (fileName != std::string("fail")) {
 			tomographer.add_image(fileName, 90.0, 50.0);
 		}
 	}
 
 	void loadBottom(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
+	std::string fileName = FileManager::OpenFileDialog();
+		if (fileName != std::string("fail")) {
 			tomographer.add_image(fileName, 270.0, 50.0);
 		}
 	}
 
 	void loadLeft(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
+	std::string fileName = FileManager::OpenFileDialog();
+		if (fileName != std::string("fail")) {
 			tomographer.add_image(fileName, 180.0, 50.0);
 		}
 	}
 
 	void loadRight(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
+	std::string fileName = FileManager::OpenFileDialog();
+		if (fileName != std::string("fail")) {
 			tomographer.add_image(fileName, 0.0, 50.0);
 		}
 	}
@@ -312,8 +311,8 @@ private:
 		tomographer.alignTemplate = &surface->diffTex->texMat;
 		tomographer.alignRequired = true;
 		tomographer.calculate_normal();
-		string saveName = winFile::SaveFileDialog();
-		if (saveName != string("fail")) {
+	std::string saveName = FileManager::SaveFileDialog();
+		if (saveName != std::string("fail")) {
 			imwrite(saveName, tomographer.computedNormal);
 		}
 		//tomographer.clearData();
@@ -325,8 +324,8 @@ private:
 		tomographer.alignTemplate = &surface->diffTex->texMat;
 		tomographer.alignRequired = true;
 		tomographer.calculate_diffuse();
-		string saveName = winFile::SaveFileDialog();
-		if (saveName != string("fail")) {
+	std::string saveName = FileManager::SaveFileDialog();
+		if (saveName != std::string("fail")) {
 			imwrite(saveName, tomographer.computedDiffuse);
 		}
 		tomographer.clearData();
@@ -344,8 +343,9 @@ public:
 		createCanvas();
 		if (sConst->webTex->webCam != nullptr) {
 			sConst->webTex->webCam->loadFilter();
+			sConst->webTex->webCam->shouldUpdate = false;
 		}
-		webcamTexture::get()->webCam->shouldUpdate = false;
+		//webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
 		mainLoop();
@@ -371,7 +371,7 @@ private:
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 
-	vector<Widget*> widgets;
+	std::vector<Widget*> widgets;
 
 	double mouseX = 0.0;
 	double mouseY = 0.0;
@@ -381,8 +381,8 @@ private:
 
 	bool showWireframe = true;
 
-	vector<StaticObject> staticObjects = {};
-	map<string, int> ObjectMap = {};
+	std::vector<StaticObject> staticObjects = {};
+	std::map<std::string, int> ObjectMap = {};
 
 	bool lit = true;
 
@@ -416,18 +416,18 @@ private:
 	
 	void loadSave(UIItem* owner) {
 
-		string saveLocation;
-		saveLocation = winFile::OpenFileDialog();
+	std::string saveLocation;
+		saveLocation = FileManager::OpenFileDialog();
 		if (saveLocation == "fail") {
 			return;
 		}
 		newSession(owner);
 		session::get()->loadStudio(saveLocation);
-		for (string path : session::get()->currentStudio.modelPaths) {
+		for (std::string path : session::get()->currentStudio.modelPaths) {
 			StaticObject newObject(path);
 			newObject.mat = &sConst->surfaceMat;
 
-			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
+			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this,std::placeholders::_1);
 
 			objectMenu.addObject(testfunction);
 
@@ -471,11 +471,11 @@ private:
 	
 	void createCanvas() {
 
-		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this, placeholders::_1);
-		std::function<void(UIItem*)> lightingFunction = bind(&Application::toggleLighting, this, placeholders::_1);
-		std::function<void(UIItem*)> loadObjectFunct = bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
-		std::function<void(UIItem*)> loadSessionFunc = bind(&Application::loadSave, this, placeholders::_1);
-		std::function<void(UIItem*)> newSessionFunc = bind(&Application::newSession, this, placeholders::_1);
+		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this,std::placeholders::_1);
+		std::function<void(UIItem*)> lightingFunction = bind(&Application::toggleLighting, this,std::placeholders::_1);
+		std::function<void(UIItem*)> loadObjectFunct = bind(&Application::buttonLoadStaticObject, this,std::placeholders::_1);
+		std::function<void(UIItem*)> loadSessionFunc = bind(&Application::loadSave, this,std::placeholders::_1);
+		std::function<void(UIItem*)> newSessionFunc = bind(&Application::newSession, this,std::placeholders::_1);
 
 		saveMenu.setup(loadSessionFunc, newSessionFunc);
 		widgets.push_back(&saveMenu);
@@ -528,15 +528,15 @@ private:
 	}
 
 	void setPipelineIndex(UIItem* owner) {
-		if (owner->Name == string("WebcamMat")) {
+		if (owner->Name == std::string("WebcamMat")) {
 			viewIndex = 0;
 			surfaceMenu.hide();
 		}
-		else if (owner->Name == string("SurfaceMat")) {
+		else if (owner->Name == std::string("SurfaceMat")) {
 			viewIndex = 1;
 			surfaceMenu.show();
 		}
-		else if (owner->Name == string("Wireframe")) {
+		else if (owner->Name == std::string("Wireframe")) {
 			viewIndex = 2;
 			surfaceMenu.hide();
 		}
@@ -563,9 +563,9 @@ private:
 	void loadStaticObject() {
 
 		try {
-			string modelPath;
+		std::string modelPath;
 			try {
-				modelPath = winFile::OpenFileDialog();
+				modelPath = FileManager::OpenFileDialog();
 			}
 			catch (...) {
 				return;
@@ -573,7 +573,7 @@ private:
 			StaticObject newObject(modelPath);
 			newObject.mat = &sConst->surfaceMat;
 
-			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
+			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this,std::placeholders::_1);
 
 			objectMenu.addObject(testfunction);
 
@@ -615,7 +615,7 @@ private:
 			return;
 		}
 		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-			throw runtime_error("failed to acquire swap chain image!");
+			throw std::runtime_error("failed to acquire swap chain image!");
 		}
 
 		updateUniformBuffer(currentFrame);
@@ -670,7 +670,7 @@ private:
 			return;
 		}
 		else if (result != VK_SUCCESS) {
-			throw runtime_error("failed to acquire swap chain image!");
+			throw std::runtime_error("failed to acquire swap chain image!");
 		}
 
 		engine->currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -703,7 +703,7 @@ private:
 		beginInfo.pInheritanceInfo = nullptr;
 
 		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-			throw runtime_error("failed to begin recording command buffer!");
+			throw std::runtime_error("failed to begin recording command buffer!");
 		}
 
 		VkRenderPassBeginInfo renderPassInfo{};
@@ -714,7 +714,7 @@ private:
 		renderPassInfo.renderArea.offset = { 0,0 };
 		renderPassInfo.renderArea.extent = engine->swapChainExtent;
 
-		array<VkClearValue, 2> clearValues{};
+		std::array<VkClearValue, 2> clearValues{};
 		clearValues[0].color = { {0.812f, 0.2f, 0.2f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
@@ -815,7 +815,7 @@ private:
 		vkCmdEndRenderPass(commandBuffer);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-			throw runtime_error("failed to record command buffer!");
+			throw std::runtime_error("failed to record command buffer!");
 		}
 	}
 };
@@ -832,8 +832,8 @@ int main()
 	try {
 		app.run();
 	}
-	catch (const exception& e) {
-		cerr << e.what() << endl;
+	catch (const std::exception& e) {
+	 std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;
 	}
 

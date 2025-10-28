@@ -1,6 +1,9 @@
+# why is this not tracked in version control????
 /tiny_obj_loader.h
 models/
 savefiles/
 textures/
 .vs/
 out/
+.cache/
+compile_commands.json

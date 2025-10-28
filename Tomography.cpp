@@ -1,5 +1,5 @@
 #include"Tomography.h"
-#include<cassert>
+#include <cassert>
 
 using namespace cv;
 using namespace std;
@@ -495,7 +495,7 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 	// D represents the list of light vectors for each image
 	// Assumes that the painting is a lambertian surface
 
-	assert(images.size() == D.size(), "Input vectors must be the same size");
+	assert(images.size() == D.size() && "Input vectors must be the same size");
 
 	vector<vector<float>> tomogMatrix;
 

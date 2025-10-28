@@ -264,7 +264,7 @@ void NormalGen::contextualConvertMap(Mat srcImg) {
 		twoDimage = srcImgSegment.reshape(1, srcImgSegment.rows * srcImgSegment.cols);
 		twoDimage.convertTo(twoDimage, CV_32FC3);
 
-		kmeans(twoDimage, tempK, label, criteria, attempts, NULL, center);
+		kmeans(twoDimage, tempK, label, criteria, attempts, 0, center);
 		center.convertTo(center, CV_8U);
 		label = label.reshape(1, 1);
 		label.convertTo(label, CV_8UC1);

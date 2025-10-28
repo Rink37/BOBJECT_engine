@@ -1,9 +1,7 @@
 #include"Meshes.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include"tiny_obj_loader.h"
-#include"WindowsFileManager.h"
 
-using namespace std;
 
 void Mesh::createVertexBuffer() {
 	Engine* engine = Engine::get();
@@ -143,21 +141,23 @@ void UIMesh::updateVertexBuffer() {
 //	createIndexBuffer();
 //}
 
-StaticMesh::StaticMesh(string modelPath) {
+StaticMesh::StaticMesh(std::string modelPath) {
 	loadModel(modelPath);
 	createVertexBuffer();
 	createIndexBuffer();
 }
 
-bool StaticMesh::loadModel(string testMODEL_PATH) {
+bool StaticMesh::loadModel(std::string testMODEL_PATH) {
 	tinyobj::attrib_t attrib;
-	vector<tinyobj::shape_t> shapes;
-	vector<tinyobj::material_t> materials;
-	string warn, err;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string err;
 
-	if (tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, testMODEL_PATH.c_str())) {
-		unordered_map<Vertex, uint32_t> uniqueVertices{};
-		unordered_map<glm::vec2, uint32_t> uniqueCoords{};
+	if (tinyobj::LoadObj(&attrib, &shapes, &materials, &err, testMODEL_PATH.c_str())) {
+
+
+		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+		std::unordered_map<glm::vec2, uint32_t> uniqueCoords{};
 
 		for (const auto& shape : shapes) {
 			for (const auto& index : shape.mesh.indices) {
@@ -217,7 +217,7 @@ void StaticMesh::computeTangents() {
 		//vert.biTangent = glm::vec3(0, 0, 0);
 	}
 
-	vector<glm::vec3> biTangents;
+	std::vector<glm::vec3> biTangents;
 	for (size_t i = 0; i != vertices.size(); i++) {
 		biTangents.push_back(glm::vec3(0, 0, 0));
 	}

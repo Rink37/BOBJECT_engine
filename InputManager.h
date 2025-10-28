@@ -8,7 +8,6 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include "windows.h"
 
 class KeyInput {
 public:

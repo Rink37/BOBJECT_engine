@@ -1,11 +1,8 @@
-#include "windows.h"
-#include<iostream>
-#include<vector>
+#include <vector>
 #include "GLFW/glfw3.h"
+#include <algorithm>
 
 #include "InputManager.h"
-
-using namespace std;
 
 KeyInput::KeyInput(std::vector<int> keysToMonitor) : _isEnabled(true) {
 	for (int key : keysToMonitor) {
