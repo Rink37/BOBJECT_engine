@@ -1,6 +1,7 @@
 #ifndef STUDIOSESSION
 #define STUDIOSESSION
 
+#include <cstdint>
 #include<string>
 #include<vector>
 #include<fstream>

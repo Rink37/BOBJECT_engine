@@ -1,7 +1,7 @@
 #include"SurfaceConstructor.h"
 #include"GenerateNormalMap.h"
 #include"ImageProcessor.h"
-#include"WindowsFileManager.h"
+#include"FileManager.h"
 
 #include"include/Kuwahara.h"
 #include"include/SobelX.h"
@@ -791,7 +791,7 @@ void SurfaceMenu::toggleDiffuseCam(UIItem* owner) {
 }
 
 void SurfaceMenu::loadDiffuseImage(UIItem* owner) {
-	string fileName = winFile::OpenFileDialog();
+	string fileName = FileManager::OpenFileDialog();
 	if (fileName != string("fail")) {
 		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
 		sConst->loadDiffuse(loadedTexture);
@@ -818,7 +818,7 @@ void SurfaceMenu::saveDiffuseImage(UIItem* owner) {
 		saveDiffuse = sConst->diffTex->texMat.clone();
 		sConst->diffTex->destroyCVMat();
 	}
-	string saveName = winFile::SaveFileDialog();
+	string saveName = FileManager::SaveFileDialog();
 	if (saveName != string("fail")) {
 		session::get()->currentStudio.diffusePath = saveName;
 		imwrite(saveName, saveDiffuse);
@@ -854,7 +854,7 @@ void SurfaceMenu::toggleNormalType(UIItem* owner) {
 }
 
 void SurfaceMenu::loadNormalImage(UIItem* owner) {
-	string fileName = winFile::OpenFileDialog();
+	string fileName = FileManager::OpenFileDialog();
 	if (fileName != string("fail")) {
 		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
 		sConst->loadNormal(loadedTexture);
@@ -893,7 +893,7 @@ void SurfaceMenu::saveNormalImage(UIItem* owner) {
 			sConst->OSNormTex->destroyCVMat();
 		}
 	}
-	string saveName = winFile::SaveFileDialog();
+	string saveName = FileManager::SaveFileDialog();
 	if (saveName != string("fail")) {
 		if (sConst->normalType == 0) {
 			session::get()->currentStudio.OSPath = saveName;
