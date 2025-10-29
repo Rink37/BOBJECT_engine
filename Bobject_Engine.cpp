@@ -1045,29 +1045,33 @@ QueueFamilyIndices Engine::findQueueFamilies(VkPhysicalDevice device) {
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
 	int i = 0;
-	for (const auto& queueFamily : queueFamilies) {
-		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-			indices.graphicsFamily = i;
-		}
+	// We assume that if there is only one queue family then it can do everything
+	if (queueFamilyCount > 1) {
+		for (const auto& queueFamily : queueFamilies) {
+			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+				indices.graphicsFamily = i;
+			}
 
-		if ((queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) && ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0)) {
-			indices.computeFamily = i;
-		}
+			if ((queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) && ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0)) {
+				indices.computeFamily = i;
+			}
 
-		VkBool32 presentSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+			VkBool32 presentSupport = false;
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
-		if (presentSupport) {
-			indices.presentFamily = i;
-		}
+			if (presentSupport) {
+				indices.presentFamily = i;
+			}
 
-		if (indices.isComplete()) {
-			break;
+			if (indices.isComplete()) {
+				break;
+			}
+			i++;
 		}
-		i++;
 	}
 
 	if (!indices.isComplete()) {
+
 		for (const auto& queueFamily : queueFamilies) {
 			if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) {
 				indices.computeFamily = i;
