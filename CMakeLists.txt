@@ -15,6 +15,7 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET VulkanRenderer PROPERTY CXX_STANDARD 20)
 endif()
 
+# Set the directory where cmake will search for Find{module}.cmake files
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 find_package(glfw 3.4 REQUIRED)
@@ -22,48 +23,42 @@ if (GLFW_FOUND)
 	message(STATUS "GLFW has been found, linking now")
 	include_directories(VulkanRenderer PUBLIC ${GLFW_INCLUDE_DIR})
 	target_link_libraries(VulkanRenderer PUBLIC ${GLFW_LIBRARY})
+else()
+	message(STATUS "GLFW has not been found, cannot link. Ensure that GLFW is installed and can be found in one of the search folders in Findglfw.cmake")
 endif()
 
 find_package(Vulkan REQUIRED)
 if (VULKAN_FOUND)
 	message(STATUS "Vulkan has been found, linking now")
 	target_link_libraries(VulkanRenderer PUBLIC Vulkan::Vulkan)
+else()
+	message(STATUS "Vulkan has not been found, cannot link. Ensure that the VulkanSDK is installed and can be found in one of the search folders in FindVulkan.cmake")
 endif()
 
 
 find_package(OpenCV REQUIRED)
-if(TARGET OpenCV::OpenCV)
-	target_link_libraries(VulkanRenderer PUBLIC OpenCV::OpenCV)
-else()
-	if (OPENCV_FOUND)
+if (OPENCV_FOUND)
+	if(TARGET OpenCV::OpenCV)
+		target_link_libraries(VulkanRenderer PUBLIC OpenCV::OpenCV)
+	else()
 		message(STATUS "OpenCV found, linking now")
 		target_include_directories(VulkanRenderer PUBLIC ${OPENCV_INCLUDE_DIR}/../)
 		target_link_libraries(VulkanRenderer PUBLIC ${OPENCV_LIBRARY}/../opencv_world4100d.lib)
 	endif()
+else()
+	message(STATUS "OpenCV has not been found, cannot link. Ensure that OpenCV is installed and can be found in one of the search folders in FindOpenCV.cmake")
 endif()
 
 find_package(glm REQUIRED)
 if (GLM_FOUND)
 	message(STATUS "GLM found, linking now")
 	target_include_directories(VulkanRenderer PUBLIC ${GLM_INCLUDE_DIRS})
+else()
+	message(STATUS "GLM has not been found, cannot link. Ensure that GLM is installed and can be found in one of the search folders in Findglm.cmake")
 endif ()
 
+# Ensure that we can find all files used in the main application
 target_include_directories(VulkanRenderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-#target_include_directories(VulkanRenderer PUBLIC "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.42.34433\\glfw-3.4.bin.WIN64\\include")
-#target_include_directories(VulkanRenderer PUBLIC "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.42.34433\\GLM\\g-truc-glm-0af55cc")
-#target_include_directories(VulkanRenderer PUBLIC "C:\\VulkanSDK\\1.3.296.0\\Include")
-#target_include_directories(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\VulkanRenderer\\include")
-
-#target_link_libraries(VulkanRenderer PUBLIC "C:\\VulkanSDK\\1.3.296.0\\Lib\\vulkan-1.lib")
-#target_link_libraries(VulkanRenderer PUBLIC "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.42.34433\\glfw-3.4.bin.WIN64\\lib-vc2022\\glfw3.lib")
-
-#set(OpenCV_DIR C:/Users/robda/Documents/opencv/build/)
-#find_package(OpenCV REQUIRED)
-#target_include_directories(VulkanRenderer PUBLIC ${OpenCV_INCLUDE_DIRS})
-#target_link_libraries(VulkanRenderer PRIVATE ${OpenCV_LIBS})
-
-#target_link_libraries(VulkanRenderer PUBLIC "C:\\Users\\robda\\Documents\\opencv\\build\\x64\\vc16\\lib\\opencv_world4120d.lib")
 
 add_custom_command(TARGET VulkanRenderer POST_BUILD
 				   COMMAND ${CMAKE_COMMAND} -E copy
