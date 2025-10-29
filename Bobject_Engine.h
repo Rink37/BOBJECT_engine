@@ -53,8 +53,6 @@ const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_N
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance, const VkDebugUtilsMessengerCreateInfoEXT*, const VkAllocationCallbacks*, VkDebugUtilsMessengerEXT*);
 
-//static std::vector<char> readFile(const std::string&);
-
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 normal;
