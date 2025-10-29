@@ -1045,7 +1045,7 @@ QueueFamilyIndices Engine::findQueueFamilies(VkPhysicalDevice device) {
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
 	int i = 0;
-	// We assume that if there is only one queue family then it can do everything
+	// We assume that if there is only one queue family then it can do everything but otherwise we look for separate specialised ones
 	if (queueFamilyCount > 1) {
 		for (const auto& queueFamily : queueFamilies) {
 			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
@@ -1068,6 +1068,11 @@ QueueFamilyIndices Engine::findQueueFamilies(VkPhysicalDevice device) {
 			}
 			i++;
 		}
+	}
+	else {
+		indices.graphicsFamily = i;
+		indices.computeFamily = i;
+		indices.presentFamily = i;
 	}
 
 	if (!indices.isComplete()) {
