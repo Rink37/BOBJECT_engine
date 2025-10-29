@@ -561,30 +561,23 @@ private:
 	}
 
 	void loadStaticObject() {
-
-		try {
-			string modelPath;
-			try {
-				modelPath = winFile::OpenFileDialog();
-			}
-			catch (...) {
-				return;
-			}
-			StaticObject newObject(modelPath);
-			newObject.mat = &sConst->surfaceMat;
-
-			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
-
-			objectMenu.addObject(testfunction);
-
-			newObject.isVisible = true;
-
-			staticObjects.push_back(newObject);
-			session::get()->currentStudio.modelPaths.push_back(modelPath);
-		}
-		catch (...) {
+		string modelPath;
+		modelPath = winFile::OpenFileDialog();
+		if (modelPath == "fail") {
 			return;
 		}
+		StaticObject newObject(modelPath);
+		newObject.mat = &sConst->surfaceMat;
+
+		std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
+
+		objectMenu.addObject(testfunction);
+
+		newObject.isVisible = true;
+
+		staticObjects.push_back(newObject);
+		session::get()->currentStudio.modelPaths.push_back(modelPath);
+
 	}
 
 	void cleanup() {
