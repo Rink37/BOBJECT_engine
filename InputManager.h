@@ -1,5 +1,3 @@
-//#include "Bobject_Engine.h"
-
 #ifndef INPUT_MANAGER
 #define INPUT_MANAGER
 
@@ -8,34 +6,55 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <functional>
 #include "windows.h"
 
-class KeyInput {
+#define NO_EVENT 0
+#define PRESS_EVENT 1
+#define RELEASE_EVENT 2
+#define HOLD_EVENT 3
+
+struct KeyState {
 public:
-	KeyInput(std::vector<int> keysToMonitor); // Creates a KeyInput instance which monitors state of keysToMonitor
-	~KeyInput(); // Remove this instance from the list of instances
+	bool isKeyDown = false;
+	int eventType = NO_EVENT;
 
-	void addMonitoredKey(int key); // Adds a key to the set of keys monitored by the KeyInput
+	void setIsKeyDown(int isDown) {
+		isKeyDown = isDown;
+	}
+};
 
-	bool getIsKeyDown(int key); // Check state of specified key
+class KeyManager {
+public:
+	KeyManager() {
+		KeyManager::_instances.push_back(this);
+	}
 
-	bool getIsEnabled() { return _isEnabled; }
-	void setIsEnabled(bool value) { _isEnabled = value; }
+	void initCallbacks(GLFWwindow* window);
+
+	using Callback = std::function<void()>;
+
+	void addKey(int);
+
+	void addBinding(int, const Callback&, int);
+
+	void addBinding(int, const Callback&);
+
+	void pollRepeatEvents();
+
+	void checkForEvent(int);
+
+	void setIsKeyDown(int, int);
 
 private:
-	void setIsKeyDown(int key, bool isDown); // Updates key states using GLFW callback
+	bool pollRequired = false;
 
-	std::map<int, bool>_keys; // Maps keys to their current active states
+	std::map<int, Callback> _Callbacks;
+	std::map<int, KeyState> _KeyStates;
 
-	bool _isEnabled; // Used to check if the active Keyboard Input instance is enabled
+	static std::vector<KeyManager*> _instances;
 
-public:
-	static void setupKeyInputs(GLFWwindow* window); // Call at engine initialisation, required to setup keyboard
-
-private:
-	static void callback(GLFWwindow* window, int key, int scancode, int action, int mods); // GLFW callback
-
-	static std::vector<KeyInput*> _instances;
+	static void callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 };
 
 #endif

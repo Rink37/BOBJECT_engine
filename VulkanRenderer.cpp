@@ -19,8 +19,12 @@ using namespace std;
 
 vector<int> keybinds = { GLFW_KEY_L, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_U, GLFW_KEY_I };
 
-std::vector<KeyInput*> KeyInput::_instances;
-KeyInput defaultKeyBinds(keybinds);
+//std::vector<KeyInput*> KeyInput::_instances;
+//KeyInput defaultKeyBinds(keybinds);
+
+std::vector<KeyManager*> KeyManager::_instances;
+KeyManager keyBinds;
+
 
 class SaveMenu : public Widget {
 public:
@@ -338,13 +342,16 @@ public:
 	void run() {
 		engine->initWindow("BOBERT_TradPainter");
 		engine->initVulkan();
-		KeyInput::setupKeyInputs(engine->window);
+		//KeyInput::setupKeyInputs(engine->window);
+		keyBinds.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		sConst->setupSurfaceConstructor();
 		createCanvas();
 		if (sConst->webTex->webCam != nullptr) {
 			sConst->webTex->webCam->loadFilter();
 		}
+		std::function<void()> tomogFunct = bind(&Application::toggleTomogMenu, this);
+		keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
@@ -494,17 +501,21 @@ private:
 
 	}
 
+	void toggleTomogMenu() {
+		if (!tomogActive) {
+			tomogUI.setup(sConst);
+			widgets.push_back(&tomogUI);
+			tomogActive = true;
+		}
+	}
+
 	void mainLoop() {
 		while (!glfwWindowShouldClose(engine->window)) {
 			glfwPollEvents();
+			keyBinds.pollRepeatEvents();
 			glfwGetCursorPos(engine->window, &mouseX, &mouseY);
 			webcamTexture::get()->updateWebcam();
 			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
-			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L) && !tomogActive) {
-				tomogUI.setup(sConst);
-				widgets.push_back(&tomogUI);
-				tomogActive = true;
-			}
 			if (state == GLFW_PRESS) {
 				mouseDown = true;
 			}
