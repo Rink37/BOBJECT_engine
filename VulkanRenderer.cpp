@@ -17,11 +17,6 @@
 using namespace cv;
 using namespace std;
 
-vector<int> keybinds = { GLFW_KEY_L, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_U, GLFW_KEY_I };
-
-//std::vector<KeyInput*> KeyInput::_instances;
-//KeyInput defaultKeyBinds(keybinds);
-
 std::vector<KeyManager*> KeyManager::_instances;
 KeyManager keyBinds;
 
@@ -36,7 +31,7 @@ public:
 		if (isSetup) {
 			return;
 		}
-		hArrangement* SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f);
+		hArrangement* SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f, ARRANGE_END);
 
 		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
 
@@ -93,7 +88,7 @@ public:
 		imageData lb = LOADBUTTON;
 		Material* LoadBtnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&lb), "LoadBtnTex")), "LoadBtnMat");
 
-		hArrangement* Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
+		hArrangement* Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f, ARRANGE_CENTER);
 
 		Button* litRenderingButton = new Button(renderedMat);
 		Button* unlitRenderingButton = new Button(webcamViewMat);
@@ -142,7 +137,7 @@ public:
 		imageData tcb = TESTCHECKBOXBUTTON;
 		visibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tcb), "TestCheckBtnTex")), "TestCheckBtnMat");
 
-		canvas.push_back(getPtr(new vArrangement(-0.9f, -0.5f, 0.05f, 0.5f, 0.01f)));
+		canvas.push_back(getPtr(new vArrangement(-0.9f, -0.5f, 0.05f, 0.5f, 0.01f, ARRANGE_START)));
 
 		ObjectButtons = canvas[0];
 		
@@ -208,7 +203,7 @@ public:
 		std::function<void(UIItem*)> toggleWebcamFunct = bind(&WebcamMenu::toggleWebcam, this, placeholders::_1);
 		std::function<void(UIItem*)> configureWebcamFunct = bind(&WebcamMenu::calibrateWebcam, this, placeholders::_1);
 
-		hArrangement* Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
+		hArrangement* Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f, ARRANGE_CENTER);
 
 		Videobuttons->addItem(getPtr(new Button(webcamMat)));
 		Videobuttons->addItem(getPtr(new Checkbox(playMat, pauseMat, toggleWebcamFunct)));
@@ -342,7 +337,6 @@ public:
 	void run() {
 		engine->initWindow("BOBERT_TradPainter");
 		engine->initVulkan();
-		//KeyInput::setupKeyInputs(engine->window);
 		keyBinds.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		sConst->setupSurfaceConstructor();
@@ -444,9 +438,9 @@ private:
 		}
 		if (session::get()->currentStudio.diffusePath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
-			sConst->loadDiffuse(loadedTexture); // This function currently produces errors
+			sConst->loadDiffuse(loadedTexture);
 			sConst->diffuseIdx = 1;
-			surfaceMenu.setDiffuse(sConst->currentDiffuse().get()); // This function currently produces errors
+			surfaceMenu.setDiffuse(sConst->currentDiffuse().get());
 			surfaceMenu.resetDiffuseTog(true);
 		}
 		if (session::get()->currentStudio.OSPath != "None") {

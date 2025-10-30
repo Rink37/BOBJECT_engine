@@ -14,6 +14,11 @@
 #include"LoadLists.h"
 #include"include/ImageDataType.h"
 
+#define ARRANGE_FILL 0
+#define ARRANGE_START 1
+#define ARRANGE_CENTER 2
+#define ARRANGE_END 3
+
 struct UIImage {
 	bool isVisible = true;
 
@@ -345,6 +350,20 @@ public:
 		this->sqAxisRatio = ey / ex;
 	}
 
+	hArrangement(float px, float py, float ex, float ey, float spc, int arrangeMethod) {
+		this->posx = px;
+		this->posy = -1.0f * py;
+		this->anchorx = px;
+		this->anchory = py;
+		this->extentx = ex;
+		this->extenty = ey;
+		this->spacing = spc;
+
+		this->sqAxisRatio = ey / ex;
+
+		this->method = arrangeMethod;
+	}
+
 	void calculateScreenPosition();
 
 	void removeItem(uint32_t index) {
@@ -390,8 +409,10 @@ public:
 	}
 
 private:
+	void calculateSpacing(float&, int, float&, float&, float&);
+	void calculatePositions(float, float, float, std::vector<float>, float);
 
-	int method = 0;
+	int method = ARRANGE_FILL;
 };
 
 class vArrangement : public UIItem{
@@ -410,6 +431,20 @@ public:
 		spacing = spc;
 
 		this->sqAxisRatio = ey / ex;
+	}
+
+	vArrangement(float px, float py, float ex, float ey, float spc, int arrangeMethod) {
+		posx = px;
+		posy = -1.0f * py;
+		anchorx = px;
+		anchory = py;
+		extentx = ex;
+		extenty = ey;
+		spacing = spc;
+
+		this->sqAxisRatio = ey / ex;
+
+		this->method = arrangeMethod;
 	}
 
 	void calculateScreenPosition();
@@ -457,8 +492,10 @@ public:
 	}
 
 private:
+	void calculateSpacing(float&, int, float&, float&, float&);
+	void calculatePositions(float, float, float, std::vector<float>, float, float);
 
-	int method = 0;
+	int method = ARRANGE_FILL;
 };
 
 struct Widget {

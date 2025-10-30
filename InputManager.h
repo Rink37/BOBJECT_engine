@@ -7,7 +7,6 @@
 #include <map>
 #include <vector>
 #include <functional>
-#include "windows.h"
 
 #define NO_EVENT 0
 #define PRESS_EVENT 1
