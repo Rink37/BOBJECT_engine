@@ -50,6 +50,7 @@ void UIItem::calculateScreenPosition() {
 	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W;
 	this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H;
 	this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H;
+
 }
 
 void hArrangement::calculateScreenPosition() {
@@ -118,7 +119,7 @@ void hArrangement::arrangeItems() {
 			}
 		}
 
-		rescale =(this->extenty * 2 - this->spacing)/maxHeight;
+		rescale = (this->extenty * 2 - this->spacing)/maxHeight;
 		for (size_t i = 0; i != Items.size(); i++) {
 			if (!Items[i]->isSpacer()) {
 				extents.push_back((Items[i]->extenty * rescale / (Items[i]->sqAxisRatio * W / H)));
@@ -187,6 +188,7 @@ void hArrangement::calculatePositions(float xbuffer, float spacerSize, float sca
 		currentPosition += remainingWidth;
 		break;
 	default:
+		currentPosition = 0;
 		break;
 	}
 	
@@ -292,6 +294,7 @@ void vArrangement::arrangeItems() {
 	// Finally for all items we calculate their positions on the screen and their sizes 
 
 	calculatePositions(ybuffer, spacerSize, scaleFactor, extents, remainingHeight, W/H);
+
 }
 
 void vArrangement::calculateSpacing(float& scaleFactor, int numSpacers, float& spacerSize, float& totalHeight, float& ybuffer) {

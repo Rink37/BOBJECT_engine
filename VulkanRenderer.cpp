@@ -137,21 +137,34 @@ public:
 		imageData tcb = TESTCHECKBOXBUTTON;
 		visibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tcb), "TestCheckBtnTex")), "TestCheckBtnMat");
 
-		canvas.push_back(getPtr(new vArrangement(-0.9f, -0.5f, 0.05f, 0.5f, 0.01f, ARRANGE_START)));
+		imageData wb = WIREFRAMEBUTTON;
+		wireframeMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&wb), "WireframeBtnTex")), "WireframeBtnMat");
+
+		canvas.push_back(getPtr(new vArrangement(-1.0f, -0.75f, 0.1f, 0.5f, 0.01f, ARRANGE_START)));
 
 		ObjectButtons = canvas[0];
 		
 		isSetup = true;
 	}
 
-	void addObject(std::function<void(UIItem*)> toggleFunction) {
+	void addObject(std::function<void(UIItem*)> toggleFunction, std::function<void(UIItem*)> wireframeToggle) {
+		ObjectButtons->arrangeItems();
+
+		hArrangement* objButtons = new hArrangement(0.0f, 0.0f, 2.0f, 1.0f, 0.01f, ARRANGE_START);
 
 		Checkbox* objectButton = new Checkbox(visibleMat, invisibleMat, toggleFunction);
 		objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
 
+		Checkbox* objWireframeButton = new Checkbox(wireframeMat, invisibleMat, wireframeToggle);
+		objWireframeButton->Name = objectButton->Name;
+
 		ObjectMap.insert({ objectButton->Name, ObjectButtons->Items.size() });
 
-		ObjectButtons->addItem(objectButton);
+		objButtons->addItem(getPtr(objectButton));
+		objButtons->addItem(getPtr(objWireframeButton));
+		objButtons->arrangeItems();
+
+		ObjectButtons->addItem(getPtr(objButtons));
 		ObjectButtons->arrangeItems();
 	}
 
@@ -170,6 +183,7 @@ private:
 
 	Material* visibleMat = nullptr;
 	Material* invisibleMat = nullptr;
+	Material* wireframeMat = nullptr;
 };
 
 class WebcamMenu : public Widget {
@@ -383,7 +397,7 @@ private:
 	bool showWireframe = true;
 
 	vector<StaticObject> staticObjects = {};
-	map<string, int> ObjectMap = {};
+	//map<string, int> ObjectMap = {};
 
 	bool lit = true;
 
@@ -428,9 +442,10 @@ private:
 			StaticObject newObject(path);
 			newObject.mat = &sConst->surfaceMat;
 
-			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
+			std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
+			std::function<void(UIItem*)> wireFunction = bind(&Application::setObjectWireframe, this, placeholders::_1);
 
-			objectMenu.addObject(testfunction);
+			objectMenu.addObject(visibleFunction, wireFunction);
 
 			newObject.isVisible = true;
 
@@ -478,6 +493,9 @@ private:
 		std::function<void(UIItem*)> loadSessionFunc = bind(&Application::loadSave, this, placeholders::_1);
 		std::function<void(UIItem*)> newSessionFunc = bind(&Application::newSession, this, placeholders::_1);
 
+		objectMenu.setup();
+		widgets.push_back(&objectMenu);
+
 		saveMenu.setup(loadSessionFunc, newSessionFunc);
 		widgets.push_back(&saveMenu);
 
@@ -486,9 +504,6 @@ private:
 
 		renderMenu.setup(loadObjectFunct, pipelinefunction);
 		widgets.push_back(&renderMenu);
-
-		objectMenu.setup();
-		widgets.push_back(&objectMenu);
 
 		surfaceMenu.setup(sConst, &staticObjects);
 		widgets.push_back(&surfaceMenu);
@@ -530,6 +545,10 @@ private:
 
 	void setObjectVisibility(UIItem* owner) {
 		staticObjects[objectMenu.ObjectMap.at(owner->Name)].isVisible = owner->activestate;
+	}
+
+	void setObjectWireframe(UIItem* owner) {
+		staticObjects[objectMenu.ObjectMap.at(owner->Name)].isWireframeVisible = owner->activestate;
 	}
 
 	void setPipelineIndex(UIItem* owner) {
@@ -574,9 +593,10 @@ private:
 		StaticObject newObject(modelPath);
 		newObject.mat = &sConst->surfaceMat;
 
-		std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
+		std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
+		std::function<void(UIItem*)> wireFunction = bind(&Application::setObjectWireframe, this, placeholders::_1);
 
-		objectMenu.addObject(testfunction);
+		objectMenu.addObject(visibleFunction, wireFunction);
 
 		newObject.isVisible = true;
 
@@ -741,7 +761,7 @@ private:
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UVWireframe")]);
 
 			for (uint32_t i = 0; i != staticObjects.size(); i++) {
-				if (staticObjects[i].isVisible) {
+				if (staticObjects[i].isVisible && staticObjects[i].isWireframeVisible) {
 
 					VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
 					VkDeviceSize offsets[] = { 0 };
