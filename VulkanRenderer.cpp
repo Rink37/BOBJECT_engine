@@ -88,7 +88,7 @@ public:
 		imageData lb = LOADBUTTON;
 		Material* LoadBtnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&lb), "LoadBtnTex")), "LoadBtnMat");
 
-		hArrangement* Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f, ARRANGE_CENTER);
+		hArrangement* Renderbuttons = new hArrangement(0.0f, 0.0f, 1.2f, 0.6f, 0.01f, ARRANGE_CENTER);
 
 		Button* litRenderingButton = new Button(renderedMat);
 		Button* unlitRenderingButton = new Button(webcamViewMat);
@@ -107,7 +107,7 @@ public:
 		Renderbuttons->addItem(getPtr(litRenderingButton));
 		Renderbuttons->addItem(getPtr(wireframeRenderingButton));
 
-		vArrangement* buttons = new vArrangement(-1.0f, 1.0f, 0.15f, 0.15f, 0.0f);
+		vArrangement* buttons = new vArrangement(-1.0f, 1.0f, 0.1f, 0.25f, 0.0f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		buttons->addItem(getPtr(new Button(LoadBtnMat, loadObjectFunct)));
 		buttons->addItem(getPtr(Renderbuttons));
@@ -328,7 +328,7 @@ private:
 		if (saveName != string("fail")) {
 			imwrite(saveName, tomographer.computedDiffuse);
 		}
-		tomographer.clearData();
+		//tomographer.clearData();
 	}
 };
 
@@ -609,6 +609,7 @@ private:
 		VkResult result = vkAcquireNextImageKHR(engine->device, engine->swapChain, UINT64_MAX, engine->imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			
 			engine->recreateSwapChain();
 			return;
 		}
@@ -658,9 +659,11 @@ private:
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine->framebufferResized) {
 			engine->framebufferResized = false;
 
-			for (size_t i = 0; i != widgets.size(); i++) {
-				widgets[i]->update();
-			}
+			if (!glfwGetWindowAttrib(engine->window, GLFW_ICONIFIED)) {
+				for (size_t i = 0; i != widgets.size(); i++) {
+					widgets[i]->update();
+				}
+			}	
 
 			engine->recreateSwapChain();
 			return;

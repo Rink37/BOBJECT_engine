@@ -19,6 +19,10 @@
 #define ARRANGE_CENTER 2
 #define ARRANGE_END 3
 
+#define SCALE_BY_CONTAINER 0
+#define SCALE_BY_DIMENSIONS 1
+#define SCALE_BY_IMAGES 2
+
 struct UIImage {
 	bool isVisible = true;
 
@@ -339,28 +343,19 @@ public:
 	hArrangement() = default;
 
 	hArrangement(float px, float py, float ex, float ey, float spc) {
-		this->posx = px;
-		this->posy = -1.0f * py;
-		this->anchorx = px;
-		this->anchory = py;
-		this->extentx = ex;
-		this->extenty = ey;
-		this->spacing = spc;
-
-		this->sqAxisRatio = ey / ex;
+		setDims(px, py, ex, ey, spc);
 	}
 
 	hArrangement(float px, float py, float ex, float ey, float spc, int arrangeMethod) {
-		this->posx = px;
-		this->posy = -1.0f * py;
-		this->anchorx = px;
-		this->anchory = py;
-		this->extentx = ex;
-		this->extenty = ey;
-		this->spacing = spc;
+		setDims(px, py, ex, ey, spc);
 
-		this->sqAxisRatio = ey / ex;
+		this->method = arrangeMethod;
+	}
 
+	hArrangement(float px, float py, float ex, float ey, float spc, int arrangeMethod, int sizeMethod) {
+		setDims(px, py, ex, ey, spc);
+
+		this->sizing = sizeMethod;
 		this->method = arrangeMethod;
 	}
 
@@ -409,10 +404,23 @@ public:
 	}
 
 private:
+	void setDims(float px, float py, float ex, float ey, float spc) {
+		this->posx = px;
+		this->posy = -1.0f * py;
+		this->anchorx = px;
+		this->anchory = py;
+		this->extentx = ex;
+		this->extenty = ey;
+		this->spacing = spc;
+
+		this->sqAxisRatio = ey / ex;
+	}
+
 	void calculateSpacing(float&, int, float&, float&, float&);
 	void calculatePositions(float, float, float, std::vector<float>, float);
 
 	int method = ARRANGE_FILL;
+	int sizing = SCALE_BY_CONTAINER;
 };
 
 class vArrangement : public UIItem{
@@ -422,28 +430,19 @@ public:
 	vArrangement() = default;
 
 	vArrangement(float px, float py, float ex, float ey, float spc) {
-		posx = px;
-		posy = -1.0f * py;
-		anchorx = px;
-		anchory = py;
-		extentx = ex;
-		extenty = ey;
-		spacing = spc;
-
-		this->sqAxisRatio = ey / ex;
+		setDims(px, py, ex, ey, spc);
 	}
 
 	vArrangement(float px, float py, float ex, float ey, float spc, int arrangeMethod) {
-		posx = px;
-		posy = -1.0f * py;
-		anchorx = px;
-		anchory = py;
-		extentx = ex;
-		extenty = ey;
-		spacing = spc;
+		setDims(px, py, ex, ey, spc);
 
-		this->sqAxisRatio = ey / ex;
+		this->method = arrangeMethod;
+	}
 
+	vArrangement(float px, float py, float ex, float ey, float spc, int arrangeMethod, int sizeMethod) {
+		setDims(px, py, ex, ey, spc);
+
+		this->sizing = sizeMethod;
 		this->method = arrangeMethod;
 	}
 
@@ -492,10 +491,23 @@ public:
 	}
 
 private:
+	void setDims(float px, float py, float ex, float ey, float spc) {
+		posx = px;
+		posy = -1.0f * py;
+		anchorx = px;
+		anchory = py;
+		extentx = ex;
+		extenty = ey;
+		spacing = spc;
+
+		this->sqAxisRatio = ey / ex;
+	}
+
 	void calculateSpacing(float&, int, float&, float&, float&);
 	void calculatePositions(float, float, float, std::vector<float>, float, float);
 
 	int method = ARRANGE_FILL;
+	int sizing = SCALE_BY_CONTAINER;
 };
 
 struct Widget {

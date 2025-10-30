@@ -104,17 +104,47 @@ void hArrangement::arrangeItems() {
 
 	vector<float> extents;
 
-	for (size_t i = 0; i != Items.size(); i++) {
-		if (!Items[i]->isSpacer()) {
-			extents.push_back((this->extenty * (1 - this->spacing) / (Items[i]->sqAxisRatio * W / H)));
-			totalWidth += extents[i] * 2;
-		}
-		else {
-			extents.push_back(0.0f);
-			numSpacers++;
-		}
-	}
+	float rescale = 0;
+	float maxHeight = 0;
 
+	switch (sizing) {
+	case SCALE_BY_DIMENSIONS:
+		
+		for (size_t i = 0; i != Items.size(); i++) {
+			if (!Items[i]->isSpacer()) {
+				if (Items[i]->extenty * 2 > maxHeight) {
+					maxHeight = Items[i]->extenty * 2;
+				}
+			}
+		}
+
+		rescale =(this->extenty * 2 - this->spacing)/maxHeight;
+		for (size_t i = 0; i != Items.size(); i++) {
+			if (!Items[i]->isSpacer()) {
+				extents.push_back((Items[i]->extenty * rescale / (Items[i]->sqAxisRatio * W / H)));
+				totalWidth += extents[i] * 2;
+			}
+			else {
+				extents.push_back(0.0f);
+				numSpacers++;
+			}
+		}
+		break;
+	default:
+		for (size_t i = 0; i != Items.size(); i++) {
+			if (!Items[i]->isSpacer()) {
+				extents.push_back((this->extenty * (1 - this->spacing) / (Items[i]->sqAxisRatio * W / H)));
+				totalWidth += extents[i] * 2;
+			}
+			else {
+				extents.push_back(0.0f);
+				numSpacers++;
+			}
+		}
+
+		break;
+	}
+	
 	float bufferSpace = xbuffer * Items.size(); // Total space occupied by x buffers
 	float spacerSize = 0.0f;
 
@@ -193,17 +223,58 @@ void vArrangement::arrangeItems() {
 
 	vector<float> extents;
 
-	for (size_t i = 0; i != Items.size(); i++) {
-		if (!Items[i]->isSpacer()) {
-			// sf = static_cast<float>(texHeights[i]) / static_cast<float>(totalTexHeight);
-			extents.push_back(this->extentx * (1 - this->spacing) * Items[i]->sqAxisRatio);
-			totalHeight += extents[i] * 2 * W / H;
+	float rescale = 0;
+	float maxWidth = 0;
+
+	switch (sizing) {
+	case SCALE_BY_DIMENSIONS:
+		for (size_t i = 0; i != Items.size(); i++) {
+			if (!Items[i]->isSpacer()) {
+				if (Items[i]->extentx * 2 > maxWidth) {
+					maxWidth = Items[i]->extentx * 2;
+				}
+			}
 		}
-		else {
-			extents.push_back(0.0f);
-			numSpacers++;
+
+		rescale = (this->extentx * 2 - this->spacing) / maxWidth;
+		for (size_t i = 0; i != Items.size(); i++) {
+			if (!Items[i]->isSpacer()) {
+				extents.push_back(Items[i]->extentx * rescale * Items[i]->sqAxisRatio);
+				totalHeight += extents[i] * 2 * W / H;
+			}
+			else {
+				extents.push_back(0.0f);
+				numSpacers++;
+			}
 		}
+
+		break;
+	default:
+		for (size_t i = 0; i != Items.size(); i++) {
+			if (!Items[i]->isSpacer()) {
+				extents.push_back(this->extentx * (1 - this->spacing) * Items[i]->sqAxisRatio);
+				totalHeight += extents[i] * 2 * W / H;
+			}
+			else {
+				extents.push_back(0.0f);
+				numSpacers++;
+			}
+		}
+
+		break;
 	}
+
+	//for (size_t i = 0; i != Items.size(); i++) {
+	//	if (!Items[i]->isSpacer()) {
+			// sf = static_cast<float>(texHeights[i]) / static_cast<float>(totalTexHeight);
+	//		extents.push_back(this->extentx * (1 - this->spacing) * Items[i]->sqAxisRatio);
+	//		totalHeight += extents[i] * 2 * W / H;
+	//	}
+	//	else {
+	//		extents.push_back(0.0f);
+	//		numSpacers++;
+	//	}
+	//}
 
 	// Now we calculate the fraction of the height which is taken up by spaces
 
