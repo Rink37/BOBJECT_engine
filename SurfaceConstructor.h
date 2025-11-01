@@ -302,7 +302,7 @@ private:
 	std::vector<StaticObject>* staticObjects = nullptr;
 
 	bool hasNormal = false;
-	bool normalsEnabled = false; // DEBUG - lets us disable any UI for normals
+	bool normalsEnabled = true; // DEBUG - lets us disable any UI for normals
 
 	Checkbox* diffuseTog = nullptr;
 	Checkbox* normalTog = nullptr;

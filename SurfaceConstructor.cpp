@@ -271,6 +271,44 @@ void surfaceConstructor::contextConvert() {
 	// Size sizeFrame(convertedY.cols, convertedY.rows); //
 	// convWriter.open(filename, codec, fps, sizeFrame, 1); //
 
+	Mat testRemap = OSNormTex->texMat.clone(); // This is the class I will temporarily be using to test a new algorithm
+	int kernelRadius = 5; // The number of pixels we will move from the central test position
+
+	for (int x = kernelRadius; x != testRemap.cols - 2 * kernelRadius; x++) {
+		for (int y = kernelRadius; y != testRemap.rows - 2 * kernelRadius; y++) {
+			cout << x << " " << y << endl;
+			vector<Vec3f> colours;
+			vector<Vec2i> coords;
+			testRemap.at<Vec3b>(y, x) = Vec3b(0, 0, 0);
+			// This describes a basic averaging system which ignores transitions but it will also permit leaking into adjacent sectors
+			if (ygrad.at<float>(y, x) < thresh && xgrad.at<float>(y, x) < thresh && OSNormTex->texMat.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
+				for (int xx = x - kernelRadius; xx != x + kernelRadius; xx++) {
+					for (int yy = y - kernelRadius; yy != y + kernelRadius; yy++) {
+						if (ygrad.at<float>(yy, xx) < thresh && xgrad.at<float>(yy, xx) < thresh && OSNormTex->texMat.at<Vec3b>(yy, xx) != Vec3b(0, 0, 0)) {
+							colours.push_back(OSNormTex->texMat.at<Vec3b>(yy, xx));
+							coords.push_back(Vec2i(yy, xx));
+						}
+					}
+				}
+			}
+			Vec3f sumColour = Vec3f(0.0f, 0.0f, 0.0f);
+			for (Vec3b colour : colours) {
+				sumColour += static_cast<Vec3f>(colour);
+			}
+			sumColour[0] /= colours.size();
+			sumColour[1] /= colours.size();
+			sumColour[2] /= colours.size();
+			Vec3b avgColour = static_cast<Vec3b>(sumColour);
+			for (Vec2i pixel : coords) {
+				testRemap.at<Vec3b>(pixel[0], pixel[1]) = avgColour;
+			}
+		}
+		if (x % 25 == 0) {
+			imshow("Converted", testRemap);
+			waitKey(0);
+		}
+	}
+
 	for (int x = 0; x != convertedY.cols; x++) {
 		vector<Vec3f> colours;
 		vector<uint32_t> indexes;
