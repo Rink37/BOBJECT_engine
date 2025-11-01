@@ -236,6 +236,7 @@ void surfaceConstructor::contextConvert() {
 	SobelX.filterImage();
 	filter SobelY(Kuwahara.filterTarget[0], new SOBELYSHADER);
 	SobelY.filterImage();
+	
 	Mat xgrad;
 	Mat ygrad;
 
