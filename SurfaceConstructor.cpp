@@ -243,8 +243,8 @@ void surfaceConstructor::contextConvert() {
 	SobelX.filterTarget[0]->getCVMat();
 	SobelY.filterTarget[0]->getCVMat();
 
-	cvtColor(SobelX.filterTarget[0]->texMat, xgrad, COLOR_RGB2GRAY);
-	cvtColor(SobelY.filterTarget[0]->texMat, ygrad, COLOR_RGB2GRAY);
+	cv::cvtColor(SobelX.filterTarget[0]->texMat, xgrad, COLOR_RGB2GRAY);
+	cv::cvtColor(SobelY.filterTarget[0]->texMat, ygrad, COLOR_RGB2GRAY);
 
 	// imwrite(baseName + string("FXgrad.jpeg"), xgrad); //
 	// imwrite(baseName + string("FYgrad.jpeg"), ygrad); // 
@@ -277,14 +277,15 @@ void surfaceConstructor::contextConvert() {
 		kernelRadius = 2;
 	}
 
-	// This algorithm currently replaces the colour smoothing but does not create gradient maps of the correct format
+	// This algorithm currently replaces the colour smoothing but does not solve replicating gradient transitions
 	for (int x = 0; x != testRemap.cols; x++) {
 		for (int y = 0; y != testRemap.rows; y++) {
-			//cout << x << " " << y << endl;
 			vector<Vec3f> colours;
 			vector<Vec2i> coords;
 			testRemap.at<Vec3b>(y, x) = Vec3b(0, 0, 0);
 			if (ygrad.at<float>(y, x) < thresh && xgrad.at<float>(y, x) < thresh && OSNormTex->texMat.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
+				ygrad.at<float>(y, x) = 0.0f;
+				xgrad.at<float>(y, x) = 0.0f;
 				colours.push_back(OSNormTex->texMat.at<Vec3b>(y, x));
 				coords.push_back(Vec2i(y, x));
 				for (int xx = x-1; xx != x - kernelRadius; xx--) {
@@ -358,6 +359,62 @@ void surfaceConstructor::contextConvert() {
 		//	imshow("Converted", testRemap);
 		//	waitKey(0);
 		//}
+	}
+
+	for (int x = 0; x != testRemap.cols; x++) {
+		for (int y = 0; y != testRemap.rows; y++) {
+			if (!(xgrad.at<float>(y, x) == 0.0f && ygrad.at<float>(y, x) == 0.0f)) {
+				Vec2f directionVector = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
+				float normFac = sqrtf(directionVector[0] * directionVector[0] + directionVector[1] * directionVector[1]);
+				directionVector[0] /= normFac;
+				directionVector[1] /= normFac;
+				int xx = x;
+				int yy = y;
+				Vec2f location = static_cast<Vec2f>(Vec2i(y, x));
+				Vec2f min;
+				Vec2f max;
+				Vec2f mid = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
+				Vec3f minColour;
+				Vec3f maxColour;
+				while (!(xgrad.at<float>(yy, xx) == 0.0f && ygrad.at<float>(yy, xx) == 0.0f)) {
+					location -= directionVector;
+					yy = static_cast<int>(location[0]);
+					xx = static_cast<int>(location[1]);
+					if (yy < 0 || xx < 0 || testRemap.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
+						break;
+					}
+					min = Vec2f(ygrad.at<float>(yy, xx), xgrad.at<float>(yy, xx));
+					mid += min;
+				}
+				minColour = static_cast<Vec3f>(OSNormTex->texMat.at<Vec3b>(y, x));
+				xx = x;
+				yy = y;
+				while (!(xgrad.at<float>(yy, xx) == 0.0f && ygrad.at<float>(yy, xx) == 0.0f)) {
+					location += directionVector;
+					yy = static_cast<int>(location[0]);
+					xx = static_cast<int>(location[1]);
+					if (yy >= testRemap.rows || xx >= testRemap.cols || testRemap.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
+						break;
+					}
+					max = Vec2f(ygrad.at<float>(yy, xx), xgrad.at<float>(yy, xx));
+				}
+				maxColour = static_cast<Vec3f>(OSNormTex->texMat.at<Vec3b>(y, x));
+				mid[0] = (mid[0] - min[0]) / (max[0] - mid[0]);
+				mid[1] = (mid[1] - min[1]) / (max[1] - mid[1]);
+				float mag = sqrtf(mid[0] * mid[0] + max[1] * max[1]);
+				minColour[0] *= (1.0f - mag); 
+				minColour[1] *= (1.0f - mag);
+				minColour[2] *= (1.0f - mag);
+				maxColour[0] *= mag;
+				maxColour[1] *= mag;
+				maxColour[2] *= mag;
+				testRemap.at<Vec3b>(y, x) = static_cast<Vec3b>(Vec3f(minColour[0]+maxColour[0], minColour[1]+maxColour[1], minColour[2]+maxColour[2]));
+			}
+		}
+		if (x % 50 == 0) {
+			imshow("Converted", testRemap);
+			waitKey(0);
+		}
 	}
 
 	//for (int x = 0; x != convertedY.cols; x++) {
@@ -457,127 +514,127 @@ void surfaceConstructor::contextConvert() {
 	// convWriter.release(); //
 
 	//convertedY.release();
-	testRemap.release();
+	//testRemap.release();
 
-	Mat scaleFacs = xgrad.clone();
+	//Mat scaleFacs = xgrad.clone();
 
 	// VideoWriter smootheWriter; //
 	// filename = baseName + string("Smoother.mp4"); //
 	// smootheWriter.open(filename, codec, fps, sizeFrame, 1); //
 
-	for (int y = 0; y != converted.rows; y++) {
-		vector<uint32_t> indexes;
-		Vec3b startColour = converted.at<Vec3b>(y, 0);
-		Vec3b endColour = startColour;
-		for (int x = 0; x != converted.cols; x++) {
-			scaleFacs.at<float>(y, x) = 0.0f;
-			if (OSNormTex->texMat.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
-				continue;
-			}
-			if (startColour == Vec3b(0, 0, 0) && converted.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
-				startColour = converted.at<Vec3b>(y, x);
-			}
-			if (xgrad.at<float>(y, x) != 0 || converted.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
-				indexes.push_back(x);
-			}
-			else {
-				if (indexes.size() > 0) {
-					endColour = converted.at<Vec3b>(y, x);
-					if (endColour == Vec3b(0, 0, 0)) {
-						endColour = startColour;
-					}
-					for (int index : indexes) {
-						float xg = xgrad.at<float>(y, index);
-						float yg = ygrad.at<float>(y, index);
-						float sf;
-						if (xg == 0) {
-							sf = 1.0f;
-						}
-						else {
-							sf = xg / (xg + yg);
-						}
-						converted.at<Vec3b>(y, index) += static_cast<Vec3b>((static_cast<Vec3f>(startColour) * (1.0f - xg) + static_cast<Vec3f>(endColour) * xg) * sf);
-						scaleFacs.at<float>(y, index) += sf;
-					}
-					indexes.clear();
-					startColour = endColour;
-				}
-			}
-		}
-		// if (y % 10 == 0) {
-		// 	smootheWriter.write(converted); //
-		// }
-		if (y % 100 == 0) {
-			imshow("Converted", converted);
-			waitKey(0);
-		}
-	}
+	//for (int y = 0; y != converted.rows; y++) {
+	//	vector<uint32_t> indexes;
+	//	Vec3b startColour = converted.at<Vec3b>(y, 0);
+	//	Vec3b endColour = startColour;
+	//	for (int x = 0; x != converted.cols; x++) {
+	//		scaleFacs.at<float>(y, x) = 0.0f;
+	//		if (OSNormTex->texMat.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
+	//			continue;
+	//		}
+	//		if (startColour == Vec3b(0, 0, 0) && converted.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
+	//			startColour = converted.at<Vec3b>(y, x);
+	//		}
+	//		if (xgrad.at<float>(y, x) != 0 || converted.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
+	//			indexes.push_back(x);
+	//		}
+	//		else {
+	//			if (indexes.size() > 0) {
+	//				endColour = converted.at<Vec3b>(y, x);
+	//				if (endColour == Vec3b(0, 0, 0)) {
+	//					endColour = startColour;
+	//				}
+	//				for (int index : indexes) {
+	//					float xg = xgrad.at<float>(y, index);
+	//					float yg = ygrad.at<float>(y, index);
+	//					float sf;
+	//					if (xg == 0) {
+	//						sf = 1.0f;
+	//					}
+	//					else {
+	//						sf = xg / (xg + yg);
+	//					}
+	//					converted.at<Vec3b>(y, index) += static_cast<Vec3b>((static_cast<Vec3f>(startColour) * (1.0f - xg) + static_cast<Vec3f>(endColour) * xg) * sf);
+	//					scaleFacs.at<float>(y, index) += sf;
+	//				}
+	//				indexes.clear();
+	//				startColour = endColour;
+	//			}
+	//		}
+	//	}
+	//	// if (y % 10 == 0) {
+	//	// 	smootheWriter.write(converted); //
+	//	// }
+	//	if (y % 100 == 0) {
+	//		imshow("Converted", converted);
+	//		waitKey(0);
+	//	}
+	//}
 
-	for (int x = 0; x != converted.cols; x++) {
-		vector<uint32_t> indexes;
-		Vec3b startColour = converted.at<Vec3b>(0, x);
-		Vec3b endColour = startColour;
-		for (int y = 0; y != converted.rows; y++) {
-			if (OSNormTex->texMat.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
-				continue;
-			}
-			if (startColour == Vec3b(0, 0, 0) && converted.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
-				startColour = converted.at<Vec3b>(y, x);
-			}
-			if (ygrad.at<float>(y, x) != 0 || converted.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
-				indexes.push_back(y);
-			}
-			else {
-				if (indexes.size() > 0) {
-					endColour = converted.at<Vec3b>(y, x);
-					if (endColour == Vec3b(0, 0, 0)) {
-						endColour = startColour;
-					}
-					for (int index : indexes) {
-						float xg = xgrad.at<float>(index, x);
-						float yg = ygrad.at<float>(index, x);
-						float sf;
-						if (yg == 0) {
-							sf = 1;
-						}
-						else {
-							sf = yg / (xg + yg);
-						}
-						Vec3f value = static_cast<Vec3f>(converted.at<Vec3b>(index, x)) + (static_cast<Vec3f>(startColour) * (1.0f - yg) + static_cast<Vec3f>(endColour) * yg) * sf;
-						value /= (sf + scaleFacs.at<float>(index, x));
-						converted.at<Vec3b>(index, x) = static_cast<Vec3b>(value);
-					}
-					indexes.clear();
-					startColour = endColour;
-				}
-			}
-		}
-		// if (x % 10 == 0) {
-		// 	smootheWriter.write(converted); //
-		// }
-		if (x % 100 == 0) {
-			imshow("Converted", converted);
-			waitKey(0);
-		}
-	}
+	//for (int x = 0; x != converted.cols; x++) {
+	//	vector<uint32_t> indexes;
+	//	Vec3b startColour = converted.at<Vec3b>(0, x);
+	//	Vec3b endColour = startColour;
+	//	for (int y = 0; y != converted.rows; y++) {
+	//		if (OSNormTex->texMat.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
+	//			continue;
+	//		}
+	//		if (startColour == Vec3b(0, 0, 0) && converted.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
+	//			startColour = converted.at<Vec3b>(y, x);
+	//		}
+	//		if (ygrad.at<float>(y, x) != 0 || converted.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
+	//			indexes.push_back(y);
+	//		}
+	//		else {
+	//			if (indexes.size() > 0) {
+	//				endColour = converted.at<Vec3b>(y, x);
+	//				if (endColour == Vec3b(0, 0, 0)) {
+	//					endColour = startColour;
+	//				}
+	//				for (int index : indexes) {
+	//					float xg = xgrad.at<float>(index, x);
+	//					float yg = ygrad.at<float>(index, x);
+	//					float sf;
+	//					if (yg == 0) {
+	//						sf = 1;
+	//					}
+	//					else {
+	//						sf = yg / (xg + yg);
+	//					}
+	//					Vec3f value = static_cast<Vec3f>(converted.at<Vec3b>(index, x)) + (static_cast<Vec3f>(startColour) * (1.0f - yg) + static_cast<Vec3f>(endColour) * yg) * sf;
+	//					value /= (sf + scaleFacs.at<float>(index, x));
+	//					converted.at<Vec3b>(index, x) = static_cast<Vec3b>(value);
+	//				}
+	//				indexes.clear();
+	//				startColour = endColour;
+	//			}
+	//		}
+	//	}
+	//	// if (x % 10 == 0) {
+	//	// 	smootheWriter.write(converted); //
+	//	// }
+	//	if (x % 100 == 0) {
+	//		imshow("Converted", converted);
+	//		waitKey(0);
+	//	}
+	//}
 
 	// smootheWriter.release(); //
 
 	// imwrite(baseName + string("Noisy.jpeg"), converted); //
 
-	scaleFacs.release();
+	//scaleFacs.release();
 	xgrad.release();
 	ygrad.release();
 
 	Mat grayConverted;
 	Mat grayDilated;
 	Mat kernel = getStructuringElement(MORPH_RECT, Size(100, 100));
-	cvtColor(converted, grayConverted, COLOR_BGR2GRAY);
-	inRange(grayConverted, 1, 255, grayConverted);
-	dilate(grayConverted, grayDilated, kernel);
-	subtract(grayDilated, grayConverted, grayConverted);
+	cv::cvtColor(converted, grayConverted, COLOR_BGR2GRAY);
+	cv::inRange(grayConverted, 1, 255, grayConverted);
+	cv::dilate(grayConverted, grayDilated, kernel);
+	cv::subtract(grayDilated, grayConverted, grayConverted);
 
-	inpaint(converted, grayConverted, converted, 1.0, INPAINT_TELEA);
+	cv::inpaint(converted, grayConverted, converted, 1.0, INPAINT_TELEA);
 
 	grayDilated.release();
 	grayConverted.release();
