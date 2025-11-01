@@ -272,7 +272,7 @@ void surfaceConstructor::contextConvert() {
 	// convWriter.open(filename, codec, fps, sizeFrame, 1); //
 
 	Mat testRemap = OSNormTex->texMat.clone(); // This is the class I will temporarily be using to test a new algorithm
-	int kernelRadius = 10; // The number of pixels we will move from the central test position
+	int kernelRadius = 25; // The number of pixels we will move from the central test position
 	if (kernelRadius < 2) {
 		kernelRadius = 2;
 	}
@@ -362,6 +362,7 @@ void surfaceConstructor::contextConvert() {
 	}
 
 	for (int x = 0; x != testRemap.cols; x++) {
+		cout << x << endl;
 		for (int y = 0; y != testRemap.rows; y++) {
 			if (!(xgrad.at<float>(y, x) == 0.0f && ygrad.at<float>(y, x) == 0.0f)) {
 				Vec2f directionVector = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
@@ -411,10 +412,10 @@ void surfaceConstructor::contextConvert() {
 				testRemap.at<Vec3b>(y, x) = static_cast<Vec3b>(Vec3f(minColour[0]+maxColour[0], minColour[1]+maxColour[1], minColour[2]+maxColour[2]));
 			}
 		}
-		if (x % 50 == 0) {
-			imshow("Converted", testRemap);
-			waitKey(0);
-		}
+		//if (x % 50 == 0) {
+		//	imshow("Converted", testRemap);
+		//	waitKey(0);
+		//}
 	}
 
 	//for (int x = 0; x != convertedY.cols; x++) {
@@ -645,6 +646,8 @@ void surfaceConstructor::contextConvert() {
 
 	normalType = 0;
 	loadNormal(new imageTexture(referenceKuwahara.filterTarget[0]->texMat(Range(0, converted.rows), Range(0, converted.cols)), VK_FORMAT_R8G8B8A8_UNORM));
+	//loadNormal(new imageTexture(converted(Range(0, converted.rows), Range(0, converted.cols)), VK_FORMAT_R8G8B8A8_UNORM));
+
 	updateSurfaceMat();
 
 	referenceKuwahara.cleanup();
