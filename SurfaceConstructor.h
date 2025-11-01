@@ -15,7 +15,8 @@ public:
 		mesh = new StaticMesh(name);
 	}
 
-	bool isVisible = false;
+	bool isVisible = true;
+	bool isWireframeVisible = true;
 	StaticMesh* mesh = nullptr;
 	Material* mat = nullptr;
 };

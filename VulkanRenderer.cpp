@@ -17,10 +17,9 @@
 using namespace cv;
 using namespace std;
 
-vector<int> keybinds = { GLFW_KEY_L, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_U, GLFW_KEY_I };
+std::vector<KeyManager*> KeyManager::_instances;
+KeyManager keyBinds;
 
-std::vector<KeyInput*> KeyInput::_instances;
-KeyInput defaultKeyBinds(keybinds);
 
 class SaveMenu : public Widget {
 public:
@@ -32,7 +31,7 @@ public:
 		if (isSetup) {
 			return;
 		}
-		hArrangement* SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f);
+		hArrangement* SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f, ARRANGE_END);
 
 		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
 
@@ -89,7 +88,7 @@ public:
 		imageData lb = LOADBUTTON;
 		Material* LoadBtnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&lb), "LoadBtnTex")), "LoadBtnMat");
 
-		hArrangement* Renderbuttons = new hArrangement(0.0f, 0.0f, 0.2f, 0.05f, 0.01f);
+		hArrangement* Renderbuttons = new hArrangement(0.0f, 0.0f, 1.2f, 0.6f, 0.01f, ARRANGE_CENTER);
 
 		Button* litRenderingButton = new Button(renderedMat);
 		Button* unlitRenderingButton = new Button(webcamViewMat);
@@ -108,7 +107,7 @@ public:
 		Renderbuttons->addItem(getPtr(litRenderingButton));
 		Renderbuttons->addItem(getPtr(wireframeRenderingButton));
 
-		vArrangement* buttons = new vArrangement(-1.0f, 1.0f, 0.15f, 0.15f, 0.0f);
+		vArrangement* buttons = new vArrangement(-1.0f, 1.0f, 0.1f, 0.25f, 0.0f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		buttons->addItem(getPtr(new Button(LoadBtnMat, loadObjectFunct)));
 		buttons->addItem(getPtr(Renderbuttons));
@@ -138,21 +137,34 @@ public:
 		imageData tcb = TESTCHECKBOXBUTTON;
 		visibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tcb), "TestCheckBtnTex")), "TestCheckBtnMat");
 
-		canvas.push_back(getPtr(new vArrangement(-0.9f, -0.5f, 0.05f, 0.5f, 0.01f)));
+		imageData wb = WIREFRAMEBUTTON;
+		wireframeMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&wb), "WireframeBtnTex")), "WireframeBtnMat");
+
+		canvas.push_back(getPtr(new vArrangement(-1.0f, -0.75f, 0.1f, 0.5f, 0.01f, ARRANGE_START)));
 
 		ObjectButtons = canvas[0];
 		
 		isSetup = true;
 	}
 
-	void addObject(std::function<void(UIItem*)> toggleFunction) {
+	void addObject(std::function<void(UIItem*)> toggleFunction, std::function<void(UIItem*)> wireframeToggle) {
+		ObjectButtons->arrangeItems();
+
+		hArrangement* objButtons = new hArrangement(0.0f, 0.0f, 2.0f, 1.0f, 0.01f, ARRANGE_START);
 
 		Checkbox* objectButton = new Checkbox(visibleMat, invisibleMat, toggleFunction);
 		objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
 
+		Checkbox* objWireframeButton = new Checkbox(wireframeMat, invisibleMat, wireframeToggle);
+		objWireframeButton->Name = objectButton->Name;
+
 		ObjectMap.insert({ objectButton->Name, ObjectButtons->Items.size() });
 
-		ObjectButtons->addItem(objectButton);
+		objButtons->addItem(getPtr(objectButton));
+		objButtons->addItem(getPtr(objWireframeButton));
+		objButtons->arrangeItems();
+
+		ObjectButtons->addItem(getPtr(objButtons));
 		ObjectButtons->arrangeItems();
 	}
 
@@ -171,6 +183,7 @@ private:
 
 	Material* visibleMat = nullptr;
 	Material* invisibleMat = nullptr;
+	Material* wireframeMat = nullptr;
 };
 
 class WebcamMenu : public Widget {
@@ -204,7 +217,7 @@ public:
 		std::function<void(UIItem*)> toggleWebcamFunct = bind(&WebcamMenu::toggleWebcam, this, placeholders::_1);
 		std::function<void(UIItem*)> configureWebcamFunct = bind(&WebcamMenu::calibrateWebcam, this, placeholders::_1);
 
-		hArrangement* Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f);
+		hArrangement* Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f, ARRANGE_CENTER);
 
 		Videobuttons->addItem(getPtr(new Button(webcamMat)));
 		Videobuttons->addItem(getPtr(new Checkbox(playMat, pauseMat, toggleWebcamFunct)));
@@ -329,7 +342,7 @@ private:
 		if (saveName != string("fail")) {
 			imwrite(saveName, tomographer.computedDiffuse);
 		}
-		tomographer.clearData();
+		//tomographer.clearData();
 	}
 };
 
@@ -338,13 +351,15 @@ public:
 	void run() {
 		engine->initWindow("BOBERT_TradPainter");
 		engine->initVulkan();
-		KeyInput::setupKeyInputs(engine->window);
+		keyBinds.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		sConst->setupSurfaceConstructor();
 		createCanvas();
 		if (sConst->webTex->webCam != nullptr) {
 			sConst->webTex->webCam->loadFilter();
 		}
+		std::function<void()> tomogFunct = bind(&Application::toggleTomogMenu, this);
+		keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
@@ -382,7 +397,7 @@ private:
 	bool showWireframe = true;
 
 	vector<StaticObject> staticObjects = {};
-	map<string, int> ObjectMap = {};
+	//map<string, int> ObjectMap = {};
 
 	bool lit = true;
 
@@ -427,9 +442,10 @@ private:
 			StaticObject newObject(path);
 			newObject.mat = &sConst->surfaceMat;
 
-			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
+			std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
+			std::function<void(UIItem*)> wireFunction = bind(&Application::setObjectWireframe, this, placeholders::_1);
 
-			objectMenu.addObject(testfunction);
+			objectMenu.addObject(visibleFunction, wireFunction);
 
 			newObject.isVisible = true;
 
@@ -438,8 +454,7 @@ private:
 		if (session::get()->currentStudio.diffusePath != "None") {
 			// This segment does not work properly because the surface menu construction produces errors
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
-			sConst->loadDiffuse(loadedTexture);
-			// Not sure if this next line does anything
+
 			sConst->diffuseIdx = 1;
 			surfaceMenu.setDiffuse(sConst->currentDiffuse().get());
 			surfaceMenu.resetDiffuseTog(true);
@@ -479,6 +494,9 @@ private:
 		std::function<void(UIItem*)> loadSessionFunc = bind(&Application::loadSave, this, placeholders::_1);
 		std::function<void(UIItem*)> newSessionFunc = bind(&Application::newSession, this, placeholders::_1);
 
+		objectMenu.setup();
+		widgets.push_back(&objectMenu);
+
 		saveMenu.setup(loadSessionFunc, newSessionFunc);
 		widgets.push_back(&saveMenu);
 
@@ -488,25 +506,26 @@ private:
 		renderMenu.setup(loadObjectFunct, pipelinefunction);
 		widgets.push_back(&renderMenu);
 
-		objectMenu.setup();
-		widgets.push_back(&objectMenu);
-
 		surfaceMenu.setup(sConst, &staticObjects);
 		widgets.push_back(&surfaceMenu);
 
 	}
 
+	void toggleTomogMenu() {
+		if (!tomogActive) {
+			tomogUI.setup(sConst);
+			widgets.push_back(&tomogUI);
+			tomogActive = true;
+		}
+	}
+
 	void mainLoop() {
 		while (!glfwWindowShouldClose(engine->window)) {
 			glfwPollEvents();
+			keyBinds.pollRepeatEvents();
 			glfwGetCursorPos(engine->window, &mouseX, &mouseY);
 			webcamTexture::get()->updateWebcam();
 			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
-			if (defaultKeyBinds.getIsKeyDown(GLFW_KEY_L) && !tomogActive) {
-				tomogUI.setup(sConst);
-				widgets.push_back(&tomogUI);
-				tomogActive = true;
-			}
 			if (state == GLFW_PRESS) {
 				mouseDown = true;
 			}
@@ -527,6 +546,10 @@ private:
 
 	void setObjectVisibility(UIItem* owner) {
 		staticObjects[objectMenu.ObjectMap.at(owner->Name)].isVisible = owner->activestate;
+	}
+
+	void setObjectWireframe(UIItem* owner) {
+		staticObjects[objectMenu.ObjectMap.at(owner->Name)].isWireframeVisible = owner->activestate;
 	}
 
 	void setPipelineIndex(UIItem* owner) {
@@ -563,30 +586,24 @@ private:
 	}
 
 	void loadStaticObject() {
-
-		try {
-			string modelPath;
-			try {
-				modelPath = winFile::OpenFileDialog();
-			}
-			catch (...) {
-				return;
-			}
-			StaticObject newObject(modelPath);
-			newObject.mat = &sConst->surfaceMat;
-
-			std::function<void(UIItem*)> testfunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
-
-			objectMenu.addObject(testfunction);
-
-			newObject.isVisible = true;
-
-			staticObjects.push_back(newObject);
-			session::get()->currentStudio.modelPaths.push_back(modelPath);
-		}
-		catch (...) {
+		string modelPath;
+		modelPath = winFile::OpenFileDialog();
+		if (modelPath == "fail") {
 			return;
 		}
+		StaticObject newObject(modelPath);
+		newObject.mat = &sConst->surfaceMat;
+
+		std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
+		std::function<void(UIItem*)> wireFunction = bind(&Application::setObjectWireframe, this, placeholders::_1);
+
+		objectMenu.addObject(visibleFunction, wireFunction);
+
+		newObject.isVisible = true;
+
+		staticObjects.push_back(newObject);
+		session::get()->currentStudio.modelPaths.push_back(modelPath);
+
 	}
 
 	void cleanup() {
@@ -613,6 +630,7 @@ private:
 		VkResult result = vkAcquireNextImageKHR(engine->device, engine->swapChain, UINT64_MAX, engine->imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			
 			engine->recreateSwapChain();
 			return;
 		}
@@ -647,16 +665,14 @@ private:
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
 
+		VkSwapchainKHR swapChains[] = { engine->swapChain };
+
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
-
-		VkSwapchainKHR swapChains[] = { engine->swapChain };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
-
 		presentInfo.pImageIndices = &imageIndex;
 
 		result = vkQueuePresentKHR(engine->presentQueue, &presentInfo);
@@ -664,9 +680,11 @@ private:
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine->framebufferResized) {
 			engine->framebufferResized = false;
 
-			for (size_t i = 0; i != widgets.size(); i++) {
-				widgets[i]->update();
-			}
+			if (!glfwGetWindowAttrib(engine->window, GLFW_ICONIFIED)) {
+				for (size_t i = 0; i != widgets.size(); i++) {
+					widgets[i]->update();
+				}
+			}	
 
 			engine->recreateSwapChain();
 			return;
@@ -744,7 +762,7 @@ private:
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UVWireframe")]);
 
 			for (uint32_t i = 0; i != staticObjects.size(); i++) {
-				if (staticObjects[i].isVisible) {
+				if (staticObjects[i].isVisible && staticObjects[i].isWireframeVisible) {
 
 					VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
 					VkDeviceSize offsets[] = { 0 };

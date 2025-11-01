@@ -7,45 +7,77 @@
 
 using namespace std;
 
-KeyInput::KeyInput(std::vector<int> keysToMonitor) : _isEnabled(true) {
-	for (int key : keysToMonitor) {
-		_keys[key] = false;
+void KeyManager::addBinding(int key, const Callback& callback, int eventType) {
+	if (eventType == HOLD_EVENT && !pollRequired) {
+		pollRequired = true;
 	}
-	KeyInput::_instances.push_back(this);
+	std::map<int, KeyState>::iterator it = _KeyStates.find(key);
+	if (it == _KeyStates.end()) {
+		addKey(key);
+	}
+	_KeyStates[key].eventType = eventType;
+	_Callbacks.insert({ key, callback });
 }
 
-KeyInput::~KeyInput() {
-	_instances.erase(std::remove(_instances.begin(), _instances.end(), this), _instances.end());
+void KeyManager::addBinding(int key, const Callback& callback) {
+	std::map<int, KeyState>::iterator it = _KeyStates.find(key);
+	if (it == _KeyStates.end()) {
+		addKey(key);
+	}
+	_KeyStates[key].eventType = PRESS_EVENT;
+	_Callbacks.insert({ key, callback });
 }
 
-void KeyInput::addMonitoredKey(int key) {
-	_keys[key] = false;
-}
-
-bool KeyInput::getIsKeyDown(int key) {
-	bool result = false;
-	if (_isEnabled) {
-		std::map<int, bool>::iterator it = _keys.find(key);
-		if (it != _keys.end()) {
-			result = _keys[key];
+void KeyManager::pollRepeatEvents() {
+	if (!pollRequired) {
+		return;
+	}
+	for (std::map<int, KeyState>::iterator it = _KeyStates.begin(); it != _KeyStates.end(); ++it) {
+		int key = it->first;
+		if (_KeyStates[key].eventType == HOLD_EVENT && _KeyStates[key].isKeyDown) {
+			_Callbacks[key]();
 		}
 	}
-	return result;
 }
 
-void KeyInput::setIsKeyDown(int key, bool isDown) {
-	std::map<int, bool>::iterator it = _keys.find(key);
-	if (it != _keys.end()) {
-		_keys[key] = isDown;
+void KeyManager::checkForEvent(int key) {
+	switch (_KeyStates[key].eventType) {
+	case PRESS_EVENT:
+		if (_KeyStates[key].isKeyDown) {
+			_Callbacks[key]();
+		}
+		break;
+	case RELEASE_EVENT:
+		if (!_KeyStates[key].isKeyDown) {
+			_Callbacks[key]();
+		}
+		break;
+	default:
+		break;
 	}
 }
 
-void KeyInput::setupKeyInputs(GLFWwindow* window) {
-	glfwSetKeyCallback(window, KeyInput::callback);
+void KeyManager::setIsKeyDown(int key, int action) {
+	std::map<int, KeyState>::iterator it = _KeyStates.find(key);
+	if (it != _KeyStates.end() && action != GLFW_REPEAT) {
+		_KeyStates[key].setIsKeyDown(action != GLFW_RELEASE);
+	}
+	checkForEvent(key);
 }
 
-void KeyInput::callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	for (KeyInput* keyInput : _instances) {
-		keyInput->setIsKeyDown(key, action != GLFW_RELEASE);
+void KeyManager::addKey(int key) {
+	KeyState keystate;
+	_KeyStates.insert({ key, keystate });
+}
+
+void KeyManager::initCallbacks(GLFWwindow* window) {
+	glfwSetKeyCallback(window, callback);
+}
+
+void KeyManager::callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (action != GLFW_REPEAT) {
+		for (KeyManager* keyManager : _instances) {
+			keyManager->setIsKeyDown(key, action != GLFW_RELEASE);
+		}	
 	}
 }
