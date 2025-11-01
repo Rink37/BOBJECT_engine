@@ -272,22 +272,75 @@ void surfaceConstructor::contextConvert() {
 	// convWriter.open(filename, codec, fps, sizeFrame, 1); //
 
 	Mat testRemap = OSNormTex->texMat.clone(); // This is the class I will temporarily be using to test a new algorithm
-	int kernelRadius = 5; // The number of pixels we will move from the central test position
+	int kernelRadius = 10; // The number of pixels we will move from the central test position
+	if (kernelRadius < 2) {
+		kernelRadius = 2;
+	}
 
-	for (int x = kernelRadius; x != testRemap.cols - 2 * kernelRadius; x++) {
-		for (int y = kernelRadius; y != testRemap.rows - 2 * kernelRadius; y++) {
-			cout << x << " " << y << endl;
+	// This algorithm currently replaces the colour smoothing but does not create gradient maps of the correct format
+	for (int x = 0; x != testRemap.cols; x++) {
+		for (int y = 0; y != testRemap.rows; y++) {
+			//cout << x << " " << y << endl;
 			vector<Vec3f> colours;
 			vector<Vec2i> coords;
 			testRemap.at<Vec3b>(y, x) = Vec3b(0, 0, 0);
-			// This describes a basic averaging system which ignores transitions but it will also permit leaking into adjacent sectors
 			if (ygrad.at<float>(y, x) < thresh && xgrad.at<float>(y, x) < thresh && OSNormTex->texMat.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
-				for (int xx = x - kernelRadius; xx != x + kernelRadius; xx++) {
-					for (int yy = y - kernelRadius; yy != y + kernelRadius; yy++) {
-						if (ygrad.at<float>(yy, xx) < thresh && xgrad.at<float>(yy, xx) < thresh && OSNormTex->texMat.at<Vec3b>(yy, xx) != Vec3b(0, 0, 0)) {
-							colours.push_back(OSNormTex->texMat.at<Vec3b>(yy, xx));
-							coords.push_back(Vec2i(yy, xx));
+				colours.push_back(OSNormTex->texMat.at<Vec3b>(y, x));
+				coords.push_back(Vec2i(y, x));
+				for (int xx = x-1; xx != x - kernelRadius; xx--) {
+					if (xx < 0) {
+						break;
+					}
+					if (!(ygrad.at<float>(y, xx) < thresh && xgrad.at<float>(y, xx) < thresh && OSNormTex->texMat.at<Vec3b>(y, xx) != Vec3b(0, 0, 0))) {
+						break;
+					}
+					for (int yy = y-1; yy != y - kernelRadius; yy--) {
+						if (yy < 0) {
+							break;
 						}
+						if (!(ygrad.at<float>(yy, xx) < thresh && xgrad.at<float>(yy, xx) < thresh && OSNormTex->texMat.at<Vec3b>(yy, xx) != Vec3b(0, 0, 0))) {
+							break;
+						}
+						colours.push_back(OSNormTex->texMat.at<Vec3b>(yy, xx));
+						coords.push_back(Vec2i(yy, xx));
+					}
+					for (int yy = y+1; yy != y + kernelRadius; yy++) {
+						if (yy >= testRemap.rows) {
+							break;
+						}
+						if (!(ygrad.at<float>(yy, xx) < thresh && xgrad.at<float>(yy, xx) < thresh && OSNormTex->texMat.at<Vec3b>(yy, xx) != Vec3b(0, 0, 0))) {
+							break;
+						}
+						colours.push_back(OSNormTex->texMat.at<Vec3b>(yy, xx));
+						coords.push_back(Vec2i(yy, xx));
+					}
+				}
+				for (int xx = x + 1; xx != x + kernelRadius; xx++) {
+					if (xx >= testRemap.cols) {
+						break;
+					}
+					if (!(ygrad.at<float>(y, xx) < thresh && xgrad.at<float>(y, xx) < thresh && OSNormTex->texMat.at<Vec3b>(y, xx) != Vec3b(0, 0, 0))) {
+						break;
+					}
+					for (int yy = y - 1; yy != y - kernelRadius; yy--) {
+						if (yy < 0) {
+							break;
+						}
+						if (!(ygrad.at<float>(yy, xx) < thresh && xgrad.at<float>(yy, xx) < thresh && OSNormTex->texMat.at<Vec3b>(yy, xx) != Vec3b(0, 0, 0))) {
+							break;
+						}
+						colours.push_back(OSNormTex->texMat.at<Vec3b>(yy, xx));
+						coords.push_back(Vec2i(yy, xx));
+					}
+					for (int yy = y + 1; yy != y + kernelRadius; yy++) {
+						if (yy >= testRemap.rows) {
+							break;
+						}
+						if (!(ygrad.at<float>(yy, xx) < thresh && xgrad.at<float>(yy, xx) < thresh && OSNormTex->texMat.at<Vec3b>(yy, xx) != Vec3b(0, 0, 0))) {
+							break;
+						}
+						colours.push_back(OSNormTex->texMat.at<Vec3b>(yy, xx));
+						coords.push_back(Vec2i(yy, xx));
 					}
 				}
 			}
@@ -299,113 +352,112 @@ void surfaceConstructor::contextConvert() {
 			sumColour[1] /= colours.size();
 			sumColour[2] /= colours.size();
 			Vec3b avgColour = static_cast<Vec3b>(sumColour);
-			for (Vec2i pixel : coords) {
-				testRemap.at<Vec3b>(pixel[0], pixel[1]) = avgColour;
-			}
+			testRemap.at<Vec3b>(y, x) = avgColour;
 		}
-		if (x % 25 == 0) {
-			imshow("Converted", testRemap);
-			waitKey(0);
-		}
+		//if (x % 100 == 0) {
+		//	imshow("Converted", testRemap);
+		//	waitKey(0);
+		//}
 	}
 
-	for (int x = 0; x != convertedY.cols; x++) {
-		vector<Vec3f> colours;
-		vector<uint32_t> indexes;
-		vector<uint32_t> gradindexes;
-		for (int y = 0; y != convertedY.rows; y++) {
-			convertedY.at<Vec3b>(y, x) = Vec3b(0, 0, 0);
-			if (ygrad.at<float>(y, x) < thresh && OSNormTex->texMat.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
-				colours.push_back(static_cast<Vec3f>(OSNormTex->texMat.at<Vec3b>(y, x)));
-				indexes.push_back(y);
-				ygrad.at<float>(y, x) = 0;
-				if (gradindexes.size() > 0) {
-					vector<float> cs;
-					cs.push_back(ygrad.at<float>(gradindexes[0], x));
-					for (size_t k = 1; k != gradindexes.size(); k++) {
-						cs.push_back(cs[k - 1] + ygrad.at<float>(gradindexes[k], x));
-					}
-					float max = cs[cs.size() - 1];
-					for (size_t k = 0; k != cs.size(); k++) {
-						ygrad.at<float>(gradindexes[k], x) = cs[k]/max;
-					}
-					gradindexes.clear();
-				}
-			}
-			else {
-				gradindexes.push_back(y);
-				if (indexes.size() > 0) {
-					Vec3f avg = Vec3f(0.0f, 0.0f, 0.0f);
-					for (int k = 0; k != indexes.size(); k++) {
-						avg += colours[k];
-					}
-					avg = Vec3f(avg[0] / colours.size(), avg[1] / colours.size(), avg[2] / colours.size());
-					for (int k : indexes) {
-						convertedY.at<Vec3b>(k, x) = Vec3b(static_cast<uint8_t>(avg[0]), static_cast<uint8_t>(avg[1]), static_cast<uint8_t>(avg[2]));
-						ygrad.at<float>(k, x) = 0.0f;
-					}
-					indexes.clear();
-					colours.clear();
-				}
-			}
-		}
-		// if (x % 10 == 0) {
-		// 	convWriter.write(convertedY); //
-		// }
-	}
+	//for (int x = 0; x != convertedY.cols; x++) {
+	//	vector<Vec3f> colours;
+	//	vector<uint32_t> indexes;
+	//	vector<uint32_t> gradindexes;
+	//	for (int y = 0; y != convertedY.rows; y++) {
+	//		convertedY.at<Vec3b>(y, x) = Vec3b(0, 0, 0);
+	//		if (ygrad.at<float>(y, x) < thresh && OSNormTex->texMat.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
+	//			colours.push_back(static_cast<Vec3f>(OSNormTex->texMat.at<Vec3b>(y, x)));
+	//			indexes.push_back(y);
+	//			ygrad.at<float>(y, x) = 0;
+	//			if (gradindexes.size() > 0) {
+	//				vector<float> cs;
+	//				cs.push_back(ygrad.at<float>(gradindexes[0], x));
+	//				for (size_t k = 1; k != gradindexes.size(); k++) {
+	//					cs.push_back(cs[k - 1] + ygrad.at<float>(gradindexes[k], x));
+	//				}
+	//				float max = cs[cs.size() - 1];
+	//				for (size_t k = 0; k != cs.size(); k++) {
+	//					ygrad.at<float>(gradindexes[k], x) = cs[k]/max;
+	//				}
+	//				gradindexes.clear();
+	//			}
+	//		}
+	//		else {
+	//			gradindexes.push_back(y);
+	//			if (indexes.size() > 0) {
+	//				Vec3f avg = Vec3f(0.0f, 0.0f, 0.0f);
+	//				for (int k = 0; k != indexes.size(); k++) {
+	//					avg += colours[k];
+	//				}
+	//				avg = Vec3f(avg[0] / colours.size(), avg[1] / colours.size(), avg[2] / colours.size());
+	//				for (int k : indexes) {
+	//					convertedY.at<Vec3b>(k, x) = Vec3b(static_cast<uint8_t>(avg[0]), static_cast<uint8_t>(avg[1]), static_cast<uint8_t>(avg[2]));
+	//					ygrad.at<float>(k, x) = 0.0f;
+	//				}
+	//				indexes.clear();
+	//				colours.clear();
+	//			}
+	//		}
+	//	}
+	//	// if (x % 10 == 0) {
+	//	// 	convWriter.write(convertedY); //
+	//	// }
+	//}
 
-	Mat converted = convertedY.clone();
+	Mat converted = testRemap.clone();// convertedY.clone();
 
-	for (int y = 0; y != converted.rows; y++) {
-		vector<Vec3f> colours;
-		vector<uint32_t> indexes;
-		vector<uint32_t> gradindexes;
-		for (int x = 0; x != converted.cols; x++) {
-			converted.at<Vec3b>(y, x) = Vec3b(0, 0, 0);
-			if (xgrad.at<float>(y, x) < thresh && OSNormTex->texMat.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
-				if (ygrad.at<float>(y, x) == 0) {
-					colours.push_back(static_cast<Vec3f>(convertedY.at<Vec3b>(y, x)));
-					indexes.push_back(x);
-				}
-				xgrad.at<float>(y, x) = 0;
-				if (gradindexes.size() > 0) {
-					vector<float> cs;
-					cs.push_back(xgrad.at<float>(y, gradindexes[0]));
-					for (size_t k = 1; k != gradindexes.size(); k++) {
-						cs.push_back(cs[k - 1] + xgrad.at<float>(y, gradindexes[k]));
-					}
-					float max = cs[cs.size() - 1];
-					for (size_t k = 0; k != cs.size(); k++) {
-						xgrad.at<float>(y, gradindexes[k]) = cs[k] / max;
-					}
-					gradindexes.clear();
-				}
-			}
-			else {
-				gradindexes.push_back(x);
-				if (indexes.size() > 0) {
-					Vec3f avg = Vec3f(0.0f, 0.0f, 0.0f);
-					for (int k = 0; k != indexes.size(); k++) {
-						avg += colours[k];
-					}
-					avg = Vec3f(avg[0] / colours.size(), avg[1] / colours.size(), avg[2] / colours.size());
-					for (int k : indexes) {
-						converted.at<Vec3b>(y, k) = Vec3b(static_cast<uint8_t>(avg[0]), static_cast<uint8_t>(avg[1]), static_cast<uint8_t>(avg[2]));
-						xgrad.at<float>(y, k) = 0.0f;
-					}
-					indexes.clear();
-					colours.clear();
-				}
-			}
-		}
+	//for (int y = 0; y != converted.rows; y++) {
+	//	vector<Vec3f> colours;
+	//	vector<uint32_t> indexes;
+	//	vector<uint32_t> gradindexes;
+	//	for (int x = 0; x != converted.cols; x++) {
+	//		converted.at<Vec3b>(y, x) = Vec3b(0, 0, 0);
+	//		if (xgrad.at<float>(y, x) < thresh && OSNormTex->texMat.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
+	//			if (ygrad.at<float>(y, x) == 0) {
+	//				colours.push_back(static_cast<Vec3f>(convertedY.at<Vec3b>(y, x)));
+	//				indexes.push_back(x);
+	//			}
+	//			xgrad.at<float>(y, x) = 0;
+	//			if (gradindexes.size() > 0) {
+	//				vector<float> cs;
+	//				cs.push_back(xgrad.at<float>(y, gradindexes[0]));
+	//				for (size_t k = 1; k != gradindexes.size(); k++) {
+	//					cs.push_back(cs[k - 1] + xgrad.at<float>(y, gradindexes[k]));
+	//				}
+	//				float max = cs[cs.size() - 1];
+	//				for (size_t k = 0; k != cs.size(); k++) {
+	//					xgrad.at<float>(y, gradindexes[k]) = cs[k] / max;
+	//				}
+	//				gradindexes.clear();
+	//			}
+	//		}
+	//		else {
+	//			gradindexes.push_back(x);
+	//			if (indexes.size() > 0) {
+	//				Vec3f avg = Vec3f(0.0f, 0.0f, 0.0f);
+	//				for (int k = 0; k != indexes.size(); k++) {
+	//					avg += colours[k];
+	//				}
+	//				avg = Vec3f(avg[0] / colours.size(), avg[1] / colours.size(), avg[2] / colours.size());
+	//				for (int k : indexes) {
+	//					converted.at<Vec3b>(y, k) = Vec3b(static_cast<uint8_t>(avg[0]), static_cast<uint8_t>(avg[1]), static_cast<uint8_t>(avg[2]));
+	//					xgrad.at<float>(y, k) = 0.0f;
+	//				}
+	//				indexes.clear();
+	//				colours.clear();
+	//			}
+	//		}
+	//	}
 		// if (y % 10 == 0) {
 		// 	convWriter.write(converted); //
 		// }
-	}
+	//}
 
 	// convWriter.release(); //
 
-	convertedY.release();
+	//convertedY.release();
+	testRemap.release();
 
 	Mat scaleFacs = xgrad.clone();
 
@@ -455,6 +507,10 @@ void surfaceConstructor::contextConvert() {
 		// if (y % 10 == 0) {
 		// 	smootheWriter.write(converted); //
 		// }
+		if (y % 100 == 0) {
+			imshow("Converted", converted);
+			waitKey(0);
+		}
 	}
 
 	for (int x = 0; x != converted.cols; x++) {
@@ -499,6 +555,10 @@ void surfaceConstructor::contextConvert() {
 		// if (x % 10 == 0) {
 		// 	smootheWriter.write(converted); //
 		// }
+		if (x % 100 == 0) {
+			imshow("Converted", converted);
+			waitKey(0);
+		}
 	}
 
 	// smootheWriter.release(); //
