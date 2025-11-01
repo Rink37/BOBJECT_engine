@@ -32,11 +32,11 @@ FIND_PATH(OPENCV_INCLUDE_DIR "opencv2/opencv.hpp"
 PATHS ${_OpenCV_HEADER_SEARCH_DIRS} )
 
 # Search for the dll
-FIND_FILE(OPENCV_DLL_DIR NAMES "opencv_world4120d.dll"
+FIND_FILE(OPENCV_DLL_DIR NAMES "opencv_world4100d.dll" "opencv_world4110d.dll" "opencv_world4120d.dll"
 PATHS ${_OpenCV_DLL_SEARCH_DIRS} )
 
 # Search for the library
-FIND_LIBRARY(OPENCV_LIBRARY NAMES opencv_world4120d
+FIND_LIBRARY(OPENCV_LIBRARY NAMES opencv_world4100d opencv_world4110d opencv_world4120d
 PATHS ${_OpenCV_LIB_SEARCH_DIRS})
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(OpenCV DEFAULT_MSG
