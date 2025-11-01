@@ -436,10 +436,12 @@ private:
 			staticObjects.push_back(newObject);
 		}
 		if (session::get()->currentStudio.diffusePath != "None") {
+			// This segment does not work properly because the surface menu construction produces errors
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
-			sConst->loadDiffuse(loadedTexture); // This function currently produces errors
+			sConst->loadDiffuse(loadedTexture);
+			// Not sure if this next line does anything
 			sConst->diffuseIdx = 1;
-			surfaceMenu.setDiffuse(sConst->currentDiffuse().get()); // This function currently produces errors
+			surfaceMenu.setDiffuse(sConst->currentDiffuse().get());
 			surfaceMenu.resetDiffuseTog(true);
 		}
 		if (session::get()->currentStudio.OSPath != "None") {
