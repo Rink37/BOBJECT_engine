@@ -7,6 +7,7 @@
 #include"include/SobelX.h"
 #include"include/SobelY.h"
 #include"include/ReferenceKuwahara.h"
+#include"include/Averager.h"
 
 using namespace std;
 using namespace cv;
@@ -236,12 +237,30 @@ void surfaceConstructor::contextConvert() {
 	SobelX.filterImage();
 	filter SobelY(Kuwahara.filterTarget[0], new SOBELYSHADER);
 	SobelY.filterImage();
+
+	//SobelX.filterTarget[0]->getCVMat();
+	//SobelY.filterTarget[0]->getCVMat();
+
+	//cv::imshow("Shader X grad", SobelX.filterTarget[0]->texMat);
+	//cv::waitKey(0);
+
+	//cv::imshow("Shader Y grad", SobelY.filterTarget[0]->texMat);
+	//cv::waitKey(0);
+
+	OSNormTex->getCVMat();
+	cv::resize(OSNormTex->texMat, OSNormTex->texMat, cv::Size(diffTex->texWidth, diffTex->texHeight));
+
+	Texture* interrimNorm = new imageTexture(OSNormTex->texMat);
+
+	filter Averager(interrimNorm, SobelX.filterTarget[0], SobelY.filterTarget[0], new AVERAGERSHADER);
+	Averager.filterImage();
+
+	Averager.filterTarget[0]->getCVMat();
+	cv::imshow("Shader filtered", Averager.filterTarget[0]->texMat);
+	cv::waitKey(0);
 	
 	Mat xgrad;
 	Mat ygrad;
-
-	SobelX.filterTarget[0]->getCVMat();
-	SobelY.filterTarget[0]->getCVMat();
 
 	cv::cvtColor(SobelX.filterTarget[0]->texMat, xgrad, COLOR_RGB2GRAY);
 	cv::cvtColor(SobelY.filterTarget[0]->texMat, ygrad, COLOR_RGB2GRAY);
@@ -260,7 +279,6 @@ void surfaceConstructor::contextConvert() {
 
 	int thresh = 15;
 
-	OSNormTex->getCVMat();
 	resize(OSNormTex->texMat, OSNormTex->texMat, Size(diffTex->texMat.cols, diffTex->texMat.rows));
 	Mat convertedY = OSNormTex->texMat.clone();
 

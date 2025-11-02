@@ -1,13 +1,14 @@
 #version 450
 
+layout (local_size_x = 16, local_size_y = 16) in;
 layout(binding = 0, rgba8) uniform readonly image2D normalImage;
 layout(binding = 1, rgba8) uniform readonly image2D xGrad;
 layout(binding = 2, rgba8) uniform readonly image2D yGrad;
 layout(binding = 3, rgba8) uniform image2D resultImage;
 
 void main(){
-	const int kernelRadius = 10; // Min value of this is 2
-	const int thresh = 15;
+	const int kernelRadius = 25; // Min value of this is 2
+	const float thresh = 0.06f;
 
 	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
 
@@ -19,7 +20,7 @@ void main(){
 
 	if (max(max(yGpix.r, yGpix.g), yGpix.b) < thresh && max(max(xGpix.r, xGpix.g), xGpix.b) < thresh && normPix != vec3(0, 0, 0)){
 		sumColour.rgb += normPix;
-		sumColour.w += 1;
+		sumColour.w += 1.0f;
 		for (int x = pixelCoords.x-1; x != pixelCoords.x-kernelRadius; x--){
 			if (x < 0){
 				break;
@@ -75,7 +76,7 @@ void main(){
 					normPix = imageLoad(normalImage, ivec2(x, y)).rgb;
 					if (max(max(yGpix.r, yGpix.g), yGpix.b) < thresh && max(max(xGpix.r, xGpix.g), xGpix.b) < thresh && normPix != vec3(0, 0, 0)){
 						sumColour.rgb += normPix;
-						sumColour.w += 1;
+						sumColour.w += 1.0f;
 					}
 				}
 				for (int y = pixelCoords.y+1; y != pixelCoords.y+kernelRadius; y++){
@@ -87,7 +88,7 @@ void main(){
 					normPix = imageLoad(normalImage, ivec2(x, y)).rgb;
 					if (max(max(yGpix.r, yGpix.g), yGpix.b) < thresh && max(max(xGpix.r, xGpix.g), xGpix.b) < thresh && normPix != vec3(0, 0, 0)){
 						sumColour.rgb += normPix;
-						sumColour.w += 1;
+						sumColour.w += 1.0f;
 					}
 				}
 			}

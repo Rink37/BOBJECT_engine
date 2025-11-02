@@ -82,6 +82,52 @@ void filter::createDescriptorSetLayout() {
 			throw runtime_error("Failed to create filter descriptor set layout");
 		}
 	}
+	else if (filtertype == THIOO) {
+		VkDescriptorPoolSize descPoolSize = {
+		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+		4
+		};
+		VkDescriptorPoolCreateInfo poolInfo = {};
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.poolSizeCount = static_cast<uint32_t>(1);
+		poolInfo.pPoolSizes = &descPoolSize;
+		poolInfo.maxSets = static_cast<uint32_t>(1);
+
+		if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descPool) != VK_SUCCESS) {
+			throw runtime_error("failed to create descriptor pool!");
+		}
+
+		VkDescriptorSetLayoutBinding bindings[4] = {};
+
+		bindings[0].binding = 0;
+		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		bindings[0].descriptorCount = 1;
+		bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		bindings[1].binding = 1;
+		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		bindings[1].descriptorCount = 1;
+		bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		bindings[2].binding = 2;
+		bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		bindings[2].descriptorCount = 1;
+		bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		bindings[3].binding = 3;
+		bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		bindings[3].descriptorCount = 1;
+		bindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
+		descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descriptorSetLayoutCreateInfo.pBindings = bindings;
+		descriptorSetLayoutCreateInfo.bindingCount = 4;
+
+		if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
+			throw runtime_error("Failed to create filter descriptor set layout");
+		}
+	}
 }
 
 void filter::createDescriptorSet() {
@@ -160,6 +206,55 @@ void filter::createDescriptorSet() {
 		descWrite[2].pImageInfo = &destinationInfo;
 
 		vkUpdateDescriptorSets(Engine::get()->device, 3, descWrite, 0, nullptr);
+	}
+	else if (filtertype == THIOO) {
+		VkDescriptorImageInfo destinationInfo = {};
+		destinationInfo.imageView = filterTarget[0]->textureImageView;
+		destinationInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkDescriptorImageInfo source0Info = {};
+		source0Info.imageView = source[0]->textureImageView;
+		source0Info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkDescriptorImageInfo source1Info = {};
+		source1Info.imageView = source[1]->textureImageView;
+		source1Info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkDescriptorImageInfo source2Info = {};
+		source2Info.imageView = source[2]->textureImageView;
+		source2Info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkWriteDescriptorSet descWrite[4] = {};
+
+		descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descWrite[0].dstSet = filterDescriptorSet;
+		descWrite[0].dstBinding = 0;
+		descWrite[0].descriptorCount = 1;
+		descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		descWrite[0].pImageInfo = &source0Info;
+
+		descWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descWrite[1].dstSet = filterDescriptorSet;
+		descWrite[1].dstBinding = 1;
+		descWrite[1].descriptorCount = 1;
+		descWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		descWrite[1].pImageInfo = &source1Info;
+
+		descWrite[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descWrite[2].dstSet = filterDescriptorSet;
+		descWrite[2].dstBinding = 2;
+		descWrite[2].descriptorCount = 1;
+		descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		descWrite[2].pImageInfo = &source2Info;
+
+		descWrite[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descWrite[3].dstSet = filterDescriptorSet;
+		descWrite[3].dstBinding = 3;
+		descWrite[3].descriptorCount = 1;
+		descWrite[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		descWrite[3].pImageInfo = &destinationInfo;
+
+		vkUpdateDescriptorSets(Engine::get()->device, 4, descWrite, 0, nullptr);
 	}
 	
 }
