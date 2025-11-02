@@ -7,6 +7,7 @@
 
 #define OIOO 0
 #define TIOO 1
+#define THIOO 2
 
 class filter {
 public:
@@ -41,6 +42,11 @@ public:
 		createDescriptorSet();
 		createFilterPipelineLayout();
 		createFilterPipeline();
+	}
+
+	filter(Texture* src0, Texture* src2, Texture* src3, shaderData* sd) {
+		filtertype = THIOO;
+
 	}
 
 	void filterImage();

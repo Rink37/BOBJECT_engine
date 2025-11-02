@@ -264,13 +264,6 @@ void surfaceConstructor::contextConvert() {
 	resize(OSNormTex->texMat, OSNormTex->texMat, Size(diffTex->texMat.cols, diffTex->texMat.rows));
 	Mat convertedY = OSNormTex->texMat.clone();
 
-	// VideoWriter convWriter; //
-	// int codec = VideoWriter::fourcc('a', 'v', 'c', '1'); //
-	// double fps = 30.0; //
-	// string filename = baseName + string("Avg.mp4"); //
-	// Size sizeFrame(convertedY.cols, convertedY.rows); //
-	// convWriter.open(filename, codec, fps, sizeFrame, 1); //
-
 	Mat testRemap = OSNormTex->texMat.clone(); // This is the class I will temporarily be using to test a new algorithm
 	int kernelRadius = 25; // The number of pixels we will move from the central test position
 	if (kernelRadius < 2) {
