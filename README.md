@@ -12,7 +12,7 @@ An engine to render traditionally painted textures onto 3D meshes in real time, 
 ### Windows:
 Download the latest release from the release tab.
 
-## BASIC USAGE
+## Usage
 You can always pause the webcam view using the pause button in the top middle of the engine
 
 ### Camera Setup
