@@ -8,6 +8,7 @@
 #include"include/SobelY.h"
 #include"include/ReferenceKuwahara.h"
 #include"include/Averager.h"
+#include"include/GradRemap.h"
 
 using namespace std;
 using namespace cv;
@@ -250,7 +251,14 @@ void surfaceConstructor::contextConvert() {
 	delete interrimNorm;
 
 	Averager.filterTarget[0]->getCVMat();
-	cv::imshow("Shader filtered", Averager.filterTarget[0]->texMat);
+	cv::imshow("Shader filtered average", Averager.filterTarget[0]->texMat);
+	cv::waitKey(0);
+
+	filter gradRemap(Averager.filterTarget[0], SobelX.filterTarget[0], SobelY.filterTarget[0], new GRADREMAPSHADER);
+	gradRemap.filterImage();
+
+	gradRemap.filterTarget[0]->getCVMat();
+	cv::imshow("Shader filtered avgd and remapped", gradRemap.filterTarget[0]->texMat);
 	cv::waitKey(0);
 
 	Mat testRemap = Averager.filterTarget[0]->texMat.clone();
@@ -388,7 +396,7 @@ void surfaceConstructor::contextConvert() {
 				Vec3f minColour;
 				Vec3f maxColour;
 				while (!(xgrad.at<float>(yy, xx) < thresh && ygrad.at<float>(yy, xx) < thresh)) {
-					directionVector = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
+					directionVector = Vec2f(ygrad.at<float>(yy, xx), xgrad.at<float>(yy, xx));
 					normFac = sqrtf(directionVector[0] * directionVector[0] + directionVector[1] * directionVector[1]);
 					directionVector[0] /= normFac;
 					directionVector[1] /= normFac;
@@ -411,9 +419,9 @@ void surfaceConstructor::contextConvert() {
 				xx = x;
 				yy = y;
 				location = static_cast<Vec2f>(Vec2i(y, x));
-				max = min;
+				max = mid;
 				while (!(xgrad.at<float>(yy, xx) < thresh && ygrad.at<float>(yy, xx) < thresh )) {
-					directionVector = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
+					directionVector = Vec2f(ygrad.at<float>(yy, xx), xgrad.at<float>(yy, xx));
 					normFac = sqrtf(directionVector[0] * directionVector[0] + directionVector[1] * directionVector[1]);
 					directionVector[0] /= normFac;
 					directionVector[1] /= normFac;

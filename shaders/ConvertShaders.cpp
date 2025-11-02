@@ -22,14 +22,14 @@ static std::vector<char> readFile(const std::string& filename) {
 	return buffer;
 }
 
-void loadAndWriteShaders(string basepath, string shadername, bool wireframe){
+void loadAndWriteShaders(string basepath, string shadername, bool wireframe, string outRoot){
     string vertPath = basepath + shadername + string("vert.spv");
 	string fragPath = basepath + shadername + string("frag.spv");
 	vector<char> vertData = readFile(vertPath);
 	vector<char> fragData = readFile(fragPath);
 	string capShaderName = shadername;
     std::transform(capShaderName.begin(), capShaderName.end(), capShaderName.begin(), ::toupper);
-	ofstream out(basepath+shadername+string(".h"));
+	ofstream out(outRoot+shadername+string(".h"));
 	out << string("#ifndef ")+capShaderName+string("DATA\n");
 	out << string("#define ")+capShaderName+string("DATA\n");
 
@@ -66,13 +66,15 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe){
 
 int main(){
 	string basepath = string("C:/Users/robda/Documents/VulkanRenderer/computeShaders/");
-	loadAndWriteShaders(basepath, string("Kuwahara"), 0);
-	loadAndWriteShaders(basepath, string("SobelX"), 0);
-	loadAndWriteShaders(basepath, string("SobelY"), 0);
-	loadAndWriteShaders(basepath, string("ReferenceKuwahara"), 0);
-	loadAndWriteShaders(basepath, string("Averager"), 0);
+	string outRoot = string("C:/Users/robda/Documents/VulkanRenderer/include/");
+	loadAndWriteShaders(basepath, string("Kuwahara"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("SobelX"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("SobelY"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("ReferenceKuwahara"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("Averager"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("GradRemap"), 0, outRoot);
 	basepath = string("C:/Users/robda/Documents/VulkanRenderer/shaders/");
-	loadAndWriteShaders(basepath, string("TS_BF"), 0);
-	loadAndWriteShaders(basepath, string("OS_BF"), 0);
+	loadAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("OS_BF"), 0, outRoot);
 	return 0;
 }

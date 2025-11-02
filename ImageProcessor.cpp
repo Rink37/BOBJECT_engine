@@ -320,6 +320,8 @@ void filter::filterImage() {
 
 	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 
+	vkQueueWaitIdle(Engine::get()->computeQueue);
+
 	filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->textureLayout, filterTarget[0]->mipLevels);
 
 	//filterTarget[0]->getCVMat();
