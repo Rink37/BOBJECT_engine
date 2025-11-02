@@ -373,7 +373,6 @@ void surfaceConstructor::contextConvert() {
 	//}
 
 	for (int x = 0; x != testRemap.cols; x++) {
-		cout << x << endl;
 		for (int y = 0; y != testRemap.rows; y++) {
 			if (!(xgrad.at<float>(y, x) < thresh && ygrad.at<float>(y, x) < thresh)) {
 				Vec2f directionVector = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
@@ -389,31 +388,49 @@ void surfaceConstructor::contextConvert() {
 				Vec3f minColour;
 				Vec3f maxColour;
 				while (!(xgrad.at<float>(yy, xx) < thresh && ygrad.at<float>(yy, xx) < thresh)) {
+					directionVector = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
+					normFac = sqrtf(directionVector[0] * directionVector[0] + directionVector[1] * directionVector[1]);
+					directionVector[0] /= normFac;
+					directionVector[1] /= normFac;
 					location -= directionVector;
 					yy = static_cast<int>(location[0]);
 					xx = static_cast<int>(location[1]);
-					if (yy < 0 || xx < 0 || testRemap.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
+					if (yy < 0 || xx < 0) {
+						yy = 0;
+						xx = 0;
 						break;
 					}
 					min = Vec2f(ygrad.at<float>(yy, xx), xgrad.at<float>(yy, xx));
 					mid += min;
 				}
-				minColour = static_cast<Vec3f>(OSNormTex->texMat.at<Vec3b>(y, x));
+				minColour = static_cast<Vec3f>(testRemap.at<Vec3b>(yy, xx));
+				directionVector = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
+				normFac = sqrtf(directionVector[0] * directionVector[0] + directionVector[1] * directionVector[1]);
+				directionVector[0] /= normFac;
+				directionVector[1] /= normFac;
 				xx = x;
 				yy = y;
+				location = static_cast<Vec2f>(Vec2i(y, x));
+				max = min;
 				while (!(xgrad.at<float>(yy, xx) < thresh && ygrad.at<float>(yy, xx) < thresh )) {
+					directionVector = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
+					normFac = sqrtf(directionVector[0] * directionVector[0] + directionVector[1] * directionVector[1]);
+					directionVector[0] /= normFac;
+					directionVector[1] /= normFac;
 					location += directionVector;
 					yy = static_cast<int>(location[0]);
 					xx = static_cast<int>(location[1]);
-					if (yy >= testRemap.rows || xx >= testRemap.cols || testRemap.at<Vec3b>(y, x) == Vec3b(0, 0, 0)) {
+					if (yy >= testRemap.rows || xx >= testRemap.cols) {
+						yy = testRemap.rows - 1;
+						xx = testRemap.cols - 1;
 						break;
 					}
-					max = Vec2f(ygrad.at<float>(yy, xx), xgrad.at<float>(yy, xx));
+					max += Vec2f(ygrad.at<float>(yy, xx), xgrad.at<float>(yy, xx));
 				}
-				maxColour = static_cast<Vec3f>(OSNormTex->texMat.at<Vec3b>(y, x));
+				maxColour = static_cast<Vec3f>(testRemap.at<Vec3b>(yy, xx));
 				mid[0] = (mid[0] - min[0]) / (max[0] - mid[0]);
 				mid[1] = (mid[1] - min[1]) / (max[1] - mid[1]);
-				float mag = sqrtf(mid[0] * mid[0] + max[1] * max[1]);
+				float mag = clamp(sqrtf(mid[0] * mid[0] + mid[1] * mid[1]), 0.0f, 1.0f);
 				minColour[0] *= (1.0f - mag); 
 				minColour[1] *= (1.0f - mag);
 				minColour[2] *= (1.0f - mag);
@@ -423,7 +440,7 @@ void surfaceConstructor::contextConvert() {
 				testRemap.at<Vec3b>(y, x) = static_cast<Vec3b>(Vec3f(minColour[0]+maxColour[0], minColour[1]+maxColour[1], minColour[2]+maxColour[2]));
 			}
 		}
-		if (x % 50 == 0) {
+		if (x % 250 == 0) {
 			imshow("Converted", testRemap);
 			waitKey(0);
 		}
@@ -638,18 +655,18 @@ void surfaceConstructor::contextConvert() {
 	xgrad.release();
 	ygrad.release();
 
-	Mat grayConverted;
-	Mat grayDilated;
-	Mat kernel = getStructuringElement(MORPH_RECT, Size(100, 100));
-	cv::cvtColor(converted, grayConverted, COLOR_BGR2GRAY);
-	cv::inRange(grayConverted, 1, 255, grayConverted);
-	cv::dilate(grayConverted, grayDilated, kernel);
-	cv::subtract(grayDilated, grayConverted, grayConverted);
+	//Mat grayConverted;
+	//Mat grayDilated;
+	//Mat kernel = getStructuringElement(MORPH_RECT, Size(100, 100));
+	//cv::cvtColor(converted, grayConverted, COLOR_BGR2GRAY);
+	//cv::inRange(grayConverted, 1, 255, grayConverted);
+	//cv::dilate(grayConverted, grayDilated, kernel);
+	//cv::subtract(grayDilated, grayConverted, grayConverted);
 
-	cv::inpaint(converted, grayConverted, converted, 1.0, INPAINT_TELEA);
+	//cv::inpaint(converted, grayConverted, converted, 1.0, INPAINT_TELEA);
 
-	grayDilated.release();
-	grayConverted.release();
+	//grayDilated.release();
+	//grayConverted.release();
 
 	filter referenceKuwahara(diffTex, new imageTexture(converted, VK_FORMAT_R8G8B8A8_UNORM), new REFERENCEKUWAHARASHADER);
 	referenceKuwahara.filterImage();

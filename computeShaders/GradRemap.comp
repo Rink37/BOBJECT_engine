@@ -19,7 +19,8 @@ void main(){
 	vec3 xGpix = imageLoad(xGrad, pixelCoords).rgb;
 	vec3 normPix = imageLoad(normalImage, pixelCoords).rgb;
 
-	if (max(max(yGpix.r, yGpix.g), yGpix.b) < thresh && max(max(xGpix.r, xGpix.g), xGpix.b) < thresh){
+	if (!(max(max(yGpix.r, yGpix.g), yGpix.b) < thresh && max(max(xGpix.r, xGpix.g), xGpix.b) < thresh)){
+		vec2 directionVector = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), (max(max(yGpix.r, yGpix.g), yGpix.b));
 		if (normPix != vec3(0.0, 0.0, 0.0)){
 			sumColour.rgb += normPix;
 			sumColour.w += 1.0f;
