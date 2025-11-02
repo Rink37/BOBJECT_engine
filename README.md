@@ -1,6 +1,8 @@
+# MOBJECT Engine
+
 This project is designed to help me make traditionally hand-painted textures for my 3D models in a single contained solution, but I am also trying to make it accessible so that other people who are interested can do the same!
 
-// BASIC USAGE //
+## Usage
 
 On launch the app will detect the default webcam used by the system. Point the camera at a specific canvas with corners marked by a single distinctive colour, then drag the sliders until only those corners are white. If set up properly, you should see your webcam view cropped to only the canvas to the right. If there's an issue you can hit the settings button at the top. To pause/play the webcam view, hit the pause button in the top middle.
 
@@ -12,6 +14,10 @@ The normal map component also has the ability to generate maps from the object. 
 
 I'm working on functionality to remap a normal map using a diffuse texture but this isn't fully implemented yet, so I've disabled it in the release build.
 
-// COMMON QUESTION //
+## FAQ
 
-Can the webcam device be changed? No, not yet - though this is something I aim to add soon.
+  * Operating Systems?
+    - Tested only on Windows 11
+
+  * Can the webcam device be changed?
+    - No, not yet - though this is something I aim to add soon.
