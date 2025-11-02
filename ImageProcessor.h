@@ -13,7 +13,7 @@ class filter {
 public:
 	filter(Texture* src, shaderData* sd) {
 		filtertype = OIOO;
-		source.push_back(src->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
 
@@ -26,11 +26,28 @@ public:
 		createFilterPipeline();
 	}
 
+	filter(Texture* src, shaderData* sd, VkFormat outFormat) {
+		filtertype = OIOO;
+		source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		texWidth = source[0]->texWidth;
+		texHeight = source[0]->texHeight;
+
+		filterShaderModule = Engine::get()->createShaderModule(sd->vertData);
+
+		targetFormat = outFormat;
+
+		createFilterTarget();
+		createDescriptorSetLayout();
+		createDescriptorSet();
+		createFilterPipelineLayout();
+		createFilterPipeline();
+	}
+
 	filter(Texture* src0, Texture* src1, shaderData* sd) {
 		filtertype = TIOO;
 
-		source.push_back(src0->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
-		source.push_back(src1->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		source.push_back(src0->copyTexture(src0->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		source.push_back(src1->copyTexture(src1->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 		
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
@@ -44,21 +61,58 @@ public:
 		createFilterPipeline();
 	}
 
-	filter(Texture* src0, Texture* src1, Texture* src2, shaderData* sd) {
-		filtertype = THIOO; 
+	filter(Texture* src0, Texture* src1, shaderData* sd, VkFormat outFormat) {
+		filtertype = TIOO;
 
-		std::cout << src0->texWidth << " " << src0->texHeight << std::endl;
-
-		source.push_back(src0->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
-		source.push_back(src1->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
-		source.push_back(src2->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		source.push_back(src0->copyTexture(src0->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		source.push_back(src1->copyTexture(src1->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
 
-		std::cout << texWidth << " " << texHeight << std::endl;
+		filterShaderModule = Engine::get()->createShaderModule(sd->vertData);
+
+		targetFormat = outFormat;
+
+		createFilterTarget();
+		createDescriptorSetLayout();
+		createDescriptorSet();
+		createFilterPipelineLayout();
+		createFilterPipeline();
+	}
+
+	filter(Texture* src0, Texture* src1, Texture* src2, shaderData* sd) {
+		filtertype = THIOO; 
+
+		source.push_back(src0->copyTexture(src0->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		source.push_back(src1->copyTexture(src1->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		source.push_back(src2->copyTexture(src2->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+
+		texWidth = source[0]->texWidth;
+		texHeight = source[0]->texHeight;
 
 		filterShaderModule = Engine::get()->createShaderModule(sd->vertData);
+
+		createFilterTarget();
+		createDescriptorSetLayout();
+		createDescriptorSet();
+		createFilterPipelineLayout();
+		createFilterPipeline();
+	}
+
+	filter(Texture* src0, Texture* src1, Texture* src2, shaderData* sd, VkFormat outFormat) {
+		filtertype = THIOO;
+
+		source.push_back(src0->copyTexture(src0->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		source.push_back(src1->copyTexture(src1->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		source.push_back(src2->copyTexture(src2->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+
+		texWidth = source[0]->texWidth;
+		texHeight = source[0]->texHeight;
+
+		filterShaderModule = Engine::get()->createShaderModule(sd->vertData);
+
+		targetFormat = outFormat;
 
 		createFilterTarget();
 		createDescriptorSetLayout();
@@ -97,6 +151,8 @@ private:
 
 	VkPipelineLayout filterPipelineLayout = nullptr;
 	VkPipeline filterPipeline = nullptr;
+
+	VkFormat targetFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
 	VkDescriptorPool descPool = nullptr;
 	VkDescriptorSetLayout filterDescriptorSetLayout = nullptr;

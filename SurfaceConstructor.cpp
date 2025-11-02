@@ -209,10 +209,15 @@ void surfaceConstructor::contextConvert() {
 	// cvtColor(tempSobelY.filterTarget[0]->texMat, tempygrad, COLOR_RGB2GRAY); //
 
 	// imwrite(baseName + string("NFXgrad.jpeg"), tempxgrad); //
-	// imwrite(baseName + string("NFYgrad.jpeg"), tempygrad); // 
+	// imwrite(baseName + string("NFYgrad.jpeg"), tempygrad); //
+	diffTex->getCVMat();
+	Texture* kuwaharaTex = new imageTexture(diffTex->texMat, VK_FORMAT_R8G8B8A8_UNORM);
 
 	filter Kuwahara(diffTex, new KUWAHARASHADER);
 	Kuwahara.filterImage();
+
+	kuwaharaTex->cleanup();
+	delete kuwaharaTex;
 
 	// Kuwahara.filterTarget[0]->getCVMat(); //
 	// Mat kuw = Kuwahara.filterTarget[0]->texMat.clone(); //
@@ -234,9 +239,9 @@ void surfaceConstructor::contextConvert() {
 
 	// imwrite(baseName + string("KuwFilteredDiff.jpeg"), kuw); // 
 		
-	filter SobelX(Kuwahara.filterTarget[0], new SOBELXSHADER);
+	filter SobelX(Kuwahara.filterTarget[0], new SOBELXSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelX.filterImage();
-	filter SobelY(Kuwahara.filterTarget[0], new SOBELYSHADER);
+	filter SobelY(Kuwahara.filterTarget[0], new SOBELYSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelY.filterImage();
 
 	OSNormTex->getCVMat();

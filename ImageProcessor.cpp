@@ -297,7 +297,7 @@ void filter::createFilterPipeline() {
 
 void filter::createFilterTarget() {
 	filterTarget.push_back(new Texture);
-	filterTarget[0]->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	filterTarget[0]->textureFormat = targetFormat;
 	filterTarget[0]->textureUsage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Transfer dst might cause issues? I'm not sure yet
 	filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	filterTarget[0]->texWidth = texWidth;
@@ -319,8 +319,6 @@ void filter::filterImage() {
 	vkCmdDispatch(commandBuffer, source[0]->texWidth / 16, source[0]->texHeight / 16, 1);
 
 	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
-
-	vkQueueWaitIdle(Engine::get()->computeQueue);
 
 	filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->textureLayout, filterTarget[0]->mipLevels);
 
