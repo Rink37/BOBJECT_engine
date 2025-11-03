@@ -191,56 +191,15 @@ void surfaceConstructor::contextConvert() {
 		return;
 	}
 
-	// Commented lines are used to save videos/images of the filter process (used for my tiktok video)
-
-	// string baseName = "ConversionSec"; //
-
-	// filter tempSobelX(diffTex, new SOBELXSHADER); //
-	// tempSobelX.filterImage(); // 
-	// filter tempSobelY(diffTex, new SOBELYSHADER); //
-	// tempSobelY.filterImage(); //
-	// Mat tempxgrad; // 
-	// Mat tempygrad; //
-
-	// tempSobelX.filterTarget[0]->getCVMat(); //
-	// tempSobelY.filterTarget[0]->getCVMat(); //
-
-	// cvtColor(tempSobelX.filterTarget[0]->texMat, tempxgrad, COLOR_RGB2GRAY); //
-	// cvtColor(tempSobelY.filterTarget[0]->texMat, tempygrad, COLOR_RGB2GRAY); //
-
-	// imwrite(baseName + string("NFXgrad.jpeg"), tempxgrad); //
-	// imwrite(baseName + string("NFYgrad.jpeg"), tempygrad); //
 	diffTex->getCVMat();
 	Texture* kuwaharaTex = new imageTexture(diffTex->texMat, VK_FORMAT_R8G8B8A8_UNORM);
 
 	filter Kuwahara(kuwaharaTex, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	Kuwahara.filterImage();
-
-	// Kuwahara.filterTarget[0]->getCVMat(); //
-	// Mat kuw = Kuwahara.filterTarget[0]->texMat.clone(); //
-
-	// THIS IS A USEFUL OPENCV GAMMA CORRECTION FUNCTION - IT SHOULD BE INCLUDED IN THE TEXTURING
-	
-	// float gamma = 2.2; //
-	// float invGamma = 1 / gamma; //
-
-	// Mat table(1, 256, CV_8U); //
-	// uchar* p = table.ptr(); //
-	// for (int i = 0; i < 256; ++i) { //
-	// 	p[i] = (uchar)(pow(i / 255.0, invGamma) * 255); //
-	// } //
-
-	// LUT(kuw, table, kuw); //
-
-	// END OF GAMMA CORRECT //
-
-	// imwrite(baseName + string("KuwFilteredDiff.jpeg"), kuw); // 
 		
-	cout << "Filtering x" << endl;
 	filter SobelX(Kuwahara.filterTarget[0], new SOBELXSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelX.filterImage();
 	
-	cout << "Filtering y" << endl;
 	filter SobelY(Kuwahara.filterTarget[0], new SOBELYSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelY.filterImage();
 
@@ -249,229 +208,18 @@ void surfaceConstructor::contextConvert() {
 
 	Texture* interrimNorm = new imageTexture(OSNormTex->texMat, VK_FORMAT_R8G8B8A8_UNORM);
 
-	// Use of gradients currently does not work because gradient values are not in the range [-1, 1] where they need to be 
-	// We want to know when the gradient is positive and when it is negative
-
 	filter Averager(interrimNorm, SobelX.filterTarget[0], SobelY.filterTarget[0], new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	Averager.filterImage();
 
 	interrimNorm->cleanup();
 	delete interrimNorm;
 
-	Averager.filterTarget[0]->getCVMat();
-	cv::imshow("Shader filtered average", Averager.filterTarget[0]->texMat);
-	cv::waitKey(0);
-
 	filter gradRemap(Averager.filterTarget[0], SobelX.filterTarget[0], SobelY.filterTarget[0], new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	gradRemap.filterImage();
 
-	//filter gradRemap2(gradRemap.filterTarget[0], SobelX.filterTarget[0], SobelY.filterTarget[0], new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
-	//gradRemap2.filterImage();
-
-	//filter gradRemap3(gradRemap2.filterTarget[0], SobelX.filterTarget[0], SobelY.filterTarget[0], new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
-	//gradRemap3.filterImage();
-
-	gradRemap.filterTarget[0]->getCVMat();
-	cv::imshow("Shader filtered avgd and remapped", gradRemap.filterTarget[0]->texMat);
-	cv::waitKey(0);
-
-	Mat testRemap = gradRemap.filterTarget[0]->texMat.clone();
-	
-	//Mat xgrad;
-	//Mat ygrad;
-
-	//SobelX.filterTarget[0]->getCVMat();
-	//SobelY.filterTarget[0]->getCVMat();
-
-	//cv::cvtColor(SobelX.filterTarget[0]->texMat, xgrad, COLOR_RGB2GRAY);
-	//cv::cvtColor(SobelY.filterTarget[0]->texMat, ygrad, COLOR_RGB2GRAY);
-
-	// imwrite(baseName + string("FXgrad.jpeg"), xgrad); //
-	// imwrite(baseName + string("FYgrad.jpeg"), ygrad); // 
-
-	//xgrad.convertTo(xgrad, CV_32F);
-	//ygrad.convertTo(ygrad, CV_32F);
-
-	//Kuwahara.cleanup();
-	//SobelX.cleanup();
-	//SobelY.cleanup();
-	//Averager.cleanup();
-
-	//diffTex->getCVMat();
-
-	//int thresh = 15;
-
-	//resize(OSNormTex->texMat, OSNormTex->texMat, Size(diffTex->texMat.cols, diffTex->texMat.rows));
-	//Mat convertedY = OSNormTex->texMat.clone();
-
-	//Mat testRemap = OSNormTex->texMat.clone(); // This is the class I will temporarily be using to test a new algorithm
-	//int kernelRadius = 25; // The number of pixels we will move from the central test position
-	//if (kernelRadius < 2) {
-	//	kernelRadius = 2;
-	//}
-
-	// This algorithm currently replaces the colour smoothing but does not solve replicating gradient transitions
-	//for (int x = 0; x != testRemap.cols; x++) {
-	//	for (int y = 0; y != testRemap.rows; y++) {
-	//		vector<Vec3f> colours;
-	//		vector<Vec2i> coords;
-	//		testRemap.at<Vec3b>(y, x) = Vec3b(0, 0, 0);
-	//		if (ygrad.at<float>(y, x) < thresh && xgrad.at<float>(y, x) < thresh && OSNormTex->texMat.at<Vec3b>(y, x) != Vec3b(0, 0, 0)) {
-	//			ygrad.at<float>(y, x) = 0.0f;
-	//			xgrad.at<float>(y, x) = 0.0f;
-	//			colours.push_back(OSNormTex->texMat.at<Vec3b>(y, x));
-	//			coords.push_back(Vec2i(y, x));
-	//			for (int xx = x-1; xx != x - kernelRadius; xx--) {
-	//				if (xx < 0) {
-	//					break;
-	//				}
-	//				if (!(ygrad.at<float>(y, xx) < thresh && xgrad.at<float>(y, xx) < thresh && OSNormTex->texMat.at<Vec3b>(y, xx) != Vec3b(0, 0, 0))) {
-	//					break;
-	//				}
-	//				for (int yy = y-1; yy != y - kernelRadius; yy--) {
-	//					if (yy < 0) {
-	//						break;
-	//					}
-	//					if (!(ygrad.at<float>(yy, xx) < thresh && xgrad.at<float>(yy, xx) < thresh && OSNormTex->texMat.at<Vec3b>(yy, xx) != Vec3b(0, 0, 0))) {
-	//						break;
-	//					}
-	//					colours.push_back(OSNormTex->texMat.at<Vec3b>(yy, xx));
-	//					coords.push_back(Vec2i(yy, xx));
-	//				}
-	//				for (int yy = y+1; yy != y + kernelRadius; yy++) {
-	//					if (yy >= testRemap.rows) {
-	//						break;
-	//					}
-	//					if (!(ygrad.at<float>(yy, xx) < thresh && xgrad.at<float>(yy, xx) < thresh && OSNormTex->texMat.at<Vec3b>(yy, xx) != Vec3b(0, 0, 0))) {
-	//						break;
-	//					}
-	//					colours.push_back(OSNormTex->texMat.at<Vec3b>(yy, xx));
-	//					coords.push_back(Vec2i(yy, xx));
-	//				}
-	//			}
-	//			for (int xx = x + 1; xx != x + kernelRadius; xx++) {
-	//				if (xx >= testRemap.cols) {
-	//					break;
-	//				}
-	//				if (!(ygrad.at<float>(y, xx) < thresh && xgrad.at<float>(y, xx) < thresh && OSNormTex->texMat.at<Vec3b>(y, xx) != Vec3b(0, 0, 0))) {
-	//					break;
-	//				}
-	//				for (int yy = y - 1; yy != y - kernelRadius; yy--) {
-	//					if (yy < 0) {
-	//						break;
-	//					}
-	//					if (!(ygrad.at<float>(yy, xx) < thresh && xgrad.at<float>(yy, xx) < thresh && OSNormTex->texMat.at<Vec3b>(yy, xx) != Vec3b(0, 0, 0))) {
-	//						break;
-	//					}
-	//					colours.push_back(OSNormTex->texMat.at<Vec3b>(yy, xx));
-	//					coords.push_back(Vec2i(yy, xx));
-	//				}
-	//				for (int yy = y + 1; yy != y + kernelRadius; yy++) {
-	//					if (yy >= testRemap.rows) {
-	//						break;
-	//					}
-	//					if (!(ygrad.at<float>(yy, xx) < thresh && xgrad.at<float>(yy, xx) < thresh && OSNormTex->texMat.at<Vec3b>(yy, xx) != Vec3b(0, 0, 0))) {
-	//						break;
-	//					}
-	//					colours.push_back(OSNormTex->texMat.at<Vec3b>(yy, xx));
-	//					coords.push_back(Vec2i(yy, xx));
-	//				}
-	//			}
-	//		}
-	//		Vec3f sumColour = Vec3f(0.0f, 0.0f, 0.0f);
-	//		for (Vec3b colour : colours) {
-	//			sumColour += static_cast<Vec3f>(colour);
-	//		}
-	//		sumColour[0] /= colours.size();
-	//		sumColour[1] /= colours.size();
-	//		sumColour[2] /= colours.size();
-	//		Vec3b avgColour = static_cast<Vec3b>(sumColour);
-	//		testRemap.at<Vec3b>(y, x) = avgColour;
-	//	}
-		//if (x % 100 == 0) {
-		//	imshow("Converted", testRemap);
-		//	waitKey(0);
-		//}
-	//}
-
-	//for (int x = 0; x != testRemap.cols; x++) {
-	//	for (int y = 0; y != testRemap.rows; y++) {
-	//		if (!(xgrad.at<float>(y, x) < thresh && ygrad.at<float>(y, x) < thresh)) {
-	//			Vec2f directionVector = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
-	//			float normFac = sqrtf(directionVector[0] * directionVector[0] + directionVector[1] * directionVector[1]);
-	//			directionVector[0] /= normFac;
-	//			directionVector[1] /= normFac;
-	//			int xx = x;
-	//			int yy = y;
-	//			Vec2f location = static_cast<Vec2f>(Vec2i(y, x));
-	//			Vec2f min;
-	//			Vec2f max;
-	//			Vec2f mid = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
-	//			Vec3f minColour;
-	//			Vec3f maxColour;
-	//			while (!(xgrad.at<float>(yy, xx) < thresh && ygrad.at<float>(yy, xx) < thresh)) {
-	//				directionVector = Vec2f(ygrad.at<float>(yy, xx), xgrad.at<float>(yy, xx));
-	//				normFac = sqrtf(directionVector[0] * directionVector[0] + directionVector[1] * directionVector[1]);
-	//				directionVector[0] /= normFac;
-	//				directionVector[1] /= normFac;
-	//				location -= directionVector;
-	//				yy = static_cast<int>(location[0]);
-	//				xx = static_cast<int>(location[1]);
-	//				if (yy < 0 || xx < 0) {
-	//					yy = 0;
-	//					xx = 0;
-	//					break;
-	//				}
-	//				min = Vec2f(ygrad.at<float>(yy, xx), xgrad.at<float>(yy, xx));
-	//				mid += min;
-	//			}
-	//			minColour = static_cast<Vec3f>(testRemap.at<Vec3b>(yy, xx));
-	//			directionVector = Vec2f(ygrad.at<float>(y, x), xgrad.at<float>(y, x));
-	//			normFac = sqrtf(directionVector[0] * directionVector[0] + directionVector[1] * directionVector[1]);
-	//			directionVector[0] /= normFac;
-	//			directionVector[1] /= normFac;
-	//			xx = x;
-	//			yy = y;
-	//			location = static_cast<Vec2f>(Vec2i(y, x));
-	//			max = mid;
-	//			while (!(xgrad.at<float>(yy, xx) < thresh && ygrad.at<float>(yy, xx) < thresh )) {
-	//				directionVector = Vec2f(ygrad.at<float>(yy, xx), xgrad.at<float>(yy, xx));
-	//				normFac = sqrtf(directionVector[0] * directionVector[0] + directionVector[1] * directionVector[1]);
-	//				directionVector[0] /= normFac;
-	//				directionVector[1] /= normFac;
-	//				location += directionVector;
-	//				yy = static_cast<int>(location[0]);
-	//				xx = static_cast<int>(location[1]);
-	//				if (yy >= testRemap.rows || xx >= testRemap.cols) {
-	//					yy = testRemap.rows - 1;
-	//					xx = testRemap.cols - 1;
-	//					break;
-	//				}
-	//				max += Vec2f(ygrad.at<float>(yy, xx), xgrad.at<float>(yy, xx));
-	//			}
-	//			maxColour = static_cast<Vec3f>(testRemap.at<Vec3b>(yy, xx));
-	//			mid[0] = (mid[0] - min[0]) / (max[0] - mid[0]);
-	//			mid[1] = (mid[1] - min[1]) / (max[1] - mid[1]);
-	//			float mag = clamp(sqrtf(mid[0] * mid[0] + mid[1] * mid[1]), 0.0f, 1.0f);
-	//			minColour[0] *= (1.0f - mag); 
-	//			minColour[1] *= (1.0f - mag);
-	//			minColour[2] *= (1.0f - mag);
-	//			maxColour[0] *= mag;
-	//			maxColour[1] *= mag;
-	//			maxColour[2] *= mag;
-	//			testRemap.at<Vec3b>(y, x) = static_cast<Vec3b>(Vec3f(minColour[0]+maxColour[0], minColour[1]+maxColour[1], minColour[2]+maxColour[2]));
-	//		}
-	//	}
-	//	if (x % 250 == 0) {
-	//		imshow("Converted", testRemap);
-	//		waitKey(0);
-	//	}
-	//}
-
-	Mat converted = testRemap.clone();// convertedY.clone();
-
-	filter referenceKuwahara(kuwaharaTex, new imageTexture(converted, VK_FORMAT_R8G8B8A8_UNORM), new REFERENCEKUWAHARASHADER);
+	filter referenceKuwahara(kuwaharaTex, gradRemap.filterTarget[0], new REFERENCEKUWAHARASHADER);
 	referenceKuwahara.filterImage();
+
 	referenceKuwahara.filterTarget[0]->getCVMat();
 
 	kuwaharaTex->cleanup();
@@ -481,11 +229,15 @@ void surfaceConstructor::contextConvert() {
 	cv::waitKey(0);
 
 	normalType = 0;
-	loadNormal(new imageTexture(referenceKuwahara.filterTarget[0]->texMat(Range(0, converted.rows), Range(0, converted.cols)), VK_FORMAT_R8G8B8A8_UNORM));
-	//loadNormal(new imageTexture(converted(Range(0, converted.rows), Range(0, converted.cols)), VK_FORMAT_R8G8B8A8_UNORM));
+	loadNormal(new imageTexture(referenceKuwahara.filterTarget[0]->texMat(Range(0, diffTex->texHeight), Range(0, diffTex->texWidth)), VK_FORMAT_R8G8B8A8_UNORM));
 
 	updateSurfaceMat();
 
+	Kuwahara.cleanup();
+	SobelX.cleanup();
+	SobelY.cleanup();
+	Averager.cleanup();
+	gradRemap.cleanup();
 	referenceKuwahara.cleanup();
 	diffTex->destroyCVMat();
 	OSNormTex->destroyCVMat();
