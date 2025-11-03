@@ -2,6 +2,7 @@
 #define IMAGEPROCESSOR
 
 #include"Bobject_Engine.h"
+#include<chrono>
 #include"Textures.h"
 #include"ShaderDataType.h"
 

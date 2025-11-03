@@ -10,6 +10,9 @@ C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalConvertor.frag -o FilterDefaultFrag.s
 C:/VulkanSDK/1.4.328.1/Bin/glslc.exe Kuwahara.comp -o KuwaharaVert.spv
 C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalConvertor.frag -o KuwaharaFrag.spv
 
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe ReferenceKuwahara.comp -o ReferenceKuwaharaVert.spv
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalConvertor.frag -o ReferenceKuwaharaFrag.spv
+
 C:/VulkanSDK/1.4.328.1/Bin/glslc.exe Averager.comp -o AveragerVert.spv
 C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalConvertor.frag -o AveragerFrag.spv
 

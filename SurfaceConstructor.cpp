@@ -191,34 +191,48 @@ void surfaceConstructor::contextConvert() {
 		return;
 	}
 
+	auto start = std::chrono::high_resolution_clock::now();
+
 	diffTex->getCVMat();
 	Texture* kuwaharaTex = new imageTexture(diffTex->texMat, VK_FORMAT_R8G8B8A8_UNORM);
 
+	cout << "Kuwahara" << endl;
 	filter Kuwahara(kuwaharaTex, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	Kuwahara.filterImage();
-		
+	
+	cout << "SobelX" << endl;
 	filter SobelX(Kuwahara.filterTarget[0], new SOBELXSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelX.filterImage();
 	
+	cout << "SobelY" << endl;
 	filter SobelY(Kuwahara.filterTarget[0], new SOBELYSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelY.filterImage();
 
-	OSNormTex->getCVMat();
+	// Presumably this block is faster than using compute to recreate the OS map, but I haven't checked
+	OSNormTex->getCVMat(); 
 	cv::resize(OSNormTex->texMat, OSNormTex->texMat, cv::Size(diffTex->texWidth, diffTex->texHeight));
-
 	Texture* interrimNorm = new imageTexture(OSNormTex->texMat, VK_FORMAT_R8G8B8A8_UNORM);
 
+	cout << "Averager" << endl;
 	filter Averager(interrimNorm, SobelX.filterTarget[0], SobelY.filterTarget[0], new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	Averager.filterImage();
 
 	interrimNorm->cleanup();
 	delete interrimNorm;
 
+	cout << "GradRemap" << endl;
 	filter gradRemap(Averager.filterTarget[0], SobelX.filterTarget[0], SobelY.filterTarget[0], new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	gradRemap.filterImage();
 
+	cout << "ReferenceKuwahara" << endl;
 	filter referenceKuwahara(kuwaharaTex, gradRemap.filterTarget[0], new REFERENCEKUWAHARASHADER);
 	referenceKuwahara.filterImage();
+
+	auto end = std::chrono::high_resolution_clock::now();
+
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+	cout << "Total filtering completed in " << duration.count() << "ms" << endl;
 
 	referenceKuwahara.filterTarget[0]->getCVMat();
 

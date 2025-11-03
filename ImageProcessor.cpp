@@ -304,13 +304,14 @@ void filter::createFilterTarget() {
 	filterTarget[0]->texHeight = texHeight;
 	filterTarget[0]->mipLevels = 1;
 	filterTarget[0]->setup();
-	cout << filterTarget[0]->textureFormat << endl;
 }
 
 void filter::filterImage() {
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 
 	vkQueueWaitIdle(Engine::get()->computeQueue);
+
+	auto start = std::chrono::high_resolution_clock::now();
 
 	//source->transitionImageLayout(source->textureImage, source->textureFormat, VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, source->mipLevels);
 	filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->mipLevels);
@@ -323,5 +324,10 @@ void filter::filterImage() {
 
 	filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->textureLayout, filterTarget[0]->mipLevels);
 
+	auto end = std::chrono::high_resolution_clock::now();
+
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+	cout << "Completed in " << duration.count() << "ms" << endl;
 	//filterTarget[0]->getCVMat();
 }
