@@ -32,8 +32,10 @@ void main(){
 			xGpix = imageLoad(xGrad, ivec2(x, pixelCoords.y)).rgb;
 			normPix = imageLoad(normalImage, ivec2(x, pixelCoords.y)).rgb;
 			if (abs(yGpix.r) < thresh && abs(xGpix.r) < thresh){
-				sumColour.rgb += normPix;
-				sumColour.w += 1;
+				if (normPix != vec3(0,0,0)){
+					sumColour.rgb += normPix;
+					sumColour.w += 1;
+				}
 				for (int y = pixelCoords.y-1; y != pixelCoords.y-kernelRadius; y--){
 					if (y < 0){
 						break;
@@ -68,8 +70,10 @@ void main(){
 			xGpix = imageLoad(xGrad, ivec2(x, pixelCoords.y)).rgb;
 			normPix = imageLoad(normalImage, ivec2(x, pixelCoords.y)).rgb;
 			if (abs(yGpix.r) < thresh && abs(xGpix.r) < thresh){
-				sumColour.rgb += normPix;
-				sumColour.w += 1;
+				if (normPix != vec3(0,0,0)){
+					sumColour.rgb += normPix;
+					sumColour.w += 1;
+				}
 				for (int y = pixelCoords.y-1; y != pixelCoords.y-kernelRadius; y--){
 					if (y < 0){
 						break;

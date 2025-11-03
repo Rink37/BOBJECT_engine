@@ -9,103 +9,81 @@ layout(binding = 3, rgba8) uniform image2D resultImage;
 void main(){
 	const float thresh = 0.06f;
 	const ivec2 imgResolution = imageSize(normalImage);
-	const int maxDist = 5;
+	const int maxIts = 2;
 
 	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
 
 	vec3 yGpix = imageLoad(yGrad, pixelCoords).rgb;
 	vec3 xGpix = imageLoad(xGrad, pixelCoords).rgb;
+	vec2 gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
+	vec2 gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
+	vec2 grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
 	vec3 normPix = imageLoad(normalImage, pixelCoords).rgb;
 
 	vec4 sumColour = vec4(normPix, 1.0f);
 
-	if (!(abs(yGpix.r) < thresh && abs(xGpix.r) < thresh)){
-		vec2 directionVector = vec2(xGpix.r, yGpix.r);
-		float norm = length(directionVector);
-		directionVector /= norm;
+	if (!(abs(grad.x) < thresh && abs(grad.y) < thresh)){
+		vec2 directionVector = normalize(vec2(grad.x, grad.y));
+		directionVector /= max(directionVector.x, directionVector.y);
 		int xx = pixelCoords.x;
 		int yy = pixelCoords.y;
 		vec2 location = vec2(float(pixelCoords.x), float(pixelCoords.y));
-		vec2 minG = vec2(0.0,0.0);
-		vec2 midG = -vec2(xGpix.r, yGpix.r);
-		vec3 minColour = vec3(0.0, 0.0, 0.0);
-		vec3 maxColour = vec3(0.0, 0.0, 0.0);
+		vec2 minG;
+		vec2 midG = vec2(0.0, 0.0);
+		vec3 minColour;
+		vec3 maxColour;
 
-		while (!(abs(xGpix.r) < thresh && abs(yGpix.r) < thresh)){
+		while (!(abs(grad.x) < thresh && abs(grad.y) < thresh)){
 			yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
 			xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
-			directionVector = vec2(xGpix.r, yGpix.r);
-			norm = length(directionVector);
-			directionVector /= norm;
+			gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
+			gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
+			grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
 			location -= directionVector;
 			xx = int(location.x);
 			yy = int(location.y);
-			if (yy < 0 || xx < 0) {
-				yy = 0;
-				xx = 0;
-				break;
-			}
-			minG = vec2(xGpix.r, yGpix.r);
+			minG = vec2(abs(grad.x), abs(grad.y));
 			midG += minG;
 		}
-		minColour = imageLoad(normalImage, ivec2(xx, yy)).rgb; 
-		int count = 0;
-		while(minColour == vec3(0.0, 0.0, 0.0) && count < maxDist){
-			location -= directionVector;
-			xx = int(location.x);
-			yy = int(location.y);
-			count++;
-			if (yy < 0 || xx < 0) {
-				yy = 0;
-				xx = 0;
-				break;
-			}
-			minColour = imageLoad(normalImage, ivec2(xx, yy)).rgb; 
-		}
+		
+		minColour = (imageLoad(normalImage, ivec2(xx, yy)).rgb != vec3(0,0,0))?imageLoad(normalImage, ivec2(xx, yy)).rgb:imageLoad(resultImage, ivec2(xx, yy)).rgb;
+
 		xx = pixelCoords.x;
 		yy = pixelCoords.y;
 		yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
 		xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
-		location = vec2(float(pixelCoords.x), float(pixelCoords.y));
-		vec2 maxG = midG - vec2(xGpix.r, yGpix.r);
+		gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
+		gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
+		grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
 		
-		while (!(abs(yGpix.r) < thresh && abs(xGpix.r) < thresh)){
+		location = vec2(float(pixelCoords.x), float(pixelCoords.y));
+		
+		vec2 maxG = midG - vec2(grad.x, grad.y);
+		
+		while (!(abs(grad.x) < thresh && abs(grad.y) < thresh)){
 			yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
 			xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
-			directionVector = vec2(xGpix.r, yGpix.r);
-			norm = length(directionVector);
-			directionVector /= norm;
+			gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
+			gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
+			grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
 			location += directionVector;
 			xx = int(location.x);
 			yy = int(location.y);
-			if (yy >= imgResolution.y || xx >= imgResolution.x) {
-				yy = imgResolution.y-1;
-				xx = imgResolution.x-1;
-				break;
-			}
-			maxG += vec2(xGpix.r, yGpix.r);
+			maxG += vec2(abs(grad.x), abs(grad.y));
 		}
-		
-		maxColour = imageLoad(normalImage, ivec2(xx, yy)).rgb;
-		count = 0;
-		while(maxColour == vec3(0.0, 0.0, 0.0) && count < maxDist){
-			location += directionVector;
-			xx = int(location.x);
-			yy = int(location.y);
-			count++;
-			if (yy >= imgResolution.y || xx >= imgResolution.x) {
-				yy = imgResolution.y-1;
-				xx = imgResolution.x-1;
-				break;
-			}
-			minColour = imageLoad(normalImage, ivec2(xx, yy)).rgb; 
-		}
+
+		maxColour = (imageLoad(normalImage, ivec2(xx, yy)).rgb != vec3(0,0,0))?imageLoad(normalImage, ivec2(xx, yy)).rgb:imageLoad(resultImage, ivec2(xx, yy)).rgb;
+
 		midG = (midG-minG)/(maxG-minG);
 		float mag = clamp(length(midG), 0.0, 1.0);
 		minColour *= (1.0-mag);
 		maxColour *= mag;
 		
-		sumColour = vec4(minColour + maxColour, 1.0);
+		if (grad.x < 0){
+			sumColour = vec4(1.0, 1.0, 1.0, 1.0); // Does this suggest that we have no negative values?
+		} else {
+			sumColour = (minColour != vec3(0,0,0) && maxColour != vec3(0,0,0))?vec4(minColour + maxColour, 1.0):vec4(0.0,0.0,0.0,0.0);
+		}
 	}
 
 	vec4 pixel = vec4(sumColour.rgb, 1.0);
