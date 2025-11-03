@@ -213,7 +213,7 @@ void surfaceConstructor::contextConvert() {
 	diffTex->getCVMat();
 	Texture* kuwaharaTex = new imageTexture(diffTex->texMat, VK_FORMAT_R8G8B8A8_UNORM);
 
-	filter Kuwahara(diffTex, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM);
+	filter Kuwahara(kuwaharaTex, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	Kuwahara.filterImage();
 
 	kuwaharaTex->cleanup();

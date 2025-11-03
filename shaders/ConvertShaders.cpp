@@ -1,8 +1,10 @@
 #include<iostream>
+#include<filesystem>
 #include<fstream>
 #include<string>
 #include<vector>
 #include <iomanip>
+#include<Windows.h>
 #include <bits/stdc++.h> // No idea why this is claimed to be an error - it works fine
 
 using namespace std;
@@ -65,16 +67,23 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 }
 
 int main(){
-	string basepath = string("C:/Users/robda/Documents/VulkanRenderer/computeShaders/");
-	string outRoot = string("C:/Users/robda/Documents/VulkanRenderer/include/");
+	char rootChar[MAX_PATH];
+	GetModuleFileName(NULL, rootChar, MAX_PATH);
+	std::filesystem::path rootPth{rootChar};
+
+	string rootPath{rootPth.parent_path().parent_path().string()};
+	string basepath = rootPath + string("/computeShaders/");
+	string outRoot = rootPath + string("/include/");
+	
 	loadAndWriteShaders(basepath, string("Kuwahara"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("SobelX"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("SobelY"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("ReferenceKuwahara"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("Averager"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("GradRemap"), 0, outRoot);
-	basepath = string("C:/Users/robda/Documents/VulkanRenderer/shaders/");
+	basepath = rootPath+string("/shaders/");
 	loadAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("OS_BF"), 0, outRoot);
+	cout << "Done" << endl;
 	return 0;
 }
