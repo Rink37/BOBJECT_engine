@@ -79,11 +79,7 @@ void main(){
 		minColour *= (1.0-mag);
 		maxColour *= mag;
 		
-		if (grad.x < 0){
-			sumColour = vec4(1.0, 1.0, 1.0, 1.0); // Does this suggest that we have no negative values?
-		} else {
-			sumColour = (minColour != vec3(0,0,0) && maxColour != vec3(0,0,0))?vec4(minColour + maxColour, 1.0):vec4(0.0,0.0,0.0,0.0);
-		}
+		sumColour = (minColour != vec3(0,0,0) && maxColour != vec3(0,0,0))?vec4(minColour + maxColour, 1.0):vec4(0.0,0.0,0.0,0.0);
 	}
 
 	vec4 pixel = vec4(sumColour.rgb, 1.0);

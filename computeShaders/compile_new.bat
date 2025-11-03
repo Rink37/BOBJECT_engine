@@ -15,3 +15,9 @@ C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalConvertor.frag -o AveragerFrag.spv
 
 C:/VulkanSDK/1.4.328.1/Bin/glslc.exe GradRemap.comp -o GradRemapVert.spv
 C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalConvertor.frag -o GradRemapFrag.spv
+
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe SobelX.comp -o SobelXVert.spv
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalConvertor.frag -o SobelXFrag.spv
+
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe SobelY.comp -o SobelYVert.spv
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalConvertor.frag -o SobelYFrag.spv

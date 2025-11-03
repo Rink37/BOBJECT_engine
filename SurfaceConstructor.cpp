@@ -216,9 +216,6 @@ void surfaceConstructor::contextConvert() {
 	filter Kuwahara(kuwaharaTex, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	Kuwahara.filterImage();
 
-	kuwaharaTex->cleanup();
-	delete kuwaharaTex;
-
 	// Kuwahara.filterTarget[0]->getCVMat(); //
 	// Mat kuw = Kuwahara.filterTarget[0]->texMat.clone(); //
 
@@ -239,8 +236,11 @@ void surfaceConstructor::contextConvert() {
 
 	// imwrite(baseName + string("KuwFilteredDiff.jpeg"), kuw); // 
 		
+	cout << "Filtering x" << endl;
 	filter SobelX(Kuwahara.filterTarget[0], new SOBELXSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelX.filterImage();
+	
+	cout << "Filtering y" << endl;
 	filter SobelY(Kuwahara.filterTarget[0], new SOBELYSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelY.filterImage();
 
@@ -265,17 +265,17 @@ void surfaceConstructor::contextConvert() {
 	filter gradRemap(Averager.filterTarget[0], SobelX.filterTarget[0], SobelY.filterTarget[0], new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	gradRemap.filterImage();
 
-	filter gradRemap2(gradRemap.filterTarget[0], SobelX.filterTarget[0], SobelY.filterTarget[0], new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
-	gradRemap2.filterImage();
+	//filter gradRemap2(gradRemap.filterTarget[0], SobelX.filterTarget[0], SobelY.filterTarget[0], new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+	//gradRemap2.filterImage();
 
 	//filter gradRemap3(gradRemap2.filterTarget[0], SobelX.filterTarget[0], SobelY.filterTarget[0], new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	//gradRemap3.filterImage();
 
-	gradRemap2.filterTarget[0]->getCVMat();
-	cv::imshow("Shader filtered avgd and remapped", gradRemap2.filterTarget[0]->texMat);
+	gradRemap.filterTarget[0]->getCVMat();
+	cv::imshow("Shader filtered avgd and remapped", gradRemap.filterTarget[0]->texMat);
 	cv::waitKey(0);
 
-	Mat testRemap = gradRemap2.filterTarget[0]->texMat.clone();
+	Mat testRemap = gradRemap.filterTarget[0]->texMat.clone();
 	
 	//Mat xgrad;
 	//Mat ygrad;
@@ -470,9 +470,12 @@ void surfaceConstructor::contextConvert() {
 
 	Mat converted = testRemap.clone();// convertedY.clone();
 
-	filter referenceKuwahara(diffTex, new imageTexture(converted, VK_FORMAT_R8G8B8A8_UNORM), new REFERENCEKUWAHARASHADER);
+	filter referenceKuwahara(kuwaharaTex, new imageTexture(converted, VK_FORMAT_R8G8B8A8_UNORM), new REFERENCEKUWAHARASHADER);
 	referenceKuwahara.filterImage();
 	referenceKuwahara.filterTarget[0]->getCVMat();
+
+	kuwaharaTex->cleanup();
+	delete kuwaharaTex;
 
 	cv::imshow("Finished", referenceKuwahara.filterTarget[0]->texMat);
 	cv::waitKey(0);

@@ -304,6 +304,7 @@ void filter::createFilterTarget() {
 	filterTarget[0]->texHeight = texHeight;
 	filterTarget[0]->mipLevels = 1;
 	filterTarget[0]->setup();
+	cout << filterTarget[0]->textureFormat << endl;
 }
 
 void filter::filterImage() {
