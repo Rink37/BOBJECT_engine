@@ -16,9 +16,6 @@ public:
 		loadList = assets;
 	}
 
-	cv::Mat OSNormalMap;
-	cv::Mat TSNormalMap;
-
 	struct ObjectSpaceMap {
 		VkFramebuffer frameBuffer;
 		Texture *colour = nullptr;

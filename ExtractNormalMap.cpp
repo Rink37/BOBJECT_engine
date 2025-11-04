@@ -6,10 +6,6 @@ using namespace std;
 
 void NormalGen::prepGenerateOSMap() {
 
-	if (objectSpaceMap.colour != nullptr) {
-		objectSpaceMap.colour->cleanup();
-	}
-
 	objectSpaceMap.colour = loadList->replacePtr(new Texture, "OSGenTex");
 
 	objectSpaceMap.colour->texWidth = DEFAULTMAPDIM;

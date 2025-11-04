@@ -62,6 +62,10 @@ struct UIImage {
 
 		return commandBuffer;
 	}
+
+	~UIImage() {
+		cleanup();
+	}
 };
 
 struct UIItem {
