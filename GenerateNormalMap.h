@@ -7,7 +7,7 @@
 #include"Textures.h"
 #include <opencv2/opencv.hpp>
 
-#define MAPDIM 1024
+#define DEFAULTMAPDIM 1024
 #define MAP_COLOUR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
 
 class NormalGen {
@@ -23,6 +23,9 @@ public:
 		VkFramebuffer frameBuffer;
 		Texture *colour;
 		VkRenderPass renderPass;
+		VkDescriptorPool descriptorPool;
+		VkDescriptorSet descriptorSet;
+		VkDescriptorSetLayout descriptorSetLayout;
 	} objectSpaceMap{};
 
 	struct TangentSpaceMap {
@@ -35,27 +38,34 @@ public:
 	} tangentSpaceMap{};
 
 	void setupOSExtractor() {
-		prepareOSMap();
-		createOSPipeline();
+		prepGenerateOSMap();
+		createGenerateOSPipeline();
 	};
 
-	void cleanupOS();
+	void cleanupGenOS();
 
 	VkCommandBuffer drawOSMap(VkCommandBuffer, Mesh*);
 
 	void createOSImageFromMat(cv::Mat);
+	void createTSImageFromMat(cv::Mat);
 
-	void setupTSExtractor() {
+	void setupTSConverter() {
 		prepareTSMap();
 		prepareTSDescriptor();
 		createTSPipeline();
 	};
 
-	void contextualConvertMap(cv::Mat);
+	void setupOSConverter() {
+		prepareOSMap();
+		prepareOSDescriptor();
+		createOSPipeline();
+	};
 
 	VkCommandBuffer convertOStoTS(VkCommandBuffer, Mesh*);
+	VkCommandBuffer convertTStoOS(VkCommandBuffer, Mesh*);
 
 	void cleanupTS();
+	void cleanupOS();
 
 private:
 	LoadList* loadList = nullptr;
@@ -63,8 +73,8 @@ private:
 	VkPipelineLayout OSpipelineLayout = nullptr;
 	VkPipeline OSpipeline = nullptr;
 
-	void prepareOSMap();
-	void createOSPipeline();
+	void prepGenerateOSMap();
+	void createGenerateOSPipeline();
 
 	VkPipelineLayout TSpipelineLayout = nullptr;
 	VkPipeline TSpipeline = nullptr;
@@ -72,6 +82,10 @@ private:
 	void prepareTSMap();
 	void prepareTSDescriptor();
 	void createTSPipeline();
+
+	void prepareOSMap();
+	void prepareOSDescriptor();
+	void createOSPipeline();
 	
 };
 

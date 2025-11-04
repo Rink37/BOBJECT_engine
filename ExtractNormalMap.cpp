@@ -4,11 +4,11 @@
 
 using namespace std;
 
-void NormalGen::prepareOSMap() {
+void NormalGen::prepGenerateOSMap() {
 	objectSpaceMap.colour = loadList->replacePtr(new Texture, "OSGenTex");
 
-	objectSpaceMap.colour->texWidth = MAPDIM;
-	objectSpaceMap.colour->texHeight = MAPDIM;
+	objectSpaceMap.colour->texWidth = DEFAULTMAPDIM;
+	objectSpaceMap.colour->texHeight = DEFAULTMAPDIM;
 	objectSpaceMap.colour->texChannels = 4;
 	objectSpaceMap.colour->mipLevels = 1;
 	objectSpaceMap.colour->textureFormat = MAP_COLOUR_FORMAT;
@@ -73,7 +73,7 @@ void NormalGen::prepareOSMap() {
 	}
 }
 
-void NormalGen::createOSPipeline() {
+void NormalGen::createGenerateOSPipeline() {
 	shaderData* sD = new NORMALGENERATORSHADER;
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -242,7 +242,7 @@ VkCommandBuffer NormalGen::drawOSMap(VkCommandBuffer commandbuffer, Mesh* mesh) 
 	return commandbuffer;
 }
 
-void NormalGen::cleanupOS() {
+void NormalGen::cleanupGenOS() {
 	vkDeviceWaitIdle(Engine::get()->device);
 
 	vkDestroyPipeline(Engine::get()->device, OSpipeline, nullptr);

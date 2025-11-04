@@ -50,6 +50,7 @@ public:
 
 	void generateOSMap(Mesh*);
 	void transitionToTS(Mesh*);
+	void transitionToOS(Mesh*);
 
 	void contextConvert();
 
@@ -171,6 +172,7 @@ public:
 			//tsNormMaterial.init(TSNormTex);
 			//Normal[2] = std::make_unique<Material>(tsNormMaterial); 
 			Normal[2] = std::make_unique<Material>(TSNormTex);
+			TSmatching = false;
 		}
 		updateSurfaceMat();
 	}
@@ -207,7 +209,7 @@ public:
 				renderPipeline = "OSNormBF";
 				break;
 			}
-			std::cout << static_cast<int>(normalIdx) << " " << static_cast<int>(normalType) << std::endl;
+			//std::cout << static_cast<int>(normalIdx) << " " << static_cast<int>(normalType) << std::endl;
 			switch (normalIdx*(normalIdx + normalType)) {
 			case 1:
 				if (OSNormTex != nullptr) {
