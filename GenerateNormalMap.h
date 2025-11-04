@@ -60,14 +60,14 @@ public:
 private:
 	LoadList* loadList = nullptr;
 
-	VkPipelineLayout OSpipelineLayout;
-	VkPipeline OSpipeline;
+	VkPipelineLayout OSpipelineLayout = nullptr;
+	VkPipeline OSpipeline = nullptr;
 
 	void prepareOSMap();
 	void createOSPipeline();
 
-	VkPipelineLayout TSpipelineLayout;
-	VkPipeline TSpipeline;
+	VkPipelineLayout TSpipelineLayout = nullptr;
+	VkPipeline TSpipeline = nullptr;
 
 	void prepareTSMap();
 	void prepareTSDescriptor();

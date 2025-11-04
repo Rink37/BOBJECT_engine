@@ -1,6 +1,6 @@
 #include "GenerateNormalMap.h"
 #include"include/ShaderDataType.h"
-#include"include/NormalConvertor.h"
+#include"include/OSToTSConverter.h"
 
 using namespace cv;
 using namespace std;
@@ -78,7 +78,7 @@ void NormalGen::prepareTSMap() {
 }
 
 void NormalGen::createTSPipeline() {
-	shaderData* sD = new NORMALCONVERTORSHADER;
+	shaderData* sD = new OSTOTSCONVERTERSHADER;
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
