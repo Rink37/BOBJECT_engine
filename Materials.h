@@ -84,6 +84,10 @@ public:
 	void createDescriptorSets();
 
 	bool cleaned = true;
+
+	~Material() {
+		cleanupDescriptor();
+	}
 };
 
 

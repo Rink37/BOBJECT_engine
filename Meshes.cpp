@@ -49,29 +49,11 @@ void Mesh::createIndexBuffer() {
 	vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
 }
 
-void Mesh::createTexCoordIndexBuffer() {
-	Engine* engine = Engine::get();
-
-	VkDeviceSize bufferSize = sizeof(uniqueTexindices[0]) * uniqueTexindices.size();
-
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-	engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-	void* data;
-	vkMapMemory(engine->device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, uniqueTexindices.data(), (size_t)bufferSize);
-	vkUnmapMemory(engine->device, stagingBufferMemory);
-
-	engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texCoordIndexBuffer, texCoordIndexBufferMemory);
-
-	engine->copyBuffer(stagingBuffer, texCoordIndexBuffer, bufferSize);
-
-	vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
-	vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
-}
-
 const void Mesh::cleanup() {
+	if (cleaned) {
+		return;
+	}
+
 	Engine* engine = Engine::get();
 
 	vkDestroyBuffer(engine->device, indexBuffer, nullptr);
@@ -79,6 +61,8 @@ const void Mesh::cleanup() {
 
 	vkDestroyBuffer(engine->device, vertexBuffer, nullptr);
 	vkFreeMemory(engine->device, vertexBufferMemory, nullptr);
+
+	cleaned = true;
 }
 
 void UIMesh::UpdateVertices(float xp, float yp, float xsc, float ysc) {
@@ -101,8 +85,9 @@ void UIMesh::UpdateVertices(float xp, float yp, float xsc, float ysc) {
 	vertices.push_back(vertex);
 
 	if (vBuffer == nullptr) {
-		createVertexBuffer();
-		createIndexBuffer();
+		//createVertexBuffer();
+		//createIndexBuffer();
+		setup();
 	}
 	else {
 		updateVertexBuffer();
@@ -145,8 +130,9 @@ void UIMesh::updateVertexBuffer() {
 
 StaticMesh::StaticMesh(string modelPath) {
 	loadModel(modelPath);
-	createVertexBuffer();
-	createIndexBuffer();
+	setup();
+	//createVertexBuffer();
+	//createIndexBuffer();
 }
 
 bool StaticMesh::loadModel(string testMODEL_PATH) {

@@ -22,166 +22,175 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 	commandBuffer = generator.drawOSMap(commandBuffer, inputMesh);
 	Engine::get()->endSingleTimeCommands(commandBuffer);
-	vkDestroyBuffer(Engine::get()->device, inputMesh->texCoordIndexBuffer, nullptr);
-	vkFreeMemory(Engine::get()->device, inputMesh->texCoordIndexBufferMemory, nullptr);
+
+	//generator.objectSpaceMap.colour->transitionImageLayout(generator.objectSpaceMap.colour->textureImage,
+	//	generator.objectSpaceMap.colour->textureFormat,
+	//	VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
 
 	// see https://github.com/SaschaWillems/Vulkan/blob/master/examples/screenshot/screenshot.cpp 
 
-	bool supportsBlit = true;
+	//bool supportsBlit = true;
 
-	VkFormatProperties formatProps;
+	//VkFormatProperties formatProps;
 
-	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, &formatProps);
-	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
-		std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
-		supportsBlit = false;
-	}
+	//vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, &formatProps);
+	//if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
+	//	std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
+	//	supportsBlit = false;
+	//}
 
-	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, &formatProps);
-	if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
-		std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
-		supportsBlit = false;
-	}
+	//vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, &formatProps);
+	//if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
+	//	std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
+	//	supportsBlit = false;
+	//}
 
-	OSNormTex = loadList->replacePtr(new imageTexture, "OSMapTex");
-	OSNormTex->texWidth = generator.objectSpaceMap.colour->texWidth;
-	OSNormTex->texHeight = generator.objectSpaceMap.colour->texHeight;
-	OSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
-	OSNormTex->textureUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	OSNormTex->textureTiling = VK_IMAGE_TILING_LINEAR;
-	OSNormTex->mipLevels = 1;
+	//OSNormTex = loadList->replacePtr(new imageTexture, "OSNormalTex");
+	
+	OSNormTex = loadList->replacePtr(generator.objectSpaceMap.colour->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1), "OSNormalTex");
+	
+	//OSNormTex->texWidth = generator.objectSpaceMap.colour->texWidth;
+	//OSNormTex->texHeight = generator.objectSpaceMap.colour->texHeight;
+	//OSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	//OSNormTex->textureUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	//OSNormTex->textureTiling = VK_IMAGE_TILING_LINEAR;
+	//OSNormTex->mipLevels = 1;
 
-	OSNormTex->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	//OSNormTex->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-	VkCommandBuffer copyCmd;
+	//VkCommandBuffer copyCmd;
 
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = Engine::get()->commandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
+	//VkCommandBufferAllocateInfo allocInfo{};
+	//allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	//allocInfo.commandPool = Engine::get()->commandPool;
+	//allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	//allocInfo.commandBufferCount = 1;
 
-	if (vkAllocateCommandBuffers(Engine::get()->device, &allocInfo, &copyCmd) != VK_SUCCESS) {
-		throw runtime_error("failed to allocate command buffer!");
-	}
+	//if (vkAllocateCommandBuffers(Engine::get()->device, &allocInfo, &copyCmd) != VK_SUCCESS) {
+	//	throw runtime_error("failed to allocate command buffer!");
+	//}
 
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.pInheritanceInfo = nullptr;
+	//VkCommandBufferBeginInfo beginInfo{};
+	//beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	//beginInfo.pInheritanceInfo = nullptr;
 
-	if (vkBeginCommandBuffer(copyCmd, &beginInfo) != VK_SUCCESS) {
-		throw runtime_error("failed to begin recording command buffer!");
-	}
+	//if (vkBeginCommandBuffer(copyCmd, &beginInfo) != VK_SUCCESS) {
+	//	throw runtime_error("failed to begin recording command buffer!");
+	//}
 
-	VkImageMemoryBarrier imageMemoryBarrier = {};
-	imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	imageMemoryBarrier.srcAccessMask = 0;
-	imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-	imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	imageMemoryBarrier.image = OSNormTex->textureImage;
-	imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+	//VkImageMemoryBarrier imageMemoryBarrier = {};
+	//imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	//imageMemoryBarrier.srcAccessMask = 0;
+	//imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	//imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	//imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	//imageMemoryBarrier.image = OSNormTex->textureImage;
+	//imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 
-	vkCmdPipelineBarrier(
-		copyCmd,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		0,
-		0, nullptr,
-		0, nullptr,
-		1, &imageMemoryBarrier);
+	//vkCmdPipelineBarrier(
+	//	copyCmd,
+	//	VK_PIPELINE_STAGE_TRANSFER_BIT,
+	//	VK_PIPELINE_STAGE_TRANSFER_BIT,
+	//	0,
+	//	0, nullptr,
+	//	0, nullptr,
+	//	1, &imageMemoryBarrier);
 
-	imageMemoryBarrier = {};
-	imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	imageMemoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-	imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-	imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-	imageMemoryBarrier.image = generator.objectSpaceMap.colour->textureImage;
-	imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+	//imageMemoryBarrier = {};
+	//imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	//imageMemoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	//imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+	//imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	//imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	//imageMemoryBarrier.image = generator.objectSpaceMap.colour->textureImage;
+	//imageMemoryBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 
-	vkCmdPipelineBarrier(
-		copyCmd,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		0,
-		0, nullptr,
-		0, nullptr,
-		1, &imageMemoryBarrier);
+	//vkCmdPipelineBarrier(
+	//	copyCmd,
+	//	VK_PIPELINE_STAGE_TRANSFER_BIT,
+	//	VK_PIPELINE_STAGE_TRANSFER_BIT,
+	//	0,
+	//	0, nullptr,
+	//	0, nullptr,
+	//	1, &imageMemoryBarrier);
 
-	if (supportsBlit)
-	{
-		VkOffset3D blitSize{};
-		blitSize.x = generator.objectSpaceMap.colour->texWidth;
-		blitSize.y = generator.objectSpaceMap.colour->texHeight;
-		blitSize.z = 1;
-		VkImageBlit imageBlitRegion{};
-		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageBlitRegion.srcSubresource.layerCount = 1;
-		imageBlitRegion.srcOffsets[1] = blitSize;
-		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageBlitRegion.dstSubresource.layerCount = 1;
-		imageBlitRegion.dstOffsets[1] = blitSize;
+	//if (supportsBlit)
+	//{
+	//	VkOffset3D blitSize{};
+	//	blitSize.x = generator.objectSpaceMap.colour->texWidth;
+	//	blitSize.y = generator.objectSpaceMap.colour->texHeight;
+	//	blitSize.z = 1;
+	//	VkImageBlit imageBlitRegion{};
+	//	imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	//	imageBlitRegion.srcSubresource.layerCount = 1;
+	//	imageBlitRegion.srcOffsets[1] = blitSize;
+	//	imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	//	imageBlitRegion.dstSubresource.layerCount = 1;
+	//	imageBlitRegion.dstOffsets[1] = blitSize;
 
-		vkCmdBlitImage(
-			copyCmd,
-			generator.objectSpaceMap.colour->textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			OSNormTex->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1,
-			&imageBlitRegion,
-			VK_FILTER_NEAREST);
-	}
-	else
-	{
-		VkImageCopy imageCopyRegion{};
-		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageCopyRegion.srcSubresource.layerCount = 1;
-		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageCopyRegion.dstSubresource.layerCount = 1;
-		imageCopyRegion.extent.width = generator.objectSpaceMap.colour->texWidth;
-		imageCopyRegion.extent.height = generator.objectSpaceMap.colour->texHeight;
-		imageCopyRegion.extent.depth = 1;
+	//	vkCmdBlitImage(
+	//		copyCmd,
+	//		generator.objectSpaceMap.colour->textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	//		OSNormTex->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	//		1,
+	//		&imageBlitRegion,
+	//		VK_FILTER_NEAREST);
+	//}
+	//else
+	//{
+	//	VkImageCopy imageCopyRegion{};
+	//	imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	//	imageCopyRegion.srcSubresource.layerCount = 1;
+	//	imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	//	imageCopyRegion.dstSubresource.layerCount = 1;
+	//	imageCopyRegion.extent.width = generator.objectSpaceMap.colour->texWidth;
+	//	imageCopyRegion.extent.height = generator.objectSpaceMap.colour->texHeight;
+	//	imageCopyRegion.extent.depth = 1;
 
-		vkCmdCopyImage(
-			copyCmd,
-			generator.objectSpaceMap.colour->textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			OSNormTex->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1,
-			&imageCopyRegion);
-	}
+	//	vkCmdCopyImage(
+	//		copyCmd,
+	//		generator.objectSpaceMap.colour->textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	//		OSNormTex->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	//		1,
+	//		&imageCopyRegion);
+	//}
 
-	if (vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
-		throw runtime_error("Failed to end command buffer");
-	}
+	//if (vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
+	//	throw runtime_error("Failed to end command buffer");
+	//}
 
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &copyCmd;
+	//VkSubmitInfo submitInfo = {};
+	//submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	//submitInfo.commandBufferCount = 1;
+	//submitInfo.pCommandBuffers = &copyCmd;
 
-	VkFence copyFence;
-	VkFenceCreateInfo fenceInfo = {};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	//VkFence copyFence;
+	//VkFenceCreateInfo fenceInfo = {};
+	//fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
-	vkCreateFence(Engine::get()->device, &fenceInfo, nullptr, &copyFence);
+	//vkCreateFence(Engine::get()->device, &fenceInfo, nullptr, &copyFence);
 
-	vkQueueSubmit(Engine::get()->graphicsQueue, 1, &submitInfo, copyFence);
+	//vkQueueSubmit(Engine::get()->graphicsQueue, 1, &submitInfo, copyFence);
 
-	if (vkWaitForFences(Engine::get()->device, 1, &copyFence, VK_TRUE, UINT64_MAX) == VK_TIMEOUT) {
-		throw runtime_error("Fence timeout");
-	};
+	//if (vkWaitForFences(Engine::get()->device, 1, &copyFence, VK_TRUE, UINT64_MAX) == VK_TIMEOUT) {
+	//	throw runtime_error("Fence timeout");
+	//};
 
-	vkFreeCommandBuffers(Engine::get()->device, Engine::get()->commandPool, 1, &copyCmd);
+	//vkFreeCommandBuffers(Engine::get()->device, Engine::get()->commandPool, 1, &copyCmd);
 
-	vkDestroyFence(Engine::get()->device, copyFence, nullptr);
+	//vkDestroyFence(Engine::get()->device, copyFence, nullptr);
 
-	OSNormTex->generateMipmaps();
+	//OSNormTex->generateMipmaps();
 	OSNormTex->textureImageView = OSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 	//osNormMaterial.~osNormMaterial();
 	//new (&osNormMaterial) Material(OSNormTex);
 
-	Normal[1] = make_unique<Material>(OSNormTex);
+	Normal[1] = loadList->replacePtr(new Material(OSNormTex), "OSNormMat");
 
 	generator.cleanupGenOS();
 }
@@ -280,8 +289,6 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 	commandBuffer = generator.convertOStoTS(commandBuffer, inputMesh);
 	Engine::get()->endSingleTimeCommands(commandBuffer);
-	vkDestroyBuffer(Engine::get()->device, inputMesh->texCoordIndexBuffer, nullptr);
-	vkFreeMemory(Engine::get()->device, inputMesh->texCoordIndexBufferMemory, nullptr);
 
 	// see https://github.com/SaschaWillems/Vulkan/blob/master/examples/screenshot/screenshot.cpp 
 
@@ -301,7 +308,7 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 		supportsBlit = false;
 	}
 
-	TSNormTex = loadList->replacePtr(new Texture, "TSMapTex");
+	TSNormTex = loadList->replacePtr(new Texture, "TSNormalTex");
 	TSNormTex->texWidth = generator.tangentSpaceMap.colour->texWidth;
 	TSNormTex->texHeight = generator.tangentSpaceMap.colour->texHeight;
 	TSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -436,7 +443,7 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 	TSNormTex->generateMipmaps();
 	TSNormTex->textureImageView = TSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-	Normal[2] = make_unique<Material>(TSNormTex);
+	Normal[2] = loadList->replacePtr(new Material(TSNormTex), "TSNormMat");
 	generator.cleanupTS();
 }
 
@@ -448,8 +455,6 @@ void surfaceConstructor::transitionToOS(Mesh* inputMesh) {
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 	commandBuffer = generator.convertTStoOS(commandBuffer, inputMesh);
 	Engine::get()->endSingleTimeCommands(commandBuffer);
-	vkDestroyBuffer(Engine::get()->device, inputMesh->texCoordIndexBuffer, nullptr);
-	vkFreeMemory(Engine::get()->device, inputMesh->texCoordIndexBufferMemory, nullptr);
 
 	// see https://github.com/SaschaWillems/Vulkan/blob/master/examples/screenshot/screenshot.cpp 
 
@@ -469,7 +474,7 @@ void surfaceConstructor::transitionToOS(Mesh* inputMesh) {
 		supportsBlit = false;
 	}
 
-	OSNormTex = loadList->replacePtr(new Texture, "TSMapTex");
+	OSNormTex = loadList->replacePtr(new Texture, "TSNormalTex");
 	OSNormTex->texWidth = generator.objectSpaceMap.colour->texWidth;
 	OSNormTex->texHeight = generator.objectSpaceMap.colour->texHeight;
 	OSNormTex->textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -604,7 +609,7 @@ void surfaceConstructor::transitionToOS(Mesh* inputMesh) {
 	OSNormTex->generateMipmaps();
 	OSNormTex->textureImageView = OSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-	Normal[2] = make_unique<Material>(OSNormTex);
+	Normal[1] = loadList->replacePtr(new Material(OSNormTex), "OSNormMat");
 	generator.cleanupOS();
 }
 
@@ -659,7 +664,7 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 
 	SurfacePanel = new vArrangement(1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 
-	diffuseView = new ImagePanel(sConst->currentDiffuse().get(), true);
+	diffuseView = new ImagePanel(sConst->currentDiffuse(), true);
 	SurfacePanel->addItem(getPtr(DiffuseButtons));
 	SurfacePanel->addItem(getPtr(diffuseView));
 	
@@ -716,7 +721,7 @@ void SurfaceMenu::removeNormalMenu(UIItem* owner) {
 
 void SurfaceMenu::toggleDiffuseCam(UIItem* owner) {
 	sConst->toggleDiffWebcam();
-	diffuseView->image->mat[0] = sConst->currentDiffuse().get();
+	diffuseView->image->mat[0] = sConst->currentDiffuse();
 }
 
 void SurfaceMenu::loadDiffuseImage(UIItem* owner) {
@@ -725,7 +730,7 @@ void SurfaceMenu::loadDiffuseImage(UIItem* owner) {
 		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
 		sConst->loadDiffuse(loadedTexture);
 		sConst->diffuseIdx = 1;
-		diffuseView->image->mat[0] = sConst->currentDiffuse().get();
+		diffuseView->image->mat[0] = sConst->currentDiffuse();
 		diffuseView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
 		diffuseView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
 		diffuseView->sqAxisRatio = static_cast<float>(diffuseView->image->texHeight) / static_cast<float>(diffuseView->image->texWidth);
@@ -756,7 +761,7 @@ void SurfaceMenu::saveDiffuseImage(UIItem* owner) {
 
 void SurfaceMenu::toggleNormalCam(UIItem* owner) {
 	sConst->toggleNormWebcam();
-	normalView->image->mat[0] = sConst->currentNormal().get();
+	normalView->image->mat[0] = sConst->currentNormal();
 }
 
 void SurfaceMenu::toggleNormalType(UIItem* owner) {
@@ -764,9 +769,10 @@ void SurfaceMenu::toggleNormalType(UIItem* owner) {
 	//cout << static_cast<int>(sConst->normalIdx) << " " << static_cast<int>(sConst->normalType) << endl;
 	if (sConst->normalType == 1 && sConst->OSNormTex != nullptr && !sConst->TSmatching) {
 		if (sConst->TSNormTex != nullptr) {
-			sConst->TSNormTex->cleanup();
+			//sConst->TSNormTex->cleanup();
+			loadList->deleteTexture("TSNormalTex");
 		}
-		sConst->transitionToTS((*staticObjects)[staticObjects->size() - 1].mesh);
+		sConst->transitionToTS(staticObjects->at(staticObjects->size() - 1).mesh);
 		sConst->TSmatching = true;
 
 		std::cout << "Converted from OS to TS" << std::endl;
@@ -776,9 +782,10 @@ void SurfaceMenu::toggleNormalType(UIItem* owner) {
 	}
 	if (sConst->normalType == 0 && sConst->TSNormTex != nullptr && !sConst->TSmatching) {
 		if (sConst->OSNormTex != nullptr) {
-			sConst->OSNormTex->cleanup();
+			//sConst->OSNormTex->cleanup();
+			loadList->deleteTexture("OSNormalTex");
 		}
-		sConst->transitionToOS((*staticObjects)[staticObjects->size() - 1].mesh);
+		sConst->transitionToOS(staticObjects->at(staticObjects->size() - 1).mesh);
 		sConst->TSmatching = true;
 
 		std::cout << "Converted from TS to OS" << std::endl;
@@ -791,7 +798,7 @@ void SurfaceMenu::toggleNormalType(UIItem* owner) {
 	//	normalView->image->mat[0] = sConst->currentNormal().get();
 	//}
 	sConst->updateSurfaceMat();
-	setNormal(sConst->currentNormal().get());
+	setNormal(sConst->currentNormal());
 }
 
 void SurfaceMenu::loadNormalImage(UIItem* owner) {
@@ -800,7 +807,7 @@ void SurfaceMenu::loadNormalImage(UIItem* owner) {
 		imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
 		sConst->loadNormal(loadedTexture);
 		sConst->normalIdx = 1;
-		normalView->image->mat[0] = sConst->currentNormal().get();
+		normalView->image->mat[0] = sConst->currentNormal();
 		normalView->image->texHeight = diffuseView->image->mat[0]->textures[0]->texHeight;
 		normalView->image->texWidth = diffuseView->image->mat[0]->textures[0]->texWidth;
 		normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);
@@ -849,7 +856,7 @@ void SurfaceMenu::saveNormalImage(UIItem* owner) {
 void SurfaceMenu::contextConvertMap(UIItem* owner) {
 	sConst->contextConvert();
 	sConst->normalIdx = 1;
-	normalView->image->mat[0] = sConst->currentNormal().get();
+	normalView->image->mat[0] = sConst->currentNormal();
 	normalTog->activestate = false;
 	normalTog->image->matidx = 1;
 }
@@ -931,7 +938,7 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	NormalButtons->addItem(getPtr(normalLoad));
 	NormalButtons->addItem(getPtr(normalSave));
 
-	normalView = new ImagePanel(sConst->currentNormal().get(), true);
+	normalView = new ImagePanel(sConst->currentNormal(), true);
 	normalView->image->texHeight = diffuseView->image->texHeight;
 	normalView->image->texWidth = diffuseView->image->texWidth;
 	normalView->sqAxisRatio = static_cast<float>(normalView->image->texHeight) / static_cast<float>(normalView->image->texWidth);

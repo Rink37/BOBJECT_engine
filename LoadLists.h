@@ -9,11 +9,11 @@ struct LoadList {
 		if (checkForTexture(name)) {
 			tex->cleanup();
 			delete tex;
-			return textures[textureMap.at(name)].get();
+			return textures.at(textureMap.at(name)).get();
 		}
 		textures.emplace_back(tex);
 		textureMap.insert({ name, static_cast<int>(textures.size() - 1) });
-		return textures[textures.size() - 1].get();
+		return textures.at(textures.size() - 1).get();
 	}
 
 	Texture* replacePtr(Texture* tex, std::string name) {
@@ -25,10 +25,10 @@ struct LoadList {
 
 	void cleanup(std::string name) {
 		if (checkForTexture(name)) {
-			textures[textureMap.at(name)].get()->cleanup();
+			textures.at(textureMap.at(name)).get()->cleanup();
 		}
 		if (checkForMaterial(name)) {
-			materials[materialMap.at(name)].get()->cleanup();
+			materials.at(materialMap.at(name)).get()->cleanup();
 		}
 	}
 
@@ -36,11 +36,11 @@ struct LoadList {
 		if (checkForMaterial(name)) {
 			tex->cleanupDescriptor();
 			delete tex;
-			return materials[materialMap.at(name)].get();
+			return materials.at(materialMap.at(name)).get();
 		}
 		materials.emplace_back(tex);
 		materialMap.insert({ name, static_cast<int>(materials.size() - 1) });
-		return materials[materials.size() - 1].get();
+		return materials.at(materials.size() - 1).get();
 	}
 
 	Material* replacePtr(Material* tex, std::string name) {
@@ -52,7 +52,7 @@ struct LoadList {
 
 	Texture* getTexture(std::string name) {
 		if (checkForTexture(name)) {
-			return textures[textureMap.at(name)].get();
+			return textures.at(textureMap.at(name)).get();
 		}
 		return nullptr;
 	}
@@ -62,7 +62,7 @@ struct LoadList {
 			return;
 		}
 		int index = textureMap.at(name);
-		textures[index]->cleanup();
+		textures.at(index)->cleanup();
 		textures.erase(textures.begin() + index);
 		textureMap.erase(name);
 		for (auto const& [key, val] : textureMap) {
@@ -74,7 +74,7 @@ struct LoadList {
 
 	Material* getMaterial(std::string name) {
 		if (checkForMaterial(name)) {
-			return materials[materialMap.at(name)].get();
+			return materials.at(materialMap.at(name)).get();
 		}
 		return nullptr;
 	}
@@ -84,7 +84,7 @@ struct LoadList {
 			return;
 		}
 		int index = materialMap.at(name);
-		materials[index]->cleanupDescriptor();
+		materials.at(index)->cleanupDescriptor();
 		materials.erase(materials.begin() + index);
 		materialMap.erase(name);
 		for (auto const& [key, val] : materialMap) {
@@ -104,11 +104,11 @@ struct LoadList {
 
 	void empty() {
 		for (size_t i = 0; i != textures.size(); i++) {
-			textures[i]->cleanup();
+			textures.at(i).get()->cleanup();
 		}
 		textures.clear();
 		for (size_t i = 0; i != materials.size(); i++) {
-			materials[i]->cleanupDescriptor();
+			materials.at(i).get()->cleanupDescriptor();
 		}
 		materials.clear();
 

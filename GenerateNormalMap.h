@@ -21,7 +21,7 @@ public:
 
 	struct ObjectSpaceMap {
 		VkFramebuffer frameBuffer;
-		Texture *colour;
+		Texture *colour = nullptr;
 		VkRenderPass renderPass;
 		VkDescriptorPool descriptorPool;
 		VkDescriptorSet descriptorSet;
@@ -30,7 +30,7 @@ public:
 
 	struct TangentSpaceMap {
 		VkFramebuffer frameBuffer;
-		Texture *colour;
+		Texture *colour = nullptr;
 		VkRenderPass renderPass;
 		VkDescriptorPool descriptorPool;
 		VkDescriptorSet descriptorSet;

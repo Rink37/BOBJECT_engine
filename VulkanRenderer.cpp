@@ -423,7 +423,7 @@ private:
 			surfaceMenu.resetNormalTog(false);
 		}
 		sConst->normalAvailable = false;
-		surfaceMenu.setDiffuse(sConst->currentDiffuse().get());
+		surfaceMenu.setDiffuse(sConst->currentDiffuse());
 
 		sConst->renderPipeline = "BFShading";
 		sConst->updateSurfaceMat();
@@ -456,7 +456,7 @@ private:
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
 
 			sConst->diffuseIdx = 1;
-			surfaceMenu.setDiffuse(sConst->currentDiffuse().get());
+			surfaceMenu.setDiffuse(sConst->currentDiffuse());
 			surfaceMenu.resetDiffuseTog(true);
 		}
 		if (session::get()->currentStudio.OSPath != "None") {
@@ -466,7 +466,7 @@ private:
 			}
 			sConst->normalType = 0;
 			sConst->loadNormal(loadedTexture);
-			surfaceMenu.setNormal(sConst->currentNormal().get());
+			surfaceMenu.setNormal(sConst->currentNormal());
 			surfaceMenu.resetNormalTog(true);
 			surfaceMenu.toggleNormalState(true);
 		}
@@ -478,7 +478,7 @@ private:
 			sConst->normalType = 1;
 			sConst->loadNormal(loadedTexture);
 			sConst->TSmatching = true;
-			surfaceMenu.setNormal(sConst->currentNormal().get());
+			surfaceMenu.setNormal(sConst->currentNormal());
 			surfaceMenu.resetNormalTog(true);
 			surfaceMenu.toggleNormalState(false);
 		}

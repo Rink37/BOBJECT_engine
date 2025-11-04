@@ -10,6 +10,7 @@ bool Texture::hasStencilComponent(VkFormat format) {
 Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, VkMemoryPropertyFlags memFlags, uint32_t mipLevels)
 {
 	Texture* copy = new Texture;
+	
 	bool supportsBlit = true;
 
 	VkFormatProperties formatProps;
@@ -29,10 +30,10 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	copy->textureFormat = format;
 	copy->texWidth = texWidth;
 	copy->texHeight = texHeight;
-	copy->textureLayout = layout;
 	copy->textureTiling = tiling;
 	copy->textureUsage = usage;
 	copy->mipLevels = mipLevels;
+	copy->textureLayout = layout;
 
 	copy->createImage(VK_SAMPLE_COUNT_1_BIT, memFlags);
 
@@ -132,8 +133,8 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	vkFreeCommandBuffers(Engine::get()->device, Engine::get()->commandPool, 1, &copyCmd);
 
 	vkDestroyFence(Engine::get()->device, copyFence, nullptr);
-	
-	transitionImageLayout(copy->textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, mipLevels);
+
+	transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, copy->mipLevels);
 	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, 1);
 	
 	return copy;
@@ -247,7 +248,7 @@ void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlag
 }
 
 void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
-	if (oldLayout == newLayout) {
+	if (oldLayout == newLayout || newLayout == textureLayout) {
 		return;
 	}
 
@@ -340,6 +341,27 @@ void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayou
 
 		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_GENERAL) {
+		barrier.dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+		barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	}
 	else {
 		cout << oldLayout << " " << newLayout << endl;

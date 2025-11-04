@@ -16,16 +16,19 @@ struct Mesh {
 
 	std::vector<uint32_t> uniqueTexindices{};
 
-	VkBuffer texCoordIndexBuffer{};
-	VkDeviceMemory texCoordIndexBufferMemory{};
+	virtual void setup() {
+		createVertexBuffer();
+		createIndexBuffer();
+		cleaned = false;
+	}
 
 	virtual void createVertexBuffer();
 	virtual void computeTangents() {};
 	void createIndexBuffer();
 
-	void createTexCoordIndexBuffer();
-
 	const void cleanup();
+private:
+	bool cleaned = true;
 };
 
 class UIMesh : public Mesh {

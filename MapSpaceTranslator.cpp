@@ -301,11 +301,9 @@ VkCommandBuffer NormalGen::convertOStoTS(VkCommandBuffer commandbuffer, Mesh* me
 	VkBuffer vertexBuffers[] = { mesh->vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
 
-	mesh->createTexCoordIndexBuffer();
-
 	vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
 
-	vkCmdBindIndexBuffer(commandbuffer, mesh->texCoordIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(commandbuffer, mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 	vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, TSpipelineLayout, 0, 1, &tangentSpaceMap.descriptorSet, 0, nullptr);
 
@@ -325,8 +323,11 @@ void NormalGen::cleanupTS() {
 	vkDestroyRenderPass(Engine::get()->device, tangentSpaceMap.renderPass, nullptr);
 	vkDestroyFramebuffer(Engine::get()->device, tangentSpaceMap.frameBuffer, nullptr);
 
-	tangentSpaceMap.colour->cleanup();
-	objectSpaceMap.colour->cleanup();
+	//tangentSpaceMap.colour->cleanup();
+	//objectSpaceMap.colour->cleanup();
+
+	loadList->deleteTexture("OS-TSGenTex");
+	loadList->deleteTexture("TSGenTex");
 }
 
 
@@ -617,11 +618,9 @@ VkCommandBuffer NormalGen::convertTStoOS(VkCommandBuffer commandbuffer, Mesh* me
 	VkBuffer vertexBuffers[] = { mesh->vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
 
-	mesh->createTexCoordIndexBuffer();
-
 	vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
 
-	vkCmdBindIndexBuffer(commandbuffer, mesh->texCoordIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(commandbuffer, mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 	vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, OSpipelineLayout, 0, 1, &objectSpaceMap.descriptorSet, 0, nullptr);
 
@@ -641,6 +640,9 @@ void NormalGen::cleanupOS() {
 	vkDestroyRenderPass(Engine::get()->device, objectSpaceMap.renderPass, nullptr);
 	vkDestroyFramebuffer(Engine::get()->device, objectSpaceMap.frameBuffer, nullptr);
 
-	tangentSpaceMap.colour->cleanup();
-	objectSpaceMap.colour->cleanup();
+	//tangentSpaceMap.colour->cleanup();
+	//objectSpaceMap.colour->cleanup();
+
+	loadList->deleteTexture("TS-OSGenTex");
+	loadList->deleteTexture("OSGenTex");
 }
