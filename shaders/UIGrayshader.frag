@@ -10,5 +10,6 @@ layout(binding = 1) uniform sampler2D texSampler;
 
 void main(){
 	float secondaryBlend = texture(texSampler, fragTexCoord).r;
-	outColor = vec4(primaryColour*(1.0-secondaryBlend) + secondaryBlend*secondaryColour, 1.0);
+	vec3 mixColour = primaryColour*(1.0-secondaryBlend) + secondaryBlend*secondaryColour;
+	outColor = vec4(mixColour, 1.0);
 }

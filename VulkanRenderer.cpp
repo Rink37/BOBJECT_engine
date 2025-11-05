@@ -363,7 +363,7 @@ public:
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
-		updateColourBuffer();
+		updateColourScheme();
 		testUIShader();
 		mainLoop();
 		cleanup();
@@ -406,6 +406,11 @@ private:
 	bool lit = true;
 
 	uint8_t viewIndex = 1;
+
+	// colours in sRGB format (for krita users these colours match the sRGB-elle-V2-g10.icc profile)
+	glm::vec3 primaryColour = glm::vec3(0.42f, 0.06f, 0.11f);
+	glm::vec3 secondaryColour = glm::vec3(0.82f, 0.55f, 0.36f);
+	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 
 	void newSession(UIItem* owner) {
 		// Remove all meshes
@@ -513,6 +518,16 @@ private:
 		surfaceMenu.setup(sConst, &staticObjects);
 		widgets.push_back(&surfaceMenu);
 
+	}
+
+	void updateColourScheme() {
+
+		ColourSchemeObject cso{};
+		cso.Primary = primaryColour;
+		cso.Secondary = secondaryColour;
+		cso.Tertiary = tertiaryColour;
+
+		memcpy(engine->colourBufferMapped, &cso, sizeof(cso));
 	}
 
 	void toggleTomogMenu() {
@@ -724,16 +739,6 @@ private:
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
 
-	void updateColourBuffer() {
-
-		ColourSchemeObject cso{};
-		cso.Primary = glm::vec3(1.0, 0.0, 0.0);
-		cso.Secondary = glm::vec3(0.0, 1.0, 0.0);
-		cso.Tertiary = glm::vec3(0.0, 0.0, 1.0);
-
-		memcpy(engine->colourBufferMapped, &cso, sizeof(cso));
-	}
-
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		uint32_t currentFrame = engine->currentFrame;
 
@@ -755,7 +760,7 @@ private:
 		renderPassInfo.renderArea.extent = engine->swapChainExtent;
 
 		array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { {0.812f, 0.2f, 0.2f, 1.0f} };
+		clearValues[0].color = { {tertiaryColour.r, tertiaryColour.g, tertiaryColour.b, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
