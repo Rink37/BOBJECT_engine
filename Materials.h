@@ -13,7 +13,24 @@ public:
 		createMaterial();
 	}
 
+	Material(Texture* defaultTex, bool isUI) {
+		isUIMat = isUI;
+		textures.push_back(defaultTex);
+		createMaterial();
+	}
+
 	void init(Texture* defaultTex) {
+		if (!cleaned) {
+			cleanupDescriptor();
+			textures.clear();
+		}
+		textures.push_back(defaultTex);
+		createMaterial();
+		cleaned = false;
+	}
+
+	void init(Texture* defaultTex, bool isUI) {
+		isUIMat = isUI;
 		if (!cleaned) {
 			cleanupDescriptor();
 			textures.clear();
@@ -84,6 +101,7 @@ public:
 	void createDescriptorSets();
 
 	bool cleaned = true;
+	bool isUIMat = false;
 
 	~Material() {
 		cleanupDescriptor();

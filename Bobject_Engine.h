@@ -152,6 +152,13 @@ struct UniformBufferObject {
 	alignas(16) glm::vec4 UVdistort;
 };
 
+struct ColourSchemeObject {
+	alignas(16) glm::vec3 Primary;
+	alignas(16) glm::vec3 Secondary;
+	alignas(16) glm::vec3 Tertiary;
+};
+
+
 class Engine {
 public:
 	static Engine* get(){
@@ -200,11 +207,13 @@ public:
 	VkSampler textureSampler;
 
 	std::vector<void*> uniformBuffersMapped;
+	void* colourBufferMapped;
 
 	VkPipelineLayout diffusePipelineLayout;
 	VkPipelineLayout diffNormPipelineLayout;
 
 	std::vector<VkBuffer> uniformBuffers;
+	VkBuffer colourBuffer;
 
 	std::map<std::string, int> PipelineMap = {};
 	std::vector<VkPipeline*> GraphicsPipelines = {};
@@ -257,6 +266,7 @@ private:
 	std::vector<VkImageView> swapChainImageViews;
 
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
+	VkDeviceMemory colourBufferMemory;
 
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
@@ -286,6 +296,7 @@ private:
 	void createFramebuffers();
 	void createTextureSampler();
 	void createUniformBuffers();
+	void createColourBuffer();
 	void createCommandBuffers();
 	void createSyncObjects();
 

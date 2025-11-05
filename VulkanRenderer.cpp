@@ -363,6 +363,7 @@ public:
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
+		updateColourBuffer();
 		testUIShader();
 		mainLoop();
 		cleanup();
@@ -545,7 +546,7 @@ private:
 
 	void testUIShader() {
 		imageData test = D2NBUTTON_GRAY;
-		UITestImage = new ImagePanel(0.0f, 0.0f, 0.1f, 0.1f, new Material(new imageTexture(&test, VK_FORMAT_R8_UNORM)), false);
+		UITestImage = new ImagePanel(0.0f, 0.0f, 0.1f, 0.1f, new Material(new imageTexture(&test, VK_FORMAT_R8_UNORM), true), false);
 		UITestImage->updateDisplay();
 	}
 
@@ -722,6 +723,16 @@ private:
 
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
+
+	void updateColourBuffer() {
+
+		ColourSchemeObject cso{};
+		cso.Primary = glm::vec3(1.0, 0.0, 0.0);
+		cso.Secondary = glm::vec3(0.0, 1.0, 0.0);
+		cso.Tertiary = glm::vec3(0.0, 0.0, 1.0);
+
+		memcpy(engine->colourBufferMapped, &cso, sizeof(cso));
+	}
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		uint32_t currentFrame = engine->currentFrame;

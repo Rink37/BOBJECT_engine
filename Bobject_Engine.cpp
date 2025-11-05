@@ -808,6 +808,14 @@ void Engine::createUniformBuffers() {
 	}
 }
 
+void Engine::createColourBuffer() {
+	VkDeviceSize bufferSize = sizeof(ColourSchemeObject);
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, colourBuffer, colourBufferMemory);
+
+	vkMapMemory(device,	colourBufferMemory, 0, bufferSize, 0, &colourBufferMapped);
+}
+
 void Engine::createCommandBuffers() {
 	commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 	VkCommandBufferAllocateInfo allocInfo{};
@@ -859,6 +867,7 @@ void Engine::initVulkan() {
 	createFramebuffers();
 	createTextureSampler();
 	createUniformBuffers();
+	createColourBuffer();
 	createCommandBuffers();
 	createSyncObjects();
 }
@@ -880,6 +889,9 @@ void Engine::cleanup() {
 		vkDestroyBuffer(device, uniformBuffers[i], nullptr);
 		vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
 	}
+
+	vkDestroyBuffer(device, colourBuffer, nullptr);
+	vkFreeMemory(device, colourBufferMemory, nullptr);
 
 	vkDestroyDescriptorSetLayout(device, diffuseDescriptorSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(device, diffNormDescriptorSetLayout, nullptr);

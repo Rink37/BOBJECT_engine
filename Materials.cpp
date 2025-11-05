@@ -76,9 +76,16 @@ void Material::createDescriptorSets() {
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = Engine::get()->uniformBuffers[i];
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UniformBufferObject);
+		if (isUIMat) {
+			bufferInfo.buffer = Engine::get()->colourBuffer;
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(ColourSchemeObject);
+		}
+		else {
+			bufferInfo.buffer = Engine::get()->uniformBuffers[i];
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(UniformBufferObject);
+		}
 
 		if (textures.size() == 1) {
 			array<VkWriteDescriptorSet, 2> descriptorWrites{};
