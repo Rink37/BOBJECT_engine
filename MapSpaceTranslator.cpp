@@ -27,6 +27,7 @@ void NormalGen::prepareTSMap() {
 	tangentSpaceMap.colour->mipLevels = 1;
 	tangentSpaceMap.colour->textureFormat = MAP_COLOUR_FORMAT;
 	tangentSpaceMap.colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	tangentSpaceMap.colour->textureLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	tangentSpaceMap.colour->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	tangentSpaceMap.colour->textureImageView = tangentSpaceMap.colour->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
@@ -337,6 +338,7 @@ void NormalGen::prepareOSMap() {
 	objectSpaceMap.colour->mipLevels = 1;
 	objectSpaceMap.colour->textureFormat = MAP_COLOUR_FORMAT;
 	objectSpaceMap.colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	objectSpaceMap.colour->textureLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	objectSpaceMap.colour->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	objectSpaceMap.colour->textureImageView = objectSpaceMap.colour->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
