@@ -40,8 +40,6 @@ void surfaceConstructor::contextConvert() {
 
 	auto start = std::chrono::high_resolution_clock::now();
 
-	//diffTex->getCVMat();
-	//Texture* kuwaharaTex = new imageTexture(diffTex->texMat, VK_FORMAT_R8G8B8A8_UNORM);
 	Texture* kuwaharaTex = diffTex->copyImage(VK_FORMAT_R8G8B8A8_UNORM, diffTex->textureLayout, diffTex->textureUsage, diffTex->textureTiling, diffTex->textureMemFlags, 1);
 
 	cout << "Kuwahara" << endl;
@@ -105,25 +103,10 @@ void surfaceConstructor::contextConvert() {
 	OSNormTex->destroyCVMat();
 }
 
-//void surfaceConstructor::contextConvert() {
-//	if (diffTex == nullptr || OSNormTex == nullptr) {
-//		// We need both of these images to perform context conversion
-//		return;
-//	}
-//	// OpenCV functions are used for conversion so we use CV matrices instead of engine images
-//	OSNormTex->getCVMat();
-//	diffTex->getCVMat();
-//	NormalGen generator;
-//	generator.OSNormalMap = OSNormTex->texMat;
-//	generator.contextualConvertMap(diffTex->texMat);
-//	//imageTexture* convertedOS = new imageTexture(generator.OSNormalMap);
-//	//loadNormal(convertedOS);
-//}
-
 void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
+	
 	NormalGen generator(loadList);
-	OSNormTex->getCVMat();
-	generator.createOSImageFromMat(OSNormTex->texMat);
+	generator.copyOSImage(OSNormTex);
 	generator.setupTSConverter();
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 	commandBuffer = generator.convertOStoTS(commandBuffer, inputMesh);
@@ -288,8 +271,7 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 
 void surfaceConstructor::transitionToOS(Mesh* inputMesh) {
 	NormalGen generator(loadList);
-	TSNormTex->getCVMat();
-	generator.createTSImageFromMat(TSNormTex->texMat);
+	generator.copyTSImage(TSNormTex);
 	generator.setupOSConverter();
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 	commandBuffer = generator.convertTStoOS(commandBuffer, inputMesh);

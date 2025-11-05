@@ -888,6 +888,7 @@ void Engine::cleanup() {
 	}
 
 	vkDestroyCommandPool(device, commandPool, nullptr);
+	vkDestroyCommandPool(device, computeCommandPool, nullptr);
 
 	vkDestroyDevice(device, nullptr);
 

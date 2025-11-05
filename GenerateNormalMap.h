@@ -43,8 +43,8 @@ public:
 
 	VkCommandBuffer drawOSMap(VkCommandBuffer, Mesh*);
 
-	void createOSImageFromMat(cv::Mat);
-	void createTSImageFromMat(cv::Mat);
+	void copyOSImage(Texture*);
+	void copyTSImage(Texture*);
 
 	void setupTSConverter() {
 		prepareTSMap();

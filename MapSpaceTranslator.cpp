@@ -6,15 +6,15 @@
 using namespace cv;
 using namespace std;
 
-void NormalGen::createOSImageFromMat(Mat srcImg) {
+void NormalGen::copyOSImage(Texture* srcTex) {
 	
-	objectSpaceMap.colour = loadList->replacePtr(new imageTexture(srcImg, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), "OS-TSGenTex");
+	objectSpaceMap.colour = loadList->replacePtr(srcTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), "OS-TSGenTex");
 
 }
 
-void NormalGen::createTSImageFromMat(Mat srcImg) {
+void NormalGen::copyTSImage(Texture* srcTex) {
 	
-	tangentSpaceMap.colour = loadList->replacePtr(new imageTexture(srcImg, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), "TS-OSGenTex");
+	tangentSpaceMap.colour = loadList->replacePtr(srcTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), "TS-OSGenTex");
 
 }
 
