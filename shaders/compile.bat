@@ -1,10 +1,11 @@
-<<<<<<< HEAD
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe shader.vert -o vert.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe shader.frag -o frag.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe Wshader.vert -o Wvert.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe Wshader.frag -o Wfrag.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe UIshader.vert -o UIvert.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe UIshader.frag -o UIfrag.spv
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe UIGrayshader.vert -o UIGrayvert.spv
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe UIGrayshader.frag -o UIGrayfrag.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe UVshader.vert -o UVvert.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe UVshader.frag -o UVfrag.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe BFshader.vert -o BFvert.spv
@@ -14,15 +15,4 @@ C:/VulkanSDK/1.3.296.0/Bin/glslc.exe OS_BFshader.frag -o OS_BFfrag.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe TS_BFshader.vert -o TS_BFvert.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe TS_BFshader.frag -o TS_BFfrag.spv
 pause
-=======
-C:/VulkanSDK/1.3.296.0/Bin/glslc.exe shader.vert -o vert.spv
-C:/VulkanSDK/1.3.296.0/Bin/glslc.exe shader.frag -o frag.spv
-C:/VulkanSDK/1.3.296.0/Bin/glslc.exe Wshader.vert -o Wvert.spv
-C:/VulkanSDK/1.3.296.0/Bin/glslc.exe Wshader.frag -o Wfrag.spv
-C:/VulkanSDK/1.3.296.0/Bin/glslc.exe UIshader.vert -o UIvert.spv
-C:/VulkanSDK/1.3.296.0/Bin/glslc.exe UIshader.frag -o UIfrag.spv
-C:/VulkanSDK/1.3.296.0/Bin/glslc.exe UVshader.vert -o UVvert.spv
-C:/VulkanSDK/1.3.296.0/Bin/glslc.exe UVshader.frag -o UVfrag.spv
-C:/VulkanSDK/1.3.296.0/Bin/glslc.exe BFshader.vert -o BFvert.spv
-C:/VulkanSDK/1.3.296.0/Bin/glslc.exe BFshader.frag -o BFfrag.spv
->>>>>>> 65e49fd884fc33b59605b3036ff7b8ff8393947b
+
