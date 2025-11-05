@@ -98,7 +98,7 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		cleaned = false;
+		//cleaned = false;
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t ml) {
@@ -112,7 +112,7 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		cleaned = false;
+		//cleaned = false;
 	}
 
 	imageTexture(std::string filename, VkFormat format) {
@@ -122,7 +122,7 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		cleaned = false;
+		//cleaned = false;
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format) {
@@ -132,14 +132,14 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		cleaned = false;
+		//cleaned = false;
 	}
 
 	imageTexture(imageData* imageBytes) {
 		// Built-in image texture
 		createTextureImage(imageBytes);
 		createTextureImageView();
-		cleaned = false;
+		//cleaned = false;
 	};
 
 	void setup() {
@@ -193,7 +193,6 @@ public:
 		}
 		createWebcamImage();
 		createWebcamTextureImageView();
-		cleaned = false;
 	}
 
 	void cleanup() {

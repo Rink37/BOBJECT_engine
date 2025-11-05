@@ -136,7 +136,7 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, copy->mipLevels);
 	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, 1);
-	
+
 	return copy;
 }
 
@@ -245,6 +245,8 @@ void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlag
 	}
 
 	vkBindImageMemory(Engine::get()->device, textureImage, textureImageMemory, 0);
+
+	cleaned = false;
 }
 
 void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
