@@ -426,6 +426,7 @@ void Engine::createGraphicsPipelines() {
 	shaderData uiShader = UISHADER;
 	shaderData wShader = WSHADER;
 	shaderData uvShader = UVSHADER;
+	shaderData uiShaderGray = UIGRAYSHADER;
 
 	std::vector<shaderData*> shaderDatas;
 
@@ -434,12 +435,14 @@ void Engine::createGraphicsPipelines() {
 	shaderDatas.push_back(&uiShader);
 	shaderDatas.push_back(&wShader);
 	shaderDatas.push_back(&uvShader);
+	shaderDatas.push_back(&uiShaderGray);
 
 	PipelineMap.insert({ string("FlatShading"), 0 });
 	PipelineMap.insert({ string("BFShading"), 1 });
 	PipelineMap.insert({ string("UIShading"), 2 });
 	PipelineMap.insert({ string("Wireframe"), 3 });
 	PipelineMap.insert({ string("UVWireframe"), 4 });
+	PipelineMap.insert({ string("UIGrayShading"), 5 });
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -642,7 +645,7 @@ void Engine::createGraphicsPipelines() {
 	}
 
 	GraphicsPipelines.push_back(CurrentPipeline);
-	PipelineMap.insert({ string("OSNormBF"), 5 });
+	PipelineMap.insert({ string("OSNormBF"), 6 });
 
 	shaderData TS_BF = TS_BFSHADER;
 	VkPipeline* TangentPipeline = new VkPipeline;
@@ -699,7 +702,7 @@ void Engine::createGraphicsPipelines() {
 	}
 
 	GraphicsPipelines.push_back(TangentPipeline);
-	PipelineMap.insert({ string("TSNormBF"), 6 });
+	PipelineMap.insert({ string("TSNormBF"), 7 });
 
 
 	vkDestroyShaderModule(device, FragShaderModule, nullptr);

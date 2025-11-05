@@ -31,6 +31,7 @@
 #include"include/Flat.h"
 #include"include/BF.h"
 #include"include/UI.h"
+#include"include/UIGray.h"
 #include"include/UV.h"
 #include"include/W.h"
 #include"include/NormalGenerator.h"

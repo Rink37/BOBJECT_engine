@@ -363,6 +363,7 @@ public:
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
+		testUIShader();
 		mainLoop();
 		cleanup();
 		surfaceConstructor::destruct();
@@ -385,6 +386,8 @@ private:
 	RenderMenu renderMenu = RenderMenu(&UIElements);
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
+
+	UIItem* UITestImage = nullptr;
 
 	vector<Widget*> widgets;
 
@@ -538,6 +541,12 @@ private:
 			drawFrame();
 		}
 		vkDeviceWaitIdle(engine->device);
+	}
+
+	void testUIShader() {
+		imageData test = D2NBUTTON_GRAY;
+		UITestImage = new ImagePanel(0.0f, 0.0f, 0.1f, 0.1f, new Material(new imageTexture(&test, VK_FORMAT_R8_UNORM)), false);
+		UITestImage->updateDisplay();
 	}
 
 	void buttonLoadStaticObject(UIItem* owner) {
@@ -784,6 +793,11 @@ private:
 			widgets[i]->draw(commandBuffer, currentFrame);
 		}
 
+		if (UITestImage != nullptr) {
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UIGrayShading")]);
+			UITestImage->draw(commandBuffer, currentFrame);
+		}
+		
 		if (viewIndex == 1 && lit) {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(sConst->renderPipeline)]);
 

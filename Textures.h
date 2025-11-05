@@ -143,6 +143,14 @@ public:
 		//cleaned = false;
 	};
 
+	imageTexture(imageData* imageBytes, VkFormat imageFormat) {
+		// Built-in image texture
+		textureFormat = imageFormat;
+		createTextureImage(imageBytes);
+		createTextureImageView();
+		//cleaned = false;
+	};
+
 	void setup() {
 
 	}

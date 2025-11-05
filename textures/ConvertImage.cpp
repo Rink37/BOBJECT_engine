@@ -75,9 +75,10 @@ void writeSingle(string outhname, string outcppname, string name, string locatio
     outcpp << string("const int ")+nameNoExt+string("Channels = ");
     outcpp << texChannels;
     outcpp << ";\n\n";
-    size_t imagesize = texWidth*texHeight*texChannels;
+    size_t imagesize = texWidth*texHeight*4;
     outcpp << string("unsigned char ")+nameNoExt+string("Bytes[] = { ");
-    for (size_t i = 0; i!= imagesize; i++){
+    cout << texChannels << endl;
+    for (size_t i = 0; i!= imagesize; i += 5-texChannels){
         outcpp << "0x" << hex << setw(2) << setfill('0') << (int)(unsigned char) pixels[i];
         if (i < imagesize-1){
             outcpp << ", ";
