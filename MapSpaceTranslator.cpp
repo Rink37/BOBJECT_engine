@@ -323,9 +323,6 @@ void NormalGen::cleanupTS() {
 	vkDestroyRenderPass(Engine::get()->device, tangentSpaceMap.renderPass, nullptr);
 	vkDestroyFramebuffer(Engine::get()->device, tangentSpaceMap.frameBuffer, nullptr);
 
-	//tangentSpaceMap.colour->cleanup();
-	//objectSpaceMap.colour->cleanup();
-
 	loadList->deleteTexture("OS-TSGenTex");
 	loadList->deleteTexture("TSGenTex");
 }
@@ -639,9 +636,6 @@ void NormalGen::cleanupOS() {
 
 	vkDestroyRenderPass(Engine::get()->device, objectSpaceMap.renderPass, nullptr);
 	vkDestroyFramebuffer(Engine::get()->device, objectSpaceMap.frameBuffer, nullptr);
-
-	//tangentSpaceMap.colour->cleanup();
-	//objectSpaceMap.colour->cleanup();
 
 	loadList->deleteTexture("TS-OSGenTex");
 	loadList->deleteTexture("OSGenTex");

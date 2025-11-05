@@ -173,7 +173,7 @@ void imageTexture::createTextureImage(imageData* imgData) {
 	memcpy(data, imgData->Bytes, static_cast<size_t>(imageSize));
 	vkUnmapMemory(Engine::get()->device, stagingBufferMemory);
 
-	createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	createImage(VK_SAMPLE_COUNT_1_BIT, textureMemFlags);
 
 	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
@@ -250,7 +250,7 @@ void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlag
 }
 
 void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
-	if (oldLayout == newLayout || newLayout == textureLayout) {
+	if (oldLayout == newLayout) {
 		return;
 	}
 

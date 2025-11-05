@@ -15,13 +15,11 @@ using namespace cv;
 
 void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 
-	// MEMORY PROBLEMS ARE DEFINITELY IN HERE
 	NormalGen generator(loadList);
 	generator.setupOSExtractor();
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 	commandBuffer = generator.drawOSMap(commandBuffer, inputMesh);
 	Engine::get()->endSingleTimeCommands(commandBuffer);
-	// END MEMORY PROBLEM BLOCK
 	
 	OSNormTex = loadList->replacePtr(generator.objectSpaceMap.colour->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -42,8 +40,9 @@ void surfaceConstructor::contextConvert() {
 
 	auto start = std::chrono::high_resolution_clock::now();
 
-	diffTex->getCVMat();
-	Texture* kuwaharaTex = new imageTexture(diffTex->texMat, VK_FORMAT_R8G8B8A8_UNORM);
+	//diffTex->getCVMat();
+	//Texture* kuwaharaTex = new imageTexture(diffTex->texMat, VK_FORMAT_R8G8B8A8_UNORM);
+	Texture* kuwaharaTex = diffTex->copyImage(VK_FORMAT_R8G8B8A8_UNORM, diffTex->textureLayout, diffTex->textureUsage, diffTex->textureTiling, diffTex->textureMemFlags, 1);
 
 	cout << "Kuwahara" << endl;
 	filter Kuwahara(kuwaharaTex, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM);
