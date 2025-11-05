@@ -4,14 +4,16 @@
 
 using namespace std;
 
-void NormalGen::prepareOSMap() {
+void NormalGen::prepGenerateOSMap() {
+
 	objectSpaceMap.colour = loadList->replacePtr(new Texture, "OSGenTex");
 
-	objectSpaceMap.colour->texWidth = MAPDIM;
-	objectSpaceMap.colour->texHeight = MAPDIM;
+	objectSpaceMap.colour->texWidth = DEFAULTMAPDIM;
+	objectSpaceMap.colour->texHeight = DEFAULTMAPDIM;
 	objectSpaceMap.colour->texChannels = 4;
 	objectSpaceMap.colour->mipLevels = 1;
 	objectSpaceMap.colour->textureFormat = MAP_COLOUR_FORMAT;
+	objectSpaceMap.colour->textureLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	objectSpaceMap.colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
 	objectSpaceMap.colour->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -56,7 +58,7 @@ void NormalGen::prepareOSMap() {
 		throw runtime_error("Failed to create render pass");
 	}
 
-	VkImageView attachments[1];
+	VkImageView attachments[1] = {};
 	attachments[0] = objectSpaceMap.colour->textureImageView;
 
 	VkFramebufferCreateInfo fbufCreateInfo = {};
@@ -73,7 +75,7 @@ void NormalGen::prepareOSMap() {
 	}
 }
 
-void NormalGen::createOSPipeline() {
+void NormalGen::createGenerateOSPipeline() {
 	shaderData* sD = new NORMALGENERATORSHADER;
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -229,11 +231,9 @@ VkCommandBuffer NormalGen::drawOSMap(VkCommandBuffer commandbuffer, Mesh* mesh) 
 	VkBuffer vertexBuffers[] = { mesh->vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
 
-	mesh->createTexCoordIndexBuffer();
-
 	vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
 
-	vkCmdBindIndexBuffer(commandbuffer, mesh->texCoordIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(commandbuffer, mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 	vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(mesh->uniqueTexindices.size()), 1, 0, 0, 0);
 
@@ -242,7 +242,7 @@ VkCommandBuffer NormalGen::drawOSMap(VkCommandBuffer commandbuffer, Mesh* mesh) 
 	return commandbuffer;
 }
 
-void NormalGen::cleanupOS() {
+void NormalGen::cleanupGenOS() {
 	vkDeviceWaitIdle(Engine::get()->device);
 
 	vkDestroyPipeline(Engine::get()->device, OSpipeline, nullptr);
@@ -251,5 +251,5 @@ void NormalGen::cleanupOS() {
 	vkDestroyRenderPass(Engine::get()->device, objectSpaceMap.renderPass, nullptr);
 	vkDestroyFramebuffer(Engine::get()->device, objectSpaceMap.frameBuffer, nullptr);
 
-	objectSpaceMap.colour->cleanup();
+	loadList->deleteTexture("OSGenTex");
 }

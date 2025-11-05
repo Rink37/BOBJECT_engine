@@ -23,6 +23,7 @@ struct Texture {
 	VkImageLayout textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	VkImageUsageFlags textureUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	VkImageTiling textureTiling = VK_IMAGE_TILING_OPTIMAL;
+	VkMemoryPropertyFlags textureMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	uint32_t mipLevels = 0;
 
 	bool hasStencilComponent(VkFormat);
@@ -48,7 +49,7 @@ struct Texture {
 		if (mipLevels == 0) {
 			mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 		}
-		createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		createImage(VK_SAMPLE_COUNT_1_BIT, textureMemFlags);
 		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
 		generateMipmaps();
 		textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
@@ -75,9 +76,9 @@ struct Texture {
 
 	Texture() = default;
 	
-	//~Texture() {
-	//	cleanup();
-	//}
+	~Texture() {
+		cleanup();
+	}
 };
 
 class imageTexture : public Texture {
@@ -98,7 +99,7 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		cleaned = false;
+		//cleaned = false;
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t ml) {
@@ -112,7 +113,7 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		cleaned = false;
+		//cleaned = false;
 	}
 
 	imageTexture(std::string filename, VkFormat format) {
@@ -122,7 +123,7 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		cleaned = false;
+		//cleaned = false;
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format) {
@@ -132,14 +133,14 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		cleaned = false;
+		//cleaned = false;
 	}
 
 	imageTexture(imageData* imageBytes) {
 		// Built-in image texture
 		createTextureImage(imageBytes);
 		createTextureImageView();
-		cleaned = false;
+		//cleaned = false;
 	};
 
 	void setup() {
@@ -193,7 +194,6 @@ public:
 		}
 		createWebcamImage();
 		createWebcamTextureImageView();
-		cleaned = false;
 	}
 
 	void cleanup() {

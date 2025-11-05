@@ -43,13 +43,14 @@ public:
 
 	// Default state management //
 	//Material webcamMaterial{};
-	std::shared_ptr<Material> webcamPtr;
+	Material* webcamPtr;
 	//Material diffuseMaterial{};
 	//Material osNormMaterial{};
 	//Material tsNormMaterial{};
 
 	void generateOSMap(Mesh*);
 	void transitionToTS(Mesh*);
+	void transitionToOS(Mesh*);
 
 	void contextConvert();
 
@@ -69,9 +70,9 @@ public:
 	LoadList* loadList = nullptr;
 
 	// Materials used by the display panels //
-	std::array<std::shared_ptr<Material>, 2> Diffuse{}; 
+	std::array<Material*, 2> Diffuse{}; 
 	uint8_t diffuseIdx = 0;
-	std::array<std::shared_ptr<Material>, 3> Normal{} ;
+	std::array<Material*, 3> Normal{} ;
 	uint8_t normalIdx = 0;
 	uint8_t normalType = 0;
 
@@ -95,11 +96,11 @@ public:
 		updateSurfaceMat();
 	};
 	
-	std::shared_ptr<Material> currentDiffuse() {
+	Material* currentDiffuse() {
 		return Diffuse[diffuseIdx];
 	}
 
-	std::shared_ptr<Material> currentNormal() {
+	Material* currentNormal() {
 		return Normal[normalIdx*(normalIdx+normalType)];
 	}
 	
@@ -140,7 +141,7 @@ public:
 		//Diffuse[1] = std::make_unique<Material>(diffuseMaterial);
 		//Diffuse[1]->cleanupDescriptor();
 		diffTex = loadList->replacePtr(diffuse, "DiffuseTex");
-		Diffuse[1] = std::make_unique<Material>(diffTex);
+		Diffuse[1] = loadList->replacePtr(new Material(diffTex), "DiffuseMat");
 		diffuseIdx = 1;
 		updateSurfaceMat();
 	}
@@ -157,7 +158,7 @@ public:
 			//osNormMaterial.cleanupDescriptor();
 			//osNormMaterial.init(OSNormTex);
 			//Normal[1] = std::make_unique<Material>(osNormMaterial);
-			Normal[1] = std::make_unique<Material>(OSNormTex);
+			Normal[1] = loadList->replacePtr(new Material(OSNormTex), "OSNormMat");
 			TSmatching = false;
 		}
 		else {
@@ -170,7 +171,8 @@ public:
 			//tsNormMaterial.cleanupDescriptor();
 			//tsNormMaterial.init(TSNormTex);
 			//Normal[2] = std::make_unique<Material>(tsNormMaterial); 
-			Normal[2] = std::make_unique<Material>(TSNormTex);
+			Normal[2] = loadList->replacePtr(new Material(TSNormTex), "TSNormMat");
+			TSmatching = false;
 		}
 		updateSurfaceMat();
 	}
@@ -179,7 +181,7 @@ public:
 		webTex = webcamTexture::get();
 		webTex->setup();
 		//webcamMaterial.init(webTex);
-		webcamPtr = std::make_unique<Material>(webTex);
+		webcamPtr = new Material(webTex);
 		Diffuse = { webcamPtr, webcamPtr };
 		Normal = { webcamPtr, webcamPtr, webcamPtr };
 		surfaceMat.init(webTex);
@@ -207,7 +209,7 @@ public:
 				renderPipeline = "OSNormBF";
 				break;
 			}
-			std::cout << static_cast<int>(normalIdx) << " " << static_cast<int>(normalType) << std::endl;
+			//std::cout << static_cast<int>(normalIdx) << " " << static_cast<int>(normalType) << std::endl;
 			switch (normalIdx*(normalIdx + normalType)) {
 			case 1:
 				if (OSNormTex != nullptr) {
@@ -244,14 +246,14 @@ public:
 		diffTex = nullptr;
 		OSNormTex = nullptr;
 		TSNormTex = nullptr;
-		for (std::shared_ptr<Material> mat : Diffuse) {
-			if (mat.get() != Diffuse[0].get()) {
-				mat.get()->cleanupDescriptor();
+		for (Material* mat : Diffuse) {
+			if (mat != Diffuse[0]) {
+				mat->cleanupDescriptor();
 			}
 		}
-		for (std::shared_ptr<Material> mat : Normal) {
-			if (mat.get() != Normal[0].get()) {
-				mat.get()->cleanupDescriptor();
+		for (Material* mat : Normal) {
+			if (mat != Normal[0]) {
+				mat->cleanupDescriptor();
 			}
 		}
 		surfaceMat.cleanupDescriptor();
@@ -302,7 +304,7 @@ private:
 	std::vector<StaticObject>* staticObjects = nullptr;
 
 	bool hasNormal = false;
-	bool normalsEnabled = false; // DEBUG - lets us disable any UI for normals
+	bool normalsEnabled = true; // DEBUG - lets us disable any UI for normals
 
 	Checkbox* diffuseTog = nullptr;
 	Checkbox* normalTog = nullptr;

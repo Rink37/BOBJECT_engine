@@ -69,7 +69,7 @@ public:
 		cleaned = true;
 	}
 
-	std::vector<Texture*> textures;
+	std::vector<Texture*> textures = {};
 
 	VkDescriptorPool descriptorPool = nullptr;
 	std::vector<VkDescriptorSet> descriptorSets = {};
@@ -84,6 +84,10 @@ public:
 	void createDescriptorSets();
 
 	bool cleaned = true;
+
+	~Material() {
+		cleanupDescriptor();
+	}
 };
 
 

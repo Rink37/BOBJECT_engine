@@ -62,6 +62,10 @@ struct UIImage {
 
 		return commandBuffer;
 	}
+
+	~UIImage() {
+		cleanup();
+	}
 };
 
 struct UIItem {
@@ -211,7 +215,6 @@ class Button : public UIItem // Here a button is just a rectangle area in screen
 {
 public:
 	std::function<void(UIItem*)> clickFunction = nullptr;
-	//std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
 	Button() = default;
 

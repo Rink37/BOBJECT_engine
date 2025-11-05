@@ -1,0 +1,110 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout(binding = 0, rgba8) uniform readonly image2D normalImage;
+layout(binding = 1, rgba16f) uniform readonly image2D xGrad;
+layout(binding = 2, rgba16f) uniform readonly image2D yGrad;
+layout(binding = 3, rgba8) uniform image2D resultImage;
+
+void main(){
+	const int kernelRadius = 16; // Min value of this is 2
+	const float thresh = 0.06f;
+	const ivec2 imgResolution = imageSize(normalImage);
+
+	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+
+	vec4 sumColour = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+
+	vec3 yGpix = imageLoad(yGrad, pixelCoords).rgb;
+	vec3 xGpix = imageLoad(xGrad, pixelCoords).rgb;
+	vec3 normPix = imageLoad(normalImage, pixelCoords).rgb;
+
+	if (abs(yGpix.r) < thresh && abs(xGpix.r) < thresh){
+		if (normPix != vec3(0.0, 0.0, 0.0)){
+			sumColour.rgb += normPix;
+			sumColour.w += 1.0f;
+		}
+		for (int x = pixelCoords.x-1; x != pixelCoords.x-kernelRadius; x--){
+			if (x < 0){
+				break;
+			}
+			yGpix = imageLoad(yGrad, ivec2(x, pixelCoords.y)).rgb;
+			xGpix = imageLoad(xGrad, ivec2(x, pixelCoords.y)).rgb;
+			normPix = imageLoad(normalImage, ivec2(x, pixelCoords.y)).rgb;
+			if (abs(yGpix.r) < thresh && abs(xGpix.r) < thresh){
+				if (normPix != vec3(0,0,0)){
+					sumColour.rgb += normPix;
+					sumColour.w += 1;
+				}
+				for (int y = pixelCoords.y-1; y != pixelCoords.y-kernelRadius; y--){
+					if (y < 0){
+						break;
+					}
+					yGpix = imageLoad(yGrad, ivec2(x, y)).rgb;
+					xGpix = imageLoad(xGrad, ivec2(x, y)).rgb;
+					normPix = imageLoad(normalImage, ivec2(x, y)).rgb;
+					if (abs(yGpix.r) < thresh && abs(xGpix.r) < thresh && normPix != vec3(0.0, 0.0, 0.0)){
+						sumColour.rgb += normPix;
+						sumColour.w += 1;
+					}
+				}
+				for (int y = pixelCoords.y+1; y != pixelCoords.y+kernelRadius; y++){
+					if (y >= imgResolution.y){
+						break;
+					}
+					yGpix = imageLoad(yGrad, ivec2(x, y)).rgb;
+					xGpix = imageLoad(xGrad, ivec2(x, y)).rgb;
+					normPix = imageLoad(normalImage, ivec2(x, y)).rgb;
+					if (abs(yGpix.r) < thresh && abs(xGpix.r) < thresh && normPix != vec3(0.0, 0.0, 0.0)){
+						sumColour.rgb += normPix;
+						sumColour.w += 1;
+					}
+				}
+			}
+		}
+		for (int x = pixelCoords.x+1; x != pixelCoords.x+kernelRadius; x++){
+			if (x >= imgResolution.x){
+				break;
+			}
+			yGpix = imageLoad(yGrad, ivec2(x, pixelCoords.y)).rgb;
+			xGpix = imageLoad(xGrad, ivec2(x, pixelCoords.y)).rgb;
+			normPix = imageLoad(normalImage, ivec2(x, pixelCoords.y)).rgb;
+			if (abs(yGpix.r) < thresh && abs(xGpix.r) < thresh){
+				if (normPix != vec3(0,0,0)){
+					sumColour.rgb += normPix;
+					sumColour.w += 1;
+				}
+				for (int y = pixelCoords.y-1; y != pixelCoords.y-kernelRadius; y--){
+					if (y < 0){
+						break;
+					}
+					yGpix = imageLoad(yGrad, ivec2(x, y)).rgb;
+					xGpix = imageLoad(xGrad, ivec2(x, y)).rgb;
+					normPix = imageLoad(normalImage, ivec2(x, y)).rgb;
+					if (abs(yGpix.r) < thresh && abs(xGpix.r) < thresh && normPix != vec3(0.0, 0.0, 0.0)){
+						sumColour.rgb += normPix;
+						sumColour.w += 1.0f;
+					}
+				}
+				for (int y = pixelCoords.y+1; y != pixelCoords.y+kernelRadius; y++){
+					if (y >= imgResolution.y){
+						break;
+					}
+					yGpix = imageLoad(yGrad, ivec2(x, y)).rgb;
+					xGpix = imageLoad(xGrad, ivec2(x, y)).rgb;
+					normPix = imageLoad(normalImage, ivec2(x, y)).rgb;
+					if (abs(yGpix.r) < thresh && abs(xGpix.r) < thresh && normPix != vec3(0.0, 0.0, 0.0)){
+						sumColour.rgb += normPix;
+						sumColour.w += 1.0f;
+					}
+				}
+			}
+		}
+	}
+
+	sumColour = (sumColour != vec4(0,0,0,0))?sumColour:vec4(imageLoad(normalImage, pixelCoords).rgb, 1.0);
+
+	vec4 pixel = vec4((sumColour.rgb/sumColour.w), 1.0);
+
+	imageStore(resultImage, pixelCoords, pixel);
+}

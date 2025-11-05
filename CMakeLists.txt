@@ -9,7 +9,7 @@ endif()
 project (VulkanRenderer LANGUAGES C CXX)
 
 # Add source to this project's executable.
-add_executable (VulkanRenderer "VulkanRenderer.cpp" "Bobject_Engine.h" "Bobject_Engine.cpp" "InputManager.h" "InputManager.cpp" "WindowsFileManager.h" "WindowsFileManager.cpp" "CameraController.cpp" "CameraController.h" "UIelements.cpp" "UIelements.h" "Webcam_feeder.cpp" "Webcam_feeder.h" "Pipelines.h" "Textures.h" "Textures.cpp" "Materials.h" "Materials.cpp" "Meshes.h" "Meshes.cpp" "GenerateNormalMap.h" "ExtractNormalMap.cpp" "ContextConverter.cpp" "MapSpaceTranslator.cpp" "SurfaceConstructor.cpp" "SurfaceConstructor.h" "ImageProcessor.h" "ImageProcessor.cpp" "StudioSession.h" "StudioSession.cpp" "Tomography.cpp" "Tomography.h" "include/BakedImages.cpp" "LoadLists.h")
+add_executable (VulkanRenderer "VulkanRenderer.cpp" "Bobject_Engine.h" "Bobject_Engine.cpp" "InputManager.h" "InputManager.cpp" "WindowsFileManager.h" "WindowsFileManager.cpp" "CameraController.cpp" "CameraController.h" "UIelements.cpp" "UIelements.h" "Webcam_feeder.cpp" "Webcam_feeder.h" "Pipelines.h" "Textures.h" "Textures.cpp" "Materials.h" "Materials.cpp" "Meshes.h" "Meshes.cpp" "GenerateNormalMap.h" "ExtractNormalMap.cpp" "MapSpaceTranslator.cpp" "SurfaceConstructor.cpp" "SurfaceConstructor.h" "ImageProcessor.h" "ImageProcessor.cpp" "StudioSession.h" "StudioSession.cpp" "Tomography.cpp" "Tomography.h" "include/BakedImages.cpp" "LoadLists.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET VulkanRenderer PROPERTY CXX_STANDARD 20)
@@ -43,7 +43,7 @@ if (OPENCV_FOUND)
 		target_link_libraries(VulkanRenderer PUBLIC OpenCV::OpenCV)
 	else()
 		message(STATUS "OpenCV found, linking now")
-		target_include_directories(VulkanRenderer PUBLIC ${OPENCV_INCLUDE_DIR})#/../) # Sometimes the include directory has opencv2 in it which will break the imports - check the cmake message log, if OPENCV_INCLUDE_DIR ends in /opencv2 then uncomment the /../)
+		target_include_directories(VulkanRenderer PUBLIC ${OPENCV_INCLUDE_DIR})# /../) # Sometimes the include directory has opencv2 in it which will break the imports - check the cmake message log, if OPENCV_INCLUDE_DIR ends in /opencv2 then uncomment the /../)
 		target_link_libraries(VulkanRenderer PUBLIC ${OPENCV_LIBRARY})#/../opencv_world4100d.lib) # Similarly if the OPENCV_LIBRARY doesn't end with the lib then uncomment the last bit of this line'
 	endif()
 else()
@@ -63,5 +63,5 @@ target_include_directories(VulkanRenderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${C
 
 add_custom_command(TARGET VulkanRenderer POST_BUILD
 				   COMMAND ${CMAKE_COMMAND} -E copy
-				   ${OPENCV_DLL_DIR} #/bin/opencv_world4100d.dll # Sometimes the path will terminate one directory before /bin - in that case replace the end segment with this
+				   ${OPENCV_DLL_DIR}#/bin/opencv_world4100d.dll # Sometimes the path will terminate one directory before /bin - in that case replace the end segment with this
 				   $<TARGET_FILE_DIR:VulkanRenderer>)

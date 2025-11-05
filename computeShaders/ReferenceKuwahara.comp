@@ -11,7 +11,7 @@ void main(){
 	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
 
 	vec4 rm[8];
-	vec4 m[8];
+	vec3 m[8];
 	vec3 s[8];
 
 	float zeta = 2.0f/float(kernelRadius);
@@ -21,15 +21,15 @@ void main(){
 
 	for (int k = 0; k != 8; k++){
 		rm[k] = vec4(0.0f, 0.0f, 0.0f, 0.0f);
-		m[k] = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+		m[k] = vec3(0.0f, 0.0f, 0.0f);
 		s[k] = vec3(0.0f, 0.0f, 0.0f);
 	}
 
 	for (int y = -kernelRadius; y <= kernelRadius; y++){
 		for (int x = -kernelRadius; x <= kernelRadius; x++){
 			vec2 v = vec2(float(x), float(y)) / kernelRadius;
-			vec3 rc = imageLoad(referenceImage, ivec2(pixelCoords.x + v.x * kernelRadius, pixelCoords.y + v.y * kernelRadius)).rgb;
-			vec3 c = imageLoad(inputImage, ivec2(pixelCoords.x + v.x * kernelRadius, pixelCoords.y + v.y * kernelRadius)).rgb;
+			vec3 rc = imageLoad(referenceImage, ivec2(pixelCoords.x + x, pixelCoords.y + y)).rgb;
+			vec3 c = imageLoad(inputImage, ivec2(pixelCoords.x + x, pixelCoords.y + y)).rgb; // Not slowing the shader
 			float sum = 0.0f;
 			float w[8];
 			float z, vxx, vyy;
@@ -68,8 +68,8 @@ void main(){
 
 			for (int k = 0; k < 8; k++){
 				float wk = w[k] * g;
-				rm[k] += vec4(rc * wk, wk);
-				m[k] += vec4(c * wk, wk);
+				rm[k] += vec4(rc * wk, wk); 
+				m[k] += c * wk;
 				s[k] += vec3(rc * rc * wk);
 			}
 		}
@@ -78,14 +78,14 @@ void main(){
 	vec4 avgPixel = vec4(0.0f, 0.0f, 0.0f, 0.0f);
 	
 	for (int k = 0; k < 8; k++){
-		m[k].rgb /= m[k].w;
+		m[k] /= rm[k].w;
 		rm[k].rgb /= rm[k].w;
 		s[k] = abs(s[k]/rm[k].w - rm[k].rgb * rm[k].rgb);
 
-		float sigma2 = s[k].r + s[k].g + s[k].b;
-		float w = 1.0f / (1.0f + pow(1000.0f * sigma2, 4.0f));
+		float sigma2 = 1000.0f * (s[k].r + s[k].g + s[k].b);
+		float w = 1.0f / (1.0f + sigma2*sigma2*sigma2*sigma2);  // This is the only value which depends on or is affected by rm - is it faster to write it into two 4-channel float images the first time around?
 
-		avgPixel += vec4(m[k].rgb * w, w);
+		avgPixel += vec4(m[k]*w, w); // Using m[k] here is the source of slowness - it adds ~8000 ms since we have to do both rm and m
 	}
 
 	vec4 pixel = (avgPixel / avgPixel.w);
