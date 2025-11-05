@@ -318,6 +318,9 @@ VkCommandBuffer NormalGen::convertOStoTS(VkCommandBuffer commandbuffer, Mesh* me
 void NormalGen::cleanupTS() {
 	vkDeviceWaitIdle(Engine::get()->device);
 
+	vkDestroyDescriptorSetLayout(Engine::get()->device, tangentSpaceMap.descriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(Engine::get()->device, tangentSpaceMap.descriptorPool, nullptr);
+
 	vkDestroyPipeline(Engine::get()->device, TSpipeline, nullptr);
 	vkDestroyPipelineLayout(Engine::get()->device, TSpipelineLayout, nullptr);
 
@@ -576,10 +579,6 @@ void NormalGen::prepareOSDescriptor() {
 	descriptorWrite.pImageInfo = &imageInfo;
 
 	vkUpdateDescriptorSets(Engine::get()->device, 1, &descriptorWrite, 0, nullptr);
-
-	cout << objectSpaceMap.descriptorPool << endl;
-	cout << objectSpaceMap.descriptorSet << endl;
-	cout << objectSpaceMap.descriptorSetLayout << endl;
 }
 
 VkCommandBuffer NormalGen::convertTStoOS(VkCommandBuffer commandbuffer, Mesh* mesh) {
@@ -632,6 +631,9 @@ VkCommandBuffer NormalGen::convertTStoOS(VkCommandBuffer commandbuffer, Mesh* me
 
 void NormalGen::cleanupOS() {
 	vkDeviceWaitIdle(Engine::get()->device);
+
+	vkDestroyDescriptorSetLayout(Engine::get()->device, objectSpaceMap.descriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(Engine::get()->device, objectSpaceMap.descriptorPool, nullptr);
 
 	vkDestroyPipeline(Engine::get()->device, OSpipeline, nullptr);
 	vkDestroyPipelineLayout(Engine::get()->device, OSpipelineLayout, nullptr);
