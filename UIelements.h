@@ -193,12 +193,6 @@ struct UIItem {
 		getImages(images, false);
 
 		for (UIImage* image : images) {
-			//for (Material* mat : image->mat) {
-			//	if (mat != nullptr && !mat->cleaned) {
-			//		mat->cleanup();
-			//		mat = nullptr;
-			//	}
-			//}
 			image->cleanup();
 			image = nullptr;
 		}
@@ -222,6 +216,8 @@ public:
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
 		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+
+		this->extenty = this->extentx * this->sqAxisRatio;
 
 		this->isWebcam = iW;
 	}
@@ -614,7 +610,7 @@ private:
 
 	Arrangement* mainArrangement = nullptr;
 
-	float spacing;
+	float spacing = 0.01;
 	int orientation = ORIENT_HORIZONTAL;
 };
 
@@ -759,6 +755,12 @@ struct Widget {
 		Arrangements.emplace_back(a);
 		return Arrangements[Arrangements.size() - 1].get();
 	}
+
+	UIItem* getPtr(Grid* grid) {
+		Grids.emplace_back(grid);
+		return Grids[Grids.size() - 1].get();
+	}
+
 	std::vector<UIItem*> canvas;
 	bool isSetup = false;
 
@@ -772,7 +774,8 @@ private:
 	std::vector<std::shared_ptr<Button>> buttons;
 	std::vector<std::shared_ptr<Checkbox>> checkboxes;
 	std::vector<std::shared_ptr<spacer>> spacers;
-	std::vector<std::shared_ptr<Arrangement>> Arrangements;
+	std::vector<std::shared_ptr<Arrangement>> Arrangements; 
+	std::vector<std::shared_ptr<Grid>> Grids;
 };
 
 #endif

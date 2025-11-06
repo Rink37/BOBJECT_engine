@@ -196,6 +196,7 @@ void Arrangement::arrangeItems() {
 		// Finally for all items we calculate their positions on the screen and their sizes 
 
 		calculateHPositions(buffer, spacerSize, scaleFactor, extents, remainingWidth);
+
 	}
 	else if (orientation == ORIENT_VERTICAL) {
 		scaleFactor = (this->extenty * 2 - bufferSpace) / (totalArea);
@@ -314,10 +315,10 @@ void Arrangement::calculateHPositions(float xbuffer, float spacerSize, float sca
 bool Arrangement::checkForSpace(UIItem* checkItem) {
 	if (orientation != ORIENT_VERTICAL && orientation != ORIENT_HORIZONTAL) {
 		cout << "Invalid orientation" << endl;
-		return;
+		return false;
 	}
 	if (checkItem->isSpacer()) {
-		return;
+		return true;
 	}
 
 	this->calculateScreenPosition();
@@ -465,6 +466,7 @@ void Grid::calculateScreenPosition() {
 	this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H;
 	this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H;
 
+	arrangeItems();
 	mainArrangement->calculateScreenPosition();
 }
 
@@ -479,28 +481,34 @@ void Grid::arrangeItems() {
 	float subExtentx = 0.0f;
 	float subExtenty = 0.0f;
 
+	float W = static_cast<float>(Engine::get()->windowWidth);
+	float H = static_cast<float>(Engine::get()->windowHeight);
+
 	if (orientation == ORIENT_HORIZONTAL) {
-		mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, this->extentx, this->extenty, this->spacing, ARRANGE_START);
-		subExtentx = this->extentx;
-		subExtenty = this->extentx / 5;
+		mainArrangement = new Arrangement(ORIENT_VERTICAL, this->posx, this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		subExtentx = 1.0f;
+		subExtenty = 1.0f / 5.5f;
 	}
 	else if (orientation == ORIENT_VERTICAL) {
-		mainArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, this->extentx, this->extenty, this->spacing, ARRANGE_START);
-		subExtenty = this->extenty;
-		subExtenty = this->extenty / 5;
+		mainArrangement = new Arrangement(ORIENT_HORIZONTAL, this->posx, this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		subExtenty = 1.0f;
+		subExtentx = 1.0f / 5.5f;
 	}
 
 	Arrangement* subArrangement = new Arrangement(orientation, 0.0f, 0.0f, subExtentx, subExtenty, this->spacing, ARRANGE_START);
 
 	for (size_t i = 0; i != Items.size(); i++) {
+		Items[i]->update(0.0f, 0.0f, 1.0f, 1.0f);
 		if (subArrangement->checkForSpace(Items[i])) {
 			subArrangement->addItem(Items[i]);
 		}
 		else {
 			mainArrangement->addItem(subArrangement);
 			subArrangement = new Arrangement(orientation, 0.0f, 0.0f, subExtentx, subExtenty, this->spacing, ARRANGE_START);
+			subArrangement->addItem(Items[i]);
 		}
 	}
 
+	mainArrangement->addItem(subArrangement);
 	mainArrangement->arrangeItems();
 }

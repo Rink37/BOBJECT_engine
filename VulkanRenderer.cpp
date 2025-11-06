@@ -285,6 +285,7 @@ public:
 		tomogButtons->updateDisplay();
 
 		canvas.push_back(getPtr(tomogButtons));
+		canvas.push_back(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.5f, 0.5f, 0.5f, 0.01f)));
 
 		isSetup = true;
 	}
@@ -297,6 +298,10 @@ private:
 		string fileName = winFile::OpenFileDialog();
 		if (fileName != string("fail")) {
 			tomographer.add_image(fileName, 90.0, 50.0);
+			cv::Mat loadedImage = cv::imread(fileName);
+			UIItem* loadedUI = new ImagePanel(new Material(new imageTexture(loadedImage)), false);
+			canvas[1]->addItem(loadedUI);
+			canvas[1]->updateDisplay();
 		}
 	}
 
