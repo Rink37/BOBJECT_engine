@@ -531,6 +531,7 @@ private:
 
 		renderMenu.setup(loadObjectFunct, pipelinefunction);
 		mouseManager.addClickListener(renderMenu.getClickCallback());
+		renderMenu.measureWindowPositions();
 		widgets.push_back(&renderMenu);
 
 		surfaceMenu.setup(sConst, &staticObjects);
@@ -561,18 +562,9 @@ private:
 		while (!glfwWindowShouldClose(engine->window)) {
 			glfwPollEvents();
 			keyBinds.pollRepeatEvents();
+			mouseManager.checkPositionEvents();
 			glfwGetCursorPos(engine->window, &mouseX, &mouseY);
 			webcamTexture::get()->updateWebcam();
-			//int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
-			//if (state == GLFW_PRESS) {
-			//	mouseDown = true;
-			//}
-			//else if (~state && mouseDown){
-			//	for (size_t i = 0; i != widgets.size(); i++) {
-			//		widgets[i]->checkForEvent(mouseX, mouseY, GLFW_PRESS);
-			//	}
-			//	mouseDown = false;
-			//}
 			drawFrame();
 		}
 		vkDeviceWaitIdle(engine->device);

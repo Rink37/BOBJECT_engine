@@ -46,10 +46,10 @@ void UIItem::calculateScreenPosition() {
 
 	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY);
 
-	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W;
-	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W;
-	this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H;
-	this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H;
+	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // left position
+	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // right position
+	this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H; // top position
+	this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom position
 
 }
 

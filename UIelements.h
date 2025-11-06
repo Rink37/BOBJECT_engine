@@ -132,16 +132,24 @@ struct UIItem {
 		}
 	};
 
+	virtual bool isInArea(double x, double y) {
+		bool result = false;
+		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
+			result = true;
+		}
+		return result;
+	};
+
 	virtual void arrangeItems() {
 
 	};
 
-	virtual void checkForClickEvent(double, double, int) {
-
+	virtual bool checkForClickEvent(double, double, int) {
+		return false;
 	};
 
-	virtual void checkForPosEvent(double, double, int) {
-
+	virtual bool checkForPosEvent(double, double, int) {
+		return false;
 	};
 
 	virtual void calculateScreenPosition();
@@ -291,14 +299,6 @@ public:
 		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
 	}
 
-	bool isInArea(double x, double y) {
-		bool result = false;
-		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
-			result = true;
-		}
-		return result;
-	};
-
 	void setClickFunction(std::function<void(UIItem*)> func) {
 		clickFunction = func;
 	}
@@ -308,12 +308,15 @@ public:
 		clickType = code;
 	}
 
-	void checkForClickEvent(double mousex, double mousey, int eventType) {
+	bool checkForClickEvent(double mousex, double mousey, int eventType) {
+		bool found = false;
 		if (clickFunction != nullptr && isEnabled && eventType == clickType) {
 			if (isInArea(mousex, mousey)) {
+				found = true;
 				clickFunction(this);
 			}
 		}
+		return found;
 	};
 };
 
@@ -365,14 +368,6 @@ public:
 		clickType = code;
 	}
 
-	bool isInArea(double x, double y) {
-		bool result = false;
-		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
-			result = true;
-		}
-		return result;
-	};
-
 	void setClickFunction(std::function<void(UIItem*)> func) {
 		clickFunction = func;
 	}
@@ -382,9 +377,11 @@ public:
 		clickType = code;
 	}
 
-	void checkForClickEvent(double mousex, double mousey, int eventType) {
+	bool checkForClickEvent(double mousex, double mousey, int eventType) {
+		bool found = false;
 		bool check = isInArea(mousex, mousey);
 		if (check && eventType == clickType && isEnabled) {
+			found = true;
 			activestate = !activestate;
 			if (activestate) {
 				image->matidx = 0;
@@ -396,6 +393,7 @@ public:
 				clickFunction(this);
 			}
 		};
+		return found;
 	};
 };
 
@@ -487,6 +485,20 @@ public:
 		}
 	}
 
+	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
+		if (!isInArea(mouseX, mouseY)) {
+			return false;
+		}
+		bool found = false;
+		for (UIItem* sitem : Items) {
+			if (sitem->checkForClickEvent(mouseX, mouseY, eventType)) {
+				found = true;
+				break;
+			};
+		}
+		return found;
+	}
+
 private:
 	void setDims(float px, float py, float ex, float ey, float spc) {
 		this->posx = px;
@@ -574,6 +586,20 @@ public:
 		}
 	}
 
+	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
+		if (!isInArea(mouseX, mouseY)) {
+			return false;
+		}
+		bool found = false;
+		for (UIItem* sitem : Items) {
+			if (sitem->checkForClickEvent(mouseX, mouseY, eventType)) {
+				found = true;
+				break;
+			};
+		}
+		return found;
+	}
+
 private:
 	void setDims(float px, float py, float ex, float ey, float spc) {
 		posx = px;
@@ -599,8 +625,41 @@ struct Widget {
 	// UI is managed based on pointers, but the widget must explicitly manage the resources so that we don't have any memory leaks
 
 	std::function<void(double, double, int)> getClickCallback() {
+		measureWindowPositions();
 		return std::bind(&Widget::checkForClickEvent, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	}
+
+	std::function<void(double, double, int)> getPosCallback() {
+		measureWindowPositions();
+		return std::bind(&Widget::checkForPosEvent, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+	}
+
+	void measureWindowPositions() {
+		windowPositions[0] = 10000.0f;
+		windowPositions[1] = 0.0f;
+		windowPositions[2] = 10000.0f;
+		windowPositions[3] = 0.0f;
+		for (UIItem* item : canvas) {
+			std::vector<UIItem*> scs;
+			item->getSubclasses(scs);
+			for (UIItem* sitem : scs) {
+				sitem->calculateScreenPosition();
+				windowPositions[0] = (sitem->windowPositions[0] < windowPositions[0]) ? sitem->windowPositions[0] : windowPositions[0];
+				windowPositions[1] = (sitem->windowPositions[1] > windowPositions[1]) ? sitem->windowPositions[1] : windowPositions[1];
+				windowPositions[2] = (sitem->windowPositions[2] < windowPositions[2]) ? sitem->windowPositions[2] : windowPositions[2];
+				windowPositions[3] = (sitem->windowPositions[3] > windowPositions[3]) ? sitem->windowPositions[3] : windowPositions[3];
+			}
+		}
+		//std::cout << windowPositions[0] << " " << windowPositions[1] << " " << windowPositions[2] << " " << windowPositions[3] << std::endl;
+	}
+
+	bool isInArea(double x, double y) {
+		bool result = false;
+		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
+			result = true;
+		}
+		return result;
+	};
 	
 	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
 		for (size_t i = 0; i != canvas.size(); i++) {
@@ -615,12 +674,13 @@ struct Widget {
 	}
 
 	void checkForClickEvent(double mouseX, double mouseY, int eventType) {
+		if (!isInArea(mouseX, mouseY)) {
+			return;
+		}
 		for (UIItem* item : canvas) {
-			std::vector<UIItem*> scs;
-			item->getSubclasses(scs);
-			for (UIItem* sitem : scs) {
-				sitem->checkForClickEvent(mouseX, mouseY, eventType);
-			}
+			if (item->checkForClickEvent(mouseX, mouseY, eventType)) {
+				break;
+			};
 		}
 	}
 
@@ -638,6 +698,7 @@ struct Widget {
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->updateDisplay();
 		}
+		measureWindowPositions();
 	}
 
 	void cleanup() {
@@ -716,6 +777,7 @@ struct Widget {
 
 	LoadList* loadList = nullptr;
 private:
+	float windowPositions[4] = { 0.0f };
 	// Array of pointers which manages the actual structure of the UI
 
 	// Widgets own all UI classes which appear in the UI, although widget functions use only pointers
