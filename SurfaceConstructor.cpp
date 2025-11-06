@@ -183,7 +183,7 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 	Button* diffLoad = new Button(openMat, loadDiffuse);
 	Button* diffSave = new Button(saveMat, saveWebcam);
 
-	hArrangement* DiffuseButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+	Arrangement* DiffuseButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
 	DiffuseButtons->addItem(getPtr(diffuseTextPanel));
 	DiffuseButtons->addItem(getPtr(diffuseTog));
@@ -191,7 +191,7 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 	DiffuseButtons->addItem(getPtr(diffLoad));
 	DiffuseButtons->addItem(getPtr(diffSave));
 
-	SurfacePanel = new vArrangement(1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
+	SurfacePanel = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 
 	diffuseView = new ImagePanel(sConst->currentDiffuse(), true);
 	SurfacePanel->addItem(getPtr(DiffuseButtons));
@@ -201,7 +201,7 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 		Button* normalTextPanel = new Button(normalMat);
 		Button* normalPlus = new Button(plusMat, addNormalButton);
 
-		NormalButtons = new hArrangement(0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+		NormalButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
 		NormalButtons->addItem(getPtr(normalTextPanel));
 		NormalButtons->addItem(getPtr(normalPlus));

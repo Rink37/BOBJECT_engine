@@ -33,7 +33,7 @@ public:
 		if (isSetup) {
 			return;
 		}
-		hArrangement* SessionButtons = new hArrangement(1.0f, 1.0f, 0.15f, 0.05f, 0.01f, ARRANGE_END);
+		Arrangement* SessionButtons = new Arrangement(ORIENT_HORIZONTAL, 1.0f, 1.0f, 0.15f, 0.05f, 0.01f, ARRANGE_END);
 
 		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
 
@@ -90,7 +90,7 @@ public:
 		imageData lb = LOADBUTTON;
 		Material* LoadBtnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&lb, VK_FORMAT_R8_UNORM), "LoadBtnTex"), true), "LoadBtnMat");
 
-		hArrangement* Renderbuttons = new hArrangement(0.0f, 0.0f, 1.2f, 0.6f, 0.01f, ARRANGE_CENTER);
+		Arrangement* Renderbuttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.2f, 0.6f, 0.01f, ARRANGE_CENTER);
 
 		Button* litRenderingButton = new Button(renderedMat);
 		Button* unlitRenderingButton = new Button(webcamViewMat);
@@ -109,7 +109,7 @@ public:
 		Renderbuttons->addItem(getPtr(litRenderingButton));
 		Renderbuttons->addItem(getPtr(wireframeRenderingButton));
 
-		vArrangement* buttons = new vArrangement(-1.0f, 1.0f, 0.1f, 0.25f, 0.0f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		Arrangement* buttons = new Arrangement(ORIENT_VERTICAL, -1.0f, 1.0f, 0.1f, 0.25f, 0.0f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		buttons->addItem(getPtr(new Button(LoadBtnMat, loadObjectFunct)));
 		buttons->addItem(getPtr(Renderbuttons));
@@ -142,7 +142,7 @@ public:
 		imageData wb = WIREFRAMEBUTTON;
 		wireframeMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&wb, VK_FORMAT_R8_UNORM), "WireframeBtnTex"), true), "WireframeBtnMat");
 
-		canvas.push_back(getPtr(new vArrangement(-1.0f, -0.75f, 0.1f, 0.5f, 0.01f, ARRANGE_START)));
+		canvas.push_back(getPtr(new Arrangement(ORIENT_VERTICAL, -1.0f, -0.75f, 0.1f, 0.5f, 0.01f, ARRANGE_START)));
 
 		ObjectButtons = canvas[0];
 		
@@ -152,7 +152,7 @@ public:
 	void addObject(std::function<void(UIItem*)> toggleFunction, std::function<void(UIItem*)> wireframeToggle) {
 		ObjectButtons->arrangeItems();
 
-		hArrangement* objButtons = new hArrangement(0.0f, 0.0f, 2.0f, 1.0f, 0.01f, ARRANGE_START);
+		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 2.0f, 1.0f, 0.01f, ARRANGE_START);
 
 		Checkbox* objectButton = new Checkbox(visibleMat, invisibleMat, toggleFunction);
 		objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
@@ -219,7 +219,7 @@ public:
 		std::function<void(UIItem*)> toggleWebcamFunct = bind(&WebcamMenu::toggleWebcam, this, placeholders::_1);
 		std::function<void(UIItem*)> configureWebcamFunct = bind(&WebcamMenu::calibrateWebcam, this, placeholders::_1);
 
-		hArrangement* Videobuttons = new hArrangement(0.0f, 1.0f, 0.2f, 0.05f, 0.01f, ARRANGE_CENTER);
+		Arrangement* Videobuttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 1.0f, 0.2f, 0.05f, 0.01f, ARRANGE_CENTER);
 
 		Videobuttons->addItem(getPtr(new Button(webcamMat)));
 		Videobuttons->addItem(getPtr(new Checkbox(playMat, pauseMat, toggleWebcamFunct)));
@@ -273,7 +273,7 @@ public:
 		std::function<void(UIItem*)> computeNormal = bind(&TomographyMenu::performNormTomog, this, placeholders::_1);
 		std::function<void(UIItem*)> computeDiffuse = bind(&TomographyMenu::performDiffTomog, this, placeholders::_1);
 
-		vArrangement* tomogButtons = new vArrangement(0.0f, 0.0f, 0.1f, 0.4f, 0.01f);
+		Arrangement* tomogButtons = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.1f, 0.4f, 0.01f);
 
 		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadTop)));
 		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadBottom)));

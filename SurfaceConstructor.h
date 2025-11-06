@@ -311,8 +311,8 @@ private:
 
 	ImagePanel* normalView = nullptr;
 
-	hArrangement* NormalButtons = nullptr;
-	vArrangement* SurfacePanel = nullptr;
+	Arrangement* NormalButtons = nullptr;
+	Arrangement* SurfacePanel = nullptr;
 
 	surfaceConstructor* sConst = nullptr;
 

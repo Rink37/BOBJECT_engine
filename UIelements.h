@@ -23,6 +23,9 @@
 #define SCALE_BY_DIMENSIONS 1
 #define SCALE_BY_IMAGES 2
 
+#define ORIENT_VERTICAL 0
+#define ORIENT_HORIZONTAL 1
+
 struct UIImage {
 	bool isVisible = true;
 
@@ -418,27 +421,32 @@ public:
 	void setVisibility(bool) {};
 };
 
-class hArrangement : public UIItem {
+class Arrangement : public UIItem {
 public:
 	float spacing;
-	
-	hArrangement() = default;
 
-	hArrangement(float px, float py, float ex, float ey, float spc) {
+	Arrangement() = default;
+
+	Arrangement(int orient, float px, float py, float ex, float ey, float spc) {
 		setDims(px, py, ex, ey, spc);
+		this->orientation = orient;
 	}
 
-	hArrangement(float px, float py, float ex, float ey, float spc, int arrangeMethod) {
+	Arrangement(int orient, float px, float py, float ex, float ey, float spc, int arrangeMethod) {
 		setDims(px, py, ex, ey, spc);
 
 		this->method = arrangeMethod;
+
+		this->orientation = orient;
 	}
 
-	hArrangement(float px, float py, float ex, float ey, float spc, int arrangeMethod, int sizeMethod) {
+	Arrangement(int orient, float px, float py, float ex, float ey, float spc, int arrangeMethod, int sizeMethod) {
 		setDims(px, py, ex, ey, spc);
 
 		this->sizing = sizeMethod;
 		this->method = arrangeMethod;
+
+		this->orientation = orient;
 	}
 
 	void calculateScreenPosition();
@@ -450,9 +458,11 @@ public:
 
 	void updateDisplay();
 
-	void arrangeItems(); // Should be called any time there is a layout change
+	void arrangeItems();
 
-	void getSubclasses(std::vector<UIItem*> &scs) {
+	bool checkForSpace(UIItem*);
+
+	void getSubclasses(std::vector<UIItem*>& scs) {
 		scs.push_back(this);
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIItem*> sscs;
@@ -512,112 +522,15 @@ private:
 		this->sqAxisRatio = ey / ex;
 	}
 
-	void calculateSpacing(float&, int, float&, float&, float&);
-	void calculatePositions(float, float, float, std::vector<float>, float);
+	void calculateVSpacing(float&, int, float&, float&, float&);
+	void calculateVPositions(float, float, float, std::vector<float>, float, float);
+
+	void calculateHSpacing(float&, int, float&, float&, float&);
+	void calculateHPositions(float, float, float, std::vector<float>, float);
 
 	int method = ARRANGE_FILL;
 	int sizing = SCALE_BY_CONTAINER;
-};
-
-class vArrangement : public UIItem{
-public:
-	float spacing;
-
-	vArrangement() = default;
-
-	vArrangement(float px, float py, float ex, float ey, float spc) {
-		setDims(px, py, ex, ey, spc);
-	}
-
-	vArrangement(float px, float py, float ex, float ey, float spc, int arrangeMethod) {
-		setDims(px, py, ex, ey, spc);
-
-		this->method = arrangeMethod;
-	}
-
-	vArrangement(float px, float py, float ex, float ey, float spc, int arrangeMethod, int sizeMethod) {
-		setDims(px, py, ex, ey, spc);
-
-		this->sizing = sizeMethod;
-		this->method = arrangeMethod;
-	}
-
-	void calculateScreenPosition();
-
-	void updateDisplay();
-
-	void arrangeItems(); // Should be called any time there is a layout change
-
-	void removeItem(uint32_t index) {
-		Items.erase(Items.begin() + index);
-		arrangeItems();
-	}
-
-	void getSubclasses(std::vector<UIItem*>& scs) {
-		scs.push_back(this);
-		for (size_t i = 0; i != Items.size(); i++) {
-			std::vector<UIItem*> sscs;
-			Items[i]->getSubclasses(sscs);
-			for (size_t j = 0; j != sscs.size(); j++) {
-				scs.push_back(sscs[j]);
-			}
-		}
-	};
-
-	void getImages(std::vector<UIImage*>& images, bool isUI) {
-		for (size_t i = 0; i != Items.size(); i++) {
-			std::vector<UIImage*> subimages;
-			Items[i]->getImages(subimages, isUI);
-			for (size_t j = 0; j != subimages.size(); j++) {
-				images.push_back(subimages[j]);
-			}
-		}
-	};
-
-	void setVisibility(bool vis) {
-		for (UIItem* item : Items) {
-			item->setVisibility(vis);
-		}
-	}
-
-	void setIsEnabled(bool enabled) {
-		for (UIItem* item : Items) {
-			item->setIsEnabled(enabled);
-		}
-	}
-
-	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
-		if (!isInArea(mouseX, mouseY)) {
-			return false;
-		}
-		bool found = false;
-		for (UIItem* sitem : Items) {
-			if (sitem->checkForClickEvent(mouseX, mouseY, eventType)) {
-				found = true;
-				break;
-			};
-		}
-		return found;
-	}
-
-private:
-	void setDims(float px, float py, float ex, float ey, float spc) {
-		posx = px;
-		posy = -1.0f * py;
-		anchorx = px;
-		anchory = py;
-		extentx = ex;
-		extenty = ey;
-		spacing = spc;
-
-		this->sqAxisRatio = ey / ex;
-	}
-
-	void calculateSpacing(float&, int, float&, float&, float&);
-	void calculatePositions(float, float, float, std::vector<float>, float, float);
-
-	int method = ARRANGE_FILL;
-	int sizing = SCALE_BY_CONTAINER;
+	int orientation = ORIENT_HORIZONTAL;
 };
 
 struct Widget {
@@ -716,16 +629,11 @@ struct Widget {
 		}
 		checkboxes.clear();
 		spacers.clear(); // spacers should have essentially no info so we can just delete them
-		for (size_t i = 0; i != vArrangements.size(); i++) {
-			vArrangements[i]->Items.clear();
-			vArrangements[i]->cleanup();
+		for (size_t i = 0; i != Arrangements.size(); i++) {
+			Arrangements[i]->Items.clear();
+			Arrangements[i]->cleanup();
 		}
-		vArrangements.clear();
-		for (size_t i = 0; i != hArrangements.size(); i++) {
-			hArrangements[i]->Items.clear();
-			hArrangements[i]->cleanup();
-		}
-		hArrangements.clear();
+		Arrangements.clear();
 	}
 
 	void hide() {
@@ -762,16 +670,10 @@ struct Widget {
 		return spacers[spacers.size() - 1].get();
 	}
 
-	UIItem* getPtr(vArrangement* v) {
-		vArrangements.emplace_back(v);
-		return vArrangements[vArrangements.size() - 1].get();
+	UIItem* getPtr(Arrangement* a) {
+		Arrangements.emplace_back(a);
+		return Arrangements[Arrangements.size() - 1].get();
 	}
-
-	UIItem* getPtr(hArrangement* h) {
-		hArrangements.emplace_back(h);
-		return hArrangements[hArrangements.size() - 1].get();
-	}
-
 	std::vector<UIItem*> canvas;
 	bool isSetup = false;
 
@@ -785,8 +687,7 @@ private:
 	std::vector<std::shared_ptr<Button>> buttons;
 	std::vector<std::shared_ptr<Checkbox>> checkboxes;
 	std::vector<std::shared_ptr<spacer>> spacers;
-	std::vector<std::shared_ptr<vArrangement>> vArrangements;
-	std::vector<std::shared_ptr<hArrangement>> hArrangements;
+	std::vector<std::shared_ptr<Arrangement>> Arrangements;
 };
 
 #endif
