@@ -448,3 +448,59 @@ bool Arrangement::checkForSpace(UIItem* checkItem) {
 		return false;
 	}
 }
+
+void Grid::calculateScreenPosition() {
+	float W = static_cast<float>(Engine::get()->windowWidth);
+	float H = static_cast<float>(Engine::get()->windowHeight);
+
+	float bufferRatioX, bufferRatioY;
+
+	bufferRatioX = static_cast<float>(buffer) / (2 * W);
+	bufferRatioY = static_cast<float>(buffer) / (2 * H);
+
+	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY);
+
+	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W;
+	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W;
+	this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H;
+	this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H;
+
+	mainArrangement->calculateScreenPosition();
+}
+
+void Grid::updateDisplay() {
+	arrangeItems();
+	mainArrangement->updateDisplay();
+}
+
+void Grid::arrangeItems() {
+	delete mainArrangement;
+
+	float subExtentx = 0.0f;
+	float subExtenty = 0.0f;
+
+	if (orientation == ORIENT_HORIZONTAL) {
+		mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, this->extentx, this->extenty, this->spacing, ARRANGE_START);
+		subExtentx = this->extentx;
+		subExtenty = this->extentx / 5;
+	}
+	else if (orientation == ORIENT_VERTICAL) {
+		mainArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, this->extentx, this->extenty, this->spacing, ARRANGE_START);
+		subExtenty = this->extenty;
+		subExtenty = this->extenty / 5;
+	}
+
+	Arrangement* subArrangement = new Arrangement(orientation, 0.0f, 0.0f, subExtentx, subExtenty, this->spacing, ARRANGE_START);
+
+	for (size_t i = 0; i != Items.size(); i++) {
+		if (subArrangement->checkForSpace(Items[i])) {
+			subArrangement->addItem(Items[i]);
+		}
+		else {
+			mainArrangement->addItem(subArrangement);
+			subArrangement = new Arrangement(orientation, 0.0f, 0.0f, subExtentx, subExtenty, this->spacing, ARRANGE_START);
+		}
+	}
+
+	mainArrangement->arrangeItems();
+}

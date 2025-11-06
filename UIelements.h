@@ -449,12 +449,12 @@ public:
 		this->orientation = orient;
 	}
 
-	void calculateScreenPosition();
-
 	void removeItem(uint32_t index) {
 		Items.erase(Items.begin() + index);
 		arrangeItems();
 	}
+
+	void calculateScreenPosition();
 
 	void updateDisplay();
 
@@ -530,6 +530,91 @@ private:
 
 	int method = ARRANGE_FILL;
 	int sizing = SCALE_BY_CONTAINER;
+	int orientation = ORIENT_HORIZONTAL;
+};
+
+class Grid : public UIItem {
+public:
+	Grid() = default;
+
+	Grid(int orient, float px, float py, float ex, float ey, float spc) {
+		setDims(px, py, ex, ey, spc);
+		this->orientation = orient;
+	}
+
+	void removeItem(uint32_t index) {
+		Items.erase(Items.begin() + index);
+		arrangeItems();
+	}
+
+	void calculateScreenPosition();
+
+	void updateDisplay();
+
+	void arrangeItems();
+
+	void getSubclasses(std::vector<UIItem*>& scs) {
+		scs.push_back(this);
+		for (size_t i = 0; i != Items.size(); i++) {
+			std::vector<UIItem*> sscs;
+			Items[i]->getSubclasses(sscs);
+			for (size_t j = 0; j != sscs.size(); j++) {
+				scs.push_back(sscs[j]);
+			}
+		}
+	};
+
+	void getImages(std::vector<UIImage*>& images, bool isUI) {
+		for (size_t i = 0; i != Items.size(); i++) {
+			std::vector<UIImage*> subimages;
+			Items[i]->getImages(subimages, isUI);
+			for (size_t j = 0; j != subimages.size(); j++) {
+				images.push_back(subimages[j]);
+			}
+		}
+	};
+
+	void setVisibility(bool vis) {
+		for (UIItem* item : Items) {
+			item->setVisibility(vis);
+		}
+	}
+
+	void setIsEnabled(bool enabled) {
+		for (UIItem* item : Items) {
+			item->setIsEnabled(enabled);
+		}
+	}
+
+	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
+		if (!isInArea(mouseX, mouseY)) {
+			return false;
+		}
+		bool found = false;
+		for (UIItem* sitem : Items) {
+			if (sitem->checkForClickEvent(mouseX, mouseY, eventType)) {
+				found = true;
+				break;
+			};
+		}
+		return found;
+	}
+private:
+	void setDims(float px, float py, float ex, float ey, float spc) {
+		this->posx = px;
+		this->posy = -1.0f * py;
+		this->anchorx = px;
+		this->anchory = py;
+		this->extentx = ex;
+		this->extenty = ey;
+		this->spacing = spc;
+
+		this->sqAxisRatio = ey / ex;
+	}
+
+	Arrangement* mainArrangement = nullptr;
+
+	float spacing;
 	int orientation = ORIENT_HORIZONTAL;
 };
 

@@ -553,6 +553,7 @@ private:
 	void toggleTomogMenu() {
 		if (!tomogActive) {
 			tomogUI.setup(sConst);
+			mouseManager.addClickListener(tomogUI.getClickCallback());
 			widgets.push_back(&tomogUI);
 			tomogActive = true;
 		}
