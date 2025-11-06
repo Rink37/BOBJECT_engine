@@ -1,8 +1,7 @@
-#include"Bobject_Engine.h"
-
 #ifndef UI_ELEMENTS
 #define UI_ELEMENTS
 
+#include"Bobject_Engine.h"
 #include"Textures.h"
 #include"Materials.h"
 #include"Meshes.h"
@@ -13,6 +12,7 @@
 
 #include"LoadLists.h"
 #include"include/ImageDataType.h"
+#include"InputManager.h"
 
 #define ARRANGE_FILL 0
 #define ARRANGE_START 1
@@ -93,6 +93,9 @@ struct UIItem {
 	bool isEnabled = true;
 	bool activestate = false;
 
+	int clickType = LMB_PRESS;
+	int posType = MOUSE_HOVER;
+
 	virtual void update(float x, float y, float xsize, float ysize) {
 		this->posx = x;
 		this->posy = y;
@@ -133,7 +136,11 @@ struct UIItem {
 
 	};
 
-	virtual void checkForEvent(double, double, int) {
+	virtual void checkForClickEvent(double, double, int) {
+
+	};
+
+	virtual void checkForPosEvent(double, double, int) {
 
 	};
 
@@ -251,6 +258,24 @@ public:
 		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
 	}
 
+	Button(Material* mat, std::function<void(UIItem*)> func, int code) {
+
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.push_back(mat);
+
+		image->isGray = mat->isUIMat;
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+
+		clickFunction = func;
+		clickType = code;
+
+		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+	}
+
 	Button(Material* mat) {
 
 		image = std::make_shared<UIImage>(new UIImage);
@@ -278,8 +303,13 @@ public:
 		clickFunction = func;
 	}
 
-	void checkForEvent(double mousex, double mousey, int state) {
-		if (clickFunction != nullptr && isEnabled) {
+	void setClickFunction(std::function<void(UIItem*)> func, int code) {
+		clickFunction = func;
+		clickType = code;
+	}
+
+	void checkForClickEvent(double mousex, double mousey, int eventType) {
+		if (clickFunction != nullptr && isEnabled && eventType == clickType) {
 			if (isInArea(mousex, mousey)) {
 				clickFunction(this);
 			}
@@ -314,6 +344,27 @@ public:
 		clickFunction = func;
 	}
 
+	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func, int code) {
+
+		image = std::unique_ptr<UIImage>(new UIImage);
+		image->mat.push_back(onMat);
+		image->mat.push_back(offMat);
+		image->matidx = 0;
+		this->activestate = true;
+
+		image->isGray = onMat->isUIMat;
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+
+		update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
+
+		clickFunction = func;
+		clickType = code;
+	}
+
 	bool isInArea(double x, double y) {
 		bool result = false;
 		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
@@ -326,9 +377,14 @@ public:
 		clickFunction = func;
 	}
 
-	void checkForEvent(double mousex, double mousey, int state) {
+	void setClickFunction(std::function<void(UIItem*)> func, int code) {
+		clickFunction = func;
+		clickType = code;
+	}
+
+	void checkForClickEvent(double mousex, double mousey, int eventType) {
 		bool check = isInArea(mousex, mousey);
-		if (check && state == 1 && isEnabled) {
+		if (check && eventType == clickType && isEnabled) {
 			activestate = !activestate;
 			if (activestate) {
 				image->matidx = 0;
@@ -542,6 +598,10 @@ struct Widget {
 	// Individual widgets should be classes with their own setup scripts, functions etc. which are called in the application with a standard constructor
 	// UI is managed based on pointers, but the widget must explicitly manage the resources so that we don't have any memory leaks
 
+	std::function<void(double, double, int)> getClickCallback() {
+		return std::bind(&Widget::checkForClickEvent, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+	}
+	
 	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->drawUI(commandBuffer, currentFrame);
@@ -554,12 +614,22 @@ struct Widget {
 		}
 	}
 
-	void checkForEvent(double mouseX, double mouseY, bool state) {
+	void checkForClickEvent(double mouseX, double mouseY, int eventType) {
 		for (UIItem* item : canvas) {
 			std::vector<UIItem*> scs;
 			item->getSubclasses(scs);
 			for (UIItem* sitem : scs) {
-				sitem->checkForEvent(mouseX, mouseY, state);
+				sitem->checkForClickEvent(mouseX, mouseY, eventType);
+			}
+		}
+	}
+
+	void checkForPosEvent(double mouseX, double mouseY, int eventType) {
+		for (UIItem* item : canvas) {
+			std::vector<UIItem*> scs;
+			item->getSubclasses(scs);
+			for (UIItem* sitem : scs) {
+				sitem->checkForPosEvent(mouseX, mouseY, eventType);
 			}
 		}
 	}

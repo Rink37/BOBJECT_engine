@@ -1,6 +1,6 @@
 #include "Bobject_Engine.h"
 
-#include"tiny_obj_loader.h"
+//#include"tiny_obj_loader.h"
 
 using namespace std;
 

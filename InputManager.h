@@ -7,11 +7,20 @@
 #include <map>
 #include <vector>
 #include <functional>
+//#include "UIelements.h"
 
 #define NO_EVENT 0
 #define PRESS_EVENT 1
 #define RELEASE_EVENT 2
 #define HOLD_EVENT 3
+
+#define RMB_PRESS 0
+#define RMB_HOLD 1
+#define RMB_RELEASE 2
+#define LMB_PRESS 3
+#define LMB_HOLD 4
+#define LMB_RELEASE 5
+#define MOUSE_HOVER 6
 
 struct KeyState {
 public:
@@ -54,6 +63,44 @@ private:
 	static std::vector<KeyManager*> _instances;
 
 	static void callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+};
+
+struct Mouse {
+	bool isRMBDown = false;
+	bool isLMBDown = false;
+
+	double xpos, ypos;
+};
+
+class MouseManager {
+public:
+	MouseManager() {
+		MouseManager::_instances.push_back(this);
+	}
+
+	using Listener = std::function<void(double, double, int)>;
+
+	void addClickListener(const Listener&);
+
+	void addPositionListener(const Listener&);
+
+	void checkClickEvents(int);
+	void checkPositionEvents();
+	
+	void initCallbacks(GLFWwindow* window);
+
+	void updateMouseState(int, bool, double, double);
+private:
+	GLFWwindow* windowArea = nullptr;
+
+	std::vector<Listener> _ClickListeners; // These care only about press/release events and where they occur
+	std::vector<Listener> _PositionListeners; // These care only about where the mouse is and what state each key is in
+
+	static std::vector<MouseManager*> _instances;
+
+	static void callback(GLFWwindow*, int, int, int);
+
+	Mouse mouse;
 };
 
 #endif

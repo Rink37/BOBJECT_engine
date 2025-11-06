@@ -20,6 +20,8 @@ using namespace std;
 std::vector<KeyManager*> KeyManager::_instances;
 KeyManager keyBinds;
 
+std::vector<MouseManager*> MouseManager::_instances;
+MouseManager mouseManager;
 
 class SaveMenu : public Widget {
 public:
@@ -352,6 +354,7 @@ public:
 		engine->initWindow("BOBERT_TradPainter");
 		engine->initVulkan();
 		keyBinds.initCallbacks(engine->window);
+		mouseManager.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		sConst->setupSurfaceConstructor();
 		createCanvas();
@@ -515,18 +518,23 @@ private:
 		std::function<void(UIItem*)> newSessionFunc = bind(&Application::newSession, this, placeholders::_1);
 
 		objectMenu.setup();
+		mouseManager.addClickListener(objectMenu.getClickCallback());
 		widgets.push_back(&objectMenu);
 
 		saveMenu.setup(loadSessionFunc, newSessionFunc);
+		mouseManager.addClickListener(saveMenu.getClickCallback());
 		widgets.push_back(&saveMenu);
 
 		webcamMenu.setup(lightingFunction);
+		mouseManager.addClickListener(webcamMenu.getClickCallback());
 		widgets.push_back(&webcamMenu);
 
 		renderMenu.setup(loadObjectFunct, pipelinefunction);
+		mouseManager.addClickListener(renderMenu.getClickCallback());
 		widgets.push_back(&renderMenu);
 
 		surfaceMenu.setup(sConst, &staticObjects);
+		mouseManager.addClickListener(surfaceMenu.getClickCallback());
 		widgets.push_back(&surfaceMenu);
 
 	}
@@ -555,16 +563,16 @@ private:
 			keyBinds.pollRepeatEvents();
 			glfwGetCursorPos(engine->window, &mouseX, &mouseY);
 			webcamTexture::get()->updateWebcam();
-			int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
-			if (state == GLFW_PRESS) {
-				mouseDown = true;
-			}
-			else if (~state && mouseDown){
-				for (size_t i = 0; i != widgets.size(); i++) {
-					widgets[i]->checkForEvent(mouseX, mouseY, GLFW_PRESS);
-				}
-				mouseDown = false;
-			}
+			//int state = glfwGetMouseButton(engine->window, GLFW_MOUSE_BUTTON_LEFT);
+			//if (state == GLFW_PRESS) {
+			//	mouseDown = true;
+			//}
+			//else if (~state && mouseDown){
+			//	for (size_t i = 0; i != widgets.size(); i++) {
+			//		widgets[i]->checkForEvent(mouseX, mouseY, GLFW_PRESS);
+			//	}
+			//	mouseDown = false;
+			//}
 			drawFrame();
 		}
 		vkDeviceWaitIdle(engine->device);

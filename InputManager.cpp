@@ -81,3 +81,72 @@ void KeyManager::callback(GLFWwindow* window, int key, int scancode, int action,
 		}	
 	}
 }
+
+void MouseManager::initCallbacks(GLFWwindow* window) {
+	glfwSetMouseButtonCallback(window, callback);
+	for (MouseManager* mouseManager : _instances) {
+		mouseManager->windowArea = window;
+	}
+}
+
+void MouseManager::callback(GLFWwindow* window, int button, int action, int mods) {
+	double xpos, ypos;
+	glfwGetCursorPos(window, &xpos, &ypos);
+	for (MouseManager* mouseManager : _instances) {
+		mouseManager->updateMouseState(button, action != GLFW_RELEASE, xpos, ypos);
+	}
+};
+
+void MouseManager::updateMouseState(int key, bool state, double xpos, double ypos) {
+	int clickCode = MOUSE_HOVER;
+	if (key == GLFW_MOUSE_BUTTON_LEFT) {
+		mouse.isLMBDown = state;
+		if (state) {
+			clickCode = LMB_PRESS;
+		}
+		else {
+			clickCode = LMB_RELEASE;
+		}
+	}
+	else if (key == GLFW_MOUSE_BUTTON_RIGHT) {
+		mouse.isRMBDown = state;
+		if (state) {
+			clickCode = RMB_PRESS;
+		}
+		else {
+			clickCode = RMB_RELEASE;
+		}
+	}
+	mouse.xpos = xpos;
+	mouse.ypos = ypos;
+	checkClickEvents(clickCode);
+}
+
+void MouseManager::addClickListener(const Listener& listener) {
+	_ClickListeners.push_back(listener);
+}
+
+void MouseManager::addPositionListener(const Listener& listener) {
+	_PositionListeners.push_back(listener);
+}
+
+void MouseManager::checkClickEvents(int clickCode) {
+	for (auto listener : _ClickListeners) {
+		listener(mouse.xpos, mouse.ypos, clickCode);
+	}
+}
+
+void MouseManager::checkPositionEvents() {
+	glfwGetCursorPos(windowArea, &mouse.xpos, &mouse.ypos);
+	int posCode = MOUSE_HOVER;
+	if (mouse.isLMBDown) {
+		posCode = LMB_HOLD;
+	}
+	else if (mouse.isRMBDown) {
+		posCode = RMB_HOLD;
+	}
+
+	for (auto listener : _PositionListeners) {
+		listener(mouse.xpos, mouse.ypos, posCode);
+	}
+}
