@@ -359,6 +359,8 @@ public:
 			sConst->webTex->webCam->loadFilter();
 		}
 		std::function<void()> tomogFunct = bind(&Application::toggleTomogMenu, this);
+		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
+		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
@@ -411,6 +413,15 @@ private:
 	glm::vec3 primaryColour = glm::vec3(0.42f, 0.06f, 0.11f);
 	glm::vec3 secondaryColour = glm::vec3(0.82f, 0.55f, 0.36f);
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
+	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
+
+	void colourChangeTest() {
+		primaryColour = glm::vec3(0.0f, 0.13f, 0.27f); 
+		secondaryColour = glm::vec3(0.0f, 0.55f, 0.32f);
+		tertiaryColour = glm::vec3(0.0f, 0.39f, 0.31f);
+		backgroundColour = glm::vec3(0.0f, 0.55f, 0.32f);
+		updateColourScheme();
+	}
 
 	void newSession(UIItem* owner) {
 		// Remove all meshes
@@ -736,6 +747,8 @@ private:
 		ubo.UVdistort[2] = 2*surfaceMenu.diffuseView->extenty;
 		ubo.UVdistort[3] = (surfaceMenu.diffuseView->posy) - surfaceMenu.diffuseView->extenty;
 
+		ubo.backgroundColour = backgroundColour;
+
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
 
@@ -760,7 +773,7 @@ private:
 		renderPassInfo.renderArea.extent = engine->swapChainExtent;
 
 		array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { {tertiaryColour.r, tertiaryColour.g, tertiaryColour.b, 1.0f} };
+		clearValues[0].color = { {backgroundColour.r, backgroundColour.g, backgroundColour.b, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
