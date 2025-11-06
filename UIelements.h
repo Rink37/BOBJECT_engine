@@ -36,6 +36,8 @@ struct UIImage {
 
 	uint32_t mipLevels = 0;
 
+	bool isGray = true;
+
 	void UpdateVertices(float, float, float, float);
 
 	void cleanup() {
@@ -121,8 +123,8 @@ struct UIItem {
 		scs.push_back(this);
 	};
 
-	virtual void getImages(std::vector<UIImage*>& images) {
-		if (image != nullptr && image->texHeight > 1) {
+	virtual void getImages(std::vector<UIImage*>& images, bool isUI) {
+		if (image != nullptr && image->texHeight > 1 && image->isGray == isUI) {
 			images.push_back(image.get());
 		}
 	};
@@ -149,9 +151,18 @@ struct UIItem {
 		isEnabled = enabled;
 	}
 
-	virtual void draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	virtual void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
 		std::vector<UIImage*> images;
-		getImages(images);
+		getImages(images, true);
+
+		for (UIImage* image : images) {
+			image->draw(commandBuffer, currentFrame);
+		}
+	}
+
+	virtual void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		std::vector<UIImage*> images;
+		getImages(images, false);
 
 		for (UIImage* image : images) {
 			image->draw(commandBuffer, currentFrame);
@@ -160,7 +171,8 @@ struct UIItem {
 
 	virtual void cleanup() {
 		std::vector<UIImage*> images;
-		getImages(images);
+		getImages(images, true);
+		getImages(images, false);
 
 		for (UIImage* image : images) {
 			//for (Material* mat : image->mat) {
@@ -186,6 +198,8 @@ public:
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(surf);
 
+		image->isGray = surf->isUIMat;
+
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
@@ -199,6 +213,8 @@ public:
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(surf);
+
+		image->isGray = surf->isUIMat;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -219,8 +235,11 @@ public:
 	Button() = default;
 
 	Button(Material* mat, std::function<void(UIItem*)> func) {
+
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.push_back(mat);
+
+		image->isGray = mat->isUIMat;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -233,8 +252,11 @@ public:
 	}
 
 	Button(Material* mat) {
+
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.push_back(mat);
+
+		image->isGray = mat->isUIMat;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -273,11 +295,14 @@ public:
 	Checkbox() = default;
 
 	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func) {
+		
 		image = std::unique_ptr<UIImage>(new UIImage);
 		image->mat.push_back(onMat);
 		image->mat.push_back(offMat);
 		image->matidx = 0;
 		this->activestate = true;
+
+		image->isGray = onMat->isUIMat;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -384,10 +409,10 @@ public:
 		}
 	};
 
-	void getImages(std::vector<UIImage*>& images) {
+	void getImages(std::vector<UIImage*>& images, bool isUI) {
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIImage*> subimages;
-			Items[i]->getImages(subimages);
+			Items[i]->getImages(subimages, isUI);
 			for (size_t j = 0; j != subimages.size(); j++) {
 				images.push_back(subimages[j]);
 			}
@@ -471,10 +496,10 @@ public:
 		}
 	};
 
-	void getImages(std::vector<UIImage*>& images) {
+	void getImages(std::vector<UIImage*>& images, bool isUI) {
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIImage*> subimages;
-			Items[i]->getImages(subimages);
+			Items[i]->getImages(subimages, isUI);
 			for (size_t j = 0; j != subimages.size(); j++) {
 				images.push_back(subimages[j]);
 			}
@@ -517,9 +542,15 @@ struct Widget {
 	// Individual widgets should be classes with their own setup scripts, functions etc. which are called in the application with a standard constructor
 	// UI is managed based on pointers, but the widget must explicitly manage the resources so that we don't have any memory leaks
 
-	void draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
 		for (size_t i = 0; i != canvas.size(); i++) {
-			canvas[i]->draw(commandBuffer, currentFrame);
+			canvas[i]->drawUI(commandBuffer, currentFrame);
+		}
+	}
+
+	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		for (size_t i = 0; i != canvas.size(); i++) {
+			canvas[i]->drawImages(commandBuffer, currentFrame);
 		}
 	}
 

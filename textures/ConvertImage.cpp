@@ -151,9 +151,6 @@ int main(int argc, char* argv[]){
         //loadAndWriteFile(string("C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\")+fname);
         fname = string("D2NButton.png");
         fnames.push_back(fname);
-
-        fname = string("D2NButton_gray.png");
-        fnames.push_back(fname);
         //loadAndWriteFile(string("C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\")+fname);
         fname = string("DiffuseText.png");
         fnames.push_back(fname);

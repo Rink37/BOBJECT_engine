@@ -65,13 +65,6 @@ extern unsigned char D2NButtonBytes[];
 
 #define D2NBUTTON imageData(D2NButtonWidth, D2NButtonHeight, D2NButtonChannels, D2NButtonBytes )
 
-extern const int D2NButton_grayWidth;
-extern const int D2NButton_grayHeight;
-extern const int D2NButton_grayChannels;
-extern unsigned char D2NButton_grayBytes[];
-
-#define D2NBUTTON_GRAY imageData(D2NButton_grayWidth, D2NButton_grayHeight, D2NButton_grayChannels, D2NButton_grayBytes )
-
 extern const int DiffuseTextWidth;
 extern const int DiffuseTextHeight;
 extern const int DiffuseTextChannels;

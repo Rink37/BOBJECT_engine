@@ -88,6 +88,8 @@ int main(){
 	loadAndWriteShaders(basepath, string("OS_BF"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("UIGray"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("UIGray"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("UI"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("UI"), 0, outRoot);
 	cout << "Done" << endl;
 	return 0;
 }
