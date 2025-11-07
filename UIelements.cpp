@@ -538,3 +538,67 @@ void Grid::arrangeItems() {
 		arrangeItems();
 	}
 }
+
+void Slider::calculateScreenPosition() {
+	float W = static_cast<float>(Engine::get()->windowWidth);
+	float H = static_cast<float>(Engine::get()->windowHeight);
+
+	float bufferRatioX, bufferRatioY;
+
+	bufferRatioX = static_cast<float>(buffer) / (2 * W);
+	bufferRatioY = static_cast<float>(buffer) / (2 * H);
+
+	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY);
+
+	switch (orientation) {
+	case (ORIENT_HORIZONTAL):
+		this->windowPositions[0] = ((((posx - extentx) + (2 * extentx * slideValue) - sliderWidth) / 2.0f) + 0.5f) * W; // left position
+		this->windowPositions[1] = ((((posx - extentx) + (2 * extentx * slideValue) + sliderWidth) / 2.0f) + 0.5f) * W; // right position
+		this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H; // top position
+		this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom position
+
+		this->valuePositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // pixel x value at min position
+		this->valuePositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // pixel x value at max position
+		this->valuePositions[2] = ((posy / 2.0f) + 0.5f) * H; // pixel y value of slider axis
+
+		break;
+	case (ORIENT_VERTICAL):
+		this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // left position
+		this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // right position
+		this->windowPositions[2] = ((((posy + extenty) - (2 * extenty * slideValue) - sliderWidth) / 2.0f) + 0.5f) * H; // top position
+		this->windowPositions[3] = ((((posy + extenty) - (2 * extenty * slideValue) + sliderWidth) / 2.0f) + 0.5f) * H; // bottom position
+
+		this->valuePositions[0] = (((posy + extenty) / 2.0f) + 0.5f) * W; // pixel y value at min position
+		this->valuePositions[1] = (((posy - extenty) / 2.0f) + 0.5f) * W; // pixel y value at max position
+		this->valuePositions[2] = ((posx / 2.0f) + 0.5f) * H; // pixel x value of slider axis
+
+		break;
+
+	default:
+		this->windowPositions[0] = ((((posx - extentx) + (2 * extentx * slideValue) - sliderWidth) / 2.0f) + 0.5f) * W; // left position
+		this->windowPositions[1] = ((((posx - extentx) + (2 * extentx * slideValue) + sliderWidth) / 2.0f) + 0.5f) * W; // right position
+		this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H; // top position
+		this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom position
+
+		this->valuePositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // pixel x value at min position
+		this->valuePositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // pixel x value at max position
+		this->valuePositions[2] = ((posy / 2.0f) + 0.5f) * H; // pixel y value of slider axis
+
+		break;
+	}
+}
+
+void Slider::calculateSlideValue(double mouseX, double mouseY) {
+	switch (orientation) {
+	case (ORIENT_HORIZONTAL):
+		slideValue = clamp(float((mouseX - valuePositions[0]) / (valuePositions[1] - valuePositions[0])), 0.0f, 1.0f);
+		break;
+	case (ORIENT_VERTICAL):
+		slideValue = clamp(float((mouseY - valuePositions[0]) / (valuePositions[1] - valuePositions[0])), 0.0f, 1.0f);
+		break;
+	default:
+		slideValue = clamp(float((mouseX - valuePositions[0]) / (valuePositions[1] - valuePositions[0])), 0.0f, 1.0f);
+		break;
+	}
+	std::cout << slideValue << std::endl;
+}

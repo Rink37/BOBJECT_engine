@@ -633,9 +633,172 @@ private:
 	int orientation = ORIENT_HORIZONTAL;
 };
 
+class Slider : public UIItem {
+public:
+
+	Slider() = default;
+	
+	Slider(Material* mat, float xp, float yp, float xs, float ys) {
+		update(xp, yp, xs, ys);
+		
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(mat);
+
+		image->isGray = mat->isUIMat;
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		backgroundImage = std::make_shared<UIImage>(new UIImage);
+		backgroundImage->mat.emplace_back(mat);
+
+		backgroundImage->isGray = mat->isUIMat;
+
+		backgroundImage->texWidth = backgroundImage->mat[0]->textures[0]->texWidth;
+		backgroundImage->texHeight = backgroundImage->mat[0]->textures[0]->texHeight;
+	}
+
+	Slider(int orient, Material* mat, float xp, float yp, float xs, float ys) {
+		update(xp, yp, xs, ys);
+
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(mat);
+
+		image->isGray = mat->isUIMat;
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		backgroundImage = std::make_shared<UIImage>(new UIImage);
+		backgroundImage->mat.emplace_back(mat);
+
+		backgroundImage->isGray = mat->isUIMat;
+
+		backgroundImage->texWidth = backgroundImage->mat[0]->textures[0]->texWidth;
+		backgroundImage->texHeight = backgroundImage->mat[0]->textures[0]->texHeight;
+
+		this->orientation = orient;
+	}
+
+	void updateDisplay() {
+		this->calculateScreenPosition();
+		switch (orientation) {
+		case (ORIENT_HORIZONTAL):
+			if (image != nullptr) {
+				image->UpdateVertices((posx - extentx) + (2 * extentx * slideValue), posy, sliderWidth, extenty);
+			}
+			if (backgroundImage != nullptr) {
+				backgroundImage->UpdateVertices(posx, posy, extentx, extenty * baseHeight);
+			}
+			break;
+		case (ORIENT_VERTICAL):
+			if (image != nullptr) {
+				image->UpdateVertices(posx, (posy + extenty) - (2 * extenty * slideValue), extentx, sliderWidth);
+			}
+			if (backgroundImage != nullptr) {
+				backgroundImage->UpdateVertices(posx, posy, extentx * baseHeight, extenty);
+			}
+			break;
+		default:
+			if (image != nullptr) {
+				image->UpdateVertices((posx - extentx) + (2 * extentx * slideValue), posy, sliderWidth, extenty);
+			}
+			if (backgroundImage != nullptr) {
+				backgroundImage->UpdateVertices(posx, posy, extentx, extenty*baseHeight);
+			}
+			break;
+		}
+	}
+
+	void calculateScreenPosition();
+
+	void calculateSlideValue(double, double);
+
+	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
+		if (!isInArea(mouseX, mouseY)) {
+			return false;
+		}
+		if (eventType == LMB_PRESS) {
+			isHeld = true;
+			std::cout << "Grabbed" << std::endl;
+		}
+		else if (eventType == LMB_RELEASE) {
+			isHeld = false;
+			std::cout << "Dropped" << std::endl;
+		}
+	}
+
+	bool checkForPosEvent(double mouseX, double mouseY, int eventType) {
+		if (eventType == LMB_HOLD && isHeld) {
+			calculateSlideValue(mouseX, mouseY);
+			updateDisplay();
+			return true;
+		}
+		return false;
+	};
+
+	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		if (image->isGray) {
+			image->draw(commandBuffer, currentFrame);
+		}
+		if (backgroundImage->isGray) {
+			backgroundImage->draw(commandBuffer, currentFrame);
+		}
+	}
+
+	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		if (!image->isGray) {
+			image->draw(commandBuffer, currentFrame);
+		}
+		if (!backgroundImage->isGray) {
+			backgroundImage->draw(commandBuffer, currentFrame);
+		}
+	}
+
+	void cleanup() {
+		image->cleanup();
+		backgroundImage->cleanup();
+	}
+
+	void update(float x, float y, float xsize, float ysize) {
+		this->posx = x;
+		this->posy = y;
+		this->anchorx = x;
+		this->anchory = y;
+
+		this->extentx = xsize;
+		this->extenty = ysize;
+
+		this->sqAxisRatio = ysize / xsize;
+	};
+
+private:
+	float minValue = 0.0f;
+	float maxValue = 1.0f;
+
+	double valuePositions[3] = {};
+	
+	float slideValue = 0.0f; 
+
+	std::shared_ptr<UIImage> backgroundImage;
+
+	int orientation = ORIENT_HORIZONTAL;
+
+	float sliderWidth = 0.05;
+	float baseHeight = 0.25;
+
+	bool isHeld = false;
+};
+
 struct Widget {
 	// Individual widgets should be classes with their own setup scripts, functions etc. which are called in the application with a standard constructor
 	// UI is managed based on pointers, but the widget must explicitly manage the resources so that we don't have any memory leaks
+
+	Widget() = default;
+	
+	Widget(LoadList* ll) {
+		loadList = ll;
+	}
 
 	std::function<void(double, double, int)> getClickCallback() {
 		measureWindowPositions();
@@ -733,6 +896,10 @@ struct Widget {
 			Arrangements[i]->cleanup();
 		}
 		Arrangements.clear();
+		for (size_t i = 0; i != Sliders.size(); i++) {
+			Sliders[i]->cleanup();
+		}
+		Sliders.clear();
 	}
 
 	void hide() {
@@ -779,6 +946,11 @@ struct Widget {
 		return Grids[Grids.size() - 1].get();
 	}
 
+	UIItem* getPtr(Slider* slider) {
+		Sliders.emplace_back(slider);
+		return Sliders[Sliders.size() - 1].get();
+	}
+
 	std::vector<UIItem*> canvas;
 	bool isSetup = false;
 
@@ -794,6 +966,7 @@ private:
 	std::vector<std::shared_ptr<spacer>> spacers;
 	std::vector<std::shared_ptr<Arrangement>> Arrangements; 
 	std::vector<std::shared_ptr<Grid>> Grids;
+	std::vector<std::shared_ptr<Slider>> Sliders;
 };
 
 #endif

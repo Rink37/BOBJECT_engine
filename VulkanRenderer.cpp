@@ -363,6 +363,7 @@ public:
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		sConst->setupSurfaceConstructor();
 		createCanvas();
+		sliderTestFunc();
 		if (sConst->webTex->webCam != nullptr) {
 			sConst->webTex->webCam->loadFilter();
 		}
@@ -374,7 +375,6 @@ public:
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
 		updateColourScheme();
-		//testUIShader();
 		mainLoop();
 		cleanup();
 		surfaceConstructor::destruct();
@@ -397,6 +397,7 @@ private:
 	RenderMenu renderMenu = RenderMenu(&UIElements);
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
+	Widget sliderTest = Widget(&UIElements);
 
 	UIItem* UITestImage = nullptr;
 
@@ -429,6 +430,20 @@ private:
 		tertiaryColour = glm::vec3(0.0f, 0.39f, 0.31f);
 		backgroundColour = glm::vec3(0.0f, 0.55f, 0.32f);
 		updateColourScheme();
+	}
+
+	void sliderTestFunc() {
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = sliderTest.loadList->getPtr(new Material(sliderTest.loadList->getPtr(new imageTexture(&tcb, VK_FORMAT_R8_UNORM), "TestCheckBtnTex"), true), "TestCheckBtnMat");
+
+		Slider* test = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 0.25f, 0.05f);
+		test->updateDisplay();
+		sliderTest.canvas.push_back(sliderTest.getPtr(test));
+		sliderTest.isSetup = true;
+
+		mouseManager.addClickListener(sliderTest.getClickCallback());
+		mouseManager.addPositionListener(sliderTest.getPosCallback());
+		widgets.push_back(&sliderTest);
 	}
 
 	void newSession(UIItem* owner) {
