@@ -499,15 +499,17 @@ void Grid::arrangeItems() {
 	if (orientation == ORIENT_HORIZONTAL) {
 		mainArrangement = new Arrangement(ORIENT_VERTICAL, this->posx, this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		subExtentx = 1.0f;
-		subExtenty = 1.0f / 5.5f;
+		subExtenty = 1.0f / (float(numArrangements) * 1.1f);
 	}
 	else if (orientation == ORIENT_VERTICAL) {
 		mainArrangement = new Arrangement(ORIENT_HORIZONTAL, this->posx, this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		subExtenty = 1.0f;
-		subExtentx = 1.0f / 5.5f;
+		subExtentx = 1.0f / (float(numArrangements) * 1.1f);
 	}
 
 	Arrangement* subArrangement = new Arrangement(orientation, 0.0f, 0.0f, subExtentx, subExtenty, this->spacing, ARRANGE_START);
+
+	int index = 0;
 
 	for (size_t i = 0; i != Items.size(); i++) {
 		Items[i]->update(0.0f, 0.0f, 1.0f, 1.0f);
@@ -515,12 +517,24 @@ void Grid::arrangeItems() {
 			subArrangement->addItem(Items[i]);
 		}
 		else {
+			subArrangement->setArrangeMethod(ARRANGE_FILL);
 			mainArrangement->addItem(subArrangement);
 			subArrangement = new Arrangement(orientation, 0.0f, 0.0f, subExtentx, subExtenty, this->spacing, ARRANGE_START);
+			index++;
 			subArrangement->addItem(Items[i]);
 		}
 	}
 
+	index -= (numArrangements-3);
+	if (index < 0) {
+		index = 0;
+	}
+
 	mainArrangement->addItem(subArrangement);
 	mainArrangement->arrangeItems();
+
+	if (index > 0) {
+		numArrangements = numArrangements + index;
+		arrangeItems();
+	}
 }

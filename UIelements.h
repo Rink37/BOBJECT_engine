@@ -44,9 +44,6 @@ struct UIImage {
 	void UpdateVertices(float, float, float, float);
 
 	void cleanup() {
-		//for (Material* indMat : mat) {
-		//	indMat->cleanup();
-		//}
 		mesh.cleanup();
 	}
 
@@ -449,6 +446,14 @@ public:
 		this->orientation = orient;
 	}
 
+	void setSizeMethod(int sizeMethod) {
+		this->sizing = sizeMethod;
+	}
+
+	void setArrangeMethod(int arrangeMethod) {
+		this->method = arrangeMethod;
+	}
+
 	void removeItem(uint32_t index) {
 		Items.erase(Items.begin() + index);
 		arrangeItems();
@@ -557,6 +562,10 @@ public:
 
 	void arrangeItems();
 
+	bool isArrangement() {
+		return true;
+	}
+
 	void getSubclasses(std::vector<UIItem*>& scs) {
 		scs.push_back(this);
 		for (size_t i = 0; i != Items.size(); i++) {
@@ -616,6 +625,8 @@ private:
 		this->sqAxisRatio = ey / ex;
 	}
 
+	int numArrangements = 5;
+
 	Arrangement* mainArrangement = nullptr;
 
 	float spacing = 0.01;
@@ -652,7 +663,6 @@ struct Widget {
 				windowPositions[3] = (sitem->windowPositions[3] > windowPositions[3]) ? sitem->windowPositions[3] : windowPositions[3];
 			}
 		}
-		//std::cout << windowPositions[0] << " " << windowPositions[1] << " " << windowPositions[2] << " " << windowPositions[3] << std::endl;
 	}
 
 	bool isInArea(double x, double y) {
