@@ -161,6 +161,10 @@ struct UIItem {
 		return false;
 	}
 
+	virtual bool isArrangement() {
+		return false;
+	}
+
 	virtual void setVisibility(bool vis) {
 		image->isVisible = vis;
 	}
@@ -458,6 +462,10 @@ public:
 
 	bool checkForSpace(UIItem*);
 
+	bool isArrangement() {
+		return true;
+	}
+	
 	void getSubclasses(std::vector<UIItem*>& scs) {
 		scs.push_back(this);
 		for (size_t i = 0; i != Items.size(); i++) {

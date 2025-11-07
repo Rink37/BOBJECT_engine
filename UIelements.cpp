@@ -249,13 +249,25 @@ void Arrangement::calculateVPositions(float ybuffer, float spacerSize, float sca
 			ysc = extents[i] * scaleFactor;
 			xsc = ysc / Items[i]->sqAxisRatio;
 			xp = this->posx;
-			yp = this->posy - this->extenty + currentPosition + ysc * vScale; // vScale = W/H
+			if (!Items[i]->isArrangement()) {
+				yp = this->posy - this->extenty + currentPosition + ysc * vScale; // vScale = W/H
+			}
+			else {
+				yp = this->posy - this->extenty + currentPosition + ysc; // vScale = W/H
+			}
+			
 
 			Items[i]->update(xp, yp, xsc, ysc);
 			Items[i]->updateDisplay();
 			Items[i]->arrangeItems();
 
-			currentPosition += ysc * 2 * vScale;
+			if (!Items[i]->isArrangement()) {
+				currentPosition += ysc * 2 * vScale;
+			}
+			else {
+				currentPosition += ysc * 2;
+			}
+			
 		}
 		currentPosition += ybuffer / 2;
 	}
