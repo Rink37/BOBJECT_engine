@@ -559,7 +559,6 @@ void Slider::calculateScreenPosition() {
 
 		this->valuePositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // pixel x value at min position
 		this->valuePositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // pixel x value at max position
-		this->valuePositions[2] = ((posy / 2.0f) + 0.5f) * H; // pixel y value of slider axis
 
 		break;
 	case (ORIENT_VERTICAL):
@@ -568,9 +567,10 @@ void Slider::calculateScreenPosition() {
 		this->windowPositions[2] = ((((posy + extenty) - (2 * extenty * slideValue) - sliderWidth) / 2.0f) + 0.5f) * H; // top position
 		this->windowPositions[3] = ((((posy + extenty) - (2 * extenty * slideValue) + sliderWidth) / 2.0f) + 0.5f) * H; // bottom position
 
-		this->valuePositions[0] = (((posy + extenty) / 2.0f) + 0.5f) * W; // pixel y value at min position
-		this->valuePositions[1] = (((posy - extenty) / 2.0f) + 0.5f) * W; // pixel y value at max position
-		this->valuePositions[2] = ((posx / 2.0f) + 0.5f) * H; // pixel x value of slider axis
+		this->valuePositions[0] = (((posy + extenty) / 2.0f) + 0.5f) * H; // pixel y value at min position
+		this->valuePositions[1] = (((posy - extenty) / 2.0f) + 0.5f) * H; // pixel y value at max position
+
+		cout << this->valuePositions[0] << " " << this->valuePositions[1] << endl;
 
 		break;
 
@@ -582,7 +582,6 @@ void Slider::calculateScreenPosition() {
 
 		this->valuePositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // pixel x value at min position
 		this->valuePositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // pixel x value at max position
-		this->valuePositions[2] = ((posy / 2.0f) + 0.5f) * H; // pixel y value of slider axis
 
 		break;
 	}

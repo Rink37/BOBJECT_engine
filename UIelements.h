@@ -681,7 +681,7 @@ public:
 	}
 
 	void updateDisplay() {
-		this->calculateScreenPosition();
+		//this->calculateScreenPosition();
 		switch (orientation) {
 		case (ORIENT_HORIZONTAL):
 			if (image != nullptr) {
@@ -724,6 +724,7 @@ public:
 		}
 		else if (eventType == LMB_RELEASE) {
 			isHeld = false;
+			this->calculateScreenPosition();
 			std::cout << "Dropped" << std::endl;
 		}
 	}
@@ -776,7 +777,7 @@ private:
 	float minValue = 0.0f;
 	float maxValue = 1.0f;
 
-	double valuePositions[3] = {};
+	double valuePositions[2] = {};
 	
 	float slideValue = 0.0f; 
 

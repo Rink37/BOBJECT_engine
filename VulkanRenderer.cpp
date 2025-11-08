@@ -436,7 +436,7 @@ private:
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = sliderTest.loadList->getPtr(new Material(sliderTest.loadList->getPtr(new imageTexture(&tcb, VK_FORMAT_R8_UNORM), "TestCheckBtnTex"), true), "TestCheckBtnMat");
 
-		Slider* test = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 0.25f, 0.05f);
+		Slider* test = new Slider(ORIENT_VERTICAL, visibleMat, 0.0f, 0.0f, 0.05f, 0.25f);
 		test->updateDisplay();
 		sliderTest.canvas.push_back(sliderTest.getPtr(test));
 		sliderTest.isSetup = true;
