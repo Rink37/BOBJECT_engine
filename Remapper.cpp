@@ -24,7 +24,6 @@ void RemapBackend::createBaseMaps() {
 	if (baseDiffuse == nullptr) {
 		return;
 	}
-	updateParamBuffer();
 	filter Kuwahara(baseDiffuse, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	Kuwahara.filterImage();
 	
@@ -44,7 +43,6 @@ void RemapBackend::performRemap() {
 	if (baseOSNormal == nullptr || xGradients == nullptr) {
 		return;
 	}
-	updateParamBuffer();
 	filter Averager(baseOSNormal, xGradients, yGradients, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	Averager.filterImage();
 	
@@ -58,7 +56,6 @@ void RemapBackend::smootheResult() {
 	if (baseDiffuse == nullptr || filteredOSNormal == nullptr) {
 		return;
 	}
-	updateParamBuffer();
 	filter referenceKuwahara(baseDiffuse, filteredOSNormal , new REFERENCEKUWAHARASHADER);
 	referenceKuwahara.filterImage();
 
@@ -80,4 +77,30 @@ void RemapBackend::cleanup() {
 	if (filteredOSNormal != nullptr) {
 		filteredOSNormal->cleanup();
 	}
+}
+
+void RemapUI::fullRemap(Texture*diffTex, Texture*OSNormTex) {
+	remapper.createReferenceMaps(diffTex, OSNormTex);
+	remapper.createBaseMaps();
+	remapper.performRemap();
+	remapper.smootheResult();
+}
+
+void RemapUI::kuwaharaCallback(int kern) {
+	remapper.setKuwaharaKernel(kern);
+	remapper.createBaseMaps();
+	remapper.performRemap();
+	remapper.smootheResult();
+}
+
+void RemapUI::averagerCallback(int kern) {
+	remapper.setAveragerKernel(kern);
+	remapper.performRemap();
+	remapper.smootheResult();
+}
+
+void RemapUI::gradientCallback(float thresh) {
+	remapper.setGradientThreshold(thresh);
+	remapper.performRemap();
+	remapper.smootheResult();
 }

@@ -16,12 +16,6 @@ public:
 		createMaterial();
 	}
 
-	//Material(Texture* defaultTex, bool isUI) {
-	//	isUIMat = isUI;
-	//	textures.push_back(defaultTex);
-	//	createMaterial();
-	//}
-
 	void init(Texture* defaultTex) {
 		if (!cleaned) {
 			cleanupDescriptor();

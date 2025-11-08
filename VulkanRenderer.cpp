@@ -11,6 +11,7 @@
 #include"StudioSession.h"
 #include"Tomography.h"
 #include"LoadLists.h"
+#include"Remapper.h"
 
 #include"include/BakedImages.h"
 
@@ -369,8 +370,10 @@ public:
 		}
 		std::function<void()> tomogFunct = bind(&Application::toggleTomogMenu, this);
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
+		std::function<void()> remapperFunct = bind(&Application::createRemapper, this);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
+		keyBinds.addBinding(GLFW_KEY_R, remapperFunct, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
@@ -398,6 +401,7 @@ private:
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	Widget sliderTest = Widget(&UIElements);
+	RemapUI remapper = RemapUI(&UIElements);
 
 	UIItem* UITestImage = nullptr;
 
@@ -449,6 +453,16 @@ private:
 		mouseManager.addClickListener(sliderTest.getClickCallback());
 		mouseManager.addPositionListener(sliderTest.getPosCallback());
 		widgets.push_back(&sliderTest);
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	}
+
+	void createRemapper() {
+		remapper.setup(sConst->diffTex, sConst->OSNormTex);
+		mouseManager.addClickListener(remapper.getClickCallback());
+		mouseManager.addPositionListener(remapper.getPosCallback());
+
+		widgets.push_back(&remapper);
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
