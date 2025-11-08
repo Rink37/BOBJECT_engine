@@ -29,7 +29,6 @@ public:
 		}
 		textures.push_back(defaultTex);
 		createMaterial();
-		cleaned = false;
 	}
 
 	void init(Texture* defaultTex, bool isUI) {
@@ -40,7 +39,6 @@ public:
 		}
 		textures.push_back(defaultTex);
 		createMaterial();
-		cleaned = false;
 	}
 
 	void init(Texture* defaultTex, Texture* normalTex) {
@@ -51,7 +49,6 @@ public:
 		textures.push_back(defaultTex);
 		textures.push_back(normalTex);
 		createMaterial();
-		cleaned = false;
 	}
 
 	void init(Material &matPtr) {
@@ -63,7 +60,6 @@ public:
 			textures.push_back(initTex);
 		}
 		createMaterial();
-		cleaned = false;
 	}
 
 	void cleanup(){
@@ -77,7 +73,6 @@ public:
 		}
 		vkDestroyDescriptorPool(Engine::get()->device, this->descriptorPool, nullptr);
 		this->descriptorPool = nullptr;
-		cleaned = true;
 	}
 
 	void cleanupDescriptor() {
@@ -86,7 +81,6 @@ public:
 		}
 		vkDestroyDescriptorPool(Engine::get()->device, this->descriptorPool, nullptr);
 		this->descriptorPool = nullptr;
-		cleaned = true;
 	}
 
 	std::vector<Texture*> textures = {};

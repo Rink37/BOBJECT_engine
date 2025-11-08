@@ -154,25 +154,25 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 	std::function<void(UIItem*)> saveWebcam = bind(&SurfaceMenu::saveDiffuseImage, this, placeholders::_1);
 
 	imageData diffuse = DIFFUSETEXT;
-	Material* diffuseMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffuse, VK_FORMAT_R8_UNORM), "DiffuseBtnTex"), true), "DiffuseBtnMat");
+	Material* diffuseMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffuse, VK_FORMAT_R8_UNORM), "DiffuseBtnTex")), "DiffuseBtnMat");
 
 	imageData normal = NORMALTEXT;
-	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal, VK_FORMAT_R8_UNORM), "NormalBtnTex"), true), "NormalBtnMat");
+	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal, VK_FORMAT_R8_UNORM), "NormalBtnTex")), "NormalBtnMat");
 
 	imageData webcamOn = WEBCAMONBUTTON;
-	Material* webcamOnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn, VK_FORMAT_R8_UNORM), "WebcamOnBtnTex"), true), "WebcamOnBtnMat");
+	Material* webcamOnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn, VK_FORMAT_R8_UNORM), "WebcamOnBtnTex")), "WebcamOnBtnMat");
 
 	imageData webcamOff = WEBCAMOFFBUTTON;
-	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff, VK_FORMAT_R8_UNORM), "WebcamOffBtnTex"), true), "WebcamOffBtnMat");
+	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff, VK_FORMAT_R8_UNORM), "WebcamOffBtnTex")), "WebcamOffBtnMat");
 
 	imageData OpenButton = OPENBUTTON;
-	Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex"), true), "OpenBtnMat");
+	Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex")), "OpenBtnMat");
 
 	imageData SaveButton = SAVEBUTTON;
-	Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton, VK_FORMAT_R8_UNORM), "SaveBtnTex"), true), "SaveBtnMat");
+	Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton, VK_FORMAT_R8_UNORM), "SaveBtnTex")), "SaveBtnMat");
 
 	imageData plusButton = PLUSBUTTON;
-	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton, VK_FORMAT_R8_UNORM), "PlusBtnTex"), true), "PlusBtnMat");
+	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton, VK_FORMAT_R8_UNORM), "PlusBtnTex")), "PlusBtnMat");
 
 	Button* diffuseTextPanel = new Button(diffuseMat);
 
@@ -232,10 +232,10 @@ void SurfaceMenu::removeNormalMenu(UIItem* owner) {
 	std::function<void(UIItem*)> addNormalButton = bind(&SurfaceMenu::createNormalMenu, this, placeholders::_1);
 
 	imageData normal = NORMALTEXT;
-	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal, VK_FORMAT_R8_UNORM), "NormalBtnTex"), true), "NormalBtnMat");
+	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal, VK_FORMAT_R8_UNORM), "NormalBtnTex")), "NormalBtnMat");
 
 	imageData plusButton = PLUSBUTTON;
-	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton, VK_FORMAT_R8_UNORM), "PlusBtnTex"), true), "PlusBtnMat");
+	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton, VK_FORMAT_R8_UNORM), "PlusBtnTex")), "PlusBtnMat");
 
 	Button* normalTextPanel = new Button(normalMat);
 	Button* normalPlus = new Button(plusMat, addNormalButton);
@@ -426,31 +426,31 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	NormalButtons->Items.clear();
 
 	imageData normal = NORMALTEXT;
-	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal, VK_FORMAT_R8_UNORM), "NormalBtnTex"), true), "NormalBtnMat");
+	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal, VK_FORMAT_R8_UNORM), "NormalBtnTex")), "NormalBtnMat");
 
 	imageData webcamOn = WEBCAMONBUTTON;
-	Material* webcamOnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn, VK_FORMAT_R8_UNORM), "WebcamOnBtnTex"), true), "WebcamOnBtnMat");
+	Material* webcamOnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn, VK_FORMAT_R8_UNORM), "WebcamOnBtnTex")), "WebcamOnBtnMat");
 
 	imageData webcamOff = WEBCAMOFFBUTTON;
-	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff, VK_FORMAT_R8_UNORM), "WebcamOffBtnTex"), true), "WebcamOffBtnMat");
+	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff, VK_FORMAT_R8_UNORM), "WebcamOffBtnTex")), "WebcamOffBtnMat");
 
 	imageData OpenButton = OPENBUTTON;
-	Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex"), true), "OpenBtnMat");
+	Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex")), "OpenBtnMat");
 
 	imageData SaveButton = SAVEBUTTON;
-	Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton, VK_FORMAT_R8_UNORM), "SaveBtnTex"), true), "SaveBtnMat");
+	Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton, VK_FORMAT_R8_UNORM), "SaveBtnTex")), "SaveBtnMat");
 
 	imageData plusButton = PLUSBUTTON;
-	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton, VK_FORMAT_R8_UNORM), "PlusBtnTex"), true), "PlusBtnMat");
+	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton, VK_FORMAT_R8_UNORM), "PlusBtnTex")), "PlusBtnMat");
 
 	imageData osType = OSBUTTON;
-	Material* osMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&osType, VK_FORMAT_R8_UNORM), "OSBtnTex"), true), "OSBtnMat");
+	Material* osMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&osType, VK_FORMAT_R8_UNORM), "OSBtnTex")), "OSBtnMat");
 
 	imageData tsType = TANGENTSPACE;
-	Material* tsMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tsType, VK_FORMAT_R8_UNORM), "TSBtnTex"), true), "TSBtnMat");
+	Material* tsMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tsType, VK_FORMAT_R8_UNORM), "TSBtnTex")), "TSBtnMat");
 
 	imageData diffToNorm = D2NBUTTON;
-	Material* dtnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffToNorm, VK_FORMAT_R8_UNORM), "DiffToNormBtnTex"), true), "DiffToNormBtnMat");
+	Material* dtnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffToNorm, VK_FORMAT_R8_UNORM), "DiffToNormBtnTex")), "DiffToNormBtnMat");
 
 	Button* normalText = new Button(normalMat);
 

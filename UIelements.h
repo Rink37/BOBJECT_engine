@@ -1188,6 +1188,12 @@ struct Widget {
 		}
 	}
 
+	Material* newMaterial(imageData* imgData, std::string name) {
+		Texture* tex = loadList->getPtr(new imageTexture(imgData), name + "Tex");
+		Material* newMat = loadList->getPtr(new Material(tex), name + "Mat");
+		return newMat;
+	}
+
 	UIItem* getPtr(ImagePanel* ip) {
 		imagePanels.emplace_back(ip);
 		return imagePanels[imagePanels.size()-1].get();

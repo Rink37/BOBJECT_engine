@@ -38,8 +38,8 @@ public:
 		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
 
 		imageData OpenButton = OPENBUTTON;
-		Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex")), "OpenBtnMat");
-		
+		Material* openMat = newMaterial(&OpenButton, "OpenBtn");//loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex")), "OpenBtnMat");//loadList->getPtr(new Material(loadList, &OpenButton, "OpenBtn"), "OpenBtnMaterial");
+
 		imageData SaveButton = SAVEBUTTON;
 		Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton, VK_FORMAT_R8_UNORM), "SaveBtnTex")), "SaveBtnMat");
 
