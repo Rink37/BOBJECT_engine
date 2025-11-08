@@ -31,6 +31,8 @@
 #define SLIDER_DISCRETE 1
 
 #define PI 3.14159265
+#define OPF_PI 4.71238898 // Equivalent to 3*PI / 2 - basic optimization
+#define HALF_PI 1.57079632 // Equivalent to PI / 2
 
 struct UIImage {
 	bool isVisible = true;
@@ -720,7 +722,11 @@ public:
 	}
 
 	void updateDisplay() {
-		//this->calculateScreenPosition();
+		this->calculateScreenPosition();
+		updateDisplayOnly();
+	}
+
+	void updateDisplayOnly() {
 		switch (orientation) {
 		case (ORIENT_HORIZONTAL):
 			if (image != nullptr) {
@@ -743,7 +749,7 @@ public:
 				image->UpdateVertices((posx - extentx) + (2 * extentx * slideValue), posy, sliderWidth, extenty);
 			}
 			if (backgroundImage != nullptr) {
-				backgroundImage->UpdateVertices(posx, posy, extentx, extenty*baseHeight);
+				backgroundImage->UpdateVertices(posx, posy, extentx, extenty * baseHeight);
 			}
 			break;
 		}
@@ -784,7 +790,7 @@ public:
 	bool checkForPosEvent(double mouseX, double mouseY, int eventType) {
 		if (eventType == LMB_HOLD && isHeld) {
 			calculateSlideValue(mouseX, mouseY);
-			updateDisplay();
+			updateDisplayOnly();
 			if (hasCallback && updateOnMove) {
 				switch (valueType) {
 				case (SLIDER_CONTINUOUS):
@@ -914,12 +920,18 @@ public:
 	}
 
 	void updateDisplay() {
-		//this->calculateScreenPosition();
+		W = static_cast<float>(Engine::get()->windowWidth);
+		H = static_cast<float>(Engine::get()->windowHeight);
+		this->calculateScreenPosition();
+		updateDisplayOnly();
+	}
+
+	void updateDisplayOnly() {
 		if (image != nullptr) {
 			calculateRadius();
-			float x = radius * cos(3 * PI / 2 - 2 * PI * slideValue) + this->posx;
-			float y = radius * sin(3 * PI / 2 - 2 * PI * slideValue) + this->posy;
-			image->UpdateVertices(x, y, sliderWidth, sliderWidth*W/H);
+			float x = radius * cos(OPF_PI - 2 * PI * slideValue) + this->posx;
+			float y = radius * sin(OPF_PI - 2 * PI * slideValue) + this->posy;
+			image->UpdateVertices(x, y, sliderWidth, sliderWidth * W / H);
 		}
 	}
 
@@ -958,7 +970,7 @@ public:
 	bool checkForPosEvent(double mouseX, double mouseY, int eventType) {
 		if (eventType == LMB_HOLD && isHeld) {
 			calculateSlideValue(mouseX, mouseY);
-			updateDisplay();
+			updateDisplayOnly();
 			if (hasCallback && updateOnMove) {
 				switch (valueType) {
 				case (SLIDER_CONTINUOUS):
@@ -1032,7 +1044,7 @@ private:
 
 	void calculateRadius() {
 		float theta = 0.0f; // Theta is measured from the major axis, not the vertical, whereas slideValue is measured from the vertical
-		theta = (a == extenty) ? 2 * PI * slideValue : (PI/2) - 2 * PI * slideValue;
+		theta = (a == extenty) ? 2 * PI * slideValue : HALF_PI - 2 * PI * slideValue;
 
 		radius = b / sqrtf(1 - (e * cos(theta)) * (e * cos(theta)));
 	}

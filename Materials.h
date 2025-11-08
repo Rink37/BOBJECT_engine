@@ -9,15 +9,18 @@ public:
 	Material() = default;
 
 	Material(Texture* defaultTex) {
+		if (defaultTex->textureFormat == VK_FORMAT_R8_UNORM) {
+			isUIMat = true;
+		}
 		textures.push_back(defaultTex);
 		createMaterial();
 	}
 
-	Material(Texture* defaultTex, bool isUI) {
-		isUIMat = isUI;
-		textures.push_back(defaultTex);
-		createMaterial();
-	}
+	//Material(Texture* defaultTex, bool isUI) {
+	//	isUIMat = isUI;
+	//	textures.push_back(defaultTex);
+	//	createMaterial();
+	//}
 
 	void init(Texture* defaultTex) {
 		if (!cleaned) {

@@ -606,8 +606,8 @@ void Slider::calculateSlideValue(double mouseX, double mouseY) {
 }
 
 void Rotator::calculateScreenPosition() {
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
+	W = static_cast<float>(Engine::get()->windowWidth);
+	H = static_cast<float>(Engine::get()->windowHeight);
 
 	float bufferRatioX, bufferRatioY;
 
@@ -616,7 +616,7 @@ void Rotator::calculateScreenPosition() {
 
 	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY);
 
-	float theta = 3 * PI / 2 - (2 * PI * slideValue);
+	float theta = OPF_PI - (2 * PI * slideValue);
 
 	float x = radius * cos(theta) + this->posx;
 	float y = radius * sin(theta) + this->posy;
@@ -635,7 +635,7 @@ void Rotator::calculateSlideValue(double mouseX, double mouseY) {
 	float y = mouseY - centroid[1];
 
 	float theta = atan2(y, x);
-	float angleFromVert = 3 * PI / 2 - theta; // We want to increase clockwise from vertical
+	float angleFromVert = OPF_PI - theta; // We want to increase clockwise from vertical
 
 	slideValue = angleFromVert / (2 * PI);
 

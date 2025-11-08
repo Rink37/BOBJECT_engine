@@ -38,13 +38,13 @@ public:
 		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
 
 		imageData OpenButton = OPENBUTTON;
-		Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex"), true), "OpenBtnMat");
+		Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex")), "OpenBtnMat");
 		
 		imageData SaveButton = SAVEBUTTON;
-		Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton, VK_FORMAT_R8_UNORM), "SaveBtnTex"), true), "SaveBtnMat");
+		Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton, VK_FORMAT_R8_UNORM), "SaveBtnTex")), "SaveBtnMat");
 
 		imageData plusButton = PLUSBUTTON;
-		Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton, VK_FORMAT_R8_UNORM), "PlusBtnTex"), true), "PlusBtnMat");
+		Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton, VK_FORMAT_R8_UNORM), "PlusBtnTex")), "PlusBtnMat");
 
 		SessionButtons->addItem(getPtr(new Button(plusMat, newSessionFunc)));
 		SessionButtons->addItem(getPtr(new Button(openMat, loadSessionFunc)));
@@ -79,16 +79,16 @@ public:
 		}
 
 		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&rb, VK_FORMAT_R8_UNORM), "RenderBtnTex"), true), "RenderBtnMat");
+		Material* renderedMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&rb, VK_FORMAT_R8_UNORM), "RenderBtnTex")), "RenderBtnMat");
 
 		imageData ub = WEBCAMVIEWBUTTON;
-		Material* webcamViewMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&ub, VK_FORMAT_R8_UNORM), "WebcamBtnTex"), true), "WebcamBtnMat");
+		Material* webcamViewMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&ub, VK_FORMAT_R8_UNORM), "WebcamBtnTex")), "WebcamBtnMat");
 
 		imageData wb = WIREFRAMEBUTTON;
-		Material* wireframeViewMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&wb, VK_FORMAT_R8_UNORM), "WireframeBtnTex"), true), "WireframeBtnMat");
+		Material* wireframeViewMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&wb, VK_FORMAT_R8_UNORM), "WireframeBtnTex")), "WireframeBtnMat");
 
 		imageData lb = LOADBUTTON;
-		Material* LoadBtnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&lb, VK_FORMAT_R8_UNORM), "LoadBtnTex"), true), "LoadBtnMat");
+		Material* LoadBtnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&lb, VK_FORMAT_R8_UNORM), "LoadBtnTex")), "LoadBtnMat");
 
 		Arrangement* Renderbuttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.2f, 0.6f, 0.01f, ARRANGE_CENTER);
 
@@ -134,13 +134,13 @@ public:
 		}
 
 		imageData ub = UNRENDEREDBUTTON;
-		invisibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&ub, VK_FORMAT_R8_UNORM), "UnrenderedBtnTex"), true), "UnrenderedBtnMat");
+		invisibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&ub, VK_FORMAT_R8_UNORM), "UnrenderedBtnTex")), "UnrenderedBtnMat");
 
 		imageData tcb = TESTCHECKBOXBUTTON;
-		visibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tcb, VK_FORMAT_R8_UNORM), "TestCheckBtnTex"), true), "TestCheckBtnMat");
+		visibleMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tcb, VK_FORMAT_R8_UNORM), "TestCheckBtnTex")), "TestCheckBtnMat");
 
 		imageData wb = WIREFRAMEBUTTON;
-		wireframeMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&wb, VK_FORMAT_R8_UNORM), "WireframeBtnTex"), true), "WireframeBtnMat");
+		wireframeMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&wb, VK_FORMAT_R8_UNORM), "WireframeBtnTex")), "WireframeBtnMat");
 
 		canvas.push_back(getPtr(new Arrangement(ORIENT_VERTICAL, -1.0f, -0.75f, 0.1f, 0.5f, 0.01f, ARRANGE_START)));
 
@@ -199,22 +199,22 @@ public:
 			return;
 		}
 		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&rb, VK_FORMAT_R8_UNORM), "RenderBtnTex"), true), "RenderBtnMat");
+		Material* renderedMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&rb, VK_FORMAT_R8_UNORM), "RenderBtnTex")), "RenderBtnMat");
 		
 		imageData fb = UNRENDEREDBUTTON;
-		Material* unrenderedMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&fb, VK_FORMAT_R8_UNORM), "UnrenderedBtnTex"), true), "UnrenderedBtnMat");
+		Material* unrenderedMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&fb, VK_FORMAT_R8_UNORM), "UnrenderedBtnTex")), "UnrenderedBtnMat");
 
 		imageData plb = PLAYBUTTON;
-		Material* playMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plb, VK_FORMAT_R8_UNORM), "PlayBtnTex"), true), "PlayBtnMat");
+		Material* playMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plb, VK_FORMAT_R8_UNORM), "PlayBtnTex")), "PlayBtnMat");
 
 		imageData pb = PAUSEBUTTON;
-		Material* pauseMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&pb, VK_FORMAT_R8_UNORM), "PauseBtnTex"), true), "PauseBtnMat");
+		Material* pauseMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&pb, VK_FORMAT_R8_UNORM), "PauseBtnTex")), "PauseBtnMat");
 
 		imageData sb = SETTINGSBUTTON;
-		Material* settingsMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&sb, VK_FORMAT_R8_UNORM), "SettingsBtnTex"), true), "SettingsBtnMat");
+		Material* settingsMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&sb, VK_FORMAT_R8_UNORM), "SettingsBtnTex")), "SettingsBtnMat");
 
 		imageData webcamOn = WEBCAMONBUTTON;
-		Material* webcamMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn, VK_FORMAT_R8_UNORM), "WebcamOnBtnTex"), true), "WebcamOnBtnMat");
+		Material* webcamMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn, VK_FORMAT_R8_UNORM), "WebcamOnBtnTex")), "WebcamOnBtnMat");
 
 		std::function<void(UIItem*)> toggleWebcamFunct = bind(&WebcamMenu::toggleWebcam, this, placeholders::_1);
 		std::function<void(UIItem*)> configureWebcamFunct = bind(&WebcamMenu::calibrateWebcam, this, placeholders::_1);
@@ -258,13 +258,13 @@ public:
 		}
 		surface = sConst;
 		imageData OpenButton = OPENBUTTON;
-		Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex"), true), "OpenBtnMat");
+		Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex")), "OpenBtnMat");
 		
 		imageData normal = NORMALTEXT;
-		Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal, VK_FORMAT_R8_UNORM), "NormalBtnTex"), true), "NormalBtnMat");
+		Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal, VK_FORMAT_R8_UNORM), "NormalBtnTex")), "NormalBtnMat");
 
 		imageData diffuse = DIFFUSETEXT;
-		Material* diffuseMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffuse, VK_FORMAT_R8_UNORM), "DiffuseBtnTex"), true), "DiffuseBtnMat");
+		Material* diffuseMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffuse, VK_FORMAT_R8_UNORM), "DiffuseBtnTex")), "DiffuseBtnMat");
 
 		std::function<void(UIItem*)> tomogLoadTop = bind(&TomographyMenu::loadTop, this, placeholders::_1);
 		std::function<void(UIItem*)> tomogLoadBottom = bind(&TomographyMenu::loadBottom, this, placeholders::_1);
@@ -434,7 +434,7 @@ private:
 
 	void sliderTestFunc() {
 		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = sliderTest.loadList->getPtr(new Material(sliderTest.loadList->getPtr(new imageTexture(&tcb, VK_FORMAT_R8_UNORM), "TestCheckBtnTex"), true), "TestCheckBtnMat");
+		Material* visibleMat = sliderTest.loadList->getPtr(new Material(sliderTest.loadList->getPtr(new imageTexture(&tcb, VK_FORMAT_R8_UNORM), "TestCheckBtnTex")), "TestCheckBtnMat");
 
 		std::function<void(int)> intFunct = bind(&Application::testIntFunct, this, std::placeholders::_1);
 		std::function<void(float)> floatFunct = bind(&Application::testFloatFunct, this, std::placeholders::_1);
