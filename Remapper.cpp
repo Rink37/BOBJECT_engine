@@ -26,45 +26,53 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 
 void RemapBackend::createBaseMaps() {
 	if (baseDiffuse == nullptr) {
+		std::cout << "No base found" << std::endl;
 		return;
 	}
 	std::cout << "Creating base maps" << std::endl;
-	filter Kuwahara(baseDiffuse, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+	filter Kuwahara(std::vector<Texture*>{baseDiffuse}, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	Kuwahara.filterImage();
 	
-	filter SobelX(Kuwahara.filterTarget[0], new SOBELXSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
+	filter SobelX(std::vector<Texture*>{Kuwahara.filterTarget[0]}, new SOBELXSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelX.filterImage();
 
-	filter SobelY(Kuwahara.filterTarget[0], new SOBELYSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
+	filter SobelY(std::vector<Texture*>{Kuwahara.filterTarget[0]}, new SOBELYSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelY.filterImage();
 
 	xGradients = SobelX.filterTarget[0]->copyImage();
 	yGradients = SobelY.filterTarget[0]->copyImage();
 	
 	Kuwahara.cleanup();
+	SobelX.cleanup();
+	SobelY.cleanup();
 }
 
 void RemapBackend::performRemap() {
 	if (baseOSNormal == nullptr || xGradients == nullptr) {
+		std::cout << "No gradients found" << std::endl;
 		return;
 	}
 	std::cout << "Remapping" << std::endl;
-	filter Averager(baseOSNormal, xGradients, yGradients, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+	filter Averager(std::vector<Texture*>{baseOSNormal, xGradients, yGradients}, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	Averager.filterImage();
 	
-	filter gradRemap(Averager.filterTarget[0], xGradients, yGradients, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+	filter gradRemap(std::vector<Texture*>{Averager.filterTarget[0], xGradients, yGradients}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	gradRemap.filterImage();
 
 	filteredOSNormal = gradRemap.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1);
 	filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+	Averager.cleanup();
+	gradRemap.cleanup();
 }
 
 void RemapBackend::smootheResult() {
 	if (baseDiffuse == nullptr || filteredOSNormal == nullptr) {
+		std::cout << "Cannot smoothe" << std::endl;
 		return;
 	}
 	std::cout << "Smoothing" << std::endl;
-	filter referenceKuwahara(baseDiffuse, filteredOSNormal , new REFERENCEKUWAHARASHADER);
+	filter referenceKuwahara(std::vector<Texture*>{baseDiffuse, filteredOSNormal}, new REFERENCEKUWAHARASHADER);
 	referenceKuwahara.filterImage();
 
 	filteredOSNormal->cleanup();
@@ -72,6 +80,8 @@ void RemapBackend::smootheResult() {
 
 	filteredOSNormal = referenceKuwahara.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1);
 	filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+	referenceKuwahara.cleanup();
 }
 
 void RemapBackend::cleanup() {

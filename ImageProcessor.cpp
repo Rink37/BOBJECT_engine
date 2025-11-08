@@ -105,7 +105,6 @@ void filter::createDescriptorSetLayout() {
 
 			descriptorSetLayoutCreateInfo.pBindings = bindings;
 			descriptorSetLayoutCreateInfo.bindingCount = 3;
-		
 		}
 		else {
 			VkDescriptorSetLayoutBinding bindings[4] = {};
@@ -308,30 +307,72 @@ void filter::createDescriptorSet() {
 		source1Info.imageView = source[1]->textureImageView;
 		source1Info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-		VkWriteDescriptorSet descWrite[3] = {};
+		if (!hasUniformBuffer) {
+			VkWriteDescriptorSet descWrite[3] = {};
 
-		descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descWrite[0].dstSet = filterDescriptorSet;
-		descWrite[0].dstBinding = 0;
-		descWrite[0].descriptorCount = 1;
-		descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		descWrite[0].pImageInfo = &source0Info;
+			descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[0].dstSet = filterDescriptorSet;
+			descWrite[0].dstBinding = 0;
+			descWrite[0].descriptorCount = 1;
+			descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[0].pImageInfo = &source0Info;
 
-		descWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descWrite[1].dstSet = filterDescriptorSet;
-		descWrite[1].dstBinding = 1;
-		descWrite[1].descriptorCount = 1;
-		descWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		descWrite[1].pImageInfo = &source1Info;
+			descWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[1].dstSet = filterDescriptorSet;
+			descWrite[1].dstBinding = 1;
+			descWrite[1].descriptorCount = 1;
+			descWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[1].pImageInfo = &source1Info;
 
-		descWrite[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descWrite[2].dstSet = filterDescriptorSet;
-		descWrite[2].dstBinding = 2;
-		descWrite[2].descriptorCount = 1;
-		descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		descWrite[2].pImageInfo = &destinationInfo;
+			descWrite[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[2].dstSet = filterDescriptorSet;
+			descWrite[2].dstBinding = 2;
+			descWrite[2].descriptorCount = 1;
+			descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[2].pImageInfo = &destinationInfo;
 
-		vkUpdateDescriptorSets(Engine::get()->device, 3, descWrite, 0, nullptr);
+			vkUpdateDescriptorSets(Engine::get()->device, 3, descWrite, 0, nullptr);
+		}
+		else {
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = bufferRef;
+			bufferInfo.offset = 0;
+			bufferInfo.range = bufferSize;
+
+			VkWriteDescriptorSet descWrite[4] = {};
+
+			descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[0].dstSet = filterDescriptorSet;
+			descWrite[0].dstBinding = 0;
+			descWrite[0].descriptorCount = 1;
+			descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[0].pImageInfo = &source0Info;
+
+			descWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[1].dstSet = filterDescriptorSet;
+			descWrite[1].dstBinding = 1;
+			descWrite[1].descriptorCount = 1;
+			descWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[1].pImageInfo = &source1Info;
+
+			descWrite[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[2].dstSet = filterDescriptorSet;
+			descWrite[2].dstBinding = 2;
+			descWrite[2].descriptorCount = 1;
+			descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[2].pImageInfo = &destinationInfo;
+
+			descWrite[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[3].dstSet = filterDescriptorSet;
+			descWrite[3].dstBinding = 3;
+			descWrite[3].dstArrayElement = 0;
+			descWrite[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descWrite[3].descriptorCount = 1;
+			descWrite[3].pBufferInfo = &bufferInfo;
+
+			vkUpdateDescriptorSets(Engine::get()->device, 4, descWrite, 0, nullptr);
+		}
+		
 	}
 	else if (filtertype == THIOO) {
 		VkDescriptorImageInfo destinationInfo = {};
@@ -350,37 +391,86 @@ void filter::createDescriptorSet() {
 		source2Info.imageView = source[2]->textureImageView;
 		source2Info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-		VkWriteDescriptorSet descWrite[4] = {};
+		if (!hasUniformBuffer) {
+			VkWriteDescriptorSet descWrite[4] = {};
 
-		descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descWrite[0].dstSet = filterDescriptorSet;
-		descWrite[0].dstBinding = 0;
-		descWrite[0].descriptorCount = 1;
-		descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		descWrite[0].pImageInfo = &source0Info;
+			descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[0].dstSet = filterDescriptorSet;
+			descWrite[0].dstBinding = 0;
+			descWrite[0].descriptorCount = 1;
+			descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[0].pImageInfo = &source0Info;
 
-		descWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descWrite[1].dstSet = filterDescriptorSet;
-		descWrite[1].dstBinding = 1;
-		descWrite[1].descriptorCount = 1;
-		descWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		descWrite[1].pImageInfo = &source1Info;
+			descWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[1].dstSet = filterDescriptorSet;
+			descWrite[1].dstBinding = 1;
+			descWrite[1].descriptorCount = 1;
+			descWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[1].pImageInfo = &source1Info;
 
-		descWrite[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descWrite[2].dstSet = filterDescriptorSet;
-		descWrite[2].dstBinding = 2;
-		descWrite[2].descriptorCount = 1;
-		descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		descWrite[2].pImageInfo = &source2Info;
+			descWrite[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[2].dstSet = filterDescriptorSet;
+			descWrite[2].dstBinding = 2;
+			descWrite[2].descriptorCount = 1;
+			descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[2].pImageInfo = &source2Info;
 
-		descWrite[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descWrite[3].dstSet = filterDescriptorSet;
-		descWrite[3].dstBinding = 3;
-		descWrite[3].descriptorCount = 1;
-		descWrite[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		descWrite[3].pImageInfo = &destinationInfo;
+			descWrite[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[3].dstSet = filterDescriptorSet;
+			descWrite[3].dstBinding = 3;
+			descWrite[3].descriptorCount = 1;
+			descWrite[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[3].pImageInfo = &destinationInfo;
 
-		vkUpdateDescriptorSets(Engine::get()->device, 4, descWrite, 0, nullptr);
+			vkUpdateDescriptorSets(Engine::get()->device, 4, descWrite, 0, nullptr);
+		}
+		else {
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = bufferRef;
+			bufferInfo.offset = 0;
+			bufferInfo.range = bufferSize;
+
+			VkWriteDescriptorSet descWrite[5] = {};
+
+			descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[0].dstSet = filterDescriptorSet;
+			descWrite[0].dstBinding = 0;
+			descWrite[0].descriptorCount = 1;
+			descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[0].pImageInfo = &source0Info;
+
+			descWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[1].dstSet = filterDescriptorSet;
+			descWrite[1].dstBinding = 1;
+			descWrite[1].descriptorCount = 1;
+			descWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[1].pImageInfo = &source1Info;
+
+			descWrite[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[2].dstSet = filterDescriptorSet;
+			descWrite[2].dstBinding = 2;
+			descWrite[2].descriptorCount = 1;
+			descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[2].pImageInfo = &source2Info;
+
+			descWrite[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[3].dstSet = filterDescriptorSet;
+			descWrite[3].dstBinding = 3;
+			descWrite[3].descriptorCount = 1;
+			descWrite[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[3].pImageInfo = &destinationInfo;
+
+			descWrite[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[4].dstSet = filterDescriptorSet;
+			descWrite[4].dstBinding = 4;
+			descWrite[4].dstArrayElement = 0;
+			descWrite[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descWrite[4].descriptorCount = 1;
+			descWrite[4].pBufferInfo = &bufferInfo;
+
+			vkUpdateDescriptorSets(Engine::get()->device, 5, descWrite, 0, nullptr);
+		}
+		
 	}
 	
 }
