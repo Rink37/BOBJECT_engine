@@ -12,7 +12,7 @@ layout(binding = 2) uniform RemapParamObject {
 } rpo;
 
 void main(){
-	const int kernelRadius = rpo.kuwaharaKernelRadius;
+	int kernelRadius = rpo.kuwaharaKernelRadius;
 
 	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
 

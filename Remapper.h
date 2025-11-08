@@ -30,23 +30,26 @@ public:
 	void setup() {
 		params.kuwaharaKernelRadius = 15;
 		params.averagerKernelRadius = 15;
-		params.gradientThreshold = 0.06f;
+		params.gradientThreshold = 0.2f;
 
 		createParamBuffer();
 		updateParamBuffer();
 	}
 
 	void setKuwaharaKernel(int kern) {
+		std::cout << kern << std::endl;
 		params.kuwaharaKernelRadius = kern;
 		updateParamBuffer();
 	}
 
 	void setAveragerKernel(int kern) {
+		std::cout << kern << std::endl;
 		params.averagerKernelRadius = kern;
 		updateParamBuffer();
 	}
 
 	void setGradientThreshold(float thresh) {
+		std::cout << thresh << std::endl;
 		params.gradientThreshold = thresh;
 		updateParamBuffer();
 	}
@@ -57,7 +60,7 @@ public:
 	int minAveragerKernel = 3;
 	int maxAveragerKernel = 16;
 
-	float minGradientThreshold = 0.0f;
+	float minGradientThreshold = 0.05f;
 	float maxGradientThreshold = 0.25f;
 
 	void updateParamBuffer();
@@ -112,7 +115,7 @@ public:
 
 		ImagePanel* outMap = new ImagePanel(loadList->getPtr(new Material(remapper.filteredOSNormal), "RemappedOS"), false);
 
-		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 1.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		Slider* kuwaharaKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 		kuwaharaKernSlider->updateDisplay();
@@ -126,8 +129,8 @@ public:
 
 		Slider* gradientThreshSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 		gradientThreshSlider->updateDisplay();
-		gradientThreshSlider->setSlideValues(remapper.minGradientThreshold, remapper.maxGradientThreshold, 0.06f);
-		kuwaharaKernSlider->setFloatCallback(gradientSliderFunction, false);
+		gradientThreshSlider->setSlideValues(remapper.minGradientThreshold, remapper.maxGradientThreshold, 0.2f);
+		gradientThreshSlider->setFloatCallback(gradientSliderFunction, false);
 		
 		column->addItem(getPtr(outMap));
 		column->addItem(getPtr(kuwaharaKernSlider));

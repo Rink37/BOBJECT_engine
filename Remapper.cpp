@@ -53,12 +53,14 @@ void RemapBackend::performRemap() {
 		return;
 	}
 	std::cout << "Remapping" << std::endl;
-	filter Averager(std::vector<Texture*>{baseOSNormal, xGradients, yGradients}, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+	filter Averager(std::vector<Texture*>{baseOSNormal, xGradients, yGradients}, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	Averager.filterImage();
 	
-	filter gradRemap(std::vector<Texture*>{Averager.filterTarget[0], xGradients, yGradients}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+	std::cout << "Gradient calculating" << std::endl;
+	filter gradRemap(std::vector<Texture*>{Averager.filterTarget[0], xGradients, yGradients}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	gradRemap.filterImage();
 
+	std::cout << "Copying" << std::endl;
 	filteredOSNormal = gradRemap.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1);
 	filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
@@ -72,7 +74,7 @@ void RemapBackend::smootheResult() {
 		return;
 	}
 	std::cout << "Smoothing" << std::endl;
-	filter referenceKuwahara(std::vector<Texture*>{baseDiffuse, filteredOSNormal}, new REFERENCEKUWAHARASHADER);
+	filter referenceKuwahara(std::vector<Texture*>{baseDiffuse, filteredOSNormal}, new REFERENCEKUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	referenceKuwahara.filterImage();
 
 	filteredOSNormal->cleanup();
@@ -106,6 +108,7 @@ void RemapUI::fullRemap(Texture*diffTex, Texture*OSNormTex) {
 }
 
 void RemapUI::kuwaharaCallback(int kern) {
+	std::cout << "Kuwahara callback" << std::endl;
 	remapper.setKuwaharaKernel(kern);
 	remapper.createBaseMaps();
 	remapper.performRemap();
@@ -113,12 +116,14 @@ void RemapUI::kuwaharaCallback(int kern) {
 }
 
 void RemapUI::averagerCallback(int kern) {
+	std::cout << "Averager callback" << std::endl;
 	remapper.setAveragerKernel(kern);
 	remapper.performRemap();
 	remapper.smootheResult();
 }
 
 void RemapUI::gradientCallback(float thresh) {
+	std::cout << "Gradient callback" << std::endl;
 	remapper.setGradientThreshold(thresh);
 	remapper.performRemap();
 	remapper.smootheResult();

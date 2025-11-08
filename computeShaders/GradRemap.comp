@@ -5,9 +5,15 @@ layout(binding = 0, rgba8) uniform readonly image2D normalImage;
 layout(binding = 1, rgba16f) uniform readonly image2D xGrad;
 layout(binding = 2, rgba16f) uniform readonly image2D yGrad;
 layout(binding = 3, rgba8) uniform image2D resultImage;
+layout(binding = 4) uniform RemapParamObject {
+	int kuwaharaKernelRadius;
+	int averagerKernelRadius;
+	float gradientThreshold;
+} rpo;
 
 void main(){
-	const float thresh = 0.06f;
+	float thresh = rpo.gradientThreshold;
+	float maxDist = rpo.averagerKernelRadius;
 	const ivec2 imgResolution = imageSize(normalImage);
 
 	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
@@ -32,7 +38,10 @@ void main(){
 		vec3 minColour;
 		vec3 maxColour;
 
-		while (!(abs(grad.x) < thresh && abs(grad.y) < thresh)){
+		for (int i = 0; i != maxDist; i++){
+			if (abs(grad.x) < thresh && abs(grad.y) < thresh){
+				break;
+			}
 			yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
 			xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
 			gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
@@ -44,6 +53,9 @@ void main(){
 			minG = vec2(abs(grad.x), abs(grad.y));
 			midG += minG;
 		}
+		//while (!(abs(grad.x) < thresh && abs(grad.y) < thresh)){
+		//	
+		//}
 		
 		minColour = (imageLoad(normalImage, ivec2(xx, yy)).rgb != vec3(0,0,0))?imageLoad(normalImage, ivec2(xx, yy)).rgb:imageLoad(resultImage, ivec2(xx, yy)).rgb;
 
@@ -59,7 +71,10 @@ void main(){
 		
 		vec2 maxG = midG - vec2(grad.x, grad.y);
 		
-		while (!(abs(grad.x) < thresh && abs(grad.y) < thresh)){
+		for (int i = 0; i != maxDist; i++){
+			if (abs(grad.x) < thresh && abs(grad.y) < thresh){
+				break;
+			}
 			yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
 			xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
 			gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
@@ -70,6 +85,9 @@ void main(){
 			yy = int(location.y);
 			maxG += vec2(abs(grad.x), abs(grad.y));
 		}
+		//while (!(abs(grad.x) < thresh && abs(grad.y) < thresh)){
+		//	
+		//}
 
 		maxColour = (imageLoad(normalImage, ivec2(xx, yy)).rgb != vec3(0,0,0))?imageLoad(normalImage, ivec2(xx, yy)).rgb:imageLoad(resultImage, ivec2(xx, yy)).rgb;
 

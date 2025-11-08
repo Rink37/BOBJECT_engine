@@ -1330,7 +1330,12 @@ void Engine::endSingleTimeComputeCommand(VkCommandBuffer commandBuffer) {
 	submitInfo.pCommandBuffers = &commandBuffer;
 
 	vkQueueSubmit(computeQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(computeQueue);
+	
+	auto result = vkQueueWaitIdle(computeQueue);
+	if (result != VK_SUCCESS) {
+		cout << result << endl;
+		throw runtime_error("Failed to wait for compute queue");
+	};
 
 	vkFreeCommandBuffers(device, computeCommandPool, 1, &commandBuffer);
 }
