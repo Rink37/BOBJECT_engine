@@ -9,6 +9,7 @@
 #include<vector>
 #include<array>
 #include<chrono>
+#include<cmath>
 
 #include"LoadLists.h"
 #include"include/ImageDataType.h"
@@ -28,6 +29,8 @@
 
 #define SLIDER_CONTINUOUS 0
 #define SLIDER_DISCRETE 1
+
+#define PI 3.14159265
 
 struct UIImage {
 	bool isVisible = true;
@@ -753,13 +756,11 @@ public:
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
 		if (isInArea(mouseX, mouseY) && eventType == LMB_PRESS) {
 			isHeld = true;
-			std::cout << "Grabbed" << std::endl;
 			return true;
 		}
 		else if (eventType == LMB_RELEASE && isHeld) {
 			isHeld = false;
 			this->calculateScreenPosition();
-			std::cout << "Dropped" << std::endl;
 			if (hasCallback && !updateOnMove) {
 				switch (valueType) {
 				case (SLIDER_CONTINUOUS):
@@ -862,6 +863,189 @@ private:
 	bool updateOnMove = false; // If false we only perform callbacks on release, if true we perform callbacks on every movement
 };
 
+class Rotator : public UIItem {
+public:
+
+	Rotator() = default;
+
+	Rotator(Material* mat, float xp, float yp, float xs, float ys) {
+		update(xp, yp, xs, ys);
+
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(mat);
+
+		image->isGray = mat->isUIMat;
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+	}
+
+	void setSlideValues(int min, int max, int position) {
+		// Use integer slider values
+		valueType = SLIDER_DISCRETE;
+		minValue = static_cast<float>(min);
+		maxValue = static_cast<float>(max);
+
+		slideValue = (static_cast<float>(position) - minValue) / (maxValue - minValue);
+	}
+
+	void setSlideValues(float min, float max, float position) {
+		valueType = SLIDER_CONTINUOUS;
+		minValue = min;
+		maxValue = max;
+
+		slideValue = (position - minValue) / (maxValue - minValue);
+	}
+
+	void setIntCallback(std::function<void(int)> function, bool onUpdate) {
+		valueType = SLIDER_DISCRETE;
+		floatCallback = nullptr;
+		intCallback = function;
+		updateOnMove = onUpdate;
+		hasCallback = true;
+	}
+
+	void setFloatCallback(std::function<void(float)> function, bool onUpdate) {
+		valueType = SLIDER_CONTINUOUS;
+		intCallback = nullptr;
+		floatCallback = function;
+		updateOnMove = onUpdate;
+		hasCallback = true;
+	}
+
+	void updateDisplay() {
+		//this->calculateScreenPosition();
+		if (image != nullptr) {
+			calculateRadius();
+			float x = radius * cos(3 * PI / 2 - 2 * PI * slideValue) + this->posx;
+			float y = radius * sin(3 * PI / 2 - 2 * PI * slideValue) + this->posy;
+			image->UpdateVertices(x, y, sliderWidth, sliderWidth*W/H);
+		}
+	}
+
+	void calculateScreenPosition();
+
+	void calculateSlideValue(double, double);
+
+	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
+		if (isInArea(mouseX, mouseY) && eventType == LMB_PRESS) {
+			isHeld = true;
+			return true;
+		}
+		else if (eventType == LMB_RELEASE && isHeld) {
+			isHeld = false;
+			this->calculateScreenPosition();
+			if (hasCallback && !updateOnMove) {
+				switch (valueType) {
+				case (SLIDER_CONTINUOUS):
+					floatCallback((1.0f-slideValue) * (maxValue - minValue) + minValue);
+					break;
+				case (SLIDER_DISCRETE):
+					intCallback(static_cast<int>((1.0f-slideValue) * (maxValue - minValue) + minValue));
+					break;
+				default:
+					floatCallback((1.0f-slideValue) * (maxValue - minValue) + minValue);
+					break;
+				}
+			}
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	bool checkForPosEvent(double mouseX, double mouseY, int eventType) {
+		if (eventType == LMB_HOLD && isHeld) {
+			calculateSlideValue(mouseX, mouseY);
+			updateDisplay();
+			if (hasCallback && updateOnMove) {
+				switch (valueType) {
+				case (SLIDER_CONTINUOUS):
+					floatCallback((1.0f-slideValue) * (maxValue - minValue) + minValue);
+					break;
+				case (SLIDER_DISCRETE):
+					intCallback(static_cast<int>((1.0f-slideValue) * (maxValue - minValue) + minValue));
+					break;
+				default:
+					floatCallback((1.0f-slideValue) * (maxValue - minValue) + minValue);
+					break;
+				}
+			}
+			return true;
+		}
+		return false;
+	};
+
+	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		if (image->isGray) {
+			image->draw(commandBuffer, currentFrame);
+		}
+	}
+
+	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		if (!image->isGray) {
+			image->draw(commandBuffer, currentFrame);
+		}
+	}
+
+	void cleanup() {
+		image->cleanup();
+	}
+
+	void update(float x, float y, float xsize, float ysize) {
+		this->posx = x;
+		this->posy = y;
+		this->anchorx = x;
+		this->anchory = y;
+
+		ysize *= W / H;
+
+		this->extentx = xsize;
+		this->extenty = ysize;
+
+		this->a = (xsize > ysize) ? xsize : ysize;
+		this->b = (xsize > ysize) ? ysize : xsize;
+
+		this->e = sqrtf(1 - (b / a) * (b / a));
+
+		this->sqAxisRatio = ysize / xsize;
+	};
+
+private:
+	float minValue = 0.0f;
+	float maxValue = 1.0f;
+
+	float slideValue = 0.0f;
+
+	float centroid[2] = {};
+
+	int valueType = SLIDER_CONTINUOUS;
+
+	float sliderWidth = 0.05;
+	float radius = 100.0f;
+
+	float a, b, e = 0.0f;
+
+	float W = static_cast<float>(Engine::get()->windowWidth);
+	float H = static_cast<float>(Engine::get()->windowHeight);
+
+	void calculateRadius() {
+		float theta = 0.0f; // Theta is measured from the major axis, not the vertical, whereas slideValue is measured from the vertical
+		theta = (a == extenty) ? 2 * PI * slideValue : (PI/2) - 2 * PI * slideValue;
+
+		radius = b / sqrtf(1 - (e * cos(theta)) * (e * cos(theta)));
+	}
+
+	bool isHeld = false;
+
+	std::function<void(int)> intCallback = nullptr;
+	std::function<void(float)> floatCallback = nullptr;
+
+	bool hasCallback = false;
+	bool updateOnMove = false; // If false we only perform callbacks on release, if true we perform callbacks on every movement
+};
+
 struct Widget {
 	// Individual widgets should be classes with their own setup scripts, functions etc. which are called in the application with a standard constructor
 	// UI is managed based on pointers, but the widget must explicitly manage the resources so that we don't have any memory leaks
@@ -921,7 +1105,7 @@ struct Widget {
 	}
 
 	void checkForClickEvent(double mouseX, double mouseY, int eventType) {
-		if (!isInArea(mouseX, mouseY) && Sliders.size() == 0) {
+		if (!isInArea(mouseX, mouseY) && Sliders.size() == 0 && Rotators.size() == 0) {
 			return;
 		}
 		for (UIItem* item : canvas) {
@@ -972,6 +1156,10 @@ struct Widget {
 			Sliders[i]->cleanup();
 		}
 		Sliders.clear();
+		for (size_t i = 0; i != Rotators.size(); i++) {
+			Rotators[i]->cleanup();
+		}
+		Rotators.clear();
 	}
 
 	void hide() {
@@ -1023,6 +1211,11 @@ struct Widget {
 		return Sliders[Sliders.size() - 1].get();
 	}
 
+	UIItem* getPtr(Rotator* rotator) {
+		Rotators.emplace_back(rotator);
+		return Rotators[Rotators.size() - 1].get();
+	}
+
 	std::vector<UIItem*> canvas;
 	bool isSetup = false;
 
@@ -1039,6 +1232,7 @@ private:
 	std::vector<std::shared_ptr<Arrangement>> Arrangements; 
 	std::vector<std::shared_ptr<Grid>> Grids;
 	std::vector<std::shared_ptr<Slider>> Sliders;
+	std::vector<std::shared_ptr<Rotator>> Rotators;
 };
 
 #endif

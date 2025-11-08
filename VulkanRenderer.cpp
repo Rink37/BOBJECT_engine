@@ -439,9 +439,9 @@ private:
 		std::function<void(int)> intFunct = bind(&Application::testIntFunct, this, std::placeholders::_1);
 		std::function<void(float)> floatFunct = bind(&Application::testFloatFunct, this, std::placeholders::_1);
 		
-		Slider* test = new Slider(ORIENT_VERTICAL, visibleMat, 0.0f, 0.0f, 0.05f, 0.25f);
-		test->setSlideValues(1.0f, 5.0f, 2.0f);
-		test->setFloatCallback(floatFunct, true);
+		Rotator* test = new Rotator(visibleMat, 0.0f, 0.0f, 0.25f, 0.25f);
+		test->setSlideValues(0, 10, 0);
+		test->setIntCallback(intFunct, false);
 		test->updateDisplay();
 		sliderTest.canvas.push_back(sliderTest.getPtr(test));
 		sliderTest.isSetup = true;
