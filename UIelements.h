@@ -700,6 +700,22 @@ public:
 		slideValue = (position - minValue) / (maxValue - minValue);
 	}
 
+	void setIntCallback(std::function<void(int)> function, bool onUpdate) {
+		valueType = SLIDER_DISCRETE;
+		floatCallback = nullptr;
+		intCallback = function;
+		updateOnMove = onUpdate;
+		hasCallback = true;
+	}
+
+	void setFloatCallback(std::function<void(float)> function, bool onUpdate) {
+		valueType = SLIDER_CONTINUOUS;
+		intCallback = nullptr;
+		floatCallback = function;
+		updateOnMove = onUpdate;
+		hasCallback = true;
+	}
+
 	void updateDisplay() {
 		//this->calculateScreenPosition();
 		switch (orientation) {
@@ -735,17 +751,32 @@ public:
 	void calculateSlideValue(double, double);
 
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
-		if (!isInArea(mouseX, mouseY)) {
-			return false;
-		}
-		if (eventType == LMB_PRESS) {
+		if (isInArea(mouseX, mouseY) && eventType == LMB_PRESS) {
 			isHeld = true;
 			std::cout << "Grabbed" << std::endl;
+			return true;
 		}
-		else if (eventType == LMB_RELEASE) {
+		else if (eventType == LMB_RELEASE && isHeld) {
 			isHeld = false;
 			this->calculateScreenPosition();
 			std::cout << "Dropped" << std::endl;
+			if (hasCallback && !updateOnMove) {
+				switch (valueType) {
+				case (SLIDER_CONTINUOUS):
+					floatCallback(slideValue * (maxValue - minValue) + minValue);
+					break;
+				case (SLIDER_DISCRETE):
+					intCallback(static_cast<int>(slideValue * (maxValue - minValue) + minValue));
+					break;
+				default:
+					floatCallback(slideValue * (maxValue - minValue) + minValue);
+					break;
+				}
+			}
+			return true;
+		}
+		else {
+			return false;
 		}
 	}
 
@@ -753,6 +784,19 @@ public:
 		if (eventType == LMB_HOLD && isHeld) {
 			calculateSlideValue(mouseX, mouseY);
 			updateDisplay();
+			if (hasCallback && updateOnMove) {
+				switch (valueType) {
+				case (SLIDER_CONTINUOUS):
+					floatCallback(slideValue * (maxValue - minValue) + minValue);
+					break;
+				case (SLIDER_DISCRETE):
+					intCallback(static_cast<int>(slideValue * (maxValue - minValue) + minValue));
+					break;
+				default:
+					floatCallback(slideValue * (maxValue - minValue) + minValue);
+					break;
+				}
+			}
 			return true;
 		}
 		return false;
@@ -810,6 +854,12 @@ private:
 	float baseHeight = 0.25;
 
 	bool isHeld = false;
+
+	std::function<void(int)> intCallback = nullptr;
+	std::function<void(float)> floatCallback = nullptr;
+
+	bool hasCallback = false;
+	bool updateOnMove = false; // If false we only perform callbacks on release, if true we perform callbacks on every movement
 };
 
 struct Widget {
@@ -871,7 +921,7 @@ struct Widget {
 	}
 
 	void checkForClickEvent(double mouseX, double mouseY, int eventType) {
-		if (!isInArea(mouseX, mouseY)) {
+		if (!isInArea(mouseX, mouseY) && Sliders.size() == 0) {
 			return;
 		}
 		for (UIItem* item : canvas) {

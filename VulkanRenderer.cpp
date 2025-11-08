@@ -436,8 +436,12 @@ private:
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = sliderTest.loadList->getPtr(new Material(sliderTest.loadList->getPtr(new imageTexture(&tcb, VK_FORMAT_R8_UNORM), "TestCheckBtnTex"), true), "TestCheckBtnMat");
 
+		std::function<void(int)> intFunct = bind(&Application::testIntFunct, this, std::placeholders::_1);
+		std::function<void(float)> floatFunct = bind(&Application::testFloatFunct, this, std::placeholders::_1);
+		
 		Slider* test = new Slider(ORIENT_VERTICAL, visibleMat, 0.0f, 0.0f, 0.05f, 0.25f);
 		test->setSlideValues(1.0f, 5.0f, 2.0f);
+		test->setFloatCallback(floatFunct, true);
 		test->updateDisplay();
 		sliderTest.canvas.push_back(sliderTest.getPtr(test));
 		sliderTest.isSetup = true;
@@ -445,6 +449,14 @@ private:
 		mouseManager.addClickListener(sliderTest.getClickCallback());
 		mouseManager.addPositionListener(sliderTest.getPosCallback());
 		widgets.push_back(&sliderTest);
+	}
+
+	void testIntFunct(int value) {
+		cout << value << endl;
+	}
+
+	void testFloatFunct(float value) {
+		cout << value << endl;
 	}
 
 	void newSession(UIItem* owner) {

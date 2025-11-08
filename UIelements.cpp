@@ -570,8 +570,6 @@ void Slider::calculateScreenPosition() {
 		this->valuePositions[0] = (((posy + extenty) / 2.0f) + 0.5f) * H; // pixel y value at min position
 		this->valuePositions[1] = (((posy - extenty) / 2.0f) + 0.5f) * H; // pixel y value at max position
 
-		cout << this->valuePositions[0] << " " << this->valuePositions[1] << endl;
-
 		break;
 
 	default:
@@ -605,5 +603,4 @@ void Slider::calculateSlideValue(double mouseX, double mouseY) {
 
 		slideValue = (static_cast<float>(round(slideValue)) - minValue)/(maxValue-minValue);
 	}
-	std::cout << slideValue << std::endl;
 }
