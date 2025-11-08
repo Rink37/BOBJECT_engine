@@ -132,7 +132,9 @@ void MouseManager::addPositionListener(const Listener& listener) {
 
 void MouseManager::checkClickEvents(int clickCode) {
 	for (auto listener : _ClickListeners) {
-		listener(mouse.xpos, mouse.ypos, clickCode);
+		if (listener(mouse.xpos, mouse.ypos, clickCode)) {
+			break;
+		};
 	}
 }
 
@@ -147,6 +149,8 @@ void MouseManager::checkPositionEvents() {
 	}
 
 	for (auto listener : _PositionListeners) {
-		listener(mouse.xpos, mouse.ypos, posCode);
+		if (listener(mouse.xpos, mouse.ypos, posCode)) {
+			break;
+		};
 	}
 }

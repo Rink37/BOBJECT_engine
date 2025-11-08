@@ -436,12 +436,12 @@ private:
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = sliderTest.loadList->getPtr(new Material(sliderTest.loadList->getPtr(new imageTexture(&tcb, VK_FORMAT_R8_UNORM), "TestCheckBtnTex")), "TestCheckBtnMat");
 
-		std::function<void(int)> intFunct = bind(&Application::testIntFunct, this, std::placeholders::_1);
-		std::function<void(float)> floatFunct = bind(&Application::testFloatFunct, this, std::placeholders::_1);
+		std::function<void(int)> intFunct = std::bind(&Application::testIntFunct, this, std::placeholders::_1);
+		std::function<void(float)> floatFunct = std::bind(&Application::testFloatFunct, this, std::placeholders::_1);
 		
 		Rotator* test = new Rotator(visibleMat, 0.0f, 0.0f, 0.25f, 0.25f);
-		test->setSlideValues(0, 10, 0);
-		test->setIntCallback(intFunct, false);
+		test->setSlideValues(0.0f, 10.0f, 0.0f);
+		test->setFloatCallback(floatFunct, false);
 		test->updateDisplay();
 		sliderTest.canvas.push_back(sliderTest.getPtr(test));
 		sliderTest.isSetup = true;
@@ -449,6 +449,8 @@ private:
 		mouseManager.addClickListener(sliderTest.getClickCallback());
 		mouseManager.addPositionListener(sliderTest.getPosCallback());
 		widgets.push_back(&sliderTest);
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 
 	void testIntFunct(int value) {
@@ -498,8 +500,8 @@ private:
 			StaticObject newObject(path);
 			newObject.mat = &sConst->surfaceMat;
 
-			std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
-			std::function<void(UIItem*)> wireFunction = bind(&Application::setObjectWireframe, this, placeholders::_1);
+			std::function<void(UIItem*)> visibleFunction = std::bind(&Application::setObjectVisibility, this, placeholders::_1);
+			std::function<void(UIItem*)> wireFunction = std::bind(&Application::setObjectWireframe, this, placeholders::_1);
 
 			objectMenu.addObject(visibleFunction, wireFunction);
 
@@ -544,11 +546,11 @@ private:
 	
 	void createCanvas() {
 
-		std::function<void(UIItem*)> pipelinefunction = bind(&Application::setPipelineIndex, this, placeholders::_1);
-		std::function<void(UIItem*)> lightingFunction = bind(&Application::toggleLighting, this, placeholders::_1);
-		std::function<void(UIItem*)> loadObjectFunct = bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
-		std::function<void(UIItem*)> loadSessionFunc = bind(&Application::loadSave, this, placeholders::_1);
-		std::function<void(UIItem*)> newSessionFunc = bind(&Application::newSession, this, placeholders::_1);
+		std::function<void(UIItem*)> pipelinefunction = std::bind(&Application::setPipelineIndex, this, placeholders::_1);
+		std::function<void(UIItem*)> lightingFunction = std::bind(&Application::toggleLighting, this, placeholders::_1);
+		std::function<void(UIItem*)> loadObjectFunct = std::bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
+		std::function<void(UIItem*)> loadSessionFunc = std::bind(&Application::loadSave, this, placeholders::_1);
+		std::function<void(UIItem*)> newSessionFunc = std::bind(&Application::newSession, this, placeholders::_1);
 
 		objectMenu.setup();
 		mouseManager.addClickListener(objectMenu.getClickCallback());
@@ -571,6 +573,7 @@ private:
 		mouseManager.addClickListener(surfaceMenu.getClickCallback());
 		widgets.push_back(&surfaceMenu);
 
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 
 	void updateColourScheme() {

@@ -1068,12 +1068,12 @@ struct Widget {
 		loadList = ll;
 	}
 
-	std::function<void(double, double, int)> getClickCallback() {
+	std::function<bool(double, double, int)> getClickCallback() {
 		measureWindowPositions();
 		return std::bind(&Widget::checkForClickEvent, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	}
 
-	std::function<void(double, double, int)> getPosCallback() {
+	std::function<bool(double, double, int)> getPosCallback() {
 		measureWindowPositions();
 		return std::bind(&Widget::checkForPosEvent, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	}
@@ -1116,25 +1116,31 @@ struct Widget {
 		}
 	}
 
-	void checkForClickEvent(double mouseX, double mouseY, int eventType) {
+	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
 		if (!isInArea(mouseX, mouseY) && Sliders.size() == 0 && Rotators.size() == 0) {
-			return;
+			return false;
 		}
 		for (UIItem* item : canvas) {
 			if (item->checkForClickEvent(mouseX, mouseY, eventType)) {
+				return true;
 				break;
 			};
 		}
+		return false;
 	}
 
-	void checkForPosEvent(double mouseX, double mouseY, int eventType) {
+	bool checkForPosEvent(double mouseX, double mouseY, int eventType) {
 		for (UIItem* item : canvas) {
 			std::vector<UIItem*> scs;
 			item->getSubclasses(scs);
 			for (UIItem* sitem : scs) {
-				sitem->checkForPosEvent(mouseX, mouseY, eventType);
+				if (sitem->checkForPosEvent(mouseX, mouseY, eventType)) {
+					return true;
+					break;
+				};
 			}
 		}
+		return false;
 	}
 
 	void update() {
@@ -1238,6 +1244,9 @@ struct Widget {
 	bool isSetup = false;
 
 	LoadList* loadList = nullptr;
+
+	int priorityLayer = 0; // Widgets are sorted in descending order, so smaller numbers will be checked later than higher ones
+						   // A widget can be placed above another simply by setting the priority of the "on-top" layer higher than the below one
 private:
 	float windowPositions[4] = { 0.0f };
 	// Array of pointers which manages the actual structure of the UI

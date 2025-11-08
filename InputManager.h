@@ -78,7 +78,7 @@ public:
 		MouseManager::_instances.push_back(this);
 	}
 
-	using Listener = std::function<void(double, double, int)>;
+	using Listener = std::function<bool(double, double, int)>;
 
 	void addClickListener(const Listener&);
 
