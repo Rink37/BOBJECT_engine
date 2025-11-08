@@ -364,7 +364,7 @@ public:
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		sConst->setupSurfaceConstructor();
 		createCanvas();
-		sliderTestFunc();
+		//sliderTestFunc();
 		if (sConst->webTex->webCam != nullptr) {
 			sConst->webTex->webCam->loadFilter();
 		}

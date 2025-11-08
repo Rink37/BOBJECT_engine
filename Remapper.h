@@ -27,7 +27,7 @@ struct RemapParamObject {
 
 class RemapBackend {
 public:
-	RemapBackend() {
+	void setup() {
 		params.kuwaharaKernelRadius = 15;
 		params.averagerKernelRadius = 15;
 		params.gradientThreshold = 0.06f;
@@ -96,6 +96,11 @@ public:
 	}
 
 	void setup(Texture* diffTex, Texture* OSNormTex) {
+		if (diffTex == nullptr || OSNormTex == nullptr) {
+			return;
+		}
+		
+		remapper.setup();
 		fullRemap(diffTex, OSNormTex);
 		
 		imageData tcb = TESTCHECKBOXBUTTON;
@@ -107,17 +112,20 @@ public:
 
 		ImagePanel* outMap = new ImagePanel(loadList->getPtr(new Material(remapper.filteredOSNormal), "RemappedOS"), false);
 
-		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.5f, 0.25f, 0.01f);
+		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-		Slider* kuwaharaKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 0.25f, 0.25f);
+		Slider* kuwaharaKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
+		kuwaharaKernSlider->updateDisplay();
 		kuwaharaKernSlider->setSlideValues(remapper.minKuwaharaKernel, remapper.maxKuwaharaKernel, 5);
 		kuwaharaKernSlider->setIntCallback(kuwaharaSliderFunction, false);
 
-		Slider* averagerKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 0.25f, 0.25f);
+		Slider* averagerKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
+		averagerKernSlider->updateDisplay();
 		averagerKernSlider->setSlideValues(remapper.minAveragerKernel, remapper.maxAveragerKernel, 5);
 		averagerKernSlider->setIntCallback(averagerSliderFunction, false);
 
-		Slider* gradientThreshSlider = new Slider(visibleMat, 0.0f, 0.0f, 0.25f, 0.25f);
+		Slider* gradientThreshSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
+		gradientThreshSlider->updateDisplay();
 		gradientThreshSlider->setSlideValues(remapper.minGradientThreshold, remapper.maxGradientThreshold, 0.06f);
 		kuwaharaKernSlider->setFloatCallback(gradientSliderFunction, false);
 		
@@ -131,6 +139,10 @@ public:
 		canvas.push_back(getPtr(column));
 
 		isSetup = true;
+	}
+
+	void cleanupSubClasses() {
+		remapper.cleanup();
 	}
 
 	int priorityLayer = 100;

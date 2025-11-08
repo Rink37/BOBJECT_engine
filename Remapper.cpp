@@ -13,6 +13,10 @@ void RemapBackend::updateParamBuffer() {
 }
 
 void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
+	if (diffTex == nullptr || OSNormTex == nullptr) {
+		return;
+	}
+	std::cout << "Creating ref maps" << std::endl;
 	baseDiffuse = diffTex->copyImage(VK_FORMAT_R8G8B8A8_UNORM, diffTex->textureLayout, diffTex->textureUsage, diffTex->textureTiling, diffTex->textureMemFlags, 1);
 	
 	OSNormTex->getCVMat();
@@ -24,6 +28,7 @@ void RemapBackend::createBaseMaps() {
 	if (baseDiffuse == nullptr) {
 		return;
 	}
+	std::cout << "Creating base maps" << std::endl;
 	filter Kuwahara(baseDiffuse, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	Kuwahara.filterImage();
 	
@@ -43,26 +48,30 @@ void RemapBackend::performRemap() {
 	if (baseOSNormal == nullptr || xGradients == nullptr) {
 		return;
 	}
+	std::cout << "Remapping" << std::endl;
 	filter Averager(baseOSNormal, xGradients, yGradients, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	Averager.filterImage();
 	
 	filter gradRemap(Averager.filterTarget[0], xGradients, yGradients, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	gradRemap.filterImage();
 
-	filteredOSNormal = gradRemap.filterTarget[0]->copyImage();
+	filteredOSNormal = gradRemap.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1);
+	filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void RemapBackend::smootheResult() {
 	if (baseDiffuse == nullptr || filteredOSNormal == nullptr) {
 		return;
 	}
+	std::cout << "Smoothing" << std::endl;
 	filter referenceKuwahara(baseDiffuse, filteredOSNormal , new REFERENCEKUWAHARASHADER);
 	referenceKuwahara.filterImage();
 
 	filteredOSNormal->cleanup();
 	filteredOSNormal = nullptr;
 
-	filteredOSNormal = referenceKuwahara.filterTarget[0]->copyImage();
+	filteredOSNormal = referenceKuwahara.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1);
+	filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void RemapBackend::cleanup() {

@@ -1150,7 +1150,12 @@ struct Widget {
 		measureWindowPositions();
 	}
 
+	virtual void cleanupSubClasses() {
+
+	}
+
 	void cleanup() {
+		cleanupSubClasses();
 		canvas.clear();
 		for (size_t i = 0; i != imagePanels.size(); i++) {
 			imagePanels[i]->cleanup();
