@@ -599,5 +599,11 @@ void Slider::calculateSlideValue(double mouseX, double mouseY) {
 		slideValue = clamp(float((mouseX - valuePositions[0]) / (valuePositions[1] - valuePositions[0])), 0.0f, 1.0f);
 		break;
 	}
+	if (valueType == SLIDER_DISCRETE) {
+		slideValue *= (maxValue - minValue);
+		slideValue += minValue;
+
+		slideValue = (static_cast<float>(round(slideValue)) - minValue)/(maxValue-minValue);
+	}
 	std::cout << slideValue << std::endl;
 }

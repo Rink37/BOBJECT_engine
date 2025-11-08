@@ -26,6 +26,9 @@
 #define ORIENT_VERTICAL 0
 #define ORIENT_HORIZONTAL 1
 
+#define SLIDER_CONTINUOUS 0
+#define SLIDER_DISCRETE 1
+
 struct UIImage {
 	bool isVisible = true;
 
@@ -680,6 +683,23 @@ public:
 		this->orientation = orient;
 	}
 
+	void setSlideValues(int min, int max, int position) {
+		// Use integer slider values
+		valueType = SLIDER_DISCRETE;
+		minValue = static_cast<float>(min);
+		maxValue = static_cast<float>(max);
+
+		slideValue = (static_cast<float>(position) - minValue) / (maxValue - minValue);
+	}
+
+	void setSlideValues(float min, float max, float position) {
+		valueType = SLIDER_CONTINUOUS;
+		minValue = min;
+		maxValue = max;
+
+		slideValue = (position - minValue) / (maxValue - minValue);
+	}
+
 	void updateDisplay() {
 		//this->calculateScreenPosition();
 		switch (orientation) {
@@ -784,6 +804,7 @@ private:
 	std::shared_ptr<UIImage> backgroundImage;
 
 	int orientation = ORIENT_HORIZONTAL;
+	int valueType = SLIDER_CONTINUOUS;
 
 	float sliderWidth = 0.05;
 	float baseHeight = 0.25;

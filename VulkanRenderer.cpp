@@ -437,6 +437,7 @@ private:
 		Material* visibleMat = sliderTest.loadList->getPtr(new Material(sliderTest.loadList->getPtr(new imageTexture(&tcb, VK_FORMAT_R8_UNORM), "TestCheckBtnTex"), true), "TestCheckBtnMat");
 
 		Slider* test = new Slider(ORIENT_VERTICAL, visibleMat, 0.0f, 0.0f, 0.05f, 0.25f);
+		test->setSlideValues(1.0f, 5.0f, 2.0f);
 		test->updateDisplay();
 		sliderTest.canvas.push_back(sliderTest.getPtr(test));
 		sliderTest.isSetup = true;
