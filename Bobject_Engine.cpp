@@ -704,7 +704,6 @@ void Engine::createGraphicsPipelines() {
 	GraphicsPipelines.push_back(TangentPipeline);
 	PipelineMap.insert({ string("TSNormBF"), 7 });
 
-
 	vkDestroyShaderModule(device, FragShaderModule, nullptr);
 	vkDestroyShaderModule(device, VertShaderModule, nullptr);
 	vkDestroyShaderModule(device, tangentFragShaderModule, nullptr);

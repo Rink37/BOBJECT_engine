@@ -21,22 +21,47 @@ void filter::createDescriptorSetLayout() {
 			throw runtime_error("failed to create descriptor pool!");
 		}
 
-		VkDescriptorSetLayoutBinding bindings[2] = {};
-
-		bindings[0].binding = 0;
-		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		bindings[0].descriptorCount = 1;
-		bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-		bindings[1].binding = 1;
-		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		bindings[1].descriptorCount = 1;
-		bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
 		descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorSetLayoutCreateInfo.pBindings = bindings;
-		descriptorSetLayoutCreateInfo.bindingCount = 2;
+
+		if (!hasUniformBuffer) {
+			VkDescriptorSetLayoutBinding bindings[2] = {};
+
+			bindings[0].binding = 0;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[0].descriptorCount = 1;
+			bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[1].binding = 1;
+			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[1].descriptorCount = 1;
+			bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			descriptorSetLayoutCreateInfo.pBindings = bindings;
+			descriptorSetLayoutCreateInfo.bindingCount = 2;
+		}
+		else {
+			VkDescriptorSetLayoutBinding bindings[3] = {};
+
+			bindings[0].binding = 0;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[0].descriptorCount = 1;
+			bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[1].binding = 1;
+			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[1].descriptorCount = 1;
+			bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[2].binding = 2;
+			bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			bindings[2].descriptorCount = 1;
+			bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			descriptorSetLayoutCreateInfo.pBindings = bindings;
+			descriptorSetLayoutCreateInfo.bindingCount = 3;
+		}
+		
 
 		if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
 			throw runtime_error("Failed to create filter descriptor set layout");
@@ -56,27 +81,59 @@ void filter::createDescriptorSetLayout() {
 			throw runtime_error("failed to create descriptor pool!");
 		}
 
-		VkDescriptorSetLayoutBinding bindings[3] = {};
-
-		bindings[0].binding = 0;
-		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		bindings[0].descriptorCount = 1;
-		bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-		bindings[1].binding = 1;
-		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		bindings[1].descriptorCount = 1;
-		bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-		bindings[2].binding = 2;
-		bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		bindings[2].descriptorCount = 1;
-		bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
 		descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorSetLayoutCreateInfo.pBindings = bindings;
-		descriptorSetLayoutCreateInfo.bindingCount = 3;
+
+		if (!hasUniformBuffer) {
+			VkDescriptorSetLayoutBinding bindings[3] = {};
+
+			bindings[0].binding = 0;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[0].descriptorCount = 1;
+			bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[1].binding = 1;
+			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[1].descriptorCount = 1;
+			bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[2].binding = 2;
+			bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[2].descriptorCount = 1;
+			bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+
+			descriptorSetLayoutCreateInfo.pBindings = bindings;
+			descriptorSetLayoutCreateInfo.bindingCount = 3;
+		
+		}
+		else {
+			VkDescriptorSetLayoutBinding bindings[4] = {};
+
+			bindings[0].binding = 0;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[0].descriptorCount = 1;
+			bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[1].binding = 1;
+			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[1].descriptorCount = 1;
+			bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[2].binding = 2;
+			bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[2].descriptorCount = 1;
+			bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[3].binding = 3;
+			bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			bindings[3].descriptorCount = 1;
+			bindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			descriptorSetLayoutCreateInfo.pBindings = bindings;
+			descriptorSetLayoutCreateInfo.bindingCount = 4;
+		}
+		
 
 		if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
 			throw runtime_error("Failed to create filter descriptor set layout");
@@ -97,32 +154,66 @@ void filter::createDescriptorSetLayout() {
 			throw runtime_error("failed to create descriptor pool!");
 		}
 
-		VkDescriptorSetLayoutBinding bindings[4] = {};
-
-		bindings[0].binding = 0;
-		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		bindings[0].descriptorCount = 1;
-		bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-		bindings[1].binding = 1;
-		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		bindings[1].descriptorCount = 1;
-		bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-		bindings[2].binding = 2;
-		bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		bindings[2].descriptorCount = 1;
-		bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-		bindings[3].binding = 3;
-		bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		bindings[3].descriptorCount = 1;
-		bindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
 		descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorSetLayoutCreateInfo.pBindings = bindings;
-		descriptorSetLayoutCreateInfo.bindingCount = 4;
+
+		if (!hasUniformBuffer) {
+			VkDescriptorSetLayoutBinding bindings[4] = {};
+
+			bindings[0].binding = 0;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[0].descriptorCount = 1;
+			bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[1].binding = 1;
+			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[1].descriptorCount = 1;
+			bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[2].binding = 2;
+			bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[2].descriptorCount = 1;
+			bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[3].binding = 3;
+			bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[3].descriptorCount = 1;
+			bindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			descriptorSetLayoutCreateInfo.pBindings = bindings;
+			descriptorSetLayoutCreateInfo.bindingCount = 4;
+		}
+		else {
+			VkDescriptorSetLayoutBinding bindings[5] = {};
+
+			bindings[0].binding = 0;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[0].descriptorCount = 1;
+			bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[1].binding = 1;
+			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[1].descriptorCount = 1;
+			bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[2].binding = 2;
+			bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[2].descriptorCount = 1;
+			bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[3].binding = 3;
+			bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[3].descriptorCount = 1;
+			bindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			bindings[4].binding = 4;
+			bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			bindings[4].descriptorCount = 1;
+			bindings[4].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			descriptorSetLayoutCreateInfo.pBindings = bindings;
+			descriptorSetLayoutCreateInfo.bindingCount = 5;
+		}
 
 		if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
 			throw runtime_error("Failed to create filter descriptor set layout");
@@ -152,23 +243,58 @@ void filter::createDescriptorSet() {
 		sourceInfo.imageView = source[0]->textureImageView;
 		sourceInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-		VkWriteDescriptorSet descWrite[2] = {};
+		if (!hasUniformBuffer) {
+			VkWriteDescriptorSet descWrite[2] = {};
 
-		descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descWrite[0].dstSet = filterDescriptorSet;
-		descWrite[0].dstBinding = 0;
-		descWrite[0].descriptorCount = 1;
-		descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		descWrite[0].pImageInfo = &sourceInfo;
+			descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[0].dstSet = filterDescriptorSet;
+			descWrite[0].dstBinding = 0;
+			descWrite[0].descriptorCount = 1;
+			descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[0].pImageInfo = &sourceInfo;
 
-		descWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descWrite[1].dstSet = filterDescriptorSet;
-		descWrite[1].dstBinding = 1;
-		descWrite[1].descriptorCount = 1;
-		descWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		descWrite[1].pImageInfo = &destinationInfo;
+			descWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[1].dstSet = filterDescriptorSet;
+			descWrite[1].dstBinding = 1;
+			descWrite[1].descriptorCount = 1;
+			descWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[1].pImageInfo = &destinationInfo;
 
-		vkUpdateDescriptorSets(Engine::get()->device, 2, descWrite, 0, nullptr);
+			vkUpdateDescriptorSets(Engine::get()->device, 2, descWrite, 0, nullptr);
+		}
+		else {
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = bufferRef;
+			bufferInfo.offset = 0;
+			bufferInfo.range = bufferSize;
+
+			VkWriteDescriptorSet descWrite[3] = {};
+
+			descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[0].dstSet = filterDescriptorSet;
+			descWrite[0].dstBinding = 0;
+			descWrite[0].descriptorCount = 1;
+			descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[0].pImageInfo = &sourceInfo;
+
+			descWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[1].dstSet = filterDescriptorSet;
+			descWrite[1].dstBinding = 1;
+			descWrite[1].descriptorCount = 1;
+			descWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descWrite[1].pImageInfo = &destinationInfo;
+
+			descWrite[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite[2].dstSet = filterDescriptorSet;
+			descWrite[2].dstBinding = 2;
+			descWrite[2].dstArrayElement = 0;
+			descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descWrite[2].descriptorCount = 1;
+			descWrite[2].pBufferInfo = &bufferInfo;
+
+			vkUpdateDescriptorSets(Engine::get()->device, 3, descWrite, 0, nullptr);
+		}
+		
 	} else if (filtertype == TIOO){
 		VkDescriptorImageInfo destinationInfo = {};
 		destinationInfo.imageView = filterTarget[0]->textureImageView;
@@ -311,9 +437,6 @@ void filter::filterImage() {
 
 	vkQueueWaitIdle(Engine::get()->computeQueue);
 
-	//auto start = std::chrono::high_resolution_clock::now();
-
-	//source->transitionImageLayout(source->textureImage, source->textureFormat, VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, source->mipLevels);
 	filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->mipLevels);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipeline);
@@ -324,10 +447,4 @@ void filter::filterImage() {
 
 	filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->textureLayout, filterTarget[0]->mipLevels);
 
-	//auto end = std::chrono::high_resolution_clock::now();
-
-	//auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-	//cout << "Completed in " << duration.count() << "ms" << endl;
-	//filterTarget[0]->getCVMat();
 }

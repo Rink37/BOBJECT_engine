@@ -12,6 +12,12 @@
 
 class filter {
 public:
+	filter(std::vector<Texture*> srcs, shaderData* sd) {
+		switch (srcs.size()) {
+
+		}
+	}
+
 	filter(Texture* src, shaderData* sd) {
 		filtertype = OIOO;
 		source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
@@ -27,8 +33,46 @@ public:
 		createFilterPipeline();
 	}
 
+	filter(Texture* src, shaderData* sd, VkBuffer buffer, uint32_t bufferSize) {
+		filtertype = OIOO;
+		hasUniformBuffer = true;
+		bufferRef = buffer;
+		this->bufferSize = bufferSize;
+		source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		texWidth = source[0]->texWidth;
+		texHeight = source[0]->texHeight;
+
+		filterShaderModule = Engine::get()->createShaderModule(sd->vertData);
+
+		createFilterTarget();
+		createDescriptorSetLayout();
+		createDescriptorSet();
+		createFilterPipelineLayout();
+		createFilterPipeline();
+	}
+
 	filter(Texture* src, shaderData* sd, VkFormat outFormat) {
 		filtertype = OIOO;
+		source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		texWidth = source[0]->texWidth;
+		texHeight = source[0]->texHeight;
+
+		filterShaderModule = Engine::get()->createShaderModule(sd->vertData);
+
+		targetFormat = outFormat;
+
+		createFilterTarget();
+		createDescriptorSetLayout();
+		createDescriptorSet();
+		createFilterPipelineLayout();
+		createFilterPipeline();
+	}
+
+	filter(Texture* src, shaderData* sd, VkFormat outFormat, VkBuffer buffer, uint32_t bufferSize) {
+		filtertype = OIOO;
+		hasUniformBuffer = true;
+		bufferRef = buffer;
+		this->bufferSize = bufferSize;
 		source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
@@ -160,6 +204,10 @@ private:
 	VkDescriptorSet filterDescriptorSet;
 
 	VkShaderModule filterShaderModule = nullptr; // Destroyed by default
+
+	bool hasUniformBuffer = false;
+	uint32_t bufferSize = 0;
+	VkBuffer bufferRef = nullptr;
 
 	void createDescriptorSetLayout();
 	void createDescriptorSet();
