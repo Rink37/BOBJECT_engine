@@ -7,6 +7,11 @@ bool Texture::hasStencilComponent(VkFormat format) {
 	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
+Texture* Texture::copyImage() {
+	// Full copy without modification
+	return copyImage(textureFormat, textureLayout, textureUsage, textureTiling, textureMemFlags, mipLevels);
+}
+
 Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, VkMemoryPropertyFlags memFlags, uint32_t mipLevels)
 {
 	Texture* copy = new Texture;
