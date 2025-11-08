@@ -154,25 +154,25 @@ void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>
 	std::function<void(UIItem*)> saveWebcam = bind(&SurfaceMenu::saveDiffuseImage, this, placeholders::_1);
 
 	imageData diffuse = DIFFUSETEXT;
-	Material* diffuseMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffuse, VK_FORMAT_R8_UNORM), "DiffuseBtnTex")), "DiffuseBtnMat");
+	Material* diffuseMat = newMaterial(&diffuse, "DiffuseBtn");
 
 	imageData normal = NORMALTEXT;
-	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal, VK_FORMAT_R8_UNORM), "NormalBtnTex")), "NormalBtnMat");
+	Material* normalMat = newMaterial(&normal, "NormalBtn");
 
 	imageData webcamOn = WEBCAMONBUTTON;
-	Material* webcamOnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn, VK_FORMAT_R8_UNORM), "WebcamOnBtnTex")), "WebcamOnBtnMat");
+	Material* webcamOnMat = newMaterial(&webcamOn, "WebcamOnBtn");
 
 	imageData webcamOff = WEBCAMOFFBUTTON;
-	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff, VK_FORMAT_R8_UNORM), "WebcamOffBtnTex")), "WebcamOffBtnMat");
+	Material* webcamOffMat = newMaterial(&webcamOff, "WebcamOffBtn");
 
 	imageData OpenButton = OPENBUTTON;
-	Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex")), "OpenBtnMat");
+	Material* openMat = newMaterial(&OpenButton, "OpenBtn");
 
 	imageData SaveButton = SAVEBUTTON;
-	Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton, VK_FORMAT_R8_UNORM), "SaveBtnTex")), "SaveBtnMat");
+	Material* saveMat = newMaterial(&SaveButton, "SaveBtn");
 
 	imageData plusButton = PLUSBUTTON;
-	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton, VK_FORMAT_R8_UNORM), "PlusBtnTex")), "PlusBtnMat");
+	Material* plusMat = newMaterial(&plusButton, "PlusBtn");
 
 	Button* diffuseTextPanel = new Button(diffuseMat);
 
@@ -232,10 +232,10 @@ void SurfaceMenu::removeNormalMenu(UIItem* owner) {
 	std::function<void(UIItem*)> addNormalButton = bind(&SurfaceMenu::createNormalMenu, this, placeholders::_1);
 
 	imageData normal = NORMALTEXT;
-	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal, VK_FORMAT_R8_UNORM), "NormalBtnTex")), "NormalBtnMat");
+	Material* normalMat = newMaterial(&normal, "NormalBtn");
 
 	imageData plusButton = PLUSBUTTON;
-	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton, VK_FORMAT_R8_UNORM), "PlusBtnTex")), "PlusBtnMat");
+	Material* plusMat = newMaterial(&plusButton, "PlusBtn");
 
 	Button* normalTextPanel = new Button(normalMat);
 	Button* normalPlus = new Button(plusMat, addNormalButton);
@@ -295,10 +295,8 @@ void SurfaceMenu::toggleNormalCam(UIItem* owner) {
 
 void SurfaceMenu::toggleNormalType(UIItem* owner) {
 	sConst->toggleNormType();
-	//cout << static_cast<int>(sConst->normalIdx) << " " << static_cast<int>(sConst->normalType) << endl;
 	if (sConst->normalType == 1 && sConst->OSNormTex != nullptr && !sConst->TSmatching) {
 		if (sConst->TSNormTex != nullptr) {
-			//sConst->TSNormTex->cleanup();
 			loadList->deleteTexture("TSNormalTex");
 		}
 		sConst->transitionToTS(staticObjects->at(staticObjects->size() - 1).mesh);
@@ -306,12 +304,9 @@ void SurfaceMenu::toggleNormalType(UIItem* owner) {
 
 		std::cout << "Converted from OS to TS" << std::endl;
 
-		//setNormal(sConst->currentNormal().get());
-		//normalView->image->mat[0] = sConst->currentNormal().get();
 	}
 	if (sConst->normalType == 0 && sConst->TSNormTex != nullptr && !sConst->TSmatching) {
 		if (sConst->OSNormTex != nullptr) {
-			//sConst->OSNormTex->cleanup();
 			loadList->deleteTexture("OSNormalTex");
 		}
 		sConst->transitionToOS(staticObjects->at(staticObjects->size() - 1).mesh);
@@ -319,13 +314,7 @@ void SurfaceMenu::toggleNormalType(UIItem* owner) {
 
 		std::cout << "Converted from TS to OS" << std::endl;
 
-		//setNormal(sConst->currentNormal().get());
-		//normalView->image->mat[0] = sConst->currentNormal().get();
 	}
-	//else {
-	//	setNormal(sConst->currentNormal().get());
-	//	normalView->image->mat[0] = sConst->currentNormal().get();
-	//}
 	sConst->updateSurfaceMat();
 	setNormal(sConst->currentNormal());
 }
@@ -426,31 +415,31 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	NormalButtons->Items.clear();
 
 	imageData normal = NORMALTEXT;
-	Material* normalMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&normal, VK_FORMAT_R8_UNORM), "NormalBtnTex")), "NormalBtnMat");
+	Material* normalMat = newMaterial(&normal, "NormalBtn"); 
 
 	imageData webcamOn = WEBCAMONBUTTON;
-	Material* webcamOnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOn, VK_FORMAT_R8_UNORM), "WebcamOnBtnTex")), "WebcamOnBtnMat");
+	Material* webcamOnMat = newMaterial(&webcamOn, "WebcamOnBtn");
 
 	imageData webcamOff = WEBCAMOFFBUTTON;
-	Material* webcamOffMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&webcamOff, VK_FORMAT_R8_UNORM), "WebcamOffBtnTex")), "WebcamOffBtnMat");
+	Material* webcamOffMat = newMaterial(&webcamOff, "WebcamOffBtn");
 
 	imageData OpenButton = OPENBUTTON;
-	Material* openMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&OpenButton, VK_FORMAT_R8_UNORM), "OpenBtnTex")), "OpenBtnMat");
+	Material* openMat = newMaterial(&OpenButton, "OpenBtn");
 
 	imageData SaveButton = SAVEBUTTON;
-	Material* saveMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&SaveButton, VK_FORMAT_R8_UNORM), "SaveBtnTex")), "SaveBtnMat");
+	Material* saveMat = newMaterial(&SaveButton, "SaveBtn");
 
 	imageData plusButton = PLUSBUTTON;
-	Material* plusMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&plusButton, VK_FORMAT_R8_UNORM), "PlusBtnTex")), "PlusBtnMat");
+	Material* plusMat = newMaterial(&plusButton, "PlusBtn");
 
 	imageData osType = OSBUTTON;
-	Material* osMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&osType, VK_FORMAT_R8_UNORM), "OSBtnTex")), "OSBtnMat");
+	Material* osMat = newMaterial(&osType, "OSBtn");
 
 	imageData tsType = TANGENTSPACE;
-	Material* tsMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&tsType, VK_FORMAT_R8_UNORM), "TSBtnTex")), "TSBtnMat");
+	Material* tsMat = newMaterial(&tsType, "TSBtn");
 
 	imageData diffToNorm = D2NBUTTON;
-	Material* dtnMat = loadList->getPtr(new Material(loadList->getPtr(new imageTexture(&diffToNorm, VK_FORMAT_R8_UNORM), "DiffToNormBtnTex")), "DiffToNormBtnMat");
+	Material* dtnMat = newMaterial(&diffToNorm, "D2NBtn");
 
 	Button* normalText = new Button(normalMat);
 
