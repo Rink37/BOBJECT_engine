@@ -151,6 +151,7 @@ struct UniformBufferObject {
 	alignas(16) glm::mat4 proj;
 	alignas(16) glm::vec4 UVdistort;
 	alignas(16) glm::vec3 backgroundColour;
+	alignas(16) glm::vec3 lightPosition;
 };
 
 struct ColourSchemeObject {

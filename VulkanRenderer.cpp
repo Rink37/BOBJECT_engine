@@ -422,6 +422,10 @@ private:
 
 	uint8_t viewIndex = 1;
 
+	// Light position
+
+	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f);
+	
 	// colours in sRGB format (for krita users these colours match the sRGB-elle-V2-g10.icc profile)
 	glm::vec3 primaryColour = glm::vec3(0.42f, 0.06f, 0.11f);
 	glm::vec3 secondaryColour = glm::vec3(0.82f, 0.55f, 0.36f);
@@ -799,6 +803,8 @@ private:
 		ubo.UVdistort[3] = (surfaceMenu.diffuseView->posy) - surfaceMenu.diffuseView->extenty;
 
 		ubo.backgroundColour = backgroundColour;
+
+		ubo.lightPosition = lightPos;
 
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
