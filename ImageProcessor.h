@@ -14,7 +14,7 @@ class filter {
 public:
 	filter(std::vector<Texture*> srcs, shaderData* sd) {
 		switch (srcs.size()) {
-		case (1):
+		case(1):
 			filtertype = OIOO;
 			break;
 		case(2):

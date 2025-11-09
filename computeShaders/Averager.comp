@@ -107,7 +107,7 @@ void main(){
 		}
 	}
 
-	sumColour = (sumColour != vec4(0,0,0,0))?sumColour:vec4(imageLoad(normalImage, pixelCoords).rgb, 1.0);
+	sumColour = (sumColour != vec4(0,0,0,0))?sumColour:vec4(0.0, 0.0, 0.0, 1.0);//vec4(imageLoad(normalImage, pixelCoords).rgb, 1.0);
 
 	vec4 pixel = vec4((sumColour.rgb/sumColour.w), 1.0);
 

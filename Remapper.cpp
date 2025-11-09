@@ -27,8 +27,15 @@ void RemapBackend::createBaseMaps() {
 	if (baseDiffuse == nullptr) {
 		return;
 	}
+	std::cout << "Creating base maps" << std::endl;
+
 	filter Kuwahara(std::vector<Texture*>{baseDiffuse}, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	Kuwahara.filterImage();
+
+	Texture* KuwaharaTex = Kuwahara.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_SRGB, Kuwahara.filterTarget[0]->textureLayout, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, Kuwahara.filterTarget[0]->textureTiling, Kuwahara.filterTarget[0]->textureMemFlags, 1);
+	KuwaharaTex->getCVMat();
+	cv::imshow("Kuwahara", KuwaharaTex->texMat);
+	cv::waitKey(0);
 	
 	filter SobelX(std::vector<Texture*>{Kuwahara.filterTarget[0]}, new SOBELXSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelX.filterImage();
@@ -55,11 +62,18 @@ void RemapBackend::performRemap() {
 	if (baseOSNormal == nullptr || xGradients == nullptr) {
 		return;
 	}
+
 	filter Averager(std::vector<Texture*>{baseOSNormal, xGradients, yGradients}, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	Averager.filterImage();
 	
+	Averager.filterTarget[0]->getCVMat();
+	cv::imshow("Averaged", Averager.filterTarget[0]->texMat);
+
 	filter gradRemap(std::vector<Texture*>{Averager.filterTarget[0], xGradients, yGradients}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	gradRemap.filterImage();
+
+	gradRemap.filterTarget[0]->getCVMat();
+	cv::imshow("grad remapped", gradRemap.filterTarget[0]->texMat);
 
 	if (filteredOSNormal != nullptr) {
 		filteredOSNormal->cleanup();
