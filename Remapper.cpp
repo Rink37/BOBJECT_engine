@@ -65,7 +65,7 @@ void RemapBackend::performRemap() {
 	filter Averager(std::vector<Texture*>{baseOSNormal, gradients}, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	Averager.filterImage();
 
-	filter gradRemap(std::vector<Texture*>{Averager.filterTarget[0], xGradients, yGradients}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+	filter gradRemap(std::vector<Texture*>{Averager.filterTarget[0], gradients}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	gradRemap.filterImage();
 
 	if (filteredOSNormal != nullptr) {

@@ -2,10 +2,10 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 layout(binding = 0, rgba8) uniform readonly image2D normalImage;
-layout(binding = 1, rgba16f) uniform readonly image2D xGrad;
-layout(binding = 2, rgba16f) uniform readonly image2D yGrad;
-layout(binding = 3, rgba8) uniform image2D resultImage;
-layout(binding = 4) uniform RemapParamObject {
+layout(binding = 1, rg16f) uniform readonly image2D gradients;
+//layout(binding = 2, rgba16f) uniform readonly image2D yGrad;
+layout(binding = 2, rgba8) uniform image2D resultImage;
+layout(binding = 3) uniform RemapParamObject {
 	int kuwaharaKernelRadius;
 	int averagerKernelRadius;
 	float gradientThreshold;
@@ -18,11 +18,13 @@ void main(){
 
 	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
 
-	vec3 yGpix = imageLoad(yGrad, pixelCoords).rgb;
-	vec3 xGpix = imageLoad(xGrad, pixelCoords).rgb;
-	vec2 gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
-	vec2 gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
-	vec2 grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
+	//vec3 yGpix = imageLoad(yGrad, pixelCoords).rgb;
+	//vec3 xGpix = imageLoad(xGrad, pixelCoords).rgb;
+	//vec2 gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
+	//vec2 gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
+	//vec2 grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
+	
+	vec2 grad = imageLoad(gradients, pixelCoords).rg;
 	vec3 normPix = imageLoad(normalImage, pixelCoords).rgb;
 
 	vec4 sumColour = vec4(normPix, 1.0f);
@@ -42,11 +44,12 @@ void main(){
 			if (abs(grad.x) < thresh && abs(grad.y) < thresh){
 				break;
 			}
-			yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
-			xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
-			gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
-			gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
-			grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
+			//yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
+			//xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
+			//gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
+			//gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
+			//grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
+			grad = imageLoad(gradients, ivec2(xx, yy)).rg;
 			location -= directionVector;
 			xx = int(location.x);
 			yy = int(location.y);
@@ -58,11 +61,14 @@ void main(){
 
 		xx = pixelCoords.x;
 		yy = pixelCoords.y;
-		yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
-		xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
-		gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
-		gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
-		grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
+		
+		//yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
+		//xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
+		//gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
+		//gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
+		//grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
+
+		grad = imageLoad(gradients, pixelCoords).rg;
 		
 		location = vec2(float(pixelCoords.x), float(pixelCoords.y));
 		
@@ -72,11 +78,13 @@ void main(){
 			if (abs(grad.x) < thresh && abs(grad.y) < thresh){
 				break;
 			}
-			yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
-			xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
-			gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
-			gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
-			grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
+			//yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
+			//xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
+			//gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
+			//gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
+			//grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
+			
+			grad = imageLoad(gradients, ivec2(xx,yy)).rg;
 			location += directionVector;
 			xx = int(location.x);
 			yy = int(location.y);
