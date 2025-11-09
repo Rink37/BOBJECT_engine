@@ -416,7 +416,7 @@ private:
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	Widget sliderTest = Widget(&UIElements);
-	RemapUI remapper = RemapUI(&UIElements);
+	RemapUI remapper = RemapUI(&UIElements, sConst);
 
 	UIItem* UITestImage = nullptr;
 
@@ -441,7 +441,7 @@ private:
 
 	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f);
 	float polarAngle, azimuthAngle = 0.0f;
-	float lightRadius = 5.0f;
+	float lightRadius = 10.0f;
 	
 	// colours in sRGB format (for krita users these colours match the sRGB-elle-V2-g10.icc profile)
 	glm::vec3 primaryColour = glm::vec3(0.42f, 0.06f, 0.11f);
@@ -483,6 +483,10 @@ private:
 		mouseManager.addClickListener(remapper.getClickCallback());
 		mouseManager.addPositionListener(remapper.getPosCallback());
 
+		cout << "Set up remapper" << endl;
+
+		surfaceMenu.hide();
+		
 		widgets.push_back(&remapper);
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });

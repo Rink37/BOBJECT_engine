@@ -39,6 +39,7 @@ struct Texture {
 
 	Texture* copyImage(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, VkMemoryPropertyFlags, uint32_t);
 	Texture* copyImage();
+	Texture* copyTexture();
 	Texture* copyTexture(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, uint32_t);
 
 	virtual void setup() {

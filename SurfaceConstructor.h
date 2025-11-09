@@ -79,6 +79,7 @@ public:
 		loadList->deleteTexture("TSGenTex");
 		loadList->deleteTexture("OSGenTex");
 		loadList->deleteTexture("OS-TSGenTex");
+		loadList->deleteTexture("TS-OSGenTex");
 		diffTex = nullptr;
 		OSNormTex = nullptr;
 		TSNormTex = nullptr;

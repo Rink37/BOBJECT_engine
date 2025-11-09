@@ -4,6 +4,7 @@
 #include"UIelements.h"
 #include"Bobject_Engine.h"
 #include"Textures.h"
+#include"SurfaceConstructor.h"
 
 #include"ImageProcessor.h"
 #include"include/Kuwahara.h"
@@ -73,6 +74,7 @@ public:
 	void cleanup();
 
 	Texture* filteredOSNormal = nullptr;
+	Texture* baseDiffuse = nullptr;
 private:
 	RemapParamObject params{};
 
@@ -80,7 +82,6 @@ private:
 	VkDeviceMemory paramBufferMemory = nullptr;
 	void* paramBufferMapped = nullptr;
 
-	Texture* baseDiffuse = nullptr;
 	Texture* baseOSNormal = nullptr;
 
 	Texture* xGradients = nullptr;
@@ -91,8 +92,9 @@ private:
 
 class RemapUI : public Widget {
 public:
-	RemapUI(LoadList* assets) {
+	RemapUI(LoadList* assets, surfaceConstructor* sConst) {
 		loadList = assets;
+		this->sConst = sConst;
 	}
 
 	void setup(Texture* diffTex, Texture* OSNormTex) {
@@ -112,7 +114,7 @@ public:
 
 		outMap = getPtr(new ImagePanel(loadList->getPtr(new Material(remapper.filteredOSNormal), "RemapOSMat"), false));
 
-		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 1.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		Slider* kuwaharaKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 		kuwaharaKernSlider->updateDisplay();
@@ -138,6 +140,9 @@ public:
 
 		canvas.push_back(getPtr(column));
 
+		sConst->normalType = 0;
+		sConst->loadNormal(remapper.filteredOSNormal->copyTexture());
+
 		isSetup = true;
 	}
 
@@ -150,6 +155,8 @@ private:
 	RemapBackend remapper;
 
 	UIItem* outMap = nullptr;
+
+	surfaceConstructor* sConst = nullptr;
 
 	void fullRemap(Texture*, Texture*);
 

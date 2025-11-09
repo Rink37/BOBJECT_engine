@@ -145,6 +145,12 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	return copy;
 }
 
+Texture* Texture::copyTexture(){
+	Texture* copy = copyImage();
+	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	return copy;
+}
+
 Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t mipLevels) {
 	Texture* copy = copyImage(format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, usage, tiling, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT , mipLevels);
 	copy->textureLayout = layout;
