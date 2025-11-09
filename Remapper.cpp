@@ -27,15 +27,9 @@ void RemapBackend::createBaseMaps() {
 	if (baseDiffuse == nullptr) {
 		return;
 	}
-	std::cout << "Creating base maps" << std::endl;
 
 	filter Kuwahara(std::vector<Texture*>{baseDiffuse}, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	Kuwahara.filterImage();
-
-	//Texture* KuwaharaTex = Kuwahara.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_SRGB, Kuwahara.filterTarget[0]->textureLayout, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, Kuwahara.filterTarget[0]->textureTiling, Kuwahara.filterTarget[0]->textureMemFlags, 1);
-	//KuwaharaTex->getCVMat();
-	//cv::imshow("Kuwahara", KuwaharaTex->texMat);
-	//cv::waitKey(0);
 	
 	filter SobelX(std::vector<Texture*>{Kuwahara.filterTarget[0]}, new SOBELXSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelX.filterImage();
@@ -65,17 +59,9 @@ void RemapBackend::performRemap() {
 
 	filter Averager(std::vector<Texture*>{baseOSNormal, xGradients, yGradients}, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	Averager.filterImage();
-	
-	Averager.filterTarget[0]->getCVMat();
-	cv::imshow("Averaged", Averager.filterTarget[0]->texMat);
-	cv::waitKey(0);
 
 	filter gradRemap(std::vector<Texture*>{Averager.filterTarget[0], xGradients, yGradients}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	gradRemap.filterImage();
-
-	gradRemap.filterTarget[0]->getCVMat();
-	cv::imshow("grad remapped", gradRemap.filterTarget[0]->texMat);
-	cv::waitKey(0);
 
 	if (filteredOSNormal != nullptr) {
 		filteredOSNormal->cleanup();
@@ -127,10 +113,10 @@ void RemapUI::fullRemap(Texture*diffTex, Texture*OSNormTex) {
 
 void RemapUI::kuwaharaCallback(int kern) {
 	remapper.setKuwaharaKernel(kern);
-	std::cout << "kuwahara" << std::endl;
+	//std::cout << "kuwahara" << std::endl;
 	remapper.createBaseMaps();
 	remapper.performRemap();
-	//remapper.smootheResult();
+	remapper.smootheResult();
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper.filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper.filteredOSNormal->copyTexture());
@@ -138,9 +124,9 @@ void RemapUI::kuwaharaCallback(int kern) {
 
 void RemapUI::averagerCallback(int kern) {
 	remapper.setAveragerKernel(kern);
-	std::cout << "Averager" << std::endl;
+	//std::cout << "Averager" << std::endl;
 	remapper.performRemap();
-	//remapper.smootheResult();
+	remapper.smootheResult();
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper.filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper.filteredOSNormal->copyTexture());
@@ -148,9 +134,9 @@ void RemapUI::averagerCallback(int kern) {
 
 void RemapUI::gradientCallback(float thresh) {
 	remapper.setGradientThreshold(thresh);
-	std::cout << "Gradient" << std::endl;
+	//std::cout << "Gradient" << std::endl;
 	remapper.performRemap();
-	//remapper.smootheResult();
+	remapper.smootheResult();
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper.filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper.filteredOSNormal->copyTexture());

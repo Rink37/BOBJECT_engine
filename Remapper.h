@@ -49,7 +49,6 @@ public:
 
 	void setGradientThreshold(float thresh) {
 		params.gradientThreshold = thresh;
-		std::cout << params.gradientThreshold << std::endl;
 		updateParamBuffer();
 	}
 
