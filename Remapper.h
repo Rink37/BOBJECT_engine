@@ -45,6 +45,7 @@ public:
 
 	void setAveragerKernel(int kern) {
 		params.averagerKernelRadius = kern;
+		std::cout << kern << std::endl;
 		updateParamBuffer();
 	}
 
@@ -57,7 +58,7 @@ public:
 	int maxKuwaharaKernel = 32;
 
 	int minAveragerKernel = 2;
-	int maxAveragerKernel = 32;
+	int maxAveragerKernel = 64;
 
 	float minGradientThreshold = 0.02f;
 	float maxGradientThreshold = 0.1f;
@@ -76,6 +77,8 @@ public:
 
 	Texture* filteredOSNormal = nullptr;
 	Texture* baseDiffuse = nullptr;
+
+	bool smoothePass = false;
 private:
 	RemapParamObject params{};
 
@@ -88,8 +91,6 @@ private:
 	Texture* xGradients = nullptr;
 	Texture* yGradients = nullptr;
 	Texture* gradients = nullptr;
-
-	bool isSmootheNeeded = true;
 };
 
 class RemapUI : public Widget {

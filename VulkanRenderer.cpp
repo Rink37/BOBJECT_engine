@@ -393,6 +393,7 @@ public:
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
 		updateColourScheme();
+		updateLightAzimuth(0);
 		mainLoop();
 		cleanup();
 		surfaceConstructor::destruct();

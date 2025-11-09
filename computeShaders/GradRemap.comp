@@ -3,7 +3,6 @@
 layout (local_size_x = 16, local_size_y = 16) in;
 layout(binding = 0, rgba8) uniform readonly image2D normalImage;
 layout(binding = 1, rg16f) uniform readonly image2D gradients;
-//layout(binding = 2, rgba16f) uniform readonly image2D yGrad;
 layout(binding = 2, rgba8) uniform image2D resultImage;
 layout(binding = 3) uniform RemapParamObject {
 	int kuwaharaKernelRadius;
@@ -17,12 +16,6 @@ void main(){
 	const ivec2 imgResolution = imageSize(normalImage);
 
 	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-
-	//vec3 yGpix = imageLoad(yGrad, pixelCoords).rgb;
-	//vec3 xGpix = imageLoad(xGrad, pixelCoords).rgb;
-	//vec2 gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
-	//vec2 gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
-	//vec2 grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
 	
 	vec2 grad = imageLoad(gradients, pixelCoords).rg;
 	vec3 normPix = imageLoad(normalImage, pixelCoords).rgb;
@@ -30,13 +23,15 @@ void main(){
 	vec4 sumColour = vec4(normPix, 1.0f);
 
 	if (!(abs(grad.x) < thresh && abs(grad.y) < thresh)){
-		vec2 directionVector = normalize(vec2(grad.x, grad.y));
-		directionVector /= max(directionVector.x, directionVector.y);
+		vec2 directionVector = grad;
+		float sf = (max(grad.x, grad.y) > abs(min(grad.x, grad.y)))?max(grad.x, grad.y):min(grad.x, grad.y);
+		directionVector /= sf;
 		int xx = pixelCoords.x;
 		int yy = pixelCoords.y;
 		vec2 location = vec2(float(pixelCoords.x), float(pixelCoords.y));
-		vec2 minG;
-		vec2 midG = vec2(0.0, 0.0);
+		float minG;
+		float midG = 0.0f;
+		float maxG;
 		vec3 minColour;
 		vec3 maxColour;
 
@@ -44,61 +39,46 @@ void main(){
 			if (abs(grad.x) < thresh && abs(grad.y) < thresh){
 				break;
 			}
-			//yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
-			//xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
-			//gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
-			//gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
-			//grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
 			grad = imageLoad(gradients, ivec2(xx, yy)).rg;
 			location -= directionVector;
-			xx = int(location.x);
-			yy = int(location.y);
-			minG = vec2(abs(grad.x), abs(grad.y));
+			xx = int(round(location.x));
+			yy = int(round(location.y));
+			minG = length(grad);
 			midG += minG;
 		}
 		
-		minColour = (imageLoad(normalImage, ivec2(xx, yy)).rgb != vec3(0,0,0))?imageLoad(normalImage, ivec2(xx, yy)).rgb:imageLoad(resultImage, ivec2(xx, yy)).rgb;
+		minColour = imageLoad(normalImage, ivec2(xx, yy)).rgb;//(imageLoad(normalImage, ivec2(xx, yy)).rgb != vec3(0,0,0))?imageLoad(normalImage, ivec2(xx, yy)).rgb:imageLoad(resultImage, ivec2(xx, yy)).rgb;
 
 		xx = pixelCoords.x;
 		yy = pixelCoords.y;
-		
-		//yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
-		//xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
-		//gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
-		//gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
-		//grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
 
 		grad = imageLoad(gradients, pixelCoords).rg;
 		
 		location = vec2(float(pixelCoords.x), float(pixelCoords.y));
 		
-		vec2 maxG = midG - vec2(grad.x, grad.y);
+		maxG = midG - length(grad);
 		
 		for (int i = 0; i != maxDist; i++){
 			if (abs(grad.x) < thresh && abs(grad.y) < thresh){
 				break;
 			}
-			//yGpix = imageLoad(yGrad, ivec2(xx, yy)).rgb;
-			//xGpix = imageLoad(xGrad, ivec2(xx, yy)).rgb;
-			//gradMax = vec2(max(max(xGpix.r, xGpix.g), xGpix.b), max(max(yGpix.r, yGpix.g), yGpix.b));
-			//gradMin = vec2(min(min(xGpix.r, xGpix.g), xGpix.b), min(min(yGpix.r, yGpix.g), yGpix.b));
-			//grad = vec2((gradMax.x>abs(gradMin.x))?gradMax.x:gradMin.x, (gradMax.y>abs(gradMin.y))?gradMax.y:gradMin.y);
-			
 			grad = imageLoad(gradients, ivec2(xx,yy)).rg;
 			location += directionVector;
-			xx = int(location.x);
-			yy = int(location.y);
-			maxG += vec2(abs(grad.x), abs(grad.y));
+			xx = int(round(location.x));
+			yy = int(round(location.y));
+			maxG += length(grad);
 		}
 
-		maxColour = (imageLoad(normalImage, ivec2(xx, yy)).rgb != vec3(0,0,0))?imageLoad(normalImage, ivec2(xx, yy)).rgb:imageLoad(resultImage, ivec2(xx, yy)).rgb;
+		maxColour = imageLoad(normalImage, ivec2(xx, yy)).rgb;//(imageLoad(normalImage, ivec2(xx, yy)).rgb != vec3(0,0,0))?imageLoad(normalImage, ivec2(xx, yy)).rgb:imageLoad(resultImage, ivec2(xx, yy)).rgb;
 
 		midG = (midG-minG)/(maxG-minG);
-		float mag = clamp(length(midG), 0.0, 1.0);
-		minColour *= (1.0-mag);
-		maxColour *= mag;
+		float mag = clamp(midG, 0.0, 1.0);
+		sumColour = (minColour != vec3(0,0,0) && maxColour != vec3(0,0,0))?vec4(minColour*(1-mag) + maxColour*mag, 1.0):sumColour;
 		
-		sumColour = (minColour != vec3(0,0,0) && maxColour != vec3(0,0,0))?vec4(minColour + maxColour, 1.0):sumColour;
+		//minColour *= (1.0-mag);
+		//maxColour *= mag;
+		
+		//sumColour = (minColour != vec3(0,0,0) && maxColour != vec3(0,0,0))?vec4(minColour + maxColour, 1.0):sumColour;
 	}
 
 	vec4 pixel = vec4(sumColour.rgb, 1.0);
