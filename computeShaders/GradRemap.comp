@@ -53,9 +53,6 @@ void main(){
 			minG = vec2(abs(grad.x), abs(grad.y));
 			midG += minG;
 		}
-		//while (!(abs(grad.x) < thresh && abs(grad.y) < thresh)){
-		//	
-		//}
 		
 		minColour = (imageLoad(normalImage, ivec2(xx, yy)).rgb != vec3(0,0,0))?imageLoad(normalImage, ivec2(xx, yy)).rgb:imageLoad(resultImage, ivec2(xx, yy)).rgb;
 
@@ -85,9 +82,6 @@ void main(){
 			yy = int(location.y);
 			maxG += vec2(abs(grad.x), abs(grad.y));
 		}
-		//while (!(abs(grad.x) < thresh && abs(grad.y) < thresh)){
-		//	
-		//}
 
 		maxColour = (imageLoad(normalImage, ivec2(xx, yy)).rgb != vec3(0,0,0))?imageLoad(normalImage, ivec2(xx, yy)).rgb:imageLoad(resultImage, ivec2(xx, yy)).rgb;
 
