@@ -18,12 +18,12 @@
 
 struct RemapParamObject {
 	// Kuwahara params
-	alignas(16) int kuwaharaKernelRadius;
+	alignas(4) int kuwaharaKernelRadius;
 	// We could potentially add zero cross/sharpness params but these values are also currently unused
 
 	// Averager and gradient remapper params
-	alignas(16) int averagerKernelRadius;
-	alignas(16) float gradientThreshold;
+	alignas(4) int averagerKernelRadius;
+	alignas(4) float gradientThreshold;
 };
 
 class RemapBackend {
@@ -49,6 +49,7 @@ public:
 
 	void setGradientThreshold(float thresh) {
 		params.gradientThreshold = thresh;
+		std::cout << params.gradientThreshold << std::endl;
 		updateParamBuffer();
 	}
 
@@ -58,8 +59,8 @@ public:
 	int minAveragerKernel = 2;
 	int maxAveragerKernel = 32;
 
-	float minGradientThreshold = 0.05f;
-	float maxGradientThreshold = 0.25f;
+	float minGradientThreshold = 0.02f;
+	float maxGradientThreshold = 0.1f;
 
 	void updateParamBuffer();
 	
@@ -128,7 +129,7 @@ public:
 
 		Slider* gradientThreshSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 		gradientThreshSlider->updateDisplay();
-		gradientThreshSlider->setSlideValues(remapper.minGradientThreshold, remapper.maxGradientThreshold, 0.06f);
+		gradientThreshSlider->setSlideValues(remapper.minGradientThreshold, remapper.maxGradientThreshold, 0.06f); 
 		gradientThreshSlider->setFloatCallback(gradientSliderFunction, false);
 		
 		column->addItem(outMap);

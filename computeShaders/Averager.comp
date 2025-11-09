@@ -13,7 +13,7 @@ layout(binding = 4) uniform RemapParamObject {
 
 void main(){
 	int kernelRadius = rpo.averagerKernelRadius; // Min value of this is 2
-	float thresh = rpo.gradientThreshold;
+	const float thresh = rpo.gradientThreshold;
 	const ivec2 imgResolution = imageSize(normalImage);
 
 	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
@@ -107,7 +107,7 @@ void main(){
 		}
 	}
 
-	sumColour = (sumColour != vec4(0,0,0,0))?sumColour:vec4(0.0, 0.0, 0.0, 1.0);//vec4(imageLoad(normalImage, pixelCoords).rgb, 1.0);
+	sumColour = (sumColour != vec4(0,0,0,0))?sumColour:vec4(imageLoad(normalImage, pixelCoords).rgb, 1.0);
 
 	vec4 pixel = vec4((sumColour.rgb/sumColour.w), 1.0);
 
