@@ -31,6 +31,9 @@ void RemapBackend::createBaseMaps() {
 	filter Kuwahara(std::vector<Texture*>{baseDiffuse}, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	Kuwahara.filterImage();
 	
+	filter SobelCombined(std::vector<Texture*>{Kuwahara.filterTarget[0]}, new SOBELCOMBINEDSHADER, VK_FORMAT_R16G16_SFLOAT);
+	SobelCombined.filterImage();
+
 	filter SobelX(std::vector<Texture*>{Kuwahara.filterTarget[0]}, new SOBELXSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
 	SobelX.filterImage();
 
@@ -46,8 +49,10 @@ void RemapBackend::createBaseMaps() {
 
 	xGradients = SobelX.filterTarget[0]->copyImage();
 	yGradients = SobelY.filterTarget[0]->copyImage();
+	gradients = SobelCombined.filterTarget[0]->copyImage();
 	
 	Kuwahara.cleanup();
+	SobelCombined.cleanup();
 	SobelX.cleanup();
 	SobelY.cleanup();
 }

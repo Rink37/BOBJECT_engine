@@ -27,3 +27,6 @@ C:/VulkanSDK/1.3.296.0/Bin/glslc.exe NormalGenerator.frag -o SobelXFrag.spv
 
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe SobelY.comp -o SobelYVert.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe NormalGenerator.frag -o SobelYFrag.spv
+
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe SobelCombined.comp -o SobelCombinedVert.spv
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe NormalGenerator.frag -o SobelCombinedFrag.spv

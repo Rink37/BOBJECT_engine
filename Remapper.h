@@ -10,6 +10,7 @@
 #include"include/Kuwahara.h"
 #include"include/SobelX.h"
 #include"include/SobelY.h"
+#include"include/SobelCombined.h"
 #include"include/ReferenceKuwahara.h"
 #include"include/Averager.h"
 #include"include/GradRemap.h"
@@ -86,6 +87,7 @@ private:
 
 	Texture* xGradients = nullptr;
 	Texture* yGradients = nullptr;
+	Texture* gradients = nullptr;
 
 	bool isSmootheNeeded = true;
 };
