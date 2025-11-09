@@ -74,7 +74,7 @@ public:
 		loadList = assets;
 	}
 
-	void setup(std::function<void(UIItem*)> loadObjectFunct, std::function<void(UIItem*)> pipelinefunction){
+	void setup(std::function<void(UIItem*)> loadObjectFunct, std::function<void(UIItem*)> pipelinefunction, std::function<void(float)> polarCallback, std::function<void(float)> azimuthCallback){
 		if (isSetup) {
 			return;
 		}
@@ -90,6 +90,9 @@ public:
 
 		imageData lb = LOADBUTTON;
 		Material* LoadBtnMat = newMaterial(&lb, "LoadBtn");
+
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
 
 		Arrangement* Renderbuttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.2f, 0.6f, 0.01f, ARRANGE_CENTER);
 
@@ -110,10 +113,22 @@ public:
 		Renderbuttons->addItem(getPtr(litRenderingButton));
 		Renderbuttons->addItem(getPtr(wireframeRenderingButton));
 
+		Slider* polarSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
+		polarSlider->updateDisplay();
+		polarSlider->setSlideValues(0.0f, 3.14159265f, 0.0f);
+		polarSlider->setFloatCallback(polarCallback, true);
+
+		Slider* azimuthSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
+		azimuthSlider->updateDisplay();
+		azimuthSlider->setSlideValues(0.0f, 6.283185307f, 0.0f);
+		azimuthSlider->setFloatCallback(azimuthCallback, true);
+
 		Arrangement* buttons = new Arrangement(ORIENT_VERTICAL, -1.0f, 1.0f, 0.1f, 0.25f, 0.0f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		buttons->addItem(getPtr(new Button(LoadBtnMat, loadObjectFunct)));
 		buttons->addItem(getPtr(Renderbuttons));
+		buttons->addItem(getPtr(polarSlider));
+		buttons->addItem(getPtr(azimuthSlider));
 
 		buttons->arrangeItems();
 		
@@ -425,6 +440,8 @@ private:
 	// Light position
 
 	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f);
+	float polarAngle, azimuthAngle = 0.0f;
+	float lightRadius = 5.0f;
 	
 	// colours in sRGB format (for krita users these colours match the sRGB-elle-V2-g10.icc profile)
 	glm::vec3 primaryColour = glm::vec3(0.42f, 0.06f, 0.11f);
@@ -477,6 +494,22 @@ private:
 
 	void testFloatFunct(float value) {
 		cout << value << endl;
+	}
+
+	void updateLightPolar(float angle) {
+		polarAngle = angle;
+		//cout << polarAngle << endl;
+		lightPos.x = lightRadius * sin(polarAngle) * cos(azimuthAngle);
+		lightPos.y = lightRadius * sin(polarAngle) * sin(azimuthAngle);
+		lightPos.z = lightRadius * cos(polarAngle);
+	}
+
+	void updateLightAzimuth(float angle) {
+		azimuthAngle = angle;
+		//cout << azimuthAngle << endl;
+		lightPos.x = lightRadius * sin(polarAngle) * cos(azimuthAngle);
+		lightPos.y = lightRadius * sin(polarAngle) * sin(azimuthAngle);
+		lightPos.z = lightRadius * cos(polarAngle);
 	}
 
 	void newSession(UIItem* owner) {
@@ -570,6 +603,9 @@ private:
 		std::function<void(UIItem*)> loadSessionFunc = std::bind(&Application::loadSave, this, placeholders::_1);
 		std::function<void(UIItem*)> newSessionFunc = std::bind(&Application::newSession, this, placeholders::_1);
 
+		std::function<void(float)> polarFunc = std::bind(&Application::updateLightPolar, this, placeholders::_1);
+		std::function<void(float)> azimuthFunc = std::bind(&Application::updateLightAzimuth, this, placeholders::_1);
+
 		objectMenu.setup();
 		mouseManager.addClickListener(objectMenu.getClickCallback());
 		widgets.push_back(&objectMenu);
@@ -582,9 +618,9 @@ private:
 		mouseManager.addClickListener(webcamMenu.getClickCallback());
 		widgets.push_back(&webcamMenu);
 
-		renderMenu.setup(loadObjectFunct, pipelinefunction);
+		renderMenu.setup(loadObjectFunct, pipelinefunction, polarFunc, azimuthFunc);
 		mouseManager.addClickListener(renderMenu.getClickCallback());
-		renderMenu.measureWindowPositions();
+		mouseManager.addPositionListener(renderMenu.getPosCallback());
 		widgets.push_back(&renderMenu);
 
 		surfaceMenu.setup(sConst, &staticObjects);
@@ -805,6 +841,7 @@ private:
 		ubo.backgroundColour = backgroundColour;
 
 		ubo.lightPosition = lightPos;
+		ubo.viewPosition = camera.pos;
 
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 

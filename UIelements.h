@@ -730,7 +730,7 @@ public:
 		switch (orientation) {
 		case (ORIENT_HORIZONTAL):
 			if (image != nullptr) {
-				image->UpdateVertices((posx - extentx) + (2 * extentx * slideValue), posy, sliderWidth, extenty);
+				image->UpdateVertices((posx - extentx) + (2 * extentx * slideValue), posy, extenty*sliderWidth, extenty);
 			}
 			if (backgroundImage != nullptr) {
 				backgroundImage->UpdateVertices(posx, posy, extentx, extenty * baseHeight);
@@ -738,7 +738,7 @@ public:
 			break;
 		case (ORIENT_VERTICAL):
 			if (image != nullptr) {
-				image->UpdateVertices(posx, (posy + extenty) - (2 * extenty * slideValue), extentx, sliderWidth);
+				image->UpdateVertices(posx, (posy + extenty) - (2 * extenty * slideValue), extentx, extentx*sliderWidth);
 			}
 			if (backgroundImage != nullptr) {
 				backgroundImage->UpdateVertices(posx, posy, extentx * baseHeight, extenty);
@@ -746,7 +746,7 @@ public:
 			break;
 		default:
 			if (image != nullptr) {
-				image->UpdateVertices((posx - extentx) + (2 * extentx * slideValue), posy, sliderWidth, extenty);
+				image->UpdateVertices((posx - extentx) + (2 * extentx * slideValue), posy, extenty*sliderWidth, extenty);
 			}
 			if (backgroundImage != nullptr) {
 				backgroundImage->UpdateVertices(posx, posy, extentx, extenty * baseHeight);
@@ -827,6 +827,15 @@ public:
 		}
 	}
 
+	void getImages(std::vector<UIImage*>& images, bool isUI) {
+		if (image != nullptr && image->texHeight > 1 && image->isGray == isUI) {
+			images.push_back(image.get());
+		}
+		if (backgroundImage != nullptr && backgroundImage->texHeight > 1 && backgroundImage->isGray == isUI) {
+			images.push_back(backgroundImage.get());
+		}
+	};
+
 	void cleanup() {
 		image->cleanup();
 		backgroundImage->cleanup();
@@ -857,8 +866,8 @@ private:
 	int orientation = ORIENT_HORIZONTAL;
 	int valueType = SLIDER_CONTINUOUS;
 
-	float sliderWidth = 0.05;
-	float baseHeight = 0.25;
+	float sliderWidth = 0.5;
+	float baseHeight = 0.2;
 
 	bool isHeld = false;
 

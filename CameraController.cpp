@@ -42,8 +42,8 @@ void Camera::updateCamera(GLFWwindow* window) {
 			isPanning = false;
 		}
 	}
-	distance = pow(getInstance().distance, 2)/defaultDistance;
+	distance = (getInstance().distance * getInstance().distance)/defaultDistance;
 	pos = glm::vec3(distance, 0.0f, 0.0f) * mat3(glm::rotate(mat4(1.0f), glm::radians(yrot), glm::vec3(0.0f, 1.0f, 0.0f))) * mat3(glm::rotate(mat4(1.0f), glm::radians(xrot), glm::vec3(0.0f, 0.0f, 1.0f))) + center;
+	//std::cout << pos.x << " " << pos.y << " " << pos.z << std::endl;
 	view = lookAt(pos, center, vec3(0.0f, 0.0f, 1.0f));
-
 }
