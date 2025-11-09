@@ -8,8 +8,8 @@
 
 #include"ImageProcessor.h"
 #include"include/Kuwahara.h"
-#include"include/SobelX.h"
-#include"include/SobelY.h"
+//#include"include/SobelX.h"
+//#include"include/SobelY.h"
 #include"include/SobelCombined.h"
 #include"include/ReferenceKuwahara.h"
 #include"include/Averager.h"

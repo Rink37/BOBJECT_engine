@@ -34,31 +34,19 @@ void RemapBackend::createBaseMaps() {
 	filter SobelCombined(std::vector<Texture*>{Kuwahara.filterTarget[0]}, new SOBELCOMBINEDSHADER, VK_FORMAT_R16G16_SFLOAT);
 	SobelCombined.filterImage();
 
-	filter SobelX(std::vector<Texture*>{Kuwahara.filterTarget[0]}, new SOBELXSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
-	SobelX.filterImage();
-
-	filter SobelY(std::vector<Texture*>{Kuwahara.filterTarget[0]}, new SOBELYSHADER, VK_FORMAT_R16G16B16A16_SFLOAT);
-	SobelY.filterImage();
-
-	if (xGradients != nullptr) {
-		xGradients->cleanup();
-		xGradients = nullptr;
-		yGradients->cleanup();
-		yGradients = nullptr;
+	if (gradients != nullptr) {
+		gradients->cleanup();
+		gradients = nullptr;
 	}
 
-	xGradients = SobelX.filterTarget[0]->copyImage();
-	yGradients = SobelY.filterTarget[0]->copyImage();
 	gradients = SobelCombined.filterTarget[0]->copyImage();
 	
 	Kuwahara.cleanup();
 	SobelCombined.cleanup();
-	SobelX.cleanup();
-	SobelY.cleanup();
 }
 
 void RemapBackend::performRemap() {
-	if (baseOSNormal == nullptr || xGradients == nullptr) {
+	if (baseOSNormal == nullptr || gradients == nullptr) {
 		return;
 	}
 
@@ -73,7 +61,7 @@ void RemapBackend::performRemap() {
 	}
 	
 	filteredOSNormal = gradRemap.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1);
-	filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	//filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 	Averager.cleanup();
 	gradRemap.cleanup();
@@ -121,7 +109,6 @@ void RemapUI::fullRemap(Texture*diffTex, Texture*OSNormTex) {
 
 void RemapUI::kuwaharaCallback(int kern) {
 	remapper.setKuwaharaKernel(kern);
-	//std::cout << "kuwahara" << std::endl;
 	remapper.createBaseMaps();
 	remapper.performRemap();
 	remapper.smootheResult();
@@ -132,7 +119,6 @@ void RemapUI::kuwaharaCallback(int kern) {
 
 void RemapUI::averagerCallback(int kern) {
 	remapper.setAveragerKernel(kern);
-	//std::cout << "Averager" << std::endl;
 	remapper.performRemap();
 	remapper.smootheResult();
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper.filteredOSNormal), "RemapOSMat");
@@ -142,7 +128,6 @@ void RemapUI::averagerCallback(int kern) {
 
 void RemapUI::gradientCallback(float thresh) {
 	remapper.setGradientThreshold(thresh);
-	//std::cout << "Gradient" << std::endl;
 	remapper.performRemap();
 	remapper.smootheResult();
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper.filteredOSNormal), "RemapOSMat");
