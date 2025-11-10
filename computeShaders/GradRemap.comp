@@ -22,7 +22,7 @@ void main(){
 
 	vec4 sumColour = vec4(normPix, 1.0f);
 
-	if (!(abs(grad.x) < thresh && abs(grad.y) < thresh)){
+	if (length(grad) >= thresh || normPix == vec3(0,0,0)){
 		vec2 directionVector = grad;
 		float sf = (max(grad.x, grad.y) > abs(min(grad.x, grad.y)))?max(grad.x, grad.y):min(grad.x, grad.y);
 		directionVector /= sf;
@@ -36,7 +36,7 @@ void main(){
 		vec3 maxColour;
 
 		for (int i = 0; i != maxDist; i++){
-			if (abs(grad.x) < thresh && abs(grad.y) < thresh){
+			if (length(grad) < thresh){
 				break;
 			}
 			grad = imageLoad(gradients, ivec2(xx, yy)).rg;
@@ -59,7 +59,7 @@ void main(){
 		maxG = midG - length(grad);
 		
 		for (int i = 0; i != maxDist; i++){
-			if (abs(grad.x) < thresh && abs(grad.y) < thresh){
+			if (length(grad) < thresh){
 				break;
 			}
 			grad = imageLoad(gradients, ivec2(xx,yy)).rg;
