@@ -135,4 +135,18 @@ extern unsigned char WebcamViewButtonBytes[];
 
 #define WEBCAMVIEWBUTTON imageData(WebcamViewButtonWidth, WebcamViewButtonHeight, WebcamViewButtonChannels, WebcamViewButtonBytes )
 
+extern const int CancelButtonWidth;
+extern const int CancelButtonHeight;
+extern const int CancelButtonChannels;
+extern unsigned char CancelButtonBytes[];
+
+#define CANCELBUTTON imageData(CancelButtonWidth, CancelButtonHeight, CancelButtonChannels, CancelButtonBytes )
+
+extern const int FinishButtonWidth;
+extern const int FinishButtonHeight;
+extern const int FinishButtonChannels;
+extern unsigned char FinishButtonBytes[];
+
+#define FINISHBUTTON imageData(FinishButtonWidth, FinishButtonHeight, FinishButtonChannels, FinishButtonBytes )
+
 #endif

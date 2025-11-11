@@ -7,7 +7,6 @@
 #include <map>
 #include <vector>
 #include <functional>
-//#include "UIelements.h"
 
 #define NO_EVENT 0
 #define PRESS_EVENT 1
@@ -80,9 +79,12 @@ public:
 
 	using Listener = std::function<bool(double, double, int)>;
 
-	void addClickListener(const Listener&);
+	int addClickListener(const Listener&);
 
-	void addPositionListener(const Listener&);
+	int addPositionListener(const Listener&);
+
+	void removeClickListener(const Listener&);
+	void removePositionListener(const Listener&);
 
 	void checkClickEvents(int);
 	void checkPositionEvents();

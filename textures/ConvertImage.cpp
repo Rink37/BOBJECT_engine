@@ -182,6 +182,10 @@ int main(int argc, char* argv[]){
         fname = string("WebcamViewButton.png");
         fnames.push_back(fname);
         //loadAndWriteFile(string("C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\")+fname);
+        fname = string("CancelButton.png");
+        fnames.push_back(fname);
+        fname = string("FinishButton.png");
+        fnames.push_back(fname);
         loadAndWriteFiles(base, fnames);
         return 0;
     }

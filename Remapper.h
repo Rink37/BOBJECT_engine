@@ -44,7 +44,6 @@ public:
 
 	void setAveragerKernel(int kern) {
 		params.averagerKernelRadius = kern;
-		std::cout << kern << std::endl;
 		updateParamBuffer();
 	}
 
@@ -134,11 +133,26 @@ public:
 		gradientThreshSlider->updateDisplay();
 		gradientThreshSlider->setSlideValues(remapper.minGradientThreshold, remapper.maxGradientThreshold, 0.06f); 
 		gradientThreshSlider->setFloatCallback(gradientSliderFunction, false);
+
+		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
+
+		imageData finish = FINISHBUTTON;
+		Material* finishMat = newMaterial(&finish, "FinishBtn");
+
+		imageData cancel = CANCELBUTTON;
+		Material* cancelMat = newMaterial(&cancel, "CancelBtn");
+
+		Button* finishButton = new Button(finishMat);
+		Button* cancelButton = new Button(cancelMat);
+
+		endButtons->addItem(getPtr(cancelButton));
+		endButtons->addItem(getPtr(finishButton));
 		
 		column->addItem(outMap);
 		column->addItem(getPtr(kuwaharaKernSlider));
 		column->addItem(getPtr(averagerKernSlider));
 		column->addItem(getPtr(gradientThreshSlider));
+		column->addItem(getPtr(endButtons));
 
 		column->updateDisplay();
 

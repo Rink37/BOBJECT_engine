@@ -482,8 +482,6 @@ private:
 		mouseManager.addClickListener(remapper.getClickCallback());
 		mouseManager.addPositionListener(remapper.getPosCallback());
 
-		cout << "Set up remapper" << endl;
-
 		surfaceMenu.hide();
 		
 		widgets.push_back(&remapper);
@@ -491,12 +489,8 @@ private:
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 
-	void testIntFunct(int value) {
-		cout << value << endl;
-	}
-
-	void testFloatFunct(float value) {
-		cout << value << endl;
+	void destroyRemapper(UIItem* owner) {
+		remapper.cleanup();
 	}
 
 	void updateLightPolar(float angle) {
