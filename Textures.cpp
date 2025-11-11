@@ -7,12 +7,20 @@ bool Texture::hasStencilComponent(VkFormat format) {
 	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-Texture* Texture::copyImage() {
-	// Full copy without modification
-	return copyImage(textureFormat, textureLayout, textureUsage, textureTiling, textureMemFlags, mipLevels);
+Texture* Texture::copyImage(uint32_t width, uint32_t height) {
+	return copyImage(textureFormat, textureLayout, textureUsage, textureTiling, textureMemFlags, mipLevels, width, height);
 }
 
-Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, VkMemoryPropertyFlags memFlags, uint32_t mipLevels)
+Texture* Texture::copyImage() {
+	// Full copy without modification
+	return copyImage(textureFormat, textureLayout, textureUsage, textureTiling, textureMemFlags, mipLevels, texWidth, texHeight);
+}
+
+Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, VkMemoryPropertyFlags memFlags, uint32_t mipLevels) {
+	return copyImage(format, layout, usage, tiling, memFlags, mipLevels, texWidth, texHeight);
+}
+
+Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, VkMemoryPropertyFlags memFlags, uint32_t mipLevels, uint32_t width, uint32_t height)
 {
 	Texture* copy = new Texture;
 	
@@ -33,8 +41,8 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	}
 
 	copy->textureFormat = format;
-	copy->texWidth = texWidth;
-	copy->texHeight = texHeight;
+	copy->texWidth = width;
+	copy->texHeight = height;
 	copy->textureTiling = tiling;
 	copy->textureUsage = usage;
 	copy->mipLevels = mipLevels;
@@ -75,17 +83,21 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	if (supportsBlit)
 	{
-		VkOffset3D blitSize;
-		blitSize.x = texWidth;
-		blitSize.y = texHeight;
-		blitSize.z = 1;
+		VkOffset3D srcBlitSize;
+		srcBlitSize.x = texWidth;
+		srcBlitSize.y = texHeight;
+		srcBlitSize.z = 1;
+		VkOffset3D dstBlitSize;
+		dstBlitSize.x = width;
+		dstBlitSize.y = height;
+		dstBlitSize.z = 1;
 		VkImageBlit imageBlitRegion{};
 		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		imageBlitRegion.srcSubresource.layerCount = 1;
-		imageBlitRegion.srcOffsets[1] = blitSize;
+		imageBlitRegion.srcOffsets[1] = srcBlitSize;
 		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		imageBlitRegion.dstSubresource.layerCount = 1;
-		imageBlitRegion.dstOffsets[1] = blitSize;
+		imageBlitRegion.dstOffsets[1] = dstBlitSize;
 
 		vkCmdBlitImage(
 			copyCmd,
@@ -152,7 +164,7 @@ Texture* Texture::copyTexture(){
 }
 
 Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t mipLevels) {
-	Texture* copy = copyImage(format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, usage, tiling, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT , mipLevels);
+	Texture* copy = copyImage(format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, usage, tiling, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT , mipLevels, texWidth, texHeight);
 	copy->textureLayout = layout;
 	copy->generateMipmaps();
 	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);

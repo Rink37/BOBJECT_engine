@@ -90,6 +90,8 @@ private:
 	Texture* xGradients = nullptr;
 	Texture* yGradients = nullptr;
 	Texture* gradients = nullptr;
+
+	uint32_t baseHeight, baseWidth;
 };
 
 class RemapUI : public Widget {

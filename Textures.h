@@ -37,8 +37,10 @@ struct Texture {
 	void destroyCVMat();
 	void transitionMatToImg();
 
+	Texture* copyImage(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, VkMemoryPropertyFlags, uint32_t, uint32_t, uint32_t);
 	Texture* copyImage(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, VkMemoryPropertyFlags, uint32_t);
 	Texture* copyImage();
+	Texture* copyImage(uint32_t, uint32_t);
 	Texture* copyTexture();
 	Texture* copyTexture(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, uint32_t);
 
