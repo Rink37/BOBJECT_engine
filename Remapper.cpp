@@ -109,6 +109,8 @@ void RemapBackend::cleanup() {
 	if (filteredOSNormal != nullptr) {
 		filteredOSNormal->cleanup();
 	}
+	vkDestroyBuffer(Engine::get()->device, paramBuffer, nullptr);
+	vkFreeMemory(Engine::get()->device, paramBufferMemory, nullptr);
 }
 
 void RemapUI::fullRemap(Texture*diffTex, Texture*OSNormTex) {
