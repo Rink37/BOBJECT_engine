@@ -142,7 +142,9 @@ void surfaceConstructor::contextConvert() {
 	//OSNormTex->destroyCVMat();
 }
 
-void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>* objects) {
+void SurfaceMenu::setup(surfaceConstructor* surfConst, std::vector<StaticObject>* objects, std::function<void(UIItem*)> remapFunc) {
+
+	remapCallback = remapFunc;
 
 	sConst = surfConst;
 	sConst->loadList = loadList;
@@ -389,7 +391,7 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	std::function<void(UIItem*)> toggleType = bind(&SurfaceMenu::toggleNormalType, this, placeholders::_1);
 	std::function<void(UIItem*)> saveNorm = bind(&SurfaceMenu::saveNormalImage, this, placeholders::_1);
 	std::function<void(UIItem*)> loadNorm = bind(&SurfaceMenu::loadNormalImage, this, placeholders::_1);
-	std::function<void(UIItem*)> convertImg = bind(&SurfaceMenu::contextConvertMap, this, placeholders::_1);
+	//std::function<void(UIItem*)> convertImg = bind(&SurfaceMenu::contextConvertMap, this, placeholders::_1);
 
 	sConst->normalType = 0;
 
@@ -448,7 +450,7 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	normalTog->image->matidx = 1;
 
 	Checkbox* mapTypeToggle = new Checkbox(osMat, tsMat, toggleType);
-	Button* copyLayout = new Button(dtnMat, convertImg);
+	Button* copyLayout = new Button(dtnMat, remapCallback);
 	Button* normalLoad = new Button(openMat, loadNorm);
 	Button* normalSave = new Button(saveMat, saveNorm);
 

@@ -28,10 +28,6 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 		width = static_cast<uint32_t>(static_cast<float>(baseWidth) / static_cast<float>(baseHeight) * 1024.0f);
 	}
 
-	std::cout << width << " " << height << std::endl;
-
-	//OSNormTex->getCVMat();
-	//cv::resize(OSNormTex->texMat, OSNormTex->texMat, cv::Size(diffTex->texWidth, diffTex->texHeight));
 	baseDiffuse = diffTex->copyImage(VK_FORMAT_R8G8B8A8_UNORM, diffTex->textureLayout, diffTex->textureUsage, diffTex->textureTiling, diffTex->textureMemFlags, 1, width, height);
 	baseOSNormal = OSNormTex->copyImage(width, height);
 }
@@ -77,7 +73,7 @@ void RemapBackend::performRemap() {
 	if (!smoothePass) {
 		filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	}
-	
+
 	Averager.cleanup();
 	gradRemap.cleanup();
 }
@@ -86,7 +82,6 @@ void RemapBackend::smootheResult() {
 	if (baseDiffuse == nullptr || filteredOSNormal == nullptr) {
 		return;
 	}
-	std::cout << "Smoothing" << std::endl;
 	filter referenceKuwahara(std::vector<Texture*>{baseDiffuse, filteredOSNormal}, new REFERENCEKUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	referenceKuwahara.filterImage();
 

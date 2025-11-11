@@ -385,10 +385,8 @@ public:
 		}
 		std::function<void()> tomogFunct = bind(&Application::toggleTomogMenu, this);
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
-		std::function<void()> remapperFunct = bind(&Application::createRemapper, this);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
-		keyBinds.addBinding(GLFW_KEY_R, remapperFunct, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
@@ -479,7 +477,7 @@ private:
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 
-	void createRemapper() {
+	void createRemapper(UIItem* owner) {
 		remapper.setup(sConst->diffTex, sConst->OSNormTex);
 		mouseManager.addClickListener(remapper.getClickCallback());
 		mouseManager.addPositionListener(remapper.getPosCallback());
@@ -607,6 +605,7 @@ private:
 		std::function<void(UIItem*)> loadObjectFunct = std::bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
 		std::function<void(UIItem*)> loadSessionFunc = std::bind(&Application::loadSave, this, placeholders::_1);
 		std::function<void(UIItem*)> newSessionFunc = std::bind(&Application::newSession, this, placeholders::_1);
+		std::function<void(UIItem*)> remapCallback = std::bind(&Application::createRemapper, this, placeholders::_1);
 
 		std::function<void(float)> polarFunc = std::bind(&Application::updateLightPolar, this, placeholders::_1);
 		std::function<void(float)> azimuthFunc = std::bind(&Application::updateLightAzimuth, this, placeholders::_1);
@@ -628,7 +627,7 @@ private:
 		mouseManager.addPositionListener(renderMenu.getPosCallback());
 		widgets.push_back(&renderMenu);
 
-		surfaceMenu.setup(sConst, &staticObjects);
+		surfaceMenu.setup(sConst, &staticObjects, remapCallback);
 		mouseManager.addClickListener(surfaceMenu.getClickCallback());
 		widgets.push_back(&surfaceMenu);
 

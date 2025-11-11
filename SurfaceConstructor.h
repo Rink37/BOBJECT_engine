@@ -229,7 +229,7 @@ public:
 		loadList = assets;
 	}
 
-	void setup(surfaceConstructor*, std::vector<StaticObject>*);
+	void setup(surfaceConstructor*, std::vector<StaticObject>*, std::function<void(UIItem*)>);
 
 	void createNormalMenu(UIItem*);
 
@@ -262,6 +262,8 @@ public:
 
 private:
 	std::vector<StaticObject>* staticObjects = nullptr;
+
+	std::function<void(UIItem*)> remapCallback;
 
 	bool hasNormal = false;
 	bool normalsEnabled = true; // DEBUG - lets us disable any UI for normals
