@@ -8,8 +8,6 @@
 
 #include"ImageProcessor.h"
 #include"include/Kuwahara.h"
-//#include"include/SobelX.h"
-//#include"include/SobelY.h"
 #include"include/SobelCombined.h"
 #include"include/ReferenceKuwahara.h"
 #include"include/Averager.h"
@@ -58,7 +56,7 @@ public:
 	int maxKuwaharaKernel = 32;
 
 	int minAveragerKernel = 2;
-	int maxAveragerKernel = 64;
+	int maxAveragerKernel = 128;
 
 	float minGradientThreshold = 0.02f;
 	float maxGradientThreshold = 0.1f;
@@ -78,7 +76,7 @@ public:
 	Texture* filteredOSNormal = nullptr;
 	Texture* baseDiffuse = nullptr;
 
-	bool smoothePass = false;
+	bool smoothePass = true;
 private:
 	RemapParamObject params{};
 

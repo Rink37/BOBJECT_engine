@@ -1,0 +1,230 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout(binding = 0, rgba8) uniform readonly image2D normalImage;
+layout(binding = 1, rg16f) uniform readonly image2D gradients;
+layout(binding = 2, rgba8) uniform image2D resultImage;
+layout(binding = 3) uniform RemapParamObject {
+	int kuwaharaKernelRadius;
+	int averagerKernelRadius;
+	float gradientThreshold;
+} rpo;
+
+void main(){
+	int kernelRadius = rpo.averagerKernelRadius; // Min value of this is 2
+	const float thresh = rpo.gradientThreshold;
+	const ivec2 imgResolution = imageSize(normalImage);
+
+	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+
+	vec4 sumColour = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+
+	vec2 grad = imageLoad(gradients, pixelCoords).rg;
+	vec3 normPix = imageLoad(normalImage, pixelCoords).rgb;
+
+	float tsf = 1.0f;
+	float bsf = 1.0f;
+	float lsf = 1.0f;
+	float rsf = 1.0f;
+
+	if (length(grad) < thresh && normPix != vec3(0,0,0)){
+		sumColour.rgb += normPix.rgb;
+		sumColour.w += 1.0f;
+		for (int r = 1; r != kernelRadius+1; r++){
+			
+			grad = (lsf == 1.0f)?imageLoad(gradients, ivec2(pixelCoords.x - r,pixelCoords.y)).rg:grad;
+			lsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*lsf:0.0f;
+			normPix = (lsf == 1.0f)?imageLoad(normalImage, ivec2(pixelCoords.x - r, pixelCoords.y)).rgb:normPix;
+			sumColour.rgb += normPix.rgb*lsf;
+			sumColour.w += lsf;
+
+			grad = (rsf == 1.0f)?imageLoad(gradients, ivec2(pixelCoords.x + r,pixelCoords.y)).rg:grad;
+			rsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*rsf:0.0f;
+			normPix = (rsf == 1.0f)?imageLoad(normalImage, ivec2(pixelCoords.x + r, pixelCoords.y)).rgb:normPix;
+			sumColour.rgb += normPix.rgb*rsf;
+			sumColour.w += rsf;
+
+			grad = (bsf == 1.0f)?imageLoad(gradients, ivec2(pixelCoords.x, pixelCoords.y - r)).rg:grad;
+			bsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*bsf:0.0f;
+			normPix = (bsf == 1.0f)?imageLoad(normalImage, ivec2(pixelCoords.x, pixelCoords.y - r)).rgb:normPix;
+			sumColour.rgb += normPix.rgb*bsf;
+			sumColour.w += bsf;
+
+			grad = (tsf == 1.0f)?imageLoad(gradients, ivec2(pixelCoords.x, pixelCoords.y + r)).rg:grad;
+			tsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*tsf:0.0f;
+			normPix = (tsf == 1.0f)?imageLoad(normalImage, ivec2(pixelCoords.x, pixelCoords.y + r)).rgb:normPix;
+			sumColour.rgb += normPix.rgb*tsf;
+			sumColour.w += tsf;
+
+		}
+
+		for (int k = 0; k != kernelRadius-1; k++){
+			lsf = 1.0f;
+			tsf = 1.0f;
+			ivec2 coords = ivec2(pixelCoords.x-k, pixelCoords.y+k);
+			for (int r = 0; r != kernelRadius - k; r++){
+				
+				grad = (lsf == 1.0f)?imageLoad(gradients, ivec2(coords.x - r,coords.y)).rg:grad;
+				lsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*lsf:0.0f;
+				normPix = (lsf == 1.0f)?imageLoad(normalImage, ivec2(coords.x - r, coords.y)).rgb:normPix;
+				sumColour.rgb += normPix.rgb*lsf;
+				sumColour.w += lsf;
+
+				grad = (tsf == 1.0f)?imageLoad(gradients, ivec2(coords.x, coords.y + r)).rg:grad;
+				tsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*tsf:0.0f;
+				normPix = (tsf == 1.0f)?imageLoad(normalImage, ivec2(coords.x, coords.y + r)).rgb:normPix;
+				sumColour.rgb += normPix.rgb*tsf;
+				sumColour.w += tsf;
+
+			}
+			tsf = 1.0f;
+			rsf = 1.0f;
+			coords = ivec2(pixelCoords.x+k, pixelCoords.y+k);
+			for (int r = 0; r != kernelRadius - k; r++){
+				
+				grad = (rsf == 1.0f)?imageLoad(gradients, ivec2(coords.x + r,coords.y)).rg:grad;
+				rsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*rsf:0.0f;
+				normPix = (rsf == 1.0f)?imageLoad(normalImage, ivec2(coords.x + r, coords.y)).rgb:normPix;
+				sumColour.rgb += normPix.rgb*rsf;
+				sumColour.w += rsf;
+
+				grad = (tsf == 1.0f)?imageLoad(gradients, ivec2(coords.x, coords.y + r)).rg:grad;
+				tsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*tsf:0.0f;
+				normPix = (tsf == 1.0f)?imageLoad(normalImage, ivec2(coords.x, coords.y + r)).rgb:normPix;
+				sumColour.rgb += normPix.rgb*tsf;
+				sumColour.w += tsf;
+
+			}
+			lsf = 1.0f;
+			bsf = 1.0f;
+			coords = ivec2(pixelCoords.x-k, pixelCoords.y-k);
+			for (int r = 0; r != kernelRadius - k; r++){
+				
+				grad = (lsf == 1.0f)?imageLoad(gradients, ivec2(coords.x - r,coords.y)).rg:grad;
+				lsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*lsf:0.0f;
+				normPix = (lsf == 1.0f)?imageLoad(normalImage, ivec2(coords.x - r, coords.y)).rgb:normPix;
+				sumColour.rgb += normPix.rgb*lsf;
+				sumColour.w += lsf;
+
+				grad = (bsf == 1.0f)?imageLoad(gradients, ivec2(coords.x, coords.y - r)).rg:grad;
+				bsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*bsf:0.0f;
+				normPix = (bsf == 1.0f)?imageLoad(normalImage, ivec2(coords.x, coords.y - r)).rgb:normPix;
+				sumColour.rgb += normPix.rgb*bsf;
+				sumColour.w += bsf;
+
+			}
+			rsf = 1.0f;
+			bsf = 1.0f;
+			coords = ivec2(pixelCoords.x+k, pixelCoords.y-k);
+			for (int r = 0; r != kernelRadius - k; r++){
+				
+				grad = (rsf == 1.0f)?imageLoad(gradients, ivec2(coords.x + r,coords.y)).rg:grad;
+				rsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*rsf:0.0f;
+				normPix = (rsf == 1.0f)?imageLoad(normalImage, ivec2(coords.x + r, coords.y)).rgb:normPix;
+				sumColour.rgb += normPix.rgb*rsf;
+				sumColour.w += rsf;
+
+				grad = (bsf == 1.0f)?imageLoad(gradients, ivec2(coords.x, coords.y - r)).rg:grad;
+				bsf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*bsf:0.0f;
+				normPix = (bsf == 1.0f)?imageLoad(normalImage, ivec2(coords.x, coords.y - r)).rgb:normPix;
+				sumColour.rgb += normPix.rgb*bsf;
+				sumColour.w += bsf;
+
+			}
+		}
+	}
+
+	//if (length(grad) < thresh){
+	//	sf =  (normPix != vec3(0,0,0))?1.0f:0.0f;
+	//	sumColour.rgb += normPix*sf;
+	//	sumColour.w += sf;
+	//	for (int x = pixelCoords.x-1; x != pixelCoords.x-kernelRadius; x--){
+	//		grad = imageLoad(gradients, ivec2(x, pixelCoords.y)).rg;
+	//		if (length(grad)<thresh){//abs(grad.x) < thresh && abs(grad.y) < thresh){
+	//			normPix = imageLoad(normalImage, ivec2(x, pixelCoords.y)).rgb;
+	//			sf = (normPix != vec3(0,0,0))?1.0f:0.0f;
+	//			sumColour.rgb += normPix*sf;
+	//			sumColour.w += sf;
+	//			sf = 1.0f;
+	//			for (int y = pixelCoords.y-1; y != pixelCoords.y-kernelRadius; y--){
+					
+	//				grad = imageLoad(gradients, ivec2(x,y)).rg;
+	//				
+	//				normPix = imageLoad(normalImage, ivec2(x, y)).rgb;
+	//				sf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*sf:0.0f;
+	//				
+	//				sumColour.rgb += normPix*sf;
+	//				sumColour.w += sf;
+
+	//				if (sf == 0.0f){
+	//					break;
+	//				}
+	//			}
+	//			sf = 1.0f;
+	//			for (int y = pixelCoords.y+1; y != pixelCoords.y+kernelRadius; y++){
+
+	//				grad = imageLoad(gradients, ivec2(x,y)).rg;
+					
+	//				normPix = imageLoad(normalImage, ivec2(x, y)).rgb;
+	//				sf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*sf:0.0f;
+					
+	//				sumColour.rgb += normPix*sf;
+	//				sumColour.w += sf;
+
+	//				if (sf == 0.0f){
+	//					break;
+	//				}
+	//			}
+	//		} else {
+	//			break;
+	//		}
+	//	}
+	//	for (int x = pixelCoords.x+1; x != pixelCoords.x+kernelRadius; x++){
+	//		grad = imageLoad(gradients, ivec2(x, pixelCoords.y)).rg;
+	//		if (length(grad) < thresh){
+	//			normPix = imageLoad(normalImage, ivec2(x, pixelCoords.y)).rgb;
+	//			sf = (normPix != vec3(0,0,0))?1.0f:0.0f;
+	//			sumColour.rgb += normPix*sf;
+	//			sumColour.w += sf;
+	//			sf = 1.0f;
+	//			for (int y = pixelCoords.y-1; y != pixelCoords.y-kernelRadius; y--){
+
+	//				grad = imageLoad(gradients, ivec2(x,y)).rg;
+	//				
+	//				normPix = imageLoad(normalImage, ivec2(x, y)).rgb;
+	//				sf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*sf:0.0f;
+	//				
+	//				sumColour.rgb += normPix*sf;
+	//				sumColour.w += sf;
+
+	//				if (sf == 0.0f){
+	//					break;
+	//				}
+	//			}
+	//			sf = 1.0f;
+	//			for (int y = pixelCoords.y+1; y != pixelCoords.y+kernelRadius; y++){
+
+	//				grad = imageLoad(gradients, ivec2(x,y)).rg;
+					
+	//				normPix = imageLoad(normalImage, ivec2(x, y)).rgb;
+	//				sf = (length(grad) < thresh && normPix != vec3(0,0,0))?1.0f*sf:0.0f;
+					
+	//				sumColour.rgb += normPix*sf;
+	//				sumColour.w += sf;
+
+	//				if (sf == 0.0f){
+	//					break;
+	//				}
+	//			}
+	//		} else {
+	//			break;
+	//		}
+	//	}
+	//}
+
+	//sumColour = (sumColour != vec4(0,0,0,0))?sumColour:vec4(0,0,0,1);//vec4(imageLoad(normalImage, pixelCoords).rgb, 1.0);
+
+	vec4 pixel = vec4((sumColour.rgb/sumColour.w), 1.0);
+
+	imageStore(resultImage, pixelCoords, pixel);
+}

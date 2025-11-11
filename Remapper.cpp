@@ -50,10 +50,13 @@ void RemapBackend::performRemap() {
 		return;
 	}
 
-	filter Averager(std::vector<Texture*>{baseOSNormal, gradients}, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
-	Averager.filterImage();
+	filter HAverager(std::vector<Texture*>{baseOSNormal, gradients}, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+	HAverager.filterImage();
 
-	filter gradRemap(std::vector<Texture*>{Averager.filterTarget[0], gradients}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+	//filter VAverager(std::vector<Texture*>{HAverager.filterTarget[0], gradients}, new VAVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+	//VAverager.filterImage();
+
+	filter gradRemap(std::vector<Texture*>{HAverager.filterTarget[0], gradients}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	gradRemap.filterImage();
 
 	if (filteredOSNormal != nullptr) {
@@ -65,7 +68,8 @@ void RemapBackend::performRemap() {
 		filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 	
-	Averager.cleanup();
+	HAverager.cleanup();
+	//VAverager.cleanup();
 	gradRemap.cleanup();
 }
 
