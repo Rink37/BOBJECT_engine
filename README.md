@@ -39,17 +39,29 @@ If the webcam view is enabled, the save function will capture a screenshot of th
 
 The webcam view and loaded image can be switched between using the camera toggle next to each map name.
 
-### Generate Maps
-The normal map component can also generate maps from the object. The object-space map of the mesh normals is generated automatically, but any OS map can be converted to a tangent-space map by clicking the button marked 'OS' so that it changes to 'TS'.
+### Generate and Translate Normal Maps
+The normal map component can also generate maps from the object. The object-space (OS) map of the mesh normals is generated automatically, but any OS map can be converted to a tangent-space (TS) map by clicking the button marked 'OS' so that it changes to 'TS'. This function can also be inverted, allowing conversion from a TS map to an OS map by clicking the button again.
 
 > [!Note]
-> This function is currently not invertible (this will change soon). So if you load a tangent space map while the icon is 'TS' you can't convert it to an object space map. It will just load the last default.
+> This function has no ability to determine what type of normal is loaded and has no option to change the type of the normal after it has been loaded. Users must set the OS/TS button to the correct state before loading a map of either type, otherwise lighting and space translation functions will not work as expected.
+
+## Remap Normals to Match Diffuse Brushstrokes
+The app contains an algorithm which can be used to 'remap' an object-space normal so that individual brushstrokes in the diffuse appear flatly lit. This process is used to imitate the effect of hand-painted normals but to ensure that the normal vectors are correct to a model and appear to match with a diffuse. To use this function, load a diffuse image for your model (the webcam view will not work) and generate an OS normal map. Then, clicking the 'Diff->Norm' button will open a new UI panel where you can use sliders to modify the parameters of the algorithm, and then hitting finish closes the remap menu and applies the map as your current OS map, which can then be saved. 
+
+The function of the sliders is as follows:
+1.Search Size: Modifies the area that is searched over when seeking brushstrokes - smaller values lead to smaller individually lit brushstrokes and vice-versa. This parameter should be adjusted until the light doesn't appear to be broken up over the surface of each brushstroke.
+2.Stroke Flatness: Modifies the extent to which each stroke is flattened - smaller values mean that the brushstrokes will appear more rounded and higher values make the brushstrokes appear more uniformly lit.
+3.Edge sharpness: Modifies how sharp the border between brushstrokes needs to be before the algorithm identifies them as distinct. Small values will mean less smooth transitions between separate brushstrokes, and larger values will make brushstrokes appear less harsh. 
+
+>[!Note]
+> The remapping algorithm currently has a maximum diffuse resolution limit of 1024px height due to the risks of GPU timeout when using some of the more complex compute shaders used in the remap pipeline. Larger diffuse images can be loaded and will not cause issues, but the remapper will downscale them before performing any filtering and then upscale them to the original dimensions after, yielding no quality improvement from larger diffuse images. 
 
 ## FAQ
 
 **Can the webcam device be changed?** — No, not yet, though this is something I aim to add soon.
 
 ## TODO
-- [ ] I'm working on a function to remap a normal map using a diffuse texture, but this isn't fully implemented yet, so I've disabled it in the release build.
-- [ ] Converting a tangent space map while the 'TS' icon is active to an object space map
+- [x] Remapping normals using the diffuse texture.
+- [x] Converting a tangent space map while the 'TS' icon is active to an object space map
 - [ ] Changeable webcam devices
+- [ ] Implement basic tomography functionality to extract information about the physical surface of the painting to be used in rendering
