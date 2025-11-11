@@ -149,4 +149,25 @@ extern unsigned char FinishButtonBytes[];
 
 #define FINISHBUTTON imageData(FinishButtonWidth, FinishButtonHeight, FinishButtonChannels, FinishButtonBytes )
 
+extern const int EdgeSharpnessTextWidth;
+extern const int EdgeSharpnessTextHeight;
+extern const int EdgeSharpnessTextChannels;
+extern unsigned char EdgeSharpnessTextBytes[];
+
+#define EDGESHARPNESSTEXT imageData(EdgeSharpnessTextWidth, EdgeSharpnessTextHeight, EdgeSharpnessTextChannels, EdgeSharpnessTextBytes )
+
+extern const int SearchSizeTextWidth;
+extern const int SearchSizeTextHeight;
+extern const int SearchSizeTextChannels;
+extern unsigned char SearchSizeTextBytes[];
+
+#define SEARCHSIZETEXT imageData(SearchSizeTextWidth, SearchSizeTextHeight, SearchSizeTextChannels, SearchSizeTextBytes )
+
+extern const int StrokeFlatnessTextWidth;
+extern const int StrokeFlatnessTextHeight;
+extern const int StrokeFlatnessTextChannels;
+extern unsigned char StrokeFlatnessTextBytes[];
+
+#define STROKEFLATNESSTEXT imageData(StrokeFlatnessTextWidth, StrokeFlatnessTextHeight, StrokeFlatnessTextChannels, StrokeFlatnessTextBytes )
+
 #endif

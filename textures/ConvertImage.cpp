@@ -186,6 +186,13 @@ int main(int argc, char* argv[]){
         fnames.push_back(fname);
         fname = string("FinishButton.png");
         fnames.push_back(fname);
+        fname = string("EdgeSharpnessText.png");
+        fnames.push_back(fname);
+        fname = string("SearchSizeText.png");
+        fnames.push_back(fname);
+        fname = string("StrokeFlatnessText.png");
+        fnames.push_back(fname);
+        
         loadAndWriteFiles(base, fnames);
         return 0;
     }

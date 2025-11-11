@@ -118,6 +118,23 @@ public:
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
+		imageData searchSize = SEARCHSIZETEXT;
+		Material* searchSizeMat = newMaterial(&searchSize, "SearchSizeText");
+
+		imageData flatness = STROKEFLATNESSTEXT;
+		Material* flatnessMat = newMaterial(&flatness, "FlatnessText");
+
+		imageData sharpness = EDGESHARPNESSTEXT;
+		Material* sharpnessMat = newMaterial(&sharpness, "SharpnessText");
+
+		Button* searchSizeBtn = new Button(searchSizeMat);
+		Button* flatnessBtn = new Button(flatnessMat);
+		Button* sharpnessBtn = new Button(sharpnessMat);
+
+		Arrangement* kuwaharaArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
+		Arrangement* averagerArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
+		Arrangement* gradientArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
+
 		Slider* kuwaharaKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 		kuwaharaKernSlider->updateDisplay();
 		kuwaharaKernSlider->setSlideValues(remapper.minKuwaharaKernel, remapper.maxKuwaharaKernel, 15);
@@ -146,11 +163,20 @@ public:
 
 		endButtons->addItem(getPtr(cancelButton));
 		endButtons->addItem(getPtr(finishButton));
+
+		kuwaharaArranger->addItem(getPtr(searchSizeBtn));
+		kuwaharaArranger->addItem(getPtr(kuwaharaKernSlider));
+
+		averagerArranger->addItem(getPtr(flatnessBtn));
+		averagerArranger->addItem(getPtr(averagerKernSlider));
+
+		gradientArranger->addItem(getPtr(sharpnessBtn));
+		gradientArranger->addItem(getPtr(gradientThreshSlider));
 		
 		column->addItem(outMap);
-		column->addItem(getPtr(kuwaharaKernSlider));
-		column->addItem(getPtr(averagerKernSlider));
-		column->addItem(getPtr(gradientThreshSlider));
+		column->addItem(getPtr(kuwaharaArranger));
+		column->addItem(getPtr(averagerArranger));
+		column->addItem(getPtr(gradientArranger));
 		column->addItem(getPtr(endButtons));
 
 		column->updateDisplay();
