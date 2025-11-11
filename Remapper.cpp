@@ -50,13 +50,10 @@ void RemapBackend::performRemap() {
 		return;
 	}
 
-	filter HAverager(std::vector<Texture*>{baseOSNormal, gradients}, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
-	HAverager.filterImage();
+	filter Averager(std::vector<Texture*>{baseOSNormal, gradients}, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+	Averager.filterImage();
 
-	//filter VAverager(std::vector<Texture*>{HAverager.filterTarget[0], gradients}, new VAVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
-	//VAverager.filterImage();
-
-	filter gradRemap(std::vector<Texture*>{HAverager.filterTarget[0], gradients}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+	filter gradRemap(std::vector<Texture*>{Averager.filterTarget[0], gradients}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	gradRemap.filterImage();
 
 	if (filteredOSNormal != nullptr) {
@@ -68,7 +65,7 @@ void RemapBackend::performRemap() {
 		filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 	
-	HAverager.cleanup();
+	Averager.cleanup();
 	//VAverager.cleanup();
 	gradRemap.cleanup();
 }
@@ -77,16 +74,25 @@ void RemapBackend::smootheResult() {
 	if (baseDiffuse == nullptr || filteredOSNormal == nullptr) {
 		return;
 	}
-	filter referenceKuwahara(std::vector<Texture*>{baseDiffuse, filteredOSNormal}, new REFERENCEKUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
-	referenceKuwahara.filterImage();
+	std::cout << "Smoothing" << std::endl;
+	//filter referenceKuwahara(std::vector<Texture*>{baseDiffuse, filteredOSNormal}, new REFERENCEKUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+	//referenceKuwahara.filterImage();
+
+	filter gaussX(std::vector<Texture*>{filteredOSNormal}, new GAUSSBLURXSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+	gaussX.filterImage();
+
+	filter gaussY(std::vector<Texture*>{gaussX.filterTarget[0]}, new GAUSSBLURYSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+	gaussY.filterImage();
 
 	filteredOSNormal->cleanup();
 	filteredOSNormal = nullptr;
 
-	filteredOSNormal = referenceKuwahara.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1);
+	filteredOSNormal = gaussY.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1);
 	filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-	referenceKuwahara.cleanup();
+	//referenceKuwahara.cleanup();
+	gaussX.cleanup();
+	gaussY.cleanup();
 }
 
 void RemapBackend::cleanup() {

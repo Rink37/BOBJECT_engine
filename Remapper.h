@@ -12,7 +12,8 @@
 #include"include/ReferenceKuwahara.h"
 #include"include/Averager.h"
 #include"include/GradRemap.h"
-
+#include"GaussBlurX.h"
+#include"GaussBlurY.h"
 #include"include/BakedImages.h"
 
 struct RemapParamObject {

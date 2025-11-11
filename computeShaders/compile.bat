@@ -33,3 +33,9 @@ C:/VulkanSDK/1.3.296.0/Bin/glslc.exe NormalGenerator.frag -o SobelYFrag.spv
 
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe SobelCombined.comp -o SobelCombinedVert.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe NormalGenerator.frag -o SobelCombinedFrag.spv
+
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe GaussBlurX.comp -o GaussBlurXVert.spv
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe NormalGenerator.frag -o GaussBlurXFrag.spv
+
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe GaussBlurY.comp -o GaussBlurYVert.spv
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe NormalGenerator.frag -o GaussBlurYFrag.spv

@@ -78,6 +78,8 @@ int main(){
 	loadAndWriteShaders(basepath, string("Kuwahara"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("SobelX"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("SobelY"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("GaussBlurX"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("GaussBlurY"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("SobelCombined"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("ReferenceKuwahara"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("Averager"), 0, outRoot);
