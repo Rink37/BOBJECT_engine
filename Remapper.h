@@ -75,6 +75,7 @@ public:
 
 	Texture* filteredOSNormal = nullptr;
 	Texture* baseDiffuse = nullptr;
+	Texture* baseOSNormal = nullptr;
 
 	bool smoothePass = true;
 private:
@@ -83,8 +84,6 @@ private:
 	VkBuffer paramBuffer = nullptr;
 	VkDeviceMemory paramBufferMemory = nullptr;
 	void* paramBufferMapped = nullptr;
-
-	Texture* baseOSNormal = nullptr;
 
 	Texture* xGradients = nullptr;
 	Texture* yGradients = nullptr;
@@ -100,7 +99,7 @@ public:
 		this->sConst = sConst;
 	}
 
-	void setup(Texture* diffTex, Texture* OSNormTex) {
+	void setup(Texture* diffTex, Texture* OSNormTex, std::function<void(UIItem*)> cancelFunct, std::function<void(UIItem*)> finishFunct) {
 		if (diffTex == nullptr || OSNormTex == nullptr) {
 			return;
 		}
@@ -142,8 +141,8 @@ public:
 		imageData cancel = CANCELBUTTON;
 		Material* cancelMat = newMaterial(&cancel, "CancelBtn");
 
-		Button* finishButton = new Button(finishMat);
-		Button* cancelButton = new Button(cancelMat);
+		Button* finishButton = new Button(finishMat, finishFunct);
+		Button* cancelButton = new Button(cancelMat, cancelFunct);
 
 		endButtons->addItem(getPtr(cancelButton));
 		endButtons->addItem(getPtr(finishButton));
@@ -169,8 +168,12 @@ public:
 	}
 
 	int priorityLayer = 100;
-private:
+
+	int clickIndex = 0;
+	int posIndex = 0;
+
 	RemapBackend remapper;
+private:
 
 	UIItem* outMap = nullptr;
 

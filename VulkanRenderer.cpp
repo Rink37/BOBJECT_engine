@@ -456,31 +456,13 @@ private:
 		updateColourScheme();
 	}
 
-	void sliderTestFunc() {
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = sliderTest.loadList->getPtr(new Material(sliderTest.loadList->getPtr(new imageTexture(&tcb, VK_FORMAT_R8_UNORM), "TestCheckBtnTex")), "TestCheckBtnMat");
-
-		std::function<void(int)> intFunct = std::bind(&Application::testIntFunct, this, std::placeholders::_1);
-		std::function<void(float)> floatFunct = std::bind(&Application::testFloatFunct, this, std::placeholders::_1);
-		
-		Rotator* test = new Rotator(visibleMat, 0.0f, 0.0f, 0.25f, 0.25f);
-		test->setSlideValues(0.0f, 10.0f, 0.0f);
-		test->setFloatCallback(floatFunct, false);
-		test->updateDisplay();
-		sliderTest.canvas.push_back(sliderTest.getPtr(test));
-		sliderTest.isSetup = true;
-
-		mouseManager.addClickListener(sliderTest.getClickCallback());
-		mouseManager.addPositionListener(sliderTest.getPosCallback());
-		widgets.push_back(&sliderTest);
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
-	}
-
 	void createRemapper(UIItem* owner) {
-		remapper.setup(sConst->diffTex, sConst->OSNormTex);
-		mouseManager.addClickListener(remapper.getClickCallback());
-		mouseManager.addPositionListener(remapper.getPosCallback());
+		std::function<void(UIItem*)> destroySelf = std::bind(&Application::destroyRemapper, this, std::placeholders::_1);
+		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishRemapper, this, std::placeholders::_1);
+
+		remapper.setup(sConst->diffTex, sConst->OSNormTex, destroySelf, finishSelf);
+		remapper.clickIndex = mouseManager.addClickListener(remapper.getClickCallback());
+		remapper.posIndex = mouseManager.addPositionListener(remapper.getPosCallback());
 
 		surfaceMenu.hide();
 		
@@ -490,7 +472,34 @@ private:
 	}
 
 	void destroyRemapper(UIItem* owner) {
+		sConst->loadNormal(remapper.remapper.baseOSNormal->copyTexture());
+		surfaceMenu.setNormal(sConst->currentNormal());
+
 		remapper.cleanup();
+
+		mouseManager.removeClickListener(remapper.clickIndex);
+		mouseManager.removePositionListener(remapper.posIndex);
+
+		surfaceMenu.show();
+
+		widgets.erase(find(widgets.begin(), widgets.end(), &remapper));
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	}
+
+	void finishRemapper(UIItem* owner) {
+		sConst->loadNormal(remapper.remapper.filteredOSNormal->copyTexture());
+		surfaceMenu.setNormal(sConst->currentNormal());
+
+		remapper.cleanup();
+		mouseManager.removeClickListener(remapper.clickIndex);
+		mouseManager.removePositionListener(remapper.posIndex);
+
+		surfaceMenu.show();
+
+		widgets.erase(find(widgets.begin(), widgets.end(), &remapper));
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 
 	void updateLightPolar(float angle) {

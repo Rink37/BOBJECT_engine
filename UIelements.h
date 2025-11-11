@@ -1204,7 +1204,7 @@ struct Widget {
 	void show() {
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->setVisibility(true);
-			canvas[i]->setIsEnabled(false);
+			canvas[i]->setIsEnabled(true);
 		}
 	}
 

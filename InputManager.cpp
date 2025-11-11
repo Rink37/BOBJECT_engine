@@ -132,6 +132,14 @@ int MouseManager::addPositionListener(const Listener& listener) {
 	return _PositionListeners.size() - 1;
 }
 
+void MouseManager::removeClickListener(int index) {
+	_ClickListeners.erase(_ClickListeners.begin() + index);
+}
+
+void MouseManager::removePositionListener(int index) {
+	_PositionListeners.erase(_PositionListeners.begin() + index);
+}
+
 void MouseManager::checkClickEvents(int clickCode) {
 	for (auto listener : _ClickListeners) {
 		if (listener(mouse.xpos, mouse.ypos, clickCode)) {

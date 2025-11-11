@@ -83,8 +83,8 @@ public:
 
 	int addPositionListener(const Listener&);
 
-	void removeClickListener(const Listener&);
-	void removePositionListener(const Listener&);
+	void removeClickListener(int);
+	void removePositionListener(int);
 
 	void checkClickEvents(int);
 	void checkPositionEvents();
