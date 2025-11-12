@@ -162,7 +162,7 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 	bool vertical = (target->rows >= target->cols);
 
 	int index = 0;
-	int secondIndex;
+	int secondIndex = 0;
 	float correlation = 0.0f;
 	float secondCorrelation = 0.0f;
 

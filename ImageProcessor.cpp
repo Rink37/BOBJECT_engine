@@ -39,6 +39,10 @@ void filter::createDescriptorSetLayout() {
 
 			descriptorSetLayoutCreateInfo.pBindings = bindings;
 			descriptorSetLayoutCreateInfo.bindingCount = 2;
+
+			if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
+				throw runtime_error("Failed to create filter descriptor set layout");
+			}
 		}
 		else {
 			VkDescriptorSetLayoutBinding bindings[3] = {};
@@ -60,12 +64,12 @@ void filter::createDescriptorSetLayout() {
 
 			descriptorSetLayoutCreateInfo.pBindings = bindings;
 			descriptorSetLayoutCreateInfo.bindingCount = 3;
+
+			if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
+				throw runtime_error("Failed to create filter descriptor set layout");
+			}
 		}
 		
-
-		if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
-			throw runtime_error("Failed to create filter descriptor set layout");
-		}
 	} else if (filtertype == TIOO){
 		VkDescriptorPoolSize descPoolSize = {
 		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
@@ -105,6 +109,10 @@ void filter::createDescriptorSetLayout() {
 
 			descriptorSetLayoutCreateInfo.pBindings = bindings;
 			descriptorSetLayoutCreateInfo.bindingCount = 3;
+
+			if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
+				throw runtime_error("Failed to create filter descriptor set layout");
+			}
 		}
 		else {
 			VkDescriptorSetLayoutBinding bindings[4] = {};
@@ -131,12 +139,12 @@ void filter::createDescriptorSetLayout() {
 
 			descriptorSetLayoutCreateInfo.pBindings = bindings;
 			descriptorSetLayoutCreateInfo.bindingCount = 4;
+
+			if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
+				throw runtime_error("Failed to create filter descriptor set layout");
+			}
 		}
 		
-
-		if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
-			throw runtime_error("Failed to create filter descriptor set layout");
-		}
 	}
 	else if (filtertype == THIOO) {
 		VkDescriptorPoolSize descPoolSize = {
@@ -181,6 +189,10 @@ void filter::createDescriptorSetLayout() {
 
 			descriptorSetLayoutCreateInfo.pBindings = bindings;
 			descriptorSetLayoutCreateInfo.bindingCount = 4;
+
+			if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
+				throw runtime_error("Failed to create filter descriptor set layout");
+			}
 		}
 		else {
 			VkDescriptorSetLayoutBinding bindings[5] = {};
@@ -212,11 +224,12 @@ void filter::createDescriptorSetLayout() {
 
 			descriptorSetLayoutCreateInfo.pBindings = bindings;
 			descriptorSetLayoutCreateInfo.bindingCount = 5;
+
+			if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
+				throw runtime_error("Failed to create filter descriptor set layout");
+			}
 		}
 
-		if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
-			throw runtime_error("Failed to create filter descriptor set layout");
-		}
 	}
 }
 

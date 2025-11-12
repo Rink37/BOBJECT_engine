@@ -68,7 +68,7 @@ struct Mouse {
 	bool isRMBDown = false;
 	bool isLMBDown = false;
 
-	double xpos, ypos;
+	double xpos = 0.0f, ypos = 0.0f;
 };
 
 class MouseManager {
@@ -79,12 +79,12 @@ public:
 
 	using Listener = std::function<bool(double, double, int)>;
 
-	int addClickListener(const Listener&);
+	size_t addClickListener(const Listener&);
 
-	int addPositionListener(const Listener&);
+	size_t addPositionListener(const Listener&);
 
-	void removeClickListener(int);
-	void removePositionListener(int);
+	void removeClickListener(size_t);
+	void removePositionListener(size_t);
 
 	void checkClickEvents(int);
 	void checkPositionEvents();

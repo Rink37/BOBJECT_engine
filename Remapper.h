@@ -32,6 +32,8 @@ struct RemapParamObject {
 
 class RemapBackend {
 public:
+	RemapBackend() = default;
+
 	void setup() {
 		params.kuwaharaKernelRadius = 15;
 		params.averagerKernelRadius = 15;
@@ -109,7 +111,7 @@ private:
 
 	Texture* gradients = nullptr;
 
-	uint32_t baseHeight, baseWidth;
+	uint32_t baseHeight = 0, baseWidth = 0;
 };
 
 class RemapUI : public Widget {
@@ -119,13 +121,14 @@ public:
 		this->sConst = sConst;
 	}
 
-	void setup(Texture* diffTex, Texture* OSNormTex, std::function<void(UIItem*)> cancelFunct, std::function<void(UIItem*)> finishFunct) {
-		if (diffTex == nullptr || OSNormTex == nullptr) {
+	void setup(std::function<void(UIItem*)> cancelFunct, std::function<void(UIItem*)> finishFunct) {
+		if (sConst->diffTex == nullptr || sConst->OSNormTex == nullptr) {
 			return;
 		}
 		
-		remapper.setup();
-		fullRemap(diffTex, OSNormTex);
+		remapper = new RemapBackend();
+		remapper->setup();
+		fullRemap(sConst->diffTex, sConst->OSNormTex);
 		
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
@@ -136,7 +139,7 @@ public:
 		std::function<void(int)> averagerSliderFunction = std::bind(&RemapUI::averagerCallback, this, std::placeholders::_1);
 		std::function<void(float)> gradientSliderFunction = std::bind(&RemapUI::gradientCallback, this, std::placeholders::_1);
 
-		outMap = getPtr(new ImagePanel(loadList->replacePtr(new Material(remapper.filteredOSNormal), "RemapOSMat"), false));
+		outMap = getPtr(new ImagePanel(loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat"), false));
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -169,7 +172,7 @@ public:
 
 		Slider* kuwaharaKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 		kuwaharaKernSlider->updateDisplay();
-		kuwaharaKernSlider->setSlideValues(remapper.minKuwaharaKernel, remapper.maxKuwaharaKernel, 15);
+		kuwaharaKernSlider->setSlideValues(remapper->minKuwaharaKernel, remapper->maxKuwaharaKernel, 15);
 		kuwaharaKernSlider->setIntCallback(kuwaharaSliderFunction, false);
 
 		Slider* zeroCrossSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
@@ -184,12 +187,12 @@ public:
 
 		Slider* averagerKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 		averagerKernSlider->updateDisplay();
-		averagerKernSlider->setSlideValues(remapper.minAveragerKernel, remapper.maxAveragerKernel, 15);
+		averagerKernSlider->setSlideValues(remapper->minAveragerKernel, remapper->maxAveragerKernel, 15);
 		averagerKernSlider->setIntCallback(averagerSliderFunction, false);
 
 		Slider* gradientThreshSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 		gradientThreshSlider->updateDisplay();
-		gradientThreshSlider->setSlideValues(remapper.minGradientThreshold, remapper.maxGradientThreshold, 0.06f); 
+		gradientThreshSlider->setSlideValues(remapper->minGradientThreshold, remapper->maxGradientThreshold, 0.06f); 
 		gradientThreshSlider->setFloatCallback(gradientSliderFunction, false);
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
@@ -234,21 +237,23 @@ public:
 		canvas.push_back(getPtr(column));
 
 		sConst->normalType = 0;
-		sConst->loadNormal(remapper.filteredOSNormal->copyTexture());
+		sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 
 		isSetup = true;
 	}
 
 	void cleanupSubClasses() {
-		remapper.cleanup();
+		remapper->cleanup();
+		delete remapper;
+		remapper = nullptr;
 	}
 
 	int priorityLayer = 100;
 
-	int clickIndex = 0;
-	int posIndex = 0;
+	size_t clickIndex = 0;
+	size_t posIndex = 0;
 
-	RemapBackend remapper;
+	RemapBackend* remapper = nullptr;
 	UIItem* outMap = nullptr;
 private:
 

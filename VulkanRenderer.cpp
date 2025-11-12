@@ -414,8 +414,8 @@ private:
 	RenderMenu renderMenu = RenderMenu(&UIElements);
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
-	Widget sliderTest = Widget(&UIElements);
-	RemapUI remapper = RemapUI(&UIElements, sConst);
+	//Widget sliderTest = Widget(&UIElements);
+	RemapUI remapMenu = RemapUI(&UIElements, sConst);
 
 	UIItem* UITestImage = nullptr;
 
@@ -439,7 +439,8 @@ private:
 	// Light position
 
 	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f);
-	float polarAngle, azimuthAngle = 0.0f;
+	float polarAngle = 0.0f;
+	float azimuthAngle = 0.0f;
 	float lightRadius = 10.0f;
 	
 	// colours in sRGB format (for krita users these colours match the sRGB-elle-V2-g10.icc profile)
@@ -460,46 +461,49 @@ private:
 		std::function<void(UIItem*)> destroySelf = std::bind(&Application::destroyRemapper, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishRemapper, this, std::placeholders::_1);
 
-		remapper.setup(sConst->diffTex, sConst->OSNormTex, destroySelf, finishSelf);
-		remapper.clickIndex = mouseManager.addClickListener(remapper.getClickCallback());
-		remapper.posIndex = mouseManager.addPositionListener(remapper.getPosCallback());
+		remapMenu.setup(destroySelf, finishSelf);
+		if (!remapMenu.isSetup) {
+			return;
+		}
+		remapMenu.clickIndex = mouseManager.addClickListener(remapMenu.getClickCallback());
+		remapMenu.posIndex = mouseManager.addPositionListener(remapMenu.getPosCallback());
 
 		surfaceMenu.hide();
 		
-		widgets.push_back(&remapper);
+		widgets.push_back(&remapMenu);
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 
 	void destroyRemapper(UIItem* owner) {
 		sConst->normalType = 0;
-		sConst->loadNormal(remapper.remapper.baseOSNormal->copyTexture());
+		sConst->loadNormal(remapMenu.remapper->baseOSNormal->copyTexture());
 		surfaceMenu.setNormal(sConst->currentNormal());
 
-		remapper.cleanup();
+		remapMenu.cleanup();
 
-		mouseManager.removeClickListener(remapper.clickIndex);
-		mouseManager.removePositionListener(remapper.posIndex);
+		mouseManager.removeClickListener(remapMenu.clickIndex);
+		mouseManager.removePositionListener(remapMenu.posIndex);
 
 		surfaceMenu.show();
 
-		widgets.erase(find(widgets.begin(), widgets.end(), &remapper));
+		widgets.erase(find(widgets.begin(), widgets.end(), &remapMenu));
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 
 	void finishRemapper(UIItem* owner) {
 		sConst->normalType = 0;
-		sConst->loadNormal(remapper.remapper.filteredOSNormal->copyTexture());
+		sConst->loadNormal(remapMenu.remapper->filteredOSNormal->copyTexture());
 		surfaceMenu.setNormal(sConst->currentNormal());
 
-		remapper.cleanup();
-		mouseManager.removeClickListener(remapper.clickIndex);
-		mouseManager.removePositionListener(remapper.posIndex);
+		remapMenu.cleanup();
+		mouseManager.removeClickListener(remapMenu.clickIndex);
+		mouseManager.removePositionListener(remapMenu.posIndex);
 
 		surfaceMenu.show();
 
-		widgets.erase(find(widgets.begin(), widgets.end(), &remapper));
+		widgets.erase(find(widgets.begin(), widgets.end(), &remapMenu));
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
@@ -842,13 +846,12 @@ private:
 			ubo.UVdistort[2] = 2 * surfaceMenu.diffuseView->extenty;
 			ubo.UVdistort[3] = (surfaceMenu.diffuseView->posy) - surfaceMenu.diffuseView->extenty;
 		}
-		else if (remapper.isVisible) {
-			ubo.UVdistort[0] = 2 * remapper.outMap->extentx;
-			ubo.UVdistort[1] = (remapper.outMap->posx) - remapper.outMap->extentx;
-			ubo.UVdistort[2] = 2 * remapper.outMap->extenty;
-			ubo.UVdistort[3] = (remapper.outMap->posy) - remapper.outMap->extenty;
+		else if (remapMenu.isVisible && remapMenu.isSetup) {
+			ubo.UVdistort[0] = 2 * remapMenu.outMap->extentx;
+			ubo.UVdistort[1] = (remapMenu.outMap->posx) - remapMenu.outMap->extentx;
+			ubo.UVdistort[2] = 2 * remapMenu.outMap->extenty;
+			ubo.UVdistort[3] = (remapMenu.outMap->posy) - remapMenu.outMap->extenty;
 		}
-		
 
 		ubo.backgroundColour = backgroundColour;
 

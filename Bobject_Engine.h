@@ -176,47 +176,47 @@ public:
 		enginstance = nullptr;
 	}
 
-	GLFWwindow* window;
+	GLFWwindow* window = nullptr;
 	uint32_t pipelineindex = 1;
 
 	int windowWidth = WIDTH;
 	int windowHeight = HEIGHT;
 
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-	VkDevice device;
+	VkDevice device = VK_NULL_HANDLE;
 
-	VkCommandPool commandPool;
+	VkCommandPool commandPool = nullptr;
 	VkCommandPool computeCommandPool = nullptr;
-	VkQueue graphicsQueue;
-	VkQueue presentQueue;
+	VkQueue graphicsQueue = nullptr;
+	VkQueue presentQueue = nullptr;
 	VkQueue computeQueue = nullptr;
 
-	VkRenderPass renderPass;
+	VkRenderPass renderPass = nullptr;
 
-	std::vector<VkFence> inFlightFences;
-	VkSwapchainKHR swapChain;
-	std::vector<VkSemaphore> imageAvailableSemaphores;
-	std::vector<VkSemaphore> renderFinishedSemaphores;
+	std::vector<VkFence> inFlightFences = {};
+	VkSwapchainKHR swapChain = nullptr;
+	std::vector<VkSemaphore> imageAvailableSemaphores = {};
+	std::vector<VkSemaphore> renderFinishedSemaphores = {};
 
-	std::vector<VkCommandBuffer> commandBuffers;
+	std::vector<VkCommandBuffer> commandBuffers = {};
 
-	std::vector<VkFramebuffer> swapChainFramebuffers;
+	std::vector<VkFramebuffer> swapChainFramebuffers = {};
 
-	VkDescriptorSetLayout diffuseDescriptorSetLayout;
-	VkDescriptorSetLayout diffNormDescriptorSetLayout;
+	VkDescriptorSetLayout diffuseDescriptorSetLayout = nullptr;
+	VkDescriptorSetLayout diffNormDescriptorSetLayout = nullptr;
 
-	VkExtent2D swapChainExtent;
+	VkExtent2D swapChainExtent = {};
 
-	VkSampler textureSampler;
+	VkSampler textureSampler = nullptr;
 
-	std::vector<void*> uniformBuffersMapped;
-	void* colourBufferMapped;
+	std::vector<void*> uniformBuffersMapped = {};
+	void* colourBufferMapped = nullptr;
 
-	VkPipelineLayout diffusePipelineLayout;
-	VkPipelineLayout diffNormPipelineLayout;
+	VkPipelineLayout diffusePipelineLayout = nullptr;
+	VkPipelineLayout diffNormPipelineLayout = nullptr;
 
-	std::vector<VkBuffer> uniformBuffers;
-	VkBuffer colourBuffer;
+	std::vector<VkBuffer> uniformBuffers = {};
+	VkBuffer colourBuffer = nullptr;
 
 	std::map<std::string, int> PipelineMap = {};
 	std::vector<VkPipeline*> GraphicsPipelines = {};
@@ -252,32 +252,32 @@ public:
 
 	VkFormat findDepthFormat();
 
-	std::vector<VkImage> swapChainImages;
-	VkFormat swapChainImageFormat;
+	std::vector<VkImage> swapChainImages = {};
+	VkFormat swapChainImageFormat = {};
 
 private:
 	static Engine* enginstance;
 	Engine() = default;
 	~Engine() = default;
 
-	VkInstance instance;
-	VkDebugUtilsMessengerEXT debugMessenger;
-	VkSurfaceKHR surface;
+	VkInstance instance = nullptr;
+	VkDebugUtilsMessengerEXT debugMessenger = nullptr;
+	VkSurfaceKHR surface = nullptr;
 
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
-	std::vector<VkImageView> swapChainImageViews;
+	std::vector<VkImageView> swapChainImageViews = {};
 
-	std::vector<VkDeviceMemory> uniformBuffersMemory;
-	VkDeviceMemory colourBufferMemory;
+	std::vector<VkDeviceMemory> uniformBuffersMemory = {};
+	VkDeviceMemory colourBufferMemory = nullptr;
 
-	VkImage depthImage;
-	VkDeviceMemory depthImageMemory;
-	VkImageView depthImageView;
+	VkImage depthImage = nullptr;
+	VkDeviceMemory depthImageMemory = nullptr;
+	VkImageView depthImageView = nullptr;
 
-	VkImage colourImage;
-	VkDeviceMemory colourImageMemory;
-	VkImageView colourImageView;
+	VkImage colourImage = nullptr;
+	VkDeviceMemory colourImageMemory = nullptr;
+	VkImageView colourImageView = nullptr;
 
 	static void framebufferResizeCallback(GLFWwindow*, int, int);
 

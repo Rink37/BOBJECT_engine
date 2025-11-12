@@ -122,21 +122,21 @@ void MouseManager::updateMouseState(int key, bool state, double xpos, double ypo
 	checkClickEvents(clickCode);
 }
 
-int MouseManager::addClickListener(const Listener& listener) {
+size_t MouseManager::addClickListener(const Listener& listener) {
 	_ClickListeners.push_back(listener);
 	return _ClickListeners.size() - 1;
 }
 
-int MouseManager::addPositionListener(const Listener& listener) {
+size_t MouseManager::addPositionListener(const Listener& listener) {
 	_PositionListeners.push_back(listener);
 	return _PositionListeners.size() - 1;
 }
 
-void MouseManager::removeClickListener(int index) {
+void MouseManager::removeClickListener(size_t index) {
 	_ClickListeners.erase(_ClickListeners.begin() + index);
 }
 
-void MouseManager::removePositionListener(int index) {
+void MouseManager::removePositionListener(size_t index) {
 	_PositionListeners.erase(_PositionListeners.begin() + index);
 }
 

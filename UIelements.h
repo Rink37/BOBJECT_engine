@@ -30,9 +30,9 @@
 #define SLIDER_CONTINUOUS 0
 #define SLIDER_DISCRETE 1
 
-#define PI 3.14159265
-#define OPF_PI 4.71238898 // Equivalent to 3*PI / 2 - basic optimization
-#define HALF_PI 1.57079632 // Equivalent to PI / 2
+#define PI 3.14159265f
+#define OPF_PI 4.71238898f // Equivalent to 3*PI / 2 - basic optimization
+#define HALF_PI 1.57079632f // Equivalent to PI / 2
 
 struct UIImage {
 	bool isVisible = true;
@@ -637,7 +637,7 @@ private:
 
 	Arrangement* mainArrangement = nullptr;
 
-	float spacing = 0.01;
+	float spacing = 0.01f;
 	int orientation = ORIENT_HORIZONTAL;
 };
 
@@ -866,8 +866,8 @@ private:
 	int orientation = ORIENT_HORIZONTAL;
 	int valueType = SLIDER_CONTINUOUS;
 
-	float sliderWidth = 0.5;
-	float baseHeight = 0.2;
+	float sliderWidth = 0.5f;
+	float baseHeight = 0.2f;
 
 	bool isHeld = false;
 
@@ -1043,7 +1043,7 @@ private:
 
 	int valueType = SLIDER_CONTINUOUS;
 
-	float sliderWidth = 0.05;
+	float sliderWidth = 0.05f;
 	float radius = 100.0f;
 
 	float a, b, e = 0.0f;
