@@ -199,9 +199,8 @@ public:
 	int posIndex = 0;
 
 	RemapBackend remapper;
-private:
-
 	UIItem* outMap = nullptr;
+private:
 
 	surfaceConstructor* sConst = nullptr;
 

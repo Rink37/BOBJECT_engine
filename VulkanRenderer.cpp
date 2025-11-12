@@ -668,12 +668,6 @@ private:
 		vkDeviceWaitIdle(engine->device);
 	}
 
-	//void testUIShader() {
-	//	imageData test = D2NBUTTON_GRAY;
-	//	UITestImage = new ImagePanel(0.0f, 0.0f, 0.1f, 0.1f, new Material(new imageTexture(&test, VK_FORMAT_R8_UNORM), true), false);
-	//	UITestImage->updateDisplay();
-	//}
-
 	void buttonLoadStaticObject(UIItem* owner) {
 		loadStaticObject();
 	}
@@ -840,10 +834,19 @@ private:
 		ubo.proj = glm::perspective(glm::radians(camera.fov), engine->swapChainExtent.width / (float)engine->swapChainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
-		ubo.UVdistort[0] = 2*surfaceMenu.diffuseView->extentx;
-		ubo.UVdistort[1] = (surfaceMenu.diffuseView->posx) - surfaceMenu.diffuseView->extentx;
-		ubo.UVdistort[2] = 2*surfaceMenu.diffuseView->extenty;
-		ubo.UVdistort[3] = (surfaceMenu.diffuseView->posy) - surfaceMenu.diffuseView->extenty;
+		if (surfaceMenu.isVisible) {
+			ubo.UVdistort[0] = 2 * surfaceMenu.diffuseView->extentx;
+			ubo.UVdistort[1] = (surfaceMenu.diffuseView->posx) - surfaceMenu.diffuseView->extentx;
+			ubo.UVdistort[2] = 2 * surfaceMenu.diffuseView->extenty;
+			ubo.UVdistort[3] = (surfaceMenu.diffuseView->posy) - surfaceMenu.diffuseView->extenty;
+		}
+		else if (remapper.isVisible) {
+			ubo.UVdistort[0] = 2 * remapper.outMap->extentx;
+			ubo.UVdistort[1] = (remapper.outMap->posx) - remapper.outMap->extentx;
+			ubo.UVdistort[2] = 2 * remapper.outMap->extenty;
+			ubo.UVdistort[3] = (remapper.outMap->posy) - remapper.outMap->extenty;
+		}
+		
 
 		ubo.backgroundColour = backgroundColour;
 

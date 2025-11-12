@@ -1195,6 +1195,7 @@ struct Widget {
 	}
 
 	void hide() {
+		isVisible = false;
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->setVisibility(false);
 			canvas[i]->setIsEnabled(false);
@@ -1202,6 +1203,7 @@ struct Widget {
 	}
 
 	void show() {
+		isVisible = true;
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->setVisibility(true);
 			canvas[i]->setIsEnabled(true);
@@ -1261,6 +1263,7 @@ struct Widget {
 
 	int priorityLayer = 0; // Widgets are sorted in descending order, so smaller numbers will be checked later than higher ones
 						   // A widget can be placed above another simply by setting the priority of the "on-top" layer higher than the below one
+	bool isVisible = true;
 private:
 	float windowPositions[4] = { 0.0f };
 	// Array of pointers which manages the actual structure of the UI
