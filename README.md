@@ -50,11 +50,14 @@ The app contains an algorithm which can be used to 'remap' an object-space norma
 
 The function of the sliders is as follows:
 1.Search Size: Modifies the area that is searched over when seeking brushstrokes - smaller values lead to smaller individually lit brushstrokes and vice-versa. This parameter should be adjusted until the light doesn't appear to be broken up over the surface of each brushstroke.
-2.Stroke Flatness: Modifies the extent to which each stroke is flattened - smaller values mean that the brushstrokes will appear more rounded and higher values make the brushstrokes appear more uniformly lit.
-3.Edge sharpness: Modifies how sharp the border between brushstrokes needs to be before the algorithm identifies them as distinct. Small values will mean less smooth transitions between separate brushstrokes, and larger values will make brushstrokes appear less harsh. 
+2.Noise Removal: Modifies the amount of detail noise (e.g. canvas texture, shadows) which is ignored in the diffuse map. Smaller values will result in more harshly broken up brushstrokes than larger values.
+3.Edge Sharpness: Modifies how sharp the border between brushstrokes is. Smaller values lead to smoother transitions between brushstrokes and vice versa. 
+4.Stroke Flatness: Modifies the extent to which each stroke is flattened - smaller values mean that the brushstrokes will appear more rounded and higher values make the brushstrokes appear more uniformly lit.
+5.Flatten Threshold: Modifies the threshold which the system uses to separate faces that are flattened. Smaller values lead to smaller flattened areas, whereas larger values lead to flattening being performed over larger distances. However, when the value is too large this can also lead to 'bleed' where adjacent similar colours are flattened to face in the same direction as each other rather than unique stroke specific directions.
+
 
 >[!Note]
-> The remapping algorithm currently has a maximum diffuse resolution limit of 1024px height due to the risks of GPU timeout when using some of the more complex compute shaders used in the remap pipeline. Larger diffuse images can be loaded and will not cause issues, but the remapper will downscale them before performing any filtering and then upscale them to the original dimensions after, yielding no quality improvement from larger diffuse images. 
+> The remapping algorithm currently has a maximum diffuse height resolution limit of 1024px due to the risks of GPU timeout when using some of the more complex compute shaders used in the remap pipeline. Larger diffuse images can be loaded and will not cause issues, but the remapper will downscale them before performing any filtering and then upscale them to the original dimensions after, yielding no quality improvement from larger diffuse images. 
 
 ## FAQ
 
