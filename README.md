@@ -45,15 +45,16 @@ The normal map component can also generate maps from the object. The object-spac
 > [!Note]
 > This function has no ability to determine what type of normal is loaded and has no option to change the type of the normal after it has been loaded. Users must set the OS/TS button to the correct state before loading a map of either type, otherwise lighting and space translation functions will not work as expected.
 
-## Remap Normals to Match Diffuse Brushstrokes
+### Remap Normals to Match Diffuse Brushstrokes
 The app contains an algorithm which can be used to 'remap' an object-space normal so that individual brushstrokes in the diffuse appear flatly lit. This process is used to imitate the effect of hand-painted normals but to ensure that the normal vectors are correct to a model and appear to match with a diffuse. To use this function, load a diffuse image for your model (the webcam view will not work) and generate an OS normal map. Then, clicking the 'Diff->Norm' button will open a new UI panel where you can use sliders to modify the parameters of the algorithm, and then hitting finish closes the remap menu and applies the map as your current OS map, which can then be saved. 
 
 The function of the sliders is as follows:
-1.Search Size: Modifies the area that is searched over when seeking brushstrokes - smaller values lead to smaller individually lit brushstrokes and vice-versa. This parameter should be adjusted until the light doesn't appear to be broken up over the surface of each brushstroke.
-2.Noise Removal: Modifies the amount of detail noise (e.g. canvas texture, shadows) which is ignored in the diffuse map. Smaller values will result in more harshly broken up brushstrokes than larger values.
-3.Edge Sharpness: Modifies how sharp the border between brushstrokes is. Smaller values lead to smoother transitions between brushstrokes and vice versa. 
-4.Stroke Flatness: Modifies the extent to which each stroke is flattened - smaller values mean that the brushstrokes will appear more rounded and higher values make the brushstrokes appear more uniformly lit.
-5.Flatten Threshold: Modifies the threshold which the system uses to separate faces that are flattened. Smaller values lead to smaller flattened areas, whereas larger values lead to flattening being performed over larger distances. However, when the value is too large this can also lead to 'bleed' where adjacent similar colours are flattened to face in the same direction as each other rather than unique stroke specific directions.
+
+1. Search Size: Modifies the area that is searched over when seeking brushstrokes - smaller values lead to smaller individually lit brushstrokes and vice-versa. This parameter should be adjusted until the light doesn't appear to be broken up over the surface of each brushstroke.
+2. Noise Removal: Modifies the amount of detail noise (e.g. canvas texture, shadows) which is ignored in the diffuse map. Smaller values will result in more harshly broken up brushstrokes than larger values.
+3. Edge Sharpness: Modifies how sharp the border between brushstrokes is. Smaller values lead to smoother transitions between brushstrokes and vice versa. 
+4. Stroke Flatness: Modifies the extent to which each stroke is flattened - smaller values mean that the brushstrokes will appear more rounded and higher values make the brushstrokes appear more uniformly lit.
+5. Flatten Threshold: Modifies the threshold which the system uses to separate faces that are flattened. Smaller values lead to smaller flattened areas, whereas larger values lead to flattening being performed over larger distances. However, when the value is too large this can also lead to 'bleed' where adjacent similar colours are flattened to face in the same direction as each other rather than unique stroke specific directions.
 
 
 >[!Note]
@@ -67,4 +68,4 @@ The function of the sliders is as follows:
 - [x] Remapping normals using the diffuse texture.
 - [x] Converting a tangent space map while the 'TS' icon is active to an object space map
 - [ ] Changeable webcam devices
-- [ ] Implement basic tomography functionality to extract information about the physical surface of the painting to be used in rendering
+- [ ] Basic tomography functionality to extract information about the physical surface of the painting to be used in rendering
