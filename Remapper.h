@@ -136,7 +136,7 @@ public:
 		std::function<void(int)> averagerSliderFunction = std::bind(&RemapUI::averagerCallback, this, std::placeholders::_1);
 		std::function<void(float)> gradientSliderFunction = std::bind(&RemapUI::gradientCallback, this, std::placeholders::_1);
 
-		outMap = getPtr(new ImagePanel(loadList->getPtr(new Material(remapper.filteredOSNormal), "RemapOSMat"), false));
+		outMap = getPtr(new ImagePanel(loadList->replacePtr(new Material(remapper.filteredOSNormal), "RemapOSMat"), false));
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 

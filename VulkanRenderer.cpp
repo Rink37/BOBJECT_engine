@@ -472,6 +472,7 @@ private:
 	}
 
 	void destroyRemapper(UIItem* owner) {
+		sConst->normalType = 0;
 		sConst->loadNormal(remapper.remapper.baseOSNormal->copyTexture());
 		surfaceMenu.setNormal(sConst->currentNormal());
 
@@ -488,6 +489,7 @@ private:
 	}
 
 	void finishRemapper(UIItem* owner) {
+		sConst->normalType = 0;
 		sConst->loadNormal(remapper.remapper.filteredOSNormal->copyTexture());
 		surfaceMenu.setNormal(sConst->currentNormal());
 
