@@ -9,6 +9,9 @@ layout(binding = 2) uniform RemapParamObject {
 	int kuwaharaKernelRadius;
 	int averagerKernelRadius;
 	float gradientThreshold;
+	float zeroCross;
+	float hardness;
+	float sharpness;
 } rpo;
 
 void main(){
@@ -20,7 +23,7 @@ void main(){
 	vec3 s[8];
 
 	float zeta = 2.0f/float(kernelRadius);
-	float zeroCross = 0.58f;
+	float zeroCross = rpo.zeroCross;
 	float sinZeroCross = sin(zeroCross);
 	float eta = (zeta + cos(zeroCross)) / (sinZeroCross * sinZeroCross);
 
@@ -84,7 +87,7 @@ void main(){
 		s[k] = abs(s[k]/m[k].w - m[k].rgb * m[k].rgb);
 
 		float sigma2 = 1000.0f*(s[k].r + s[k].g + s[k].b);
-		float w = 1.0f / (1.0f + sigma2*sigma2*sigma2*sigma2);
+		float w = 1.0f / (1.0f + pow(rpo.hardness*sigma2, 0.5f * rpo.sharpness);
 
 		avgPixel += vec4(m[k].rgb * w, w);
 	}

@@ -9,6 +9,9 @@ layout(binding = 3) uniform RemapParamObject {
 	int kuwaharaKernelRadius;
 	int averagerKernelRadius;
 	float gradientThreshold;
+	float zeroCross;
+	float hardness;
+	float sharpness;
 } rpo;
 
 void main(){
@@ -21,7 +24,7 @@ void main(){
 	vec3 s[8];
 
 	float zeta = 2.0f/float(kernelRadius);
-	float zeroCross = 0.58f;
+	float zeroCross = rpo.zeroCross;
 	float sinZeroCross = sin(zeroCross);
 	float eta = (zeta + cos(zeroCross)) / (sinZeroCross * sinZeroCross);
 
@@ -89,7 +92,7 @@ void main(){
 		s[k] = abs(s[k]/rm[k].w - rm[k].rgb * rm[k].rgb);
 
 		float sigma2 = 1000.0f * (s[k].r + s[k].g + s[k].b);
-		float w = 1.0f / (1.0f + sigma2*sigma2*sigma2*sigma2);  // This is the only value which depends on or is affected by rm - is it faster to write it into two 4-channel float images the first time around?
+		float w = 1.0f / (1.0f + pow(rpo.hardness * sigma2, 0.5f * rpo.sharpness));  // This is the only value which depends on or is affected by rm - is it faster to write it into two 4-channel float images the first time around?
 
 		avgPixel += vec4(m[k]*w, w); // Using m[k] here is the source of slowness - it adds ~8000 ms since we have to do both rm and m
 	}

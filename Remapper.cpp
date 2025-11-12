@@ -134,6 +134,41 @@ void RemapUI::kuwaharaCallback(int kern) {
 	sConst->loadNormal(remapper.filteredOSNormal->copyTexture());
 }
 
+void RemapUI::zeroCrossCallback(float zeroCross) {
+	remapper.setZeroCross(zeroCross);
+	remapper.createBaseMaps();
+	remapper.performRemap();
+	if (remapper.smoothePass) {
+		remapper.smootheResult();
+	}
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper.filteredOSNormal), "RemapOSMat");
+	sConst->normalType = 0;
+	sConst->loadNormal(remapper.filteredOSNormal->copyTexture());
+}
+
+void RemapUI::sharpnessCallback(float sharpness) {
+	remapper.setKuwaharaSharpness(sharpness);
+	remapper.createBaseMaps();
+	remapper.performRemap();
+	if (remapper.smoothePass) {
+		remapper.smootheResult();
+	}
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper.filteredOSNormal), "RemapOSMat");
+	sConst->normalType = 0;
+	sConst->loadNormal(remapper.filteredOSNormal->copyTexture());
+}
+void RemapUI::hardnessCallback(float hardness) {
+	remapper.setKuwaharaHardness(hardness);
+	remapper.createBaseMaps();
+	remapper.performRemap();
+	if (remapper.smoothePass) {
+		remapper.smootheResult();
+	}
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper.filteredOSNormal), "RemapOSMat");
+	sConst->normalType = 0;
+	sConst->loadNormal(remapper.filteredOSNormal->copyTexture());
+}
+
 void RemapUI::averagerCallback(int kern) {
 	remapper.setAveragerKernel(kern);
 	remapper.performRemap();

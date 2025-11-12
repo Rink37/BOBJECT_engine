@@ -24,6 +24,10 @@ struct RemapParamObject {
 	// Averager and gradient remapper params
 	alignas(4) int averagerKernelRadius;
 	alignas(4) float gradientThreshold;
+
+	alignas(4) float zeroCross;
+	alignas(4) float hardness;
+	alignas(4) float sharpness;
 };
 
 class RemapBackend {
@@ -32,6 +36,9 @@ public:
 		params.kuwaharaKernelRadius = 15;
 		params.averagerKernelRadius = 15;
 		params.gradientThreshold = 0.06f;
+		params.zeroCross = 0.58f;
+		params.hardness = 8.0f; // modifying this appears to have minimal effect when we are already flattening
+		params.sharpness = 8.0f;
 
 		createParamBuffer();
 		updateParamBuffer();
@@ -39,6 +46,21 @@ public:
 
 	void setKuwaharaKernel(int kern) {
 		params.kuwaharaKernelRadius = kern;
+		updateParamBuffer();
+	}
+
+	void setZeroCross(float zeroCross) {
+		params.zeroCross = zeroCross;
+		updateParamBuffer();
+	}
+
+	void setKuwaharaSharpness(float sharpness) {
+		params.sharpness = sharpness;
+		updateParamBuffer();
+	}
+
+	void setKuwaharaHardness(float hardness) {
+		params.hardness = hardness;
 		updateParamBuffer();
 	}
 
@@ -111,6 +133,9 @@ public:
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
 
 		std::function<void(int)> kuwaharaSliderFunction = std::bind(&RemapUI::kuwaharaCallback, this, std::placeholders::_1);
+		std::function<void(float)> zeroCrossSliderFunction = std::bind(&RemapUI::zeroCrossCallback, this, std::placeholders::_1);
+		std::function<void(float)> hardnessSliderFunction = std::bind(&RemapUI::hardnessCallback, this, std::placeholders::_1);
+		std::function<void(float)> sharpnessSliderFunction = std::bind(&RemapUI::sharpnessCallback, this, std::placeholders::_1);
 		std::function<void(int)> averagerSliderFunction = std::bind(&RemapUI::averagerCallback, this, std::placeholders::_1);
 		std::function<void(float)> gradientSliderFunction = std::bind(&RemapUI::gradientCallback, this, std::placeholders::_1);
 
@@ -139,6 +164,21 @@ public:
 		kuwaharaKernSlider->updateDisplay();
 		kuwaharaKernSlider->setSlideValues(remapper.minKuwaharaKernel, remapper.maxKuwaharaKernel, 15);
 		kuwaharaKernSlider->setIntCallback(kuwaharaSliderFunction, false);
+
+		Slider* zeroCrossSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
+		zeroCrossSlider->updateDisplay();
+		zeroCrossSlider->setSlideValues(0.5f, 2.0f, 0.58f);
+		zeroCrossSlider->setFloatCallback(zeroCrossSliderFunction, false);
+
+		//Slider* hardnessSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
+		//hardnessSlider->updateDisplay();
+		//hardnessSlider->setSlideValues(1.0f, 100.0f, 8.0f);
+		//hardnessSlider->setFloatCallback(hardnessSliderFunction, false);
+
+		Slider* sharpnessSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
+		sharpnessSlider->updateDisplay();
+		sharpnessSlider->setSlideValues(1.0f, 20.0f, 8.0f);
+		sharpnessSlider->setFloatCallback(sharpnessSliderFunction, false);
 
 		Slider* averagerKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 		averagerKernSlider->updateDisplay();
@@ -175,6 +215,9 @@ public:
 		
 		column->addItem(outMap);
 		column->addItem(getPtr(kuwaharaArranger));
+		column->addItem(getPtr(zeroCrossSlider));
+		//column->addItem(getPtr(hardnessSlider));
+		column->addItem(getPtr(sharpnessSlider));
 		column->addItem(getPtr(averagerArranger));
 		column->addItem(getPtr(gradientArranger));
 		column->addItem(getPtr(endButtons));
@@ -207,6 +250,9 @@ private:
 	void fullRemap(Texture*, Texture*);
 
 	void kuwaharaCallback(int);
+	void zeroCrossCallback(float);
+	void sharpnessCallback(float);
+	void hardnessCallback(float);
 	void averagerCallback(int);
 	void gradientCallback(float);
 };

@@ -8,6 +8,9 @@ layout(binding = 3) uniform RemapParamObject {
 	int kuwaharaKernelRadius;
 	int averagerKernelRadius;
 	float gradientThreshold;
+	float zeroCross;
+	float hardness;
+	float sharpness;
 } rpo;
 
 void main(){
