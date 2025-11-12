@@ -81,7 +81,7 @@ public:
 	int maxAveragerKernel = 128;
 
 	float minGradientThreshold = 0.02f;
-	float maxGradientThreshold = 0.1f;
+	float maxGradientThreshold = 0.2f;
 
 	void updateParamBuffer();
 	
@@ -107,8 +107,6 @@ private:
 	VkDeviceMemory paramBufferMemory = nullptr;
 	void* paramBufferMapped = nullptr;
 
-	Texture* xGradients = nullptr;
-	Texture* yGradients = nullptr;
 	Texture* gradients = nullptr;
 
 	uint32_t baseHeight, baseWidth;
@@ -134,7 +132,6 @@ public:
 
 		std::function<void(int)> kuwaharaSliderFunction = std::bind(&RemapUI::kuwaharaCallback, this, std::placeholders::_1);
 		std::function<void(float)> zeroCrossSliderFunction = std::bind(&RemapUI::zeroCrossCallback, this, std::placeholders::_1);
-		std::function<void(float)> hardnessSliderFunction = std::bind(&RemapUI::hardnessCallback, this, std::placeholders::_1);
 		std::function<void(float)> sharpnessSliderFunction = std::bind(&RemapUI::sharpnessCallback, this, std::placeholders::_1);
 		std::function<void(int)> averagerSliderFunction = std::bind(&RemapUI::averagerCallback, this, std::placeholders::_1);
 		std::function<void(float)> gradientSliderFunction = std::bind(&RemapUI::gradientCallback, this, std::placeholders::_1);
@@ -152,11 +149,21 @@ public:
 		imageData sharpness = EDGESHARPNESSTEXT;
 		Material* sharpnessMat = newMaterial(&sharpness, "SharpnessText");
 
+		imageData noiseRemoval = NOISEREMOVALTEXT;
+		Material* noiseMat = newMaterial(&noiseRemoval, "NoiseRemovalText");
+
+		imageData flattenThresh = FLATTENTHRESHOLDTEXT;
+		Material* threshMat = newMaterial(&flattenThresh, "FlattenThresholdText");
+
 		Button* searchSizeBtn = new Button(searchSizeMat);
 		Button* flatnessBtn = new Button(flatnessMat);
 		Button* sharpnessBtn = new Button(sharpnessMat);
+		Button* noiseBtn = new Button(noiseMat);
+		Button* threshBtn = new Button(threshMat);
 
 		Arrangement* kuwaharaArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
+		Arrangement* zeroCrossArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
+		Arrangement* sharpnessArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
 		Arrangement* averagerArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
 		Arrangement* gradientArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
 
@@ -169,11 +176,6 @@ public:
 		zeroCrossSlider->updateDisplay();
 		zeroCrossSlider->setSlideValues(0.5f, 2.0f, 0.58f);
 		zeroCrossSlider->setFloatCallback(zeroCrossSliderFunction, false);
-
-		//Slider* hardnessSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
-		//hardnessSlider->updateDisplay();
-		//hardnessSlider->setSlideValues(1.0f, 100.0f, 8.0f);
-		//hardnessSlider->setFloatCallback(hardnessSliderFunction, false);
 
 		Slider* sharpnessSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 		sharpnessSlider->updateDisplay();
@@ -204,20 +206,25 @@ public:
 		endButtons->addItem(getPtr(cancelButton));
 		endButtons->addItem(getPtr(finishButton));
 
+		zeroCrossArranger->addItem(getPtr(noiseBtn));
+		zeroCrossArranger->addItem(getPtr(zeroCrossSlider));
+
 		kuwaharaArranger->addItem(getPtr(searchSizeBtn));
 		kuwaharaArranger->addItem(getPtr(kuwaharaKernSlider));
+
+		sharpnessArranger->addItem(getPtr(sharpnessBtn));
+		sharpnessArranger->addItem(getPtr(sharpnessSlider));
 
 		averagerArranger->addItem(getPtr(flatnessBtn));
 		averagerArranger->addItem(getPtr(averagerKernSlider));
 
-		gradientArranger->addItem(getPtr(sharpnessBtn));
+		gradientArranger->addItem(getPtr(threshBtn));
 		gradientArranger->addItem(getPtr(gradientThreshSlider));
 		
 		column->addItem(outMap);
 		column->addItem(getPtr(kuwaharaArranger));
-		column->addItem(getPtr(zeroCrossSlider));
-		//column->addItem(getPtr(hardnessSlider));
-		column->addItem(getPtr(sharpnessSlider));
+		column->addItem(getPtr(zeroCrossArranger));
+		column->addItem(getPtr(sharpnessArranger));
 		column->addItem(getPtr(averagerArranger));
 		column->addItem(getPtr(gradientArranger));
 		column->addItem(getPtr(endButtons));

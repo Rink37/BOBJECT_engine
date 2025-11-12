@@ -87,7 +87,7 @@ void main(){
 		s[k] = abs(s[k]/m[k].w - m[k].rgb * m[k].rgb);
 
 		float sigma2 = 1000.0f*(s[k].r + s[k].g + s[k].b);
-		float w = 1.0f / (1.0f + pow(rpo.hardness*sigma2, 0.5f * rpo.sharpness);
+		float w = 1.0f / (1.0f + pow(rpo.hardness*sigma2, 0.5f * rpo.sharpness));
 
 		avgPixel += vec4(m[k].rgb * w, w);
 	}

@@ -170,4 +170,18 @@ extern unsigned char StrokeFlatnessTextBytes[];
 
 #define STROKEFLATNESSTEXT imageData(StrokeFlatnessTextWidth, StrokeFlatnessTextHeight, StrokeFlatnessTextChannels, StrokeFlatnessTextBytes )
 
+extern const int FlattenThresholdTextWidth;
+extern const int FlattenThresholdTextHeight;
+extern const int FlattenThresholdTextChannels;
+extern unsigned char FlattenThresholdTextBytes[];
+
+#define FLATTENTHRESHOLDTEXT imageData(FlattenThresholdTextWidth, FlattenThresholdTextHeight, FlattenThresholdTextChannels, FlattenThresholdTextBytes )
+
+extern const int NoiseRemovalTextWidth;
+extern const int NoiseRemovalTextHeight;
+extern const int NoiseRemovalTextChannels;
+extern unsigned char NoiseRemovalTextBytes[];
+
+#define NOISEREMOVALTEXT imageData(NoiseRemovalTextWidth, NoiseRemovalTextHeight, NoiseRemovalTextChannels, NoiseRemovalTextBytes )
+
 #endif

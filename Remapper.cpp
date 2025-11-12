@@ -98,16 +98,16 @@ void RemapBackend::cleanup() {
 	if (baseDiffuse != nullptr) {
 		baseDiffuse->cleanup();
 		baseOSNormal->cleanup();
+		baseDiffuse = nullptr;
+		baseOSNormal = nullptr;
 	}
 	if (gradients != nullptr) {
 		gradients->cleanup();
-	}
-	if (xGradients != nullptr) {
-		xGradients->cleanup();
-		yGradients->cleanup();
+		gradients = nullptr;
 	}
 	if (filteredOSNormal != nullptr) {
 		filteredOSNormal->cleanup();
+		filteredOSNormal = nullptr;
 	}
 	vkDestroyBuffer(Engine::get()->device, paramBuffer, nullptr);
 	vkFreeMemory(Engine::get()->device, paramBufferMemory, nullptr);
