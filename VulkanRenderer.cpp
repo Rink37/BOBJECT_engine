@@ -268,7 +268,7 @@ public:
 		loadList = assets;
 	}
 
-	void setup(Material* loadedMat, std::function<void(Material*, float, float)> callback) {
+	void setup(Material* loadedMat, std::function<void(Material*, float, float)> callback, std::function<void(UIItem*)> cancelCallback) {
 		if (isSetup) {
 			return;
 		}
@@ -284,17 +284,25 @@ public:
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
 
+		imageData cancel = CANCELBUTTON;
+		Material* cancelMat = newMaterial(&cancel, "CancelBtn");
+
 		imageData finish = FINISHBUTTON;
 		Material* finishMat = newMaterial(&finish, "FinishBtn");
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f);
+		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
 		std::function<void(UIItem*)> finishFunct = std::bind(&TomographyLoad::finish, this, std::placeholders::_1);
 
+		Button* cancelButton = new Button(cancelMat, cancelCallback);
 		Button* finishButton = new Button(finishMat, finishFunct);
 
+		buttons->addItem(getPtr(cancelButton));
+		buttons->addItem(getPtr(finishButton));
+
 		column->addItem(getPtr(loadedUI));
-		column->addItem(getPtr(finishButton));
+		column->addItem(getPtr(buttons));
 		column->updateDisplay();
 
 		canvas.push_back(getPtr(column));
@@ -407,10 +415,11 @@ private:
 		string fileName = winFile::OpenFileDialog();
 		if (fileName != string("fail")) {
 			tomographer.add_image(fileName);
-			//tomographer.add_lightVector(90.0, 50.0);
 			Material* imageMat = new Material(tomographer.images[tomographer.images.size() - 1]);
 			tomogLoadMenu = new TomographyLoad(loadList);
-			tomogLoadMenu->setup(imageMat, std::bind(&TomographyMenu::addItem, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+			std::function<void(Material*, float, float)> loadCallback = std::bind(&TomographyMenu::addItem, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+			std::function<void(UIItem*)> cancelCallback = std::bind(&TomographyMenu::cancelLoad, this, std::placeholders::_1);
+			tomogLoadMenu->setup(imageMat, loadCallback, cancelCallback);
 			for (UIItem* item : canvas) {
 				item->setIsEnabled(false);
 				item->setVisibility(false);
@@ -425,6 +434,17 @@ private:
 		canvas[1]->addItem(getPtr(loadedUI));
 		canvas[1]->updateDisplay();
 		tomographer.add_lightVector(azimuth, polar);
+		mouseManager.removeClickListener(clickIdx);
+		mouseManager.removePositionListener(posIdx);
+		tomogLoadMenu->cleanup();
+		tomogLoadMenu = nullptr;
+		for (UIItem* item : canvas) {
+			item->setIsEnabled(true);
+			item->setVisibility(true);
+		}
+	}
+
+	void cancelLoad(UIItem* owner) {
 		mouseManager.removeClickListener(clickIdx);
 		mouseManager.removePositionListener(posIdx);
 		tomogLoadMenu->cleanup();

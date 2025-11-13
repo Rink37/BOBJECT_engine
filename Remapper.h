@@ -197,11 +197,11 @@ public:
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
-		imageData finish = FINISHBUTTON;
-		Material* finishMat = newMaterial(&finish, "FinishBtn");
-
 		imageData cancel = CANCELBUTTON;
 		Material* cancelMat = newMaterial(&cancel, "CancelBtn");
+		
+		imageData finish = FINISHBUTTON;
+		Material* finishMat = newMaterial(&finish, "FinishBtn");
 
 		Button* finishButton = new Button(finishMat, finishFunct);
 		Button* cancelButton = new Button(cancelMat, cancelFunct);
