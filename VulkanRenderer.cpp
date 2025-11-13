@@ -358,23 +358,39 @@ public:
 		imageData diffuse = DIFFUSETEXT;
 		Material* diffuseMat = newMaterial(&diffuse, "DiffuseBtn");
 
-		std::function<void(UIItem*)> tomogLoadTop = bind(&TomographyMenu::loadFile, this, placeholders::_1);
+		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.5f, 0.01f);
+		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+		Arrangement* loadButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START);
+
+		std::function<void(UIItem*)> tomogLoad = bind(&TomographyMenu::loadFile, this, placeholders::_1);
 		std::function<void(UIItem*)> computeNormal = bind(&TomographyMenu::performNormTomog, this, placeholders::_1);
 		std::function<void(UIItem*)> computeDiffuse = bind(&TomographyMenu::performDiffTomog, this, placeholders::_1);
 
 		Arrangement* tomogButtons = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.1f, 0.4f, 0.01f);
 
-		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadTop)));
-		tomogButtons->addItem(getPtr(new Button(normalMat, computeNormal)));
-		tomogButtons->addItem(getPtr(new Button(diffuseMat, computeDiffuse)));
+		loadButtons->addItem(getPtr(new Button(openMat, tomogLoad)));
+		
+		column->addItem(getPtr(loadButtons));
+		column->addItem(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.5f, 0.5f, 0.5f, 0.01f)));
 
-		tomogButtons->updateDisplay();
+		grid = column->Items[1];
+
+		buttons->addItem(getPtr(new Button(normalMat, computeNormal)));
+		buttons->addItem(getPtr(new Button(diffuseMat, computeDiffuse)));
+
+		column->addItem(getPtr(buttons));
+
+		//tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadTop)));
+		//tomogButtons->addItem(getPtr(new Button(normalMat, computeNormal)));
+		//tomogButtons->addItem(getPtr(new Button(diffuseMat, computeDiffuse)));
+
+		column->updateDisplay();
 
 		sConst->diffTex->getCVMat();
 		tomographer.alignTemplate = &sConst->diffTex->texMat;
 
-		canvas.push_back(getPtr(tomogButtons));
-		canvas.push_back(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.5f, 0.5f, 0.5f, 0.01f)));
+		canvas.push_back(getPtr(column));
+		//canvas.push_back(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.5f, 0.5f, 0.5f, 0.01f)));
 
 		isSetup = true;
 	}
@@ -402,6 +418,8 @@ public:
 
 	size_t clickIdx = 0;
 	size_t posIdx = 0;
+
+	UIItem* grid = nullptr;
 
 private:
 	Tomographer tomographer;
@@ -431,8 +449,8 @@ private:
 
 	void addItem(Material* imageMat, float azimuth, float polar) {
 		ImagePanel* loadedUI = new ImagePanel(imageMat, false);
-		canvas[1]->addItem(getPtr(loadedUI));
-		canvas[1]->updateDisplay();
+		grid->addItem(getPtr(loadedUI));
+		grid->updateDisplay();
 		tomographer.add_lightVector(azimuth, polar);
 		mouseManager.removeClickListener(clickIdx);
 		mouseManager.removePositionListener(posIdx);
