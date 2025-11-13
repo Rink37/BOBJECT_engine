@@ -2,6 +2,7 @@
 #define TOMOG
 
 #include"ImageProcessor.h"
+#include"Textures.h"
 
 class Tomographer {
 public:
@@ -14,7 +15,8 @@ public:
 
 	cv::Size outdims;
 
-	void add_image(std::string, float phi, float theta);
+	void add_image(std::string);
+	void add_lightVector(float phi, float theta);
 
 	void calculate_normal();
 	void calculate_diffuse();
@@ -25,9 +27,12 @@ public:
 		computedNormal.release();
 		computedDiffuse.release();
 	}
+
+	std::vector<Texture*> images;
 private:
 	bool normalExists = false;
-	std::vector<cv::Mat> images;
+	std::vector<Texture*> originalImages;
+	
 	std::vector<std::vector<float>> vectors;
 };
 

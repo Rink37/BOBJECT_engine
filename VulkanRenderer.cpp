@@ -282,63 +282,43 @@ public:
 		imageData diffuse = DIFFUSETEXT;
 		Material* diffuseMat = newMaterial(&diffuse, "DiffuseBtn");
 
-		std::function<void(UIItem*)> tomogLoadTop = bind(&TomographyMenu::loadTop, this, placeholders::_1);
-		std::function<void(UIItem*)> tomogLoadBottom = bind(&TomographyMenu::loadBottom, this, placeholders::_1);
-		std::function<void(UIItem*)> tomogLoadLeft = bind(&TomographyMenu::loadLeft, this, placeholders::_1);
-		std::function<void(UIItem*)> tomogLoadRight = bind(&TomographyMenu::loadRight, this, placeholders::_1);
+		std::function<void(UIItem*)> tomogLoadTop = bind(&TomographyMenu::loadFile, this, placeholders::_1);
 		std::function<void(UIItem*)> computeNormal = bind(&TomographyMenu::performNormTomog, this, placeholders::_1);
 		std::function<void(UIItem*)> computeDiffuse = bind(&TomographyMenu::performDiffTomog, this, placeholders::_1);
 
 		Arrangement* tomogButtons = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.1f, 0.4f, 0.01f);
 
 		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadTop)));
-		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadBottom)));
-		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadLeft)));
-		tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadRight)));
 		tomogButtons->addItem(getPtr(new Button(normalMat, computeNormal)));
 		tomogButtons->addItem(getPtr(new Button(diffuseMat, computeDiffuse)));
 
 		tomogButtons->updateDisplay();
+
+		sConst->diffTex->getCVMat();
+		tomographer.alignTemplate = &sConst->diffTex->texMat;
 
 		canvas.push_back(getPtr(tomogButtons));
 		canvas.push_back(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.5f, 0.5f, 0.5f, 0.01f)));
 
 		isSetup = true;
 	}
+
+	void cleanupSubclasses() {
+	}
 private:
 	Tomographer tomographer;
 
 	surfaceConstructor* surface = nullptr;
 
-	void loadTop(UIItem* owner) {
+	void loadFile(UIItem* owner) {
 		string fileName = winFile::OpenFileDialog();
 		if (fileName != string("fail")) {
-			tomographer.add_image(fileName, 90.0, 50.0);
+			tomographer.add_image(fileName);
+			tomographer.add_lightVector(90.0, 50.0);
 			cv::Mat loadedImage = cv::imread(fileName);
-			UIItem* loadedUI = new ImagePanel(new Material(new imageTexture(loadedImage)), false);
+			UIItem* loadedUI = new ImagePanel(new Material(tomographer.images[tomographer.images.size()-1]), false);
 			canvas[1]->addItem(loadedUI);
 			canvas[1]->updateDisplay();
-		}
-	}
-
-	void loadBottom(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
-			tomographer.add_image(fileName, 270.0, 50.0);
-		}
-	}
-
-	void loadLeft(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
-			tomographer.add_image(fileName, 180.0, 50.0);
-		}
-	}
-
-	void loadRight(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
-			tomographer.add_image(fileName, 0.0, 50.0);
 		}
 	}
 

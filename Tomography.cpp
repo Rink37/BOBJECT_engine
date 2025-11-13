@@ -217,7 +217,6 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 	else {
 		scaleFactor = static_cast<float>(stepsPerIter) / static_cast<float>(index + 1) * target->cols / src.cols;
 	}
-	//cout << "Scale factor = " << scaleFactor << endl;
 
 	Mat matched = src.clone();
 
@@ -266,8 +265,6 @@ void match_template(Mat src, Mat* target, Size outdims) {
 	Mat imMatches;
 	drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
 
-	//imshow("Matches", imMatches);
-	//waitKey(0);
 
 	for (size_t i = 0; i < matches.size(); i++) {
 		if (norm(keypoints1[matches[i].queryIdx].pt - keypoints2[matches[i].trainIdx].pt) < 100) {
@@ -281,10 +278,8 @@ void match_template(Mat src, Mat* target, Size outdims) {
 		matchPoints[i] = Point2f(matchPoints[i].x * target->cols / targetGray.cols, matchPoints[i].y * target->rows / targetGray.rows);
 	}
 
-	//Mat h = findHomography(matchPoints, srcPoints, RANSAC);
 	Mat h = estimateAffine2D(matchPoints, srcPoints);
 
-	//warpPerspective(*target, *target, h, outdims);
 	warpAffine(*target, *target, h, outdims);
 }
 
@@ -489,7 +484,7 @@ bool checkForEmptyInArea(Mat img, int x, int y, int range) {
 	return false;
 }
 
-Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
+Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
 	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
 	// Seems like CPU compute takes a few minutes so worth investigating GPU
 	// D represents the list of light vectors for each image
@@ -499,7 +494,7 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 
 	vector<vector<float>> tomogMatrix;
 
-	Mat normal = images[0].clone();
+	Mat normal = images[0]->texMat.clone();
 	normal = Scalar(0, 0, 0);
 
 	map <string, vector<vector<float>>> tomogMatrices;
@@ -508,7 +503,7 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 
 	for (int i = 0; i != images.size(); i++) {
 		Mat gray;// = getDiffuseGray(images[i]);
-		cvtColor(images[i], gray, COLOR_RGB2GRAY);
+		cvtColor(images[i]->texMat, gray, COLOR_RGB2GRAY);
 		grayImages.push_back(gray);
 	}
 
@@ -566,16 +561,16 @@ Mat calculateNormal(vector<Mat> images, vector<vector<float>> D) { // Calculates
 	return normal;
 }
 
-Mat calculateDiffuse(vector<Mat> images, vector<vector<float>> D, Mat normal) {
+Mat calculateDiffuse(vector<Texture*> images, vector<vector<float>> D, Mat normal) {
 
-	Mat diffuse = images[0].clone();
+	Mat diffuse = images[0]->texMat.clone();
 	diffuse = Scalar(0, 0, 0);
 
 	vector<Mat> grayImages;
 	for (int k = 0; k != images.size(); k++) {
 		//Mat grayImg;
 		Mat grayImg;// = getDiffuseGray(images[k]);
-		cvtColor(images[k], grayImg, COLOR_RGB2GRAY);
+		cvtColor(images[k]->texMat, grayImg, COLOR_RGB2GRAY);
 		grayImages.push_back(grayImg);
 	}
 
@@ -590,7 +585,7 @@ Mat calculateDiffuse(vector<Mat> images, vector<vector<float>> D, Mat normal) {
 			Vec2f xyNormal = Vec2f(normalVector[0], normalVector[1]);
 			float normalLength = sqrt(normalVector[0] * normalVector[0] + normalVector[1] * normalVector[1]);
 			if (normalLength == 0) {
-				diffuse.at<Vec3b>(x, y) = images[0].at<Vec3b>(x, y);
+				diffuse.at<Vec3b>(x, y) = images[0]->texMat.at<Vec3b>(x, y);
 				continue;
 			}
 			xyNormal[0] /= normalLength;
@@ -618,7 +613,7 @@ Mat calculateDiffuse(vector<Mat> images, vector<vector<float>> D, Mat normal) {
 			Vec3f floatPixel = Vec3f(0.0f, 0.0f, 0.0f);
 
 			for (int k = 0; k != images.size(); k++) {
-				Vec3f pixel = static_cast<Vec3f>(images[k].at<Vec3b>(x, y));
+				Vec3f pixel = static_cast<Vec3f>(images[k]->texMat.at<Vec3b>(x, y));
 				floatPixel[0] += pixel[0] * weights[k] / total;
 				floatPixel[1] += pixel[1] * weights[k] / total;
 				floatPixel[2] += pixel[2] * weights[k] / total;
@@ -630,32 +625,46 @@ Mat calculateDiffuse(vector<Mat> images, vector<vector<float>> D, Mat normal) {
 	return diffuse;
 }
 
-void Tomographer::add_image(string filename, float phi, float theta) {
+void Tomographer::add_image(string filename) {
 	Mat image = imread(filename);
+	Texture* texture = new imageTexture(image);
+	texture->getCVMat();
 
+	originalImages.push_back(texture);
+
+	Mat scaledAlign = alignTemplate->clone();
+	Size dims(scaledAlign.cols, scaledAlign.rows);
+	int height = 1024;
+	resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
+
+	match_partial(scaledAlign, &image, dims);
+	match_template(scaledAlign, &image, dims);
+
+	Texture* matchedTex = new imageTexture(image);
+	matchedTex->getCVMat();
+	images.push_back(matchedTex);
+}
+
+void Tomographer::add_lightVector(float phi, float theta) {
 	vector<float> lightVec;
 	calculateVector(lightVec, phi, theta);
-
-	images.push_back(image);
 	vectors.push_back(lightVec);
 }
 
 void Tomographer::calculate_normal() {
-	if (alignRequired && (alignTemplate != nullptr)) {
+	//if (alignRequired && (alignTemplate != nullptr)) {
 		// perform template matching for each image in the set
-		Mat scaledAlign = alignTemplate->clone();
-		Size dims(scaledAlign.cols, scaledAlign.rows);
-		int height = 1024;
-		resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
+	//	Mat scaledAlign = alignTemplate->clone();
+	//	Size dims(scaledAlign.cols, scaledAlign.rows);
+	//	int height = 1024;
+	//	resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
 
-		for (int i = 0; i != images.size(); i++) {
-			match_partial(scaledAlign, &images[i], dims);
-			match_template(scaledAlign, &images[i], dims);
-		}
-		//cout << "All templates matched" << endl;
-		//imshow("Example", images[0]);
-		waitKey(0);
-	}
+	//	for (int i = 0; i != images.size(); i++) {
+	//		match_partial(scaledAlign, &images[i], dims);
+	//		match_template(scaledAlign, &images[i], dims);
+	//	}
+		//waitKey(0);
+	//}
 	computedNormal = calculateNormal(images, vectors);
 	normalExists = true;
 
