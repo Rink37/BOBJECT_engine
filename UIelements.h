@@ -633,7 +633,7 @@ private:
 		this->sqAxisRatio = ey / ex;
 	}
 
-	int numArrangements = 5;
+	int numArrangements = 2;
 
 	Arrangement* mainArrangement = nullptr;
 

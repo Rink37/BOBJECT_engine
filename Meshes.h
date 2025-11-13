@@ -27,7 +27,6 @@ struct Mesh {
 	void createIndexBuffer();
 
 	const void cleanup();
-private:
 	bool cleaned = true;
 };
 
@@ -53,6 +52,27 @@ public:
 	void computeTangents();
 private:
 	bool loadModel(std::string);
+};
+
+class PlaneMesh : public Mesh {
+public:
+	PlaneMesh(uint32_t width, uint32_t height) {
+		aspectRatio = static_cast<float>(height) / static_cast<float>(width);
+
+		constructMesh();
+		computeTangents();
+		createVertexBuffer();
+		createIndexBuffer();
+
+		cleaned = false;
+	}
+
+	float aspectRatio = 0.0f;
+	float size = 1.0f;
+
+private:
+	void constructMesh();
+	void computeTangents();
 };
 
 #endif

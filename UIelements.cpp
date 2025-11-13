@@ -497,14 +497,14 @@ void Grid::arrangeItems() {
 	float H = static_cast<float>(Engine::get()->windowHeight);
 
 	if (orientation == ORIENT_HORIZONTAL) {
-		mainArrangement = new Arrangement(ORIENT_VERTICAL, this->posx, this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		mainArrangement = new Arrangement(ORIENT_VERTICAL, this->posx, -1*this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		subExtentx = 1.0f;
-		subExtenty = 1.0f / (float(numArrangements) * 1.1f);
+		subExtenty = 1.0f / (float(numArrangements) * 1.1f) * this->extenty/this->extentx;
 	}
 	else if (orientation == ORIENT_VERTICAL) {
-		mainArrangement = new Arrangement(ORIENT_HORIZONTAL, this->posx, this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		mainArrangement = new Arrangement(ORIENT_HORIZONTAL, this->posx, -1*this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		subExtenty = 1.0f;
-		subExtentx = 1.0f / (float(numArrangements) * 1.1f);
+		subExtentx = 1.0f / (float(numArrangements) * 1.1f) * this->extentx/this->extenty;
 	}
 
 	Arrangement* subArrangement = new Arrangement(orientation, 0.0f, 0.0f, subExtentx, subExtenty, this->spacing, ARRANGE_START);

@@ -85,8 +85,6 @@ void UIMesh::UpdateVertices(float xp, float yp, float xsc, float ysc) {
 	vertices.push_back(vertex);
 
 	if (vBuffer == nullptr) {
-		//createVertexBuffer();
-		//createIndexBuffer();
 		setup();
 	}
 	else {
@@ -257,6 +255,100 @@ void StaticMesh::computeTangents() {
 		glm::vec3 c = cross(n, t0);
 		float w = (dot(c, t1) < 0) ? -1.0f : 1.0f;
 		vertices[i].tangent = glm::vec4(t.x, t.y, t.z, w);
+
+		t = cross(glm::vec3(vertices[i].tangent.x, vertices[i].tangent.y, vertices[i].tangent.z), vertices[i].normal);
+		//vertices[i].biTangent = t;
+	}
+}
+
+void PlaneMesh::constructMesh() {
+	Vertex vertex{};
+
+	float xsc = size;
+	float ysc = size * aspectRatio;
+	float xp = 0.0f;
+	float yp = 0.0f;
+
+	vertex.pos = { -xsc + xp, yp - ysc, 0.0f };
+	vertex.normal = { 0.0f, 0.0f, 1.0f };
+	vertex.texCoord = { 0.0f, 1.0f };
+	vertices.push_back(vertex);
+	vertex.pos = { xsc + xp, yp - ysc, 0.0f };
+	vertex.texCoord = { 1.0f, 1.0f };
+	vertices.push_back(vertex);
+	vertex.pos = { xsc + xp, yp + ysc, 0.0f };
+	vertex.texCoord = { 1.0f, 0.0f };
+	vertices.push_back(vertex);
+	vertex.pos = { -xsc + xp, yp + ysc, 0.0f };
+	vertex.texCoord = { 0.0f, 0.0f };
+	vertices.push_back(vertex);
+
+
+	indices = { 0, 1, 2, 2, 3, 0 };
+}
+
+void PlaneMesh::computeTangents() {
+	// First we initialise all the tangents and bitangents
+	for (Vertex vert : vertices) {
+		vert.tangent = glm::vec4(0, 0, 0, 0);
+		//vert.biTangent = glm::vec3(0, 0, 0);
+	}
+
+	vector<glm::vec3> biTangents;
+	for (size_t i = 0; i != vertices.size(); i++) {
+		biTangents.push_back(glm::vec3(0, 0, 0));
+	}
+
+	// Then we calculate the tangents and bitangents described by the plane of each triangle
+	for (size_t i = 0; i != indices.size(); i += 3) {
+
+		size_t i0 = indices[i + 0];
+		size_t i1 = indices[i + 1];
+		size_t i2 = indices[i + 2];
+
+		glm::vec3& v0 = vertices[i0].pos;
+		glm::vec3& v1 = vertices[i1].pos;
+		glm::vec3& v2 = vertices[i2].pos;
+
+		glm::vec2& uv0 = vertices[i0].texCoord;
+		glm::vec2& uv1 = vertices[i1].texCoord;
+		glm::vec2& uv2 = vertices[i2].texCoord;
+
+		glm::vec3 deltaPos1 = v1 - v0;
+		glm::vec3 deltaPos2 = v2 - v0;
+
+		glm::vec2 deltaUV1 = uv1 - uv0;
+		glm::vec2 deltaUV2 = uv2 - uv0;
+
+		float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+		glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
+		glm::vec3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x) * r;
+		glm::vec4 fourTan = glm::vec4(tangent, 1.0);
+
+		vertices[i0].tangent += fourTan;
+		vertices[i1].tangent += fourTan;
+		vertices[i2].tangent += fourTan;
+
+		biTangents[i0] += bitangent;
+		biTangents[i1] += bitangent;
+		biTangents[i2] += bitangent;
+	}
+
+	// Finally we compute the normalized tangent vectors as well as the facing direction
+	// w describes whether the normals need to be inverted or not (for vertices that have been mirrored and share UV coordinates)
+
+	for (size_t i = 0; i != vertices.size(); i++) {
+		glm::vec3 n = vertices[i].normal;
+		glm::vec3 t0 = vertices[i].tangent;
+		glm::vec3 t1 = biTangents[i];
+
+		glm::vec3 t = t0 - (n * dot(n, t0));
+		t = normalize(t); // Disabling this normalization will scale the vectors based on the scale of the vertices (perhaps this is more ideal?)
+
+		glm::vec3 c = cross(n, t0);
+		float w = (dot(c, t1) < 0) ? -1.0f : 1.0f;
+		vertices[i].tangent = glm::vec4(t.x, t.y, t.z, w);
+		std::cout << vertices[i].normal.x << " " << vertices[i].normal.y << " " << vertices[i].normal.z << std::endl;
 
 		t = cross(glm::vec3(vertices[i].tangent.x, vertices[i].tangent.y, vertices[i].tangent.z), vertices[i].normal);
 		//vertices[i].biTangent = t;

@@ -358,20 +358,19 @@ public:
 		imageData diffuse = DIFFUSETEXT;
 		Material* diffuseMat = newMaterial(&diffuse, "DiffuseBtn");
 
-		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.5f, 0.01f);
-		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
-		Arrangement* loadButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START);
+		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, -1.0f, 0.875f, 0.4f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		
+		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.05f, 0.01f, ARRANGE_END);
+		Arrangement* loadButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.05f, 0.01f, ARRANGE_START);
 
 		std::function<void(UIItem*)> tomogLoad = bind(&TomographyMenu::loadFile, this, placeholders::_1);
 		std::function<void(UIItem*)> computeNormal = bind(&TomographyMenu::performNormTomog, this, placeholders::_1);
 		std::function<void(UIItem*)> computeDiffuse = bind(&TomographyMenu::performDiffTomog, this, placeholders::_1);
 
-		Arrangement* tomogButtons = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.1f, 0.4f, 0.01f);
-
 		loadButtons->addItem(getPtr(new Button(openMat, tomogLoad)));
 		
 		column->addItem(getPtr(loadButtons));
-		column->addItem(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.5f, 0.5f, 0.5f, 0.01f)));
+		column->addItem(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.3f, 0.01f)));
 
 		grid = column->Items[1];
 
@@ -380,17 +379,12 @@ public:
 
 		column->addItem(getPtr(buttons));
 
-		//tomogButtons->addItem(getPtr(new Button(openMat, tomogLoadTop)));
-		//tomogButtons->addItem(getPtr(new Button(normalMat, computeNormal)));
-		//tomogButtons->addItem(getPtr(new Button(diffuseMat, computeDiffuse)));
-
 		column->updateDisplay();
 
 		sConst->diffTex->getCVMat();
 		tomographer.alignTemplate = &sConst->diffTex->texMat;
 
 		canvas.push_back(getPtr(column));
-		//canvas.push_back(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.5f, 0.5f, 0.5f, 0.01f)));
 
 		isSetup = true;
 	}
@@ -510,7 +504,6 @@ public:
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		sConst->setupSurfaceConstructor();
 		createCanvas();
-		//sliderTestFunc();
 		if (sConst->webTex->webCam != nullptr) {
 			sConst->webTex->webCam->loadFilter();
 		}
@@ -560,7 +553,7 @@ private:
 	bool showWireframe = true;
 
 	vector<StaticObject> staticObjects = {};
-	//map<string, int> ObjectMap = {};
+	PlaneObject* tomographyPlane = nullptr;
 
 	bool lit = true;
 
@@ -785,6 +778,7 @@ private:
 
 	void toggleTomogMenu() {
 		if (!tomogActive) {
+			tomographyPlane = new PlaneObject(sConst->diffTex->texWidth, sConst->diffTex->texHeight);
 			tomogUI.setup(sConst);
 			mouseManager.addClickListener(tomogUI.getClickCallback());
 			widgets.push_back(&tomogUI);
@@ -1089,6 +1083,24 @@ private:
 					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
 				}
 			}
+
+			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
+				VkBuffer vertexBuffers[] = { tomographyPlane->mesh->vertexBuffer };
+				VkDeviceSize offsets[] = { 0 };
+
+				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+				vkCmdBindIndexBuffer(commandBuffer, tomographyPlane->mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+				if (sConst->normalAvailable) {
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
+				}
+				else {
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
+				}
+
+				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(tomographyPlane->mesh->indices.size()), 1, 0, 0, 0);
+			}
 		}
 		else {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
@@ -1112,6 +1124,24 @@ private:
 
 					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
 				}
+			}
+
+			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
+				VkBuffer vertexBuffers[] = { tomographyPlane->mesh->vertexBuffer };
+				VkDeviceSize offsets[] = { 0 };
+
+				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+				vkCmdBindIndexBuffer(commandBuffer, tomographyPlane->mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+				if (sConst->normalAvailable) {
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
+				}
+				else {
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
+				}
+
+				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(tomographyPlane->mesh->indices.size()), 1, 0, 0, 0);
 			}
 		}
 
