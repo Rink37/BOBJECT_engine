@@ -449,13 +449,13 @@ vector<vector<float>> constructTomogMatrix(vector<int> indexes, vector<vector<fl
 	matrixDot(reducedD, DT, Ddot);
 	// Ddot = 3x3 matrix
 
-	printMatrix(Ddot);
+	//printMatrix(Ddot);
 
 	vector<vector<float>> DdotInverse;
 	matrixInverse(Ddot, DdotInverse);
 	// DdotInverse = 3x3 matrix
 
-	printMatrix(DdotInverse);
+	//printMatrix(DdotInverse);
 
 	vector<vector<float>> transformationD;
 	matrixDot(DT, DdotInverse, transformationD);
@@ -503,9 +503,13 @@ Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calcu
 
 	for (int i = 0; i != images.size(); i++) {
 		Mat gray;// = getDiffuseGray(images[i]);
-		cvtColor(images[i]->texMat, gray, COLOR_RGB2GRAY);
+		cvtColor(images[i]->texMat, gray, COLOR_RGB2GRAY); // These are fine
 		grayImages.push_back(gray);
 	}
+
+	//for (int i = 0; i != images.size(); i++) {
+	//	std::cout << D[i][0] << " " << D[i][1] << " " << D[i][2] << std::endl;
+	//}
 
 	for (int y = 0; y != normal.cols; y++) {
 		cout << y << endl;
@@ -523,6 +527,7 @@ Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calcu
 			}
 			if (validIndexes.size() == 0) {
 				normal.at<Vec3b>(x, y) = Vec3b(127, 127, 255);
+				//cout << "No valid indexes" << endl;
 				continue;
 			}
 
@@ -553,6 +558,9 @@ Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calcu
 			}
 			
 			normal.at<Vec3b>(x, y) = Vec3b(normalPixel[0], normalPixel[1], normalPixel[2]);
+
+			//std::cout << normalPixel[0] << " " << normalPixel[1] << " " << normalPixel[2] << std::endl;
+
 		}
 	}
 
@@ -642,6 +650,7 @@ void Tomographer::add_image(string filename) {
 
 	Texture* matchedTex = new imageTexture(image);
 	matchedTex->getCVMat();
+
 	images.push_back(matchedTex);
 }
 

@@ -287,17 +287,24 @@ public:
 		imageData finish = FINISHBUTTON;
 		Material* finishMat = newMaterial(&finish, "FinishBtn");
 
-		lightDirection = new Rotator(visibleMat, loadedUI->posx, loadedUI->posy, loadedUI->extentx, loadedUI->extentx*loadedUI->sqAxisRatio);
-		lightDirection->updateDisplay();
-		lightDirection->setSlideValues(0.0f, 360.0f, 0.0f);
-		lightDirection->setFloatCallback(std::bind(&TomographyLoad::setAzimuth, this, std::placeholders::_1), false);
+		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f);
 
 		std::function<void(UIItem*)> finishFunct = std::bind(&TomographyLoad::finish, this, std::placeholders::_1);
 
 		Button* finishButton = new Button(finishMat, finishFunct);
 
-		canvas.push_back(getPtr(loadedUI));
+		column->addItem(getPtr(loadedUI));
+		column->addItem(getPtr(finishButton));
+		column->updateDisplay();
+
+		canvas.push_back(getPtr(column));
+
+		lightDirection = new Rotator(visibleMat, loadedUI->posx, loadedUI->posy, loadedUI->extentx, loadedUI->extentx * loadedUI->sqAxisRatio);
+		lightDirection->updateDisplay();
+		lightDirection->setSlideValues(0.0f, 360.0f, 0.0f);
+		lightDirection->setFloatCallback(std::bind(&TomographyLoad::setAzimuth, this, std::placeholders::_1), false);
 		canvas.push_back(getPtr(lightDirection));
+		
 
 		isSetup = true;
 	}
@@ -311,8 +318,8 @@ private:
 
 	void setAzimuth(float az) {
 		az = 90.0f - az;
-		az = (az < 0) ? az + 360.0f : az;
-		std::cout << az << std::endl;
+		azimuth = (az < 0) ? az + 360.0f : az;
+		std::cout << azimuth << std::endl;
 	}
 
 	void finish(UIItem* nothing) {
@@ -400,7 +407,7 @@ private:
 		string fileName = winFile::OpenFileDialog();
 		if (fileName != string("fail")) {
 			tomographer.add_image(fileName);
-			tomographer.add_lightVector(90.0, 50.0);
+			//tomographer.add_lightVector(90.0, 50.0);
 			Material* imageMat = new Material(tomographer.images[tomographer.images.size() - 1]);
 			tomogLoadMenu = new TomographyLoad(loadList);
 			tomogLoadMenu->setup(imageMat, std::bind(&TomographyMenu::addItem, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -414,14 +421,18 @@ private:
 	}
 
 	void addItem(Material* imageMat, float azimuth, float polar) {
-		UIItem* loadedUI = new ImagePanel(imageMat, false);
-		canvas[1]->addItem(loadedUI);
+		ImagePanel* loadedUI = new ImagePanel(imageMat, false);
+		canvas[1]->addItem(getPtr(loadedUI));
 		canvas[1]->updateDisplay();
 		tomographer.add_lightVector(azimuth, polar);
 		mouseManager.removeClickListener(clickIdx);
 		mouseManager.removePositionListener(posIdx);
 		tomogLoadMenu->cleanup();
 		tomogLoadMenu = nullptr;
+		for (UIItem* item : canvas) {
+			item->setIsEnabled(true);
+			item->setVisibility(true);
+		}
 	}
 
 	void performNormTomog(UIItem* owner) {
