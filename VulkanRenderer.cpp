@@ -262,6 +262,32 @@ private:
 	}
 };
 
+class TomographyLoad : public Widget {
+public:
+	TomographyLoad(LoadList* assets) {
+		loadList = assets;
+	}
+
+	void setup(Material* loadedMat) {
+		if (isSetup) {
+			return;
+		}
+		ImagePanel* loadedUI = new ImagePanel(loadedMat, false);
+		loadedUI->update(0.0f, 0.0f, 0.4f, 0.4f);
+		loadedUI->updateDisplay();
+		
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+		Rotator* lightDirection = new Rotator(visibleMat, loadedUI->posx, loadedUI->posy, loadedUI->extentx, loadedUI->extentx*loadedUI->sqAxisRatio);
+		lightDirection->updateDisplay();
+
+		canvas.push_back(getPtr(loadedUI));
+		canvas.push_back(getPtr(lightDirection));
+
+		isSetup = true;
+	}
+};
+
 class TomographyMenu : public Widget {
 public:
 	TomographyMenu(LoadList* assets) {
@@ -273,6 +299,7 @@ public:
 			return;
 		}
 		surface = sConst;
+
 		imageData OpenButton = OPENBUTTON;
 		Material* openMat = newMaterial(&OpenButton, "OpenBtn");
 		
@@ -305,18 +332,47 @@ public:
 
 	void cleanupSubclasses() {
 	}
+
+	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		if (tomogLoadMenu != nullptr) {
+			tomogLoadMenu->drawUI(commandBuffer, currentFrame);
+		}
+		for (size_t i = 0; i != canvas.size(); i++) {
+			canvas[i]->drawUI(commandBuffer, currentFrame);
+		}
+	}
+
+	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		if (tomogLoadMenu != nullptr) {
+			tomogLoadMenu->drawImages(commandBuffer, currentFrame);
+		}
+		for (size_t i = 0; i != canvas.size(); i++) {
+			canvas[i]->drawImages(commandBuffer, currentFrame);
+		}
+	}
+
+	size_t clickIdx = 0;
+	size_t posIdx = 0;
+
 private:
 	Tomographer tomographer;
+	TomographyLoad* tomogLoadMenu = nullptr;
 
 	surfaceConstructor* surface = nullptr;
+
+	std::function<void(Material*)> loadCallback = nullptr;
 
 	void loadFile(UIItem* owner) {
 		string fileName = winFile::OpenFileDialog();
 		if (fileName != string("fail")) {
 			tomographer.add_image(fileName);
 			tomographer.add_lightVector(90.0, 50.0);
-			cv::Mat loadedImage = cv::imread(fileName);
-			UIItem* loadedUI = new ImagePanel(new Material(tomographer.images[tomographer.images.size()-1]), false);
+			Material* imageMat = new Material(tomographer.images[tomographer.images.size() - 1]);
+			tomogLoadMenu = new TomographyLoad(loadList);
+			tomogLoadMenu->setup(new Material(tomographer.images[tomographer.images.size() - 1]));
+			clickIdx = mouseManager.addClickListener(tomogLoadMenu->getClickCallback());
+			posIdx = mouseManager.addPositionListener(tomogLoadMenu->getPosCallback());
+			UIItem* loadedUI = new ImagePanel(imageMat, false);
 			canvas[1]->addItem(loadedUI);
 			canvas[1]->updateDisplay();
 		}
@@ -394,7 +450,6 @@ private:
 	RenderMenu renderMenu = RenderMenu(&UIElements);
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
-	//Widget sliderTest = Widget(&UIElements);
 	RemapUI remapMenu = RemapUI(&UIElements, sConst);
 
 	UIItem* UITestImage = nullptr;

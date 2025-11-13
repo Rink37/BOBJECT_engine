@@ -1113,13 +1113,13 @@ struct Widget {
 		return result;
 	};
 	
-	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	virtual void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->drawUI(commandBuffer, currentFrame);
 		}
 	}
 
-	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	virtual void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->drawImages(commandBuffer, currentFrame);
 		}
