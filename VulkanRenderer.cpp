@@ -268,23 +268,57 @@ public:
 		loadList = assets;
 	}
 
-	void setup(Material* loadedMat) {
+	void setup(Material* loadedMat, std::function<void(Material*, float, float)> callback) {
 		if (isSetup) {
 			return;
 		}
+
+		doneCallback = callback;
+
+		outMat = loadedMat;
+
 		ImagePanel* loadedUI = new ImagePanel(loadedMat, false);
 		loadedUI->update(0.0f, 0.0f, 0.4f, 0.4f);
 		loadedUI->updateDisplay();
 		
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
-		Rotator* lightDirection = new Rotator(visibleMat, loadedUI->posx, loadedUI->posy, loadedUI->extentx, loadedUI->extentx*loadedUI->sqAxisRatio);
+
+		imageData finish = FINISHBUTTON;
+		Material* finishMat = newMaterial(&finish, "FinishBtn");
+
+		lightDirection = new Rotator(visibleMat, loadedUI->posx, loadedUI->posy, loadedUI->extentx, loadedUI->extentx*loadedUI->sqAxisRatio);
 		lightDirection->updateDisplay();
+		lightDirection->setSlideValues(0.0f, 360.0f, 0.0f);
+		lightDirection->setFloatCallback(std::bind(&TomographyLoad::setAzimuth, this, std::placeholders::_1), false);
+
+		std::function<void(UIItem*)> finishFunct = std::bind(&TomographyLoad::finish, this, std::placeholders::_1);
+
+		Button* finishButton = new Button(finishMat, finishFunct);
 
 		canvas.push_back(getPtr(loadedUI));
 		canvas.push_back(getPtr(lightDirection));
 
 		isSetup = true;
+	}
+private:
+	std::function<void(Material*, float, float)> doneCallback = nullptr;
+	Rotator* lightDirection = nullptr;
+	Material* outMat = nullptr;
+
+	float polar = 50.0f;
+	float azimuth = 90.0f;
+
+	void setAzimuth(float az) {
+		az = 90.0f - az;
+		az = (az < 0) ? az + 360.0f : az;
+		std::cout << az << std::endl;
+	}
+
+	void finish(UIItem* nothing) {
+		if (doneCallback != nullptr) {
+			doneCallback(outMat, azimuth, polar);
+		}
 	}
 };
 
@@ -369,13 +403,25 @@ private:
 			tomographer.add_lightVector(90.0, 50.0);
 			Material* imageMat = new Material(tomographer.images[tomographer.images.size() - 1]);
 			tomogLoadMenu = new TomographyLoad(loadList);
-			tomogLoadMenu->setup(new Material(tomographer.images[tomographer.images.size() - 1]));
+			tomogLoadMenu->setup(imageMat, std::bind(&TomographyMenu::addItem, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+			for (UIItem* item : canvas) {
+				item->setIsEnabled(false);
+				item->setVisibility(false);
+			}
 			clickIdx = mouseManager.addClickListener(tomogLoadMenu->getClickCallback());
 			posIdx = mouseManager.addPositionListener(tomogLoadMenu->getPosCallback());
-			UIItem* loadedUI = new ImagePanel(imageMat, false);
-			canvas[1]->addItem(loadedUI);
-			canvas[1]->updateDisplay();
 		}
+	}
+
+	void addItem(Material* imageMat, float azimuth, float polar) {
+		UIItem* loadedUI = new ImagePanel(imageMat, false);
+		canvas[1]->addItem(loadedUI);
+		canvas[1]->updateDisplay();
+		tomographer.add_lightVector(azimuth, polar);
+		mouseManager.removeClickListener(clickIdx);
+		mouseManager.removePositionListener(posIdx);
+		tomogLoadMenu->cleanup();
+		tomogLoadMenu = nullptr;
 	}
 
 	void performNormTomog(UIItem* owner) {
