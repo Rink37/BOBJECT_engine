@@ -196,6 +196,8 @@ int main(int argc, char* argv[]){
         fnames.push_back(fname);
         fname = string("NoiseRemovalText.png");
         fnames.push_back(fname);
+        fname = string("UpdateButton.png");
+        fnames.push_back(fname);
         
         loadAndWriteFiles(base, fnames);
         return 0;

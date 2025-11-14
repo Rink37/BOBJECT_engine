@@ -184,4 +184,11 @@ extern unsigned char NoiseRemovalTextBytes[];
 
 #define NOISEREMOVALTEXT imageData(NoiseRemovalTextWidth, NoiseRemovalTextHeight, NoiseRemovalTextChannels, NoiseRemovalTextBytes )
 
+extern const int UpdateButtonWidth;
+extern const int UpdateButtonHeight;
+extern const int UpdateButtonChannels;
+extern unsigned char UpdateButtonBytes[];
+
+#define UPDATEBUTTON imageData(UpdateButtonWidth, UpdateButtonHeight, UpdateButtonChannels, UpdateButtonBytes )
+
 #endif

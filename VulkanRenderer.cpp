@@ -343,7 +343,7 @@ public:
 		loadList = assets;
 	}
 
-	void setup(surfaceConstructor* sConst) {
+	void setup(surfaceConstructor* sConst, std::function<void(UIItem*)> toggleFunction) {
 		if (isSetup) {
 			return;
 		}
@@ -358,6 +358,12 @@ public:
 		imageData diffuse = DIFFUSETEXT;
 		Material* diffuseMat = newMaterial(&diffuse, "DiffuseBtn");
 
+		imageData ub = UNRENDEREDBUTTON;
+		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
+
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "CheckboxBtn");
+
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, -1.0f, 0.875f, 0.4f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		
 		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.05f, 0.01f, ARRANGE_END);
@@ -368,6 +374,8 @@ public:
 		std::function<void(UIItem*)> computeDiffuse = bind(&TomographyMenu::performDiffTomog, this, placeholders::_1);
 
 		loadButtons->addItem(getPtr(new Button(openMat, tomogLoad)));
+		loadButtons->addItem(getPtr(new spacer));
+		loadButtons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, toggleFunction)));
 		
 		column->addItem(getPtr(loadButtons));
 		column->addItem(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.3f, 0.01f)));
@@ -779,10 +787,33 @@ private:
 	void toggleTomogMenu() {
 		if (!tomogActive) {
 			tomographyPlane = new PlaneObject(sConst->diffTex->texWidth, sConst->diffTex->texHeight);
-			tomogUI.setup(sConst);
+			std::function<void(UIItem*)> toggleFunct = std::bind(&Application::toggleTomogMeshes, this, std::placeholders::_1);
+			tomogUI.setup(sConst, toggleFunct);
+			tomographyPlane->isVisible = true;
+			for (size_t i = 0; i != staticObjects.size(); i++) {
+				staticObjects[i].isVisible = false;
+			}
+			objectMenu.hide();
 			mouseManager.addClickListener(tomogUI.getClickCallback());
 			widgets.push_back(&tomogUI);
 			tomogActive = true;
+		}
+	}
+
+	void toggleTomogMeshes(UIItem* owner) {
+		if (owner->activestate) {
+			tomographyPlane->isVisible = true;
+			for (size_t i = 0; i != staticObjects.size(); i++) {
+				staticObjects[i].isVisible = false;
+			}
+			objectMenu.hide();
+		}
+		else {
+			tomographyPlane->isVisible = false;
+			for (size_t i = 0; i != staticObjects.size(); i++) {
+				staticObjects[i].isVisible = true;
+			}
+			objectMenu.show();
 		}
 	}
 
