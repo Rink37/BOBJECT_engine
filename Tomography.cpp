@@ -629,9 +629,9 @@ Mat calculateDiffuse(vector<Texture*> images, vector<vector<float>> D, Mat norma
 	return diffuse;
 }
 
-void Tomographer::add_image(string filename) {
+void Tomographer::add_image(string filename, string name) {
 	Mat image = imread(filename);
-	Texture* texture = new imageTexture(image);
+	Texture* texture = loadList->getPtr(new imageTexture(image), name);
 	texture->getCVMat();
 
 	originalImages.push_back(texture);
@@ -644,7 +644,7 @@ void Tomographer::add_image(string filename) {
 	match_partial(scaledAlign, &image, dims);
 	match_template(scaledAlign, &image, dims);
 
-	Texture* matchedTex = new imageTexture(image);
+	Texture* matchedTex = loadList->getPtr(new imageTexture(image), name+"Matched");
 	matchedTex->getCVMat();
 
 	images.push_back(matchedTex);

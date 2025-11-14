@@ -397,21 +397,25 @@ public:
 		buttons->updateDisplay();
 
 		column->addItem(getPtr(buttons));
-
 		column->updateDisplay();
 
-		sConst->diffTex->getCVMat();
-		tomographer.alignTemplate = &sConst->diffTex->texMat;
+		baseDiffuse = loadList->getPtr(sConst->diffTex->copyImage(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1), "TomogDiffTex");
+		baseDiffuse->textureImageView = baseDiffuse->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		baseDiffuse->getCVMat();
+
+		tomographer.alignTemplate = &baseDiffuse->texMat;
+		tomographer.setLoadList(loadList);
 
 		canvas.push_back(getPtr(column));
 
-		scannedMaterial.init(sConst->diffTex);
+		scannedMaterial.init(baseDiffuse);
 
 		isSetup = true;
 	}
 
-	void cleanupSubclasses() {
+	void cleanupSubClasses() {
 		scannedMaterial.cleanupDescriptor();
+		tomographer.cleanup();
 	}
 
 	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
@@ -441,6 +445,7 @@ public:
 	bool generateNormal = true;
 
 	std::string renderPipeline = string("BFShading");
+	Texture* baseDiffuse = nullptr;
 
 	Material scannedMaterial;
 	bool normalAvailable = false;
@@ -456,8 +461,9 @@ private:
 	void loadFile(UIItem* owner) {
 		string fileName = winFile::OpenFileDialog();
 		if (fileName != string("fail")) {
-			tomographer.add_image(fileName);
-			Material* imageMat = new Material(tomographer.images[tomographer.images.size() - 1]);
+			std::string name = "Image" + to_string(grid->Items.size());
+			tomographer.add_image(fileName, name+"Tex");
+			Material* imageMat = loadList->getPtr(new Material(tomographer.images[tomographer.images.size() - 1]), name+"Mat");
 			tomogLoadMenu = new TomographyLoad(loadList);
 			std::function<void(Material*, float, float)> loadCallback = std::bind(&TomographyMenu::addItem, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 			std::function<void(UIItem*)> cancelCallback = std::bind(&TomographyMenu::cancelLoad, this, std::placeholders::_1);
@@ -506,20 +512,19 @@ private:
 	}
 
 	void performTomog(UIItem* owner) {
-		surface->diffTex->getCVMat();
-		tomographer.outdims = Size(surface->diffTex->texMat.cols, surface->diffTex->texMat.rows);
-		tomographer.alignTemplate = &surface->diffTex->texMat;
+		tomographer.outdims = Size(baseDiffuse->texMat.cols, baseDiffuse->texMat.rows);
+		tomographer.alignTemplate = &baseDiffuse->texMat;
 		if (generateNormal && !generateDiffuse) {
 			tomographer.calculate_normal();
 			normalAvailable = true;
-			scannedMaterial.init(surface->diffTex, new imageTexture(tomographer.computedNormal));
+			scannedMaterial.init(baseDiffuse, loadList->replacePtr(new imageTexture(tomographer.computedNormal), "TomogNormTex"));
 			renderPipeline = "TSNormBF";
 		}
 		else if (generateNormal && generateDiffuse) {
 			tomographer.calculate_normal();
 			tomographer.calculate_diffuse();
 			normalAvailable = true;
-			scannedMaterial.init(new imageTexture(tomographer.computedDiffuse), new imageTexture(tomographer.computedNormal));
+			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogDiffTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal), "TomogNormTex"));
 			renderPipeline = "TSNormBF";
 		}
 		else {
@@ -549,7 +554,8 @@ public:
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
 		updateColourScheme();
-		updateLightAzimuth(0);
+		updateLightAzimuth(0.0f);
+		updateLightPolar(0.0f);
 		mainLoop();
 		cleanup();
 		surfaceConstructor::destruct();
@@ -667,7 +673,6 @@ private:
 
 	void updateLightPolar(float angle) {
 		polarAngle = angle;
-		//cout << polarAngle << endl;
 		lightPos.x = lightRadius * sin(polarAngle) * cos(azimuthAngle);
 		lightPos.y = lightRadius * sin(polarAngle) * sin(azimuthAngle);
 		lightPos.z = lightRadius * cos(polarAngle);
@@ -675,7 +680,6 @@ private:
 
 	void updateLightAzimuth(float angle) {
 		azimuthAngle = angle;
-		//cout << azimuthAngle << endl;
 		lightPos.x = lightRadius * sin(polarAngle) * cos(azimuthAngle);
 		lightPos.y = lightRadius * sin(polarAngle) * sin(azimuthAngle);
 		lightPos.z = lightRadius * cos(polarAngle);
@@ -822,6 +826,9 @@ private:
 			objectMenu.hide();
 			mouseManager.addClickListener(tomogUI.getClickCallback());
 			widgets.push_back(&tomogUI);
+
+			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+
 			tomogActive = true;
 		}
 	}
@@ -924,6 +931,10 @@ private:
 	void cleanup() {
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			staticObjects[i].mesh->cleanup();
+		}
+
+		if (tomographyPlane != nullptr) {
+			tomographyPlane->mesh->cleanup();
 		}
 
 		UIElements.empty();

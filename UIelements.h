@@ -1160,7 +1160,6 @@ struct Widget {
 	}
 
 	virtual void cleanupSubClasses() {
-
 	}
 
 	void cleanup() {
