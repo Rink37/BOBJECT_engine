@@ -631,7 +631,7 @@ Mat calculateDiffuse(vector<Texture*> images, vector<vector<float>> D, Mat norma
 
 void Tomographer::add_image(string filename, string name) {
 	Mat image = imread(filename);
-	Texture* texture = loadList->getPtr(new imageTexture(image), name);
+	Texture* texture = loadList->getPtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name);
 	texture->getCVMat();
 
 	originalImages.push_back(texture);
@@ -644,7 +644,7 @@ void Tomographer::add_image(string filename, string name) {
 	match_partial(scaledAlign, &image, dims);
 	match_template(scaledAlign, &image, dims);
 
-	Texture* matchedTex = loadList->getPtr(new imageTexture(image), name+"Matched");
+	Texture* matchedTex = loadList->getPtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name+"Matched");
 	matchedTex->getCVMat();
 
 	images.push_back(matchedTex);

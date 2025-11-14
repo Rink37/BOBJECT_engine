@@ -574,8 +574,8 @@ private:
 		Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
 		Texture* tomogNorm = UIElements.findTexPtr("TomogNormTex");
 		if (tomogDiff != nullptr) {
-			tomogDiff = tomogDiff->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, sConst->diffTex->mipLevels);
-			sConst->loadDiffuse(tomogDiff);
+			Texture* diff = tomogDiff->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0);
+			sConst->loadDiffuse(diff);
 			surfaceMenu.setDiffuse(sConst->currentDiffuse());
 		}
 		if (tomogNorm != nullptr) {
@@ -583,6 +583,7 @@ private:
 				surfaceMenu.createNormalMenu(owner);
 				surfaceMenu.toggleNormalState(false);
 			}
+			Texture* norm = tomogNorm->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0);
 			sConst->normalType = 1;
 			sConst->loadNormal(tomogNorm);
 			surfaceMenu.setNormal(sConst->currentNormal());

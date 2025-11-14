@@ -8,6 +8,7 @@ bool Texture::hasStencilComponent(VkFormat format) {
 }
 
 Texture* Texture::copyImage(uint32_t width, uint32_t height) {
+	// Uses blitting to change image resolution
 	return copyImage(textureFormat, textureLayout, textureUsage, textureTiling, textureMemFlags, mipLevels, width, height);
 }
 
@@ -28,6 +29,10 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	VkFormatProperties formatProps;
 
+	if (mipLevels == 0) {
+		mipLevels = static_cast<uint32_t>(floor(log2(max(texWidth, texHeight)))) + 1;
+	}
+	
 	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProps);
 	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
 		std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
@@ -70,15 +75,15 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 		throw runtime_error("failed to begin recording command buffer!");
 	}
 
-	transitionImageLayout(copy->textureImage, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+	transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 
 	if (textureLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-		transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+		transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
 	}
 	else {
 		// This is a bit of a quick fix - I just need to add this transition to the list of valid transitions in the function 
-		transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
-		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+		transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, this->mipLevels);
+		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
 	}
 
 	if (supportsBlit)
@@ -151,10 +156,14 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	vkDestroyFence(Engine::get()->device, copyFence, nullptr);
 
-	if (copy->mipLevels == 1) {
-		transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, copy->mipLevels);
+	if (mipLevels == 1) {
+		transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, mipLevels);
 	}
-	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, 1);
+	else {
+		transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+	}
+	//transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, 1);
+	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, this->mipLevels);
 
 	return copy;
 }
@@ -169,8 +178,7 @@ Texture* Texture::copyTexture(){
 }
 
 Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t mipLevels) {
-	Texture* copy = copyImage(format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, usage, tiling, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT , mipLevels, texWidth, texHeight);
-	copy->textureLayout = layout;
+	Texture* copy = copyImage(format, layout, usage, tiling, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT , mipLevels, texWidth, texHeight);
 	if (copy->mipLevels != 1) {
 		copy->generateMipmaps();
 	}
@@ -504,7 +512,7 @@ void Texture::generateMipmaps() {
 			1, &blit, VK_FILTER_LINEAR);
 
 		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		barrier.newLayout = textureLayout;//VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.newLayout = textureLayout;
 		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
@@ -519,7 +527,7 @@ void Texture::generateMipmaps() {
 
 	barrier.subresourceRange.baseMipLevel = mipLevels - 1;
 	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	barrier.newLayout = textureLayout;// VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.newLayout = textureLayout;
 	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
@@ -633,7 +641,12 @@ void Texture::transitionMatToImg() {
 	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);
 	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
 
-	generateMipmaps();
+	if (mipLevels != 1) {
+		generateMipmaps();
+	}
+	else {
+		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureLayout, mipLevels);
+	}
 }
 
 void webcamTexture::createWebcamImage() {
