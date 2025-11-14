@@ -507,10 +507,6 @@ Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calcu
 		grayImages.push_back(gray);
 	}
 
-	//for (int i = 0; i != images.size(); i++) {
-	//	std::cout << D[i][0] << " " << D[i][1] << " " << D[i][2] << std::endl;
-	//}
-
 	for (int y = 0; y != normal.cols; y++) {
 		cout << y << endl;
 		for (int x = 0; x != normal.rows; x++) {
@@ -677,8 +673,8 @@ void Tomographer::calculate_normal() {
 	computedNormal = calculateNormal(images, vectors);
 	normalExists = true;
 
-	imshow("Calculated normal", computedNormal);
-	waitKey(0);
+	//imshow("Calculated normal", computedNormal);
+	//waitKey(0);
 }
 
 void Tomographer::calculate_diffuse() {
@@ -687,6 +683,6 @@ void Tomographer::calculate_diffuse() {
 	}
 	computedDiffuse = calculateDiffuse(images, vectors, computedNormal);
 
-	imshow("Calculated diffuse", computedDiffuse);
-	waitKey(0);
+	//imshow("Calculated diffuse", computedDiffuse);
+	//waitKey(0);
 }

@@ -373,8 +373,7 @@ public:
 		Arrangement* loadButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.05f, 0.01f, ARRANGE_START);
 
 		std::function<void(UIItem*)> tomogLoad = bind(&TomographyMenu::loadFile, this, placeholders::_1);
-		std::function<void(UIItem*)> computeNormal = bind(&TomographyMenu::performNormTomog, this, placeholders::_1);
-		std::function<void(UIItem*)> computeDiffuse = bind(&TomographyMenu::performDiffTomog, this, placeholders::_1);
+		std::function<void(UIItem*)> performTomog = bind(&TomographyMenu::performTomog, this, placeholders::_1);
 
 		std::function<void(UIItem*)> toggleDiffuse = bind(&TomographyMenu::updateDiffuseGen, this, placeholders::_1);
 		std::function<void(UIItem*)> toggleNormal = bind(&TomographyMenu::updateNormalGen, this, placeholders::_1);
@@ -394,7 +393,7 @@ public:
 		buttons->addItem(getPtr(new Button(normalMat)));
 		buttons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, toggleNormal)));
 		buttons->addItem(getPtr(new spacer));
-		buttons->addItem(getPtr(new Button(updateMat, computeNormal)));
+		buttons->addItem(getPtr(new Button(updateMat, performTomog)));
 		buttons->updateDisplay();
 
 		column->addItem(getPtr(buttons));
@@ -405,6 +404,8 @@ public:
 		tomographer.alignTemplate = &sConst->diffTex->texMat;
 
 		canvas.push_back(getPtr(column));
+
+		scannedMaterial.init(sConst->diffTex);
 
 		isSetup = true;
 	}
@@ -437,6 +438,11 @@ public:
 
 	bool generateDiffuse = true;
 	bool generateNormal = true;
+
+	std::string renderPipeline = string("BFShading");
+
+	Material scannedMaterial;
+	bool normalAvailable = false;
 
 private:
 	Tomographer tomographer;
@@ -498,30 +504,52 @@ private:
 		generateNormal = owner->activestate;
 	}
 
-	void performNormTomog(UIItem* owner) {
-		surface->diffTex->getCVMat();
-		tomographer.outdims = Size(surface->diffTex->texMat.cols, surface->diffTex->texMat.rows);
-		tomographer.alignTemplate = &surface->diffTex->texMat;
-		tomographer.alignRequired = true;
-		tomographer.calculate_normal();
-		string saveName = winFile::SaveFileDialog();
-		if (saveName != string("fail")) {
-			imwrite(saveName, tomographer.computedNormal);
-		}
+	//void performNormTomog(UIItem* owner) {
+	//	surface->diffTex->getCVMat();
+	//	tomographer.outdims = Size(surface->diffTex->texMat.cols, surface->diffTex->texMat.rows);
+	//	tomographer.alignTemplate = &surface->diffTex->texMat;
+	//	tomographer.alignRequired = true;
+	//	tomographer.calculate_normal();
+	//	string saveName = winFile::SaveFileDialog();
+	//	if (saveName != string("fail")) {
+	//		imwrite(saveName, tomographer.computedNormal);
+	//	}
 		//tomographer.clearData();
-	}
+	//}
 
-	void performDiffTomog(UIItem* owner) {
+	//void performDiffTomog(UIItem* owner) {
+	//	surface->diffTex->getCVMat();
+	//	tomographer.outdims = Size(surface->diffTex->texMat.cols, surface->diffTex->texMat.rows);
+	//	tomographer.alignTemplate = &surface->diffTex->texMat;
+	//	tomographer.alignRequired = true;
+	//	tomographer.calculate_diffuse();
+	//	string saveName = winFile::SaveFileDialog();
+	//	if (saveName != string("fail")) {
+	//		imwrite(saveName, tomographer.computedDiffuse);
+	//	}
+		//tomographer.clearData();
+	//}
+
+	void performTomog(UIItem* owner) {
 		surface->diffTex->getCVMat();
 		tomographer.outdims = Size(surface->diffTex->texMat.cols, surface->diffTex->texMat.rows);
 		tomographer.alignTemplate = &surface->diffTex->texMat;
-		tomographer.alignRequired = true;
-		tomographer.calculate_diffuse();
-		string saveName = winFile::SaveFileDialog();
-		if (saveName != string("fail")) {
-			imwrite(saveName, tomographer.computedDiffuse);
+		if (generateNormal && !generateDiffuse) {
+			tomographer.calculate_normal();
+			normalAvailable = true;
+			scannedMaterial.init(surface->diffTex, new imageTexture(tomographer.computedNormal));
+			renderPipeline = "TSNormBF";
 		}
-		//tomographer.clearData();
+		else if (generateNormal && generateDiffuse) {
+			tomographer.calculate_normal();
+			tomographer.calculate_diffuse();
+			normalAvailable = true;
+			scannedMaterial.init(new imageTexture(tomographer.computedDiffuse), new imageTexture(tomographer.computedNormal));
+			renderPipeline = "TSNormBF";
+		}
+		else {
+			std::cout << "Invalid configuration" << std::endl;
+		}
 	}
 };
 
@@ -1138,6 +1166,8 @@ private:
 				}
 			}
 
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(tomogUI.renderPipeline)]);
+
 			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
 				VkBuffer vertexBuffers[] = { tomographyPlane->mesh->vertexBuffer };
 				VkDeviceSize offsets[] = { 0 };
@@ -1146,11 +1176,11 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, tomographyPlane->mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				if (sConst->normalAvailable) {
-					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
+				if (tomogUI.normalAvailable) {
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &tomogUI.scannedMaterial.descriptorSets[currentFrame], 0, nullptr);
 				}
 				else {
-					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &tomogUI.scannedMaterial.descriptorSets[currentFrame], 0, nullptr);
 				}
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(tomographyPlane->mesh->indices.size()), 1, 0, 0, 0);
@@ -1188,11 +1218,11 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, tomographyPlane->mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				if (sConst->normalAvailable) {
-					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
+				if (tomogUI.normalAvailable) {
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &tomogUI.scannedMaterial.descriptorSets[currentFrame], 0, nullptr);
 				}
 				else {
-					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &tomogUI.scannedMaterial.descriptorSets[currentFrame], 0, nullptr);
 				}
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(tomographyPlane->mesh->indices.size()), 1, 0, 0, 0);
