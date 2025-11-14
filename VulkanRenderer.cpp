@@ -547,7 +547,8 @@ private:
 		if (!tomogActive) {
 			tomographyPlane = new PlaneObject(sConst->diffTex->texWidth, sConst->diffTex->texHeight);
 			std::function<void(UIItem*)> toggleFunct = std::bind(&Application::toggleTomogMeshes, this, std::placeholders::_1);
-			tomogUI.setup(sConst, toggleFunct, &mouseManager);
+			std::function<void(UIItem*)> tomogExit = std::bind(&Application::exitTomogMenu, this, std::placeholders::_1);
+			tomogUI.setup(sConst, toggleFunct, &mouseManager, tomogExit);
 			tomographyPlane->isVisible = true;
 			for (size_t i = 0; i != staticObjects.size(); i++) {
 				staticObjects[i].isVisible = false;
@@ -560,6 +561,50 @@ private:
 
 			tomogActive = true;
 		}
+	}
+
+	void exitTomogMenu(UIItem* owner) {
+		if (!tomogActive) {
+			return;
+		}
+		vkQueueWaitIdle(engine->graphicsQueue);
+		tomographyPlane->mesh->cleanup();
+		delete tomographyPlane;
+		tomographyPlane = nullptr;
+		Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
+		Texture* tomogNorm = UIElements.findTexPtr("TomogNormTex");
+		if (tomogDiff != nullptr) {
+			sConst->loadDiffuse(tomogDiff->copyTexture());
+			surfaceMenu.setDiffuse(sConst->currentDiffuse());
+		}
+		if (tomogNorm != nullptr) {
+			if (!sConst->normalAvailable) {
+				surfaceMenu.createNormalMenu(owner);
+				surfaceMenu.toggleNormalState(true);
+			}
+			sConst->normalType = 1;
+			sConst->loadNormal(tomogNorm->copyTexture());
+			surfaceMenu.setNormal(sConst->currentNormal());
+		}
+		tomogActive = false;
+
+		for (size_t i = 0; i != staticObjects.size(); i++) {
+			staticObjects[i].isVisible = true;
+		}
+		objectMenu.show();
+
+		mouseManager.removeClickListener(tomogUI.clickIdx);
+		mouseManager.removePositionListener(tomogUI.posIdx);
+
+		if (find(widgets.begin(), widgets.end(), &tomogUI) != widgets.end()) {
+			widgets.erase(find(widgets.begin(), widgets.end(), &tomogUI));
+
+			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		}
+		
+		tomogUI.cleanup();
+
+		std::cout << "Exited tomog menu" << std::endl;
 	}
 
 	void toggleTomogMeshes(UIItem* owner) {

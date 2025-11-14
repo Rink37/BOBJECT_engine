@@ -133,7 +133,7 @@ public:
 		loadList = assets;
 	}
 
-	void setup(surfaceConstructor* sConst, std::function<void(UIItem*)> toggleFunction, MouseManager* mm) {
+	void setup(surfaceConstructor* sConst, std::function<void(UIItem*)> toggleFunction, MouseManager* mm, std::function<void(UIItem*)> finishTomog) {
 		if (isSetup) {
 			return;
 		}
@@ -158,6 +158,9 @@ public:
 		imageData update = UPDATEBUTTON;
 		Material* updateMat = newMaterial(&update, "UpdateBtn");
 
+		imageData finish = FINISHBUTTON;
+		Material* finishMat = newMaterial(&finish, "FinishBtn");
+
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, -1.0f, 0.875f, 0.4f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.05f, 0.01f);
@@ -168,6 +171,8 @@ public:
 
 		std::function<void(UIItem*)> toggleDiffuse = bind(&TomographyMenu::updateDiffuseGen, this, std::placeholders::_1);
 		std::function<void(UIItem*)> toggleNormal = bind(&TomographyMenu::updateNormalGen, this, std::placeholders::_1);
+
+		//std::function<void(UIItem*)> finishTomog = bind(&TomographyMenu::finish, this, std::placeholders::_1);
 
 		loadButtons->addItem(getPtr(new Button(openMat, tomogLoad)));
 		loadButtons->addItem(getPtr(new spacer));
@@ -185,6 +190,7 @@ public:
 		buttons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, toggleNormal)));
 		buttons->addItem(getPtr(new spacer));
 		buttons->addItem(getPtr(new Button(updateMat, performTomog)));
+		buttons->addItem(getPtr(new Button(finishMat, finishTomog)));
 		buttons->updateDisplay();
 
 		column->addItem(getPtr(buttons));
@@ -246,7 +252,7 @@ private:
 	TomographyLoad* tomogLoadMenu = nullptr;
 	surfaceConstructor* surface = nullptr;
 
-	MouseManager* mouseManager;
+	MouseManager* mouseManager = nullptr;
 
 	std::function<void(Material*)> loadCallback = nullptr;
 

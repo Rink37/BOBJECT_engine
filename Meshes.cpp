@@ -348,7 +348,6 @@ void PlaneMesh::computeTangents() {
 		glm::vec3 c = cross(n, t0);
 		float w = (dot(c, t1) < 0) ? -1.0f : 1.0f;
 		vertices[i].tangent = glm::vec4(t.x, t.y, t.z, w);
-		std::cout << vertices[i].normal.x << " " << vertices[i].normal.y << " " << vertices[i].normal.z << std::endl;
 
 		t = cross(glm::vec3(vertices[i].tangent.x, vertices[i].tangent.y, vertices[i].tangent.z), vertices[i].normal);
 		//vertices[i].biTangent = t;

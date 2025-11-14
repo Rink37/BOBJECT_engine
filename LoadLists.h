@@ -102,6 +102,20 @@ struct LoadList {
 		return materialMap.find(name) != materialMap.end();
 	}
 
+	Texture* findTexPtr(std::string name) {
+		if (checkForTexture(name)) {
+			return textures.at(textureMap.at(name)).get();
+		}
+		return nullptr;
+	}
+
+	Material* findMatPtr(std::string name) {
+		if (checkForMaterial(name)) {
+			return materials.at(materialMap.at(name)).get();
+		}
+		return nullptr;
+	}
+
 	void empty() {
 		for (size_t i = 0; i != textures.size(); i++) {
 			textures.at(i).get()->cleanup();

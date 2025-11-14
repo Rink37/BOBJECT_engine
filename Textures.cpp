@@ -151,7 +151,9 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	vkDestroyFence(Engine::get()->device, copyFence, nullptr);
 
-	transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, copy->mipLevels);
+	if (copy->mipLevels <= 1) {
+		transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, copy->mipLevels);
+	}
 	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, 1);
 
 	return copy;
@@ -159,6 +161,9 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 Texture* Texture::copyTexture(){
 	Texture* copy = copyImage();
+	if (copy->mipLevels > 1) {
+		copy->generateMipmaps();
+	}
 	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	return copy;
 }
@@ -166,7 +171,9 @@ Texture* Texture::copyTexture(){
 Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t mipLevels) {
 	Texture* copy = copyImage(format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, usage, tiling, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT , mipLevels, texWidth, texHeight);
 	copy->textureLayout = layout;
-	copy->generateMipmaps();
+	if (copy->mipLevels > 1) {
+		copy->generateMipmaps();
+	}
 	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	return copy;
 }
