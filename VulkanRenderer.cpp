@@ -545,15 +545,24 @@ private:
 
 	void toggleTomogMenu() {
 		if (!tomogActive) {
-			tomographyPlane = new PlaneObject(sConst->diffTex->texWidth, sConst->diffTex->texHeight);
 			std::function<void(UIItem*)> toggleFunct = std::bind(&Application::toggleTomogMeshes, this, std::placeholders::_1);
 			std::function<void(UIItem*)> tomogExit = std::bind(&Application::exitTomogMenu, this, std::placeholders::_1);
-			tomogUI.setup(sConst, toggleFunct, &mouseManager, tomogExit);
+			
+			if (!tomogUI.isSetup) {
+				tomogUI.setup(sConst, toggleFunct, &mouseManager, tomogExit);
+			}
+			else {
+				tomogUI.show();
+			}
+			
+			tomographyPlane = new PlaneObject(sConst->diffTex->texWidth, sConst->diffTex->texHeight);
 			tomographyPlane->isVisible = true;
 			for (size_t i = 0; i != staticObjects.size(); i++) {
 				staticObjects[i].isVisible = false;
 			}
 			objectMenu.hide();
+			surfaceMenu.hide();
+			
 			tomogUI.clickIdx = mouseManager.addClickListener(tomogUI.getClickCallback());
 			widgets.push_back(&tomogUI);
 
@@ -568,9 +577,11 @@ private:
 			return;
 		}
 		vkQueueWaitIdle(engine->graphicsQueue);
+		
 		tomographyPlane->mesh->cleanup();
 		delete tomographyPlane;
 		tomographyPlane = nullptr;
+		
 		Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
 		Texture* tomogNorm = UIElements.findTexPtr("TomogNormTex");
 		if (tomogDiff != nullptr) {
@@ -595,6 +606,7 @@ private:
 		}
 		
 		objectMenu.show();
+		surfaceMenu.show();
 
 		mouseManager.removeClickListener(tomogUI.clickIdx);
 
@@ -604,7 +616,7 @@ private:
 			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 		}
 		
-		tomogUI.cleanup();
+		tomogUI.hide();
 
 		std::cout << "Exited tomog menu" << std::endl;
 	}
@@ -716,6 +728,10 @@ private:
 		UIElements.empty();
 		ObjectElements.empty();
 
+		if (find(widgets.begin(), widgets.end(), &tomogUI) == widgets.end()) {
+			tomogUI.cleanup();
+		}
+		
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->cleanup();
 		}
@@ -955,10 +971,10 @@ private:
 				}
 
 			}
-			
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(tomogUI.renderPipeline)]);
 
 			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(tomogUI.renderPipeline)]);
+
 				VkBuffer vertexBuffers[] = { tomographyPlane->mesh->vertexBuffer };
 				VkDeviceSize offsets[] = { 0 };
 
@@ -977,9 +993,10 @@ private:
 			}
 		}
 		else {
-			if (!tomogActive) {
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
 
+			if (!tomogActive) {
+				
 				for (uint32_t i = 0; i != staticObjects.size(); i++) {
 					if (staticObjects[i].isVisible) {
 						VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
@@ -1002,7 +1019,6 @@ private:
 				}
 			}
 			else {
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
 
 				for (uint32_t i = 0; i != staticObjects.size(); i++) {
 					if (staticObjects[i].isVisible) {

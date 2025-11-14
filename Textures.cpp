@@ -159,10 +159,6 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	if (mipLevels == 1) {
 		transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, mipLevels);
 	}
-	else {
-		transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-	}
-	//transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, 1);
 	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, this->mipLevels);
 
 	return copy;
