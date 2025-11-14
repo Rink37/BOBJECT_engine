@@ -554,7 +554,7 @@ private:
 				staticObjects[i].isVisible = false;
 			}
 			objectMenu.hide();
-			mouseManager.addClickListener(tomogUI.getClickCallback());
+			tomogUI.clickIdx = mouseManager.addClickListener(tomogUI.getClickCallback());
 			widgets.push_back(&tomogUI);
 
 			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
@@ -574,16 +574,17 @@ private:
 		Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
 		Texture* tomogNorm = UIElements.findTexPtr("TomogNormTex");
 		if (tomogDiff != nullptr) {
-			sConst->loadDiffuse(tomogDiff->copyTexture());
+			tomogDiff = tomogDiff->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, sConst->diffTex->mipLevels);
+			sConst->loadDiffuse(tomogDiff);
 			surfaceMenu.setDiffuse(sConst->currentDiffuse());
 		}
 		if (tomogNorm != nullptr) {
 			if (!sConst->normalAvailable) {
 				surfaceMenu.createNormalMenu(owner);
-				surfaceMenu.toggleNormalState(true);
+				surfaceMenu.toggleNormalState(false);
 			}
 			sConst->normalType = 1;
-			sConst->loadNormal(tomogNorm->copyTexture());
+			sConst->loadNormal(tomogNorm);
 			surfaceMenu.setNormal(sConst->currentNormal());
 		}
 		tomogActive = false;
@@ -591,10 +592,10 @@ private:
 		for (size_t i = 0; i != staticObjects.size(); i++) {
 			staticObjects[i].isVisible = true;
 		}
+		
 		objectMenu.show();
 
 		mouseManager.removeClickListener(tomogUI.clickIdx);
-		mouseManager.removePositionListener(tomogUI.posIdx);
 
 		if (find(widgets.begin(), widgets.end(), &tomogUI) != widgets.end()) {
 			widgets.erase(find(widgets.begin(), widgets.end(), &tomogUI));

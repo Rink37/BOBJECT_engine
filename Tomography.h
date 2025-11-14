@@ -234,7 +234,8 @@ public:
 	}
 
 	size_t clickIdx = 0;
-	size_t posIdx = 0;
+	size_t loadClickIdx = 0;
+	size_t loadPosIdx = 0;
 
 	UIItem* grid = nullptr;
 
@@ -270,8 +271,8 @@ private:
 				item->setIsEnabled(false);
 				item->setVisibility(false);
 			}
-			clickIdx = mouseManager->addClickListener(tomogLoadMenu->getClickCallback());
-			posIdx = mouseManager->addPositionListener(tomogLoadMenu->getPosCallback());
+			loadClickIdx = mouseManager->addClickListener(tomogLoadMenu->getClickCallback());
+			loadPosIdx = mouseManager->addPositionListener(tomogLoadMenu->getPosCallback());
 		}
 	}
 
@@ -280,8 +281,8 @@ private:
 		grid->addItem(getPtr(loadedUI));
 		grid->updateDisplay();
 		tomographer.add_lightVector(azimuth, polar);
-		mouseManager->removeClickListener(clickIdx);
-		mouseManager->removePositionListener(posIdx);
+		mouseManager->removeClickListener(loadClickIdx);
+		mouseManager->removePositionListener(loadPosIdx);
 		tomogLoadMenu->cleanup();
 		tomogLoadMenu = nullptr;
 		for (UIItem* item : canvas) {
@@ -291,8 +292,8 @@ private:
 	}
 
 	void cancelLoad(UIItem* owner) {
-		mouseManager->removeClickListener(clickIdx);
-		mouseManager->removePositionListener(posIdx);
+		mouseManager->removeClickListener(loadClickIdx);
+		mouseManager->removePositionListener(loadPosIdx);
 		tomogLoadMenu->cleanup();
 		tomogLoadMenu = nullptr;
 		for (UIItem* item : canvas) {
