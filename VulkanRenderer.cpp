@@ -411,6 +411,7 @@ public:
 	}
 
 	void cleanupSubclasses() {
+		scannedMaterial.cleanupDescriptor();
 	}
 
 	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
@@ -503,32 +504,6 @@ private:
 	void updateNormalGen(UIItem* owner) {
 		generateNormal = owner->activestate;
 	}
-
-	//void performNormTomog(UIItem* owner) {
-	//	surface->diffTex->getCVMat();
-	//	tomographer.outdims = Size(surface->diffTex->texMat.cols, surface->diffTex->texMat.rows);
-	//	tomographer.alignTemplate = &surface->diffTex->texMat;
-	//	tomographer.alignRequired = true;
-	//	tomographer.calculate_normal();
-	//	string saveName = winFile::SaveFileDialog();
-	//	if (saveName != string("fail")) {
-	//		imwrite(saveName, tomographer.computedNormal);
-	//	}
-		//tomographer.clearData();
-	//}
-
-	//void performDiffTomog(UIItem* owner) {
-	//	surface->diffTex->getCVMat();
-	//	tomographer.outdims = Size(surface->diffTex->texMat.cols, surface->diffTex->texMat.rows);
-	//	tomographer.alignTemplate = &surface->diffTex->texMat;
-	//	tomographer.alignRequired = true;
-	//	tomographer.calculate_diffuse();
-	//	string saveName = winFile::SaveFileDialog();
-	//	if (saveName != string("fail")) {
-	//		imwrite(saveName, tomographer.computedDiffuse);
-	//	}
-		//tomographer.clearData();
-	//}
 
 	void performTomog(UIItem* owner) {
 		surface->diffTex->getCVMat();
@@ -1144,28 +1119,56 @@ private:
 		}
 		
 		if (viewIndex == 1 && lit) {
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(sConst->renderPipeline)]);
+			if (!tomogActive) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(sConst->renderPipeline)]);
 
-			for (uint32_t i = 0; i != staticObjects.size(); i++) {
-				if (staticObjects[i].isVisible) {
-					VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
-					VkDeviceSize offsets[] = { 0 };
+				for (uint32_t i = 0; i != staticObjects.size(); i++) {
+					if (staticObjects[i].isVisible) {
+						VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
+						VkDeviceSize offsets[] = { 0 };
 
-					vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+						vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-					vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+						vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-					if (sConst->normalAvailable) {
-						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
+						if (sConst->normalAvailable) {
+							vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
+						}
+						else {
+							vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
+						}
+
+						vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
 					}
-					else {
-						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
-					}
-
-					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
 				}
-			}
 
+				
+			}
+			else {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(tomogUI.renderPipeline)]);
+
+				for (uint32_t i = 0; i != staticObjects.size(); i++) {
+					if (staticObjects[i].isVisible) {
+						VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
+						VkDeviceSize offsets[] = { 0 };
+
+						vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+						vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+						if (tomogUI.normalAvailable) {
+							vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &tomogUI.scannedMaterial.descriptorSets[currentFrame], 0, nullptr);
+						}
+						else {
+							vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &tomogUI.scannedMaterial.descriptorSets[currentFrame], 0, nullptr);
+						}
+
+						vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
+					}
+				}
+
+			}
+			
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(tomogUI.renderPipeline)]);
 
 			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
@@ -1187,29 +1190,55 @@ private:
 			}
 		}
 		else {
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
+			if (!tomogActive) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
 
-			for (uint32_t i = 0; i != staticObjects.size(); i++) {
-				if (staticObjects[i].isVisible) {
-					VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
-					VkDeviceSize offsets[] = { 0 };
+				for (uint32_t i = 0; i != staticObjects.size(); i++) {
+					if (staticObjects[i].isVisible) {
+						VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
+						VkDeviceSize offsets[] = { 0 };
 
-					vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+						vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-					vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+						vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-					if (viewIndex == 1) {
-						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->currentDiffuse()->descriptorSets[currentFrame], 0, nullptr);
+						if (viewIndex == 1) {
+							vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->currentDiffuse()->descriptorSets[currentFrame], 0, nullptr);
+						}
+						else {
+							vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->webcamPtr->descriptorSets[currentFrame], 0, nullptr);
+
+						}
+
+						vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
 					}
-					else {
-						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->webcamPtr->descriptorSets[currentFrame], 0, nullptr);
-
-					}
-
-					vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
 				}
 			}
+			else {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
 
+				for (uint32_t i = 0; i != staticObjects.size(); i++) {
+					if (staticObjects[i].isVisible) {
+						VkBuffer vertexBuffers[] = { staticObjects[i].mesh->vertexBuffer };
+						VkDeviceSize offsets[] = { 0 };
+
+						vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+						vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+						if (viewIndex == 1) {
+							vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &tomogUI.scannedMaterial.descriptorSets[currentFrame], 0, nullptr);
+						}
+						else {
+							vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->webcamPtr->descriptorSets[currentFrame], 0, nullptr);
+
+						}
+
+						vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
+					}
+				}
+			}
+			
 			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
 				VkBuffer vertexBuffers[] = { tomographyPlane->mesh->vertexBuffer };
 				VkDeviceSize offsets[] = { 0 };
