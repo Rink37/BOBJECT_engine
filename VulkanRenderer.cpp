@@ -364,14 +364,20 @@ public:
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "CheckboxBtn");
 
+		imageData update = UPDATEBUTTON;
+		Material* updateMat = newMaterial(&update, "UpdateBtn");
+
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, -1.0f, 0.875f, 0.4f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		
-		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.05f, 0.01f, ARRANGE_END);
+		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.05f, 0.01f);
 		Arrangement* loadButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.05f, 0.01f, ARRANGE_START);
 
 		std::function<void(UIItem*)> tomogLoad = bind(&TomographyMenu::loadFile, this, placeholders::_1);
 		std::function<void(UIItem*)> computeNormal = bind(&TomographyMenu::performNormTomog, this, placeholders::_1);
 		std::function<void(UIItem*)> computeDiffuse = bind(&TomographyMenu::performDiffTomog, this, placeholders::_1);
+
+		std::function<void(UIItem*)> toggleDiffuse = bind(&TomographyMenu::updateDiffuseGen, this, placeholders::_1);
+		std::function<void(UIItem*)> toggleNormal = bind(&TomographyMenu::updateNormalGen, this, placeholders::_1);
 
 		loadButtons->addItem(getPtr(new Button(openMat, tomogLoad)));
 		loadButtons->addItem(getPtr(new spacer));
@@ -382,8 +388,14 @@ public:
 
 		grid = column->Items[1];
 
-		buttons->addItem(getPtr(new Button(normalMat, computeNormal)));
-		buttons->addItem(getPtr(new Button(diffuseMat, computeDiffuse)));
+		buttons->addItem(getPtr(new Button(diffuseMat)));
+		buttons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, toggleDiffuse)));
+		buttons->addItem(getPtr(new spacer));
+		buttons->addItem(getPtr(new Button(normalMat)));
+		buttons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, toggleNormal)));
+		buttons->addItem(getPtr(new spacer));
+		buttons->addItem(getPtr(new Button(updateMat, computeNormal)));
+		buttons->updateDisplay();
 
 		column->addItem(getPtr(buttons));
 
@@ -422,6 +434,9 @@ public:
 	size_t posIdx = 0;
 
 	UIItem* grid = nullptr;
+
+	bool generateDiffuse = true;
+	bool generateNormal = true;
 
 private:
 	Tomographer tomographer;
@@ -473,6 +488,14 @@ private:
 			item->setIsEnabled(true);
 			item->setVisibility(true);
 		}
+	}
+
+	void updateDiffuseGen(UIItem* owner) {
+		generateDiffuse = owner->activestate;
+	}
+
+	void updateNormalGen(UIItem* owner) {
+		generateNormal = owner->activestate;
 	}
 
 	void performNormTomog(UIItem* owner) {
