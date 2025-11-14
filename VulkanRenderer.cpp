@@ -544,7 +544,7 @@ private:
 	}
 
 	void toggleTomogMenu() {
-		if (!tomogActive) {
+		if (!tomogActive && sConst->diffTex != nullptr) {
 			std::function<void(UIItem*)> toggleFunct = std::bind(&Application::toggleTomogMeshes, this, std::placeholders::_1);
 			std::function<void(UIItem*)> tomogExit = std::bind(&Application::exitTomogMenu, this, std::placeholders::_1);
 			
@@ -618,7 +618,6 @@ private:
 		
 		tomogUI.hide();
 
-		std::cout << "Exited tomog menu" << std::endl;
 	}
 
 	void toggleTomogMeshes(UIItem* owner) {
