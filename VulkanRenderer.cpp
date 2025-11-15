@@ -592,6 +592,7 @@ private:
 		if (tomogNorm != nullptr) {
 			if (!sConst->normalAvailable) {
 				surfaceMenu.createNormalMenu(owner);
+				vkQueueWaitIdle(engine->graphicsQueue);
 				surfaceMenu.toggleNormalState(false);
 			}
 			sConst->normalType = 1;

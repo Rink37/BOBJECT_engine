@@ -263,6 +263,7 @@ public:
 	bool normalAvailable = false;
 
 	int imageCount = 0;
+	int activeImageCount = 0;
 
 private:
 	Tomographer tomographer;
@@ -296,8 +297,9 @@ private:
 		ImagePanel* loadedUI = new ImagePanel(imageMat, false);
 		Material* visibleMat = loadList->findMatPtr("CheckboxBtnMat");
 		Button* deleteButton = new Button(visibleMat, std::bind(&TomographyMenu::removeItem, this, std::placeholders::_1));
-		deleteButton->Name = std::to_string(imageCount);
+		deleteButton->Name = std::to_string(activeImageCount);
 		imageCount++;
+		activeImageCount++;
 		grid->addItem(getPtr(loadedUI));
 		grid->updateDisplay();
 		UIItem* ref = grid->Items[grid->Items.size() - 1];
@@ -330,6 +332,7 @@ private:
 				canvas[i]->Name = std::to_string(currentIndex - 1);
 			}
 		}
+		activeImageCount--;
 		owner->cleanup();
 		canvas.erase(find(canvas.begin(), canvas.end(), owner));
 	}
