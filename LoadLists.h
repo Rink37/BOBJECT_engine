@@ -117,14 +117,14 @@ struct LoadList {
 	}
 
 	void empty() {
-		for (size_t i = 0; i != textures.size(); i++) {
-			textures.at(i).get()->cleanup();
-		}
-		textures.clear();
-		for (size_t i = 0; i != materials.size(); i++) {
-			materials.at(i).get()->cleanupDescriptor();
-		}
-		materials.clear();
+		//for (size_t i = 0; i != textures.size(); i++) {
+		//	textures.at(i).get()->cleanup();
+		//}
+		textures.clear(); // destructor replicates above operation
+		//for (size_t i = 0; i != materials.size(); i++) {
+		//	materials.at(i).get()->cleanupDescriptor();
+		//}
+		materials.clear(); // destructor replicates above operation
 
 		textureMap.clear();
 		materialMap.clear();

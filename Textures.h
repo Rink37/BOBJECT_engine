@@ -68,7 +68,12 @@ struct Texture {
 		}
 		if (textureImage != nullptr) {
 			vkDestroyImage(Engine::get()->device, textureImage, nullptr);
+			
+		}
+		if (textureImageMemory != nullptr) {
 			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
+		}
+		if (textureImageView != nullptr) {
 			vkDestroyImageView(Engine::get()->device, textureImageView, nullptr);
 		}
 		textureImage = nullptr;
@@ -80,9 +85,9 @@ struct Texture {
 
 	Texture() = default;
 	
-	//~Texture() {
-	//	cleanup();
-	//}
+	~Texture() {
+		cleanup();
+	}
 };
 
 class imageTexture : public Texture {

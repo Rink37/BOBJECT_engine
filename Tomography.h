@@ -17,7 +17,7 @@ public:
 	cv::Mat computedNormal;
 	cv::Mat computedDiffuse;
 	bool alignRequired = true;
-	cv::Mat *alignTemplate = nullptr;
+	cv::Mat alignTemplate;
 
 	cv::Size outdims;
 
@@ -37,6 +37,7 @@ public:
 		vectors.clear();
 		computedNormal.release();
 		computedDiffuse.release();
+		alignTemplate.release();
 	}
 
 	void cleanup() {
@@ -199,8 +200,9 @@ public:
 		baseDiffuse->textureImageView = baseDiffuse->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		baseDiffuse->getCVMat();
 
-		tomographer.alignTemplate = &baseDiffuse->texMat;
 		tomographer.setLoadList(loadList);
+		tomographer.alignTemplate = baseDiffuse->texMat.clone();
+		tomographer.outdims = cv::Size(baseDiffuse->texMat.cols, baseDiffuse->texMat.rows);
 
 		canvas.push_back(getPtr(column));
 
@@ -310,8 +312,8 @@ private:
 	}
 
 	void performTomog(UIItem* owner) {
-		tomographer.outdims = cv::Size(baseDiffuse->texMat.cols, baseDiffuse->texMat.rows);
-		tomographer.alignTemplate = &baseDiffuse->texMat;
+		//tomographer.outdims = cv::Size(baseDiffuse->texMat.cols, baseDiffuse->texMat.rows);
+		//tomographer.alignTemplate = &baseDiffuse->texMat;
 		if (generateNormal && !generateDiffuse) {
 			tomographer.calculate_normal();
 			normalAvailable = true;

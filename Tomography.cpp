@@ -749,9 +749,10 @@ void Tomographer::add_image(string filename, string name) {
 
 	originalImages.push_back(texture);
 
-	Mat scaledAlign = alignTemplate->clone();
-	Size dims(scaledAlign.cols, scaledAlign.rows);
+	Mat scaledAlign = alignTemplate.clone();
+	//Size dims(scaledAlign.cols, scaledAlign.rows);
 	int height = 1024;
+	Size dims(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height);
 	resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
 
 	match_partial(scaledAlign, &image, dims);
