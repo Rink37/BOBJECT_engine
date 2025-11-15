@@ -115,6 +115,7 @@ public:
 		lightDirection->setFloatCallback(std::bind(&TomographyLoad::setAzimuth, this, std::placeholders::_1), false);
 		canvas.push_back(getPtr(lightDirection));
 
+		customUpdate();
 
 		isSetup = true;
 	}
@@ -139,6 +140,13 @@ private:
 		if (doneCallback != nullptr) {
 			doneCallback(outMat, azimuth, polar);
 		}
+	}
+
+	void customUpdate() {
+		//float W = static_cast<float>(Engine::get()->windowWidth);
+		//float H = static_cast<float>(Engine::get()->windowHeight);
+		canvas[0]->Items[0]->Items[1]->extenty = canvas[0]->Items[0]->Items[0]->extenty;
+		canvas[0]->Items[0]->Items[1]->updateDisplay();
 	}
 };
 
@@ -227,6 +235,9 @@ public:
 	void cleanupSubClasses() {
 		scannedMaterial.cleanupDescriptor();
 		tomographer.cleanup();
+		if (tomogLoadMenu != nullptr) {
+			tomogLoadMenu->cleanup();
+		}
 	}
 
 	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {

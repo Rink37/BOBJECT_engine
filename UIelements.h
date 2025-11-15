@@ -1155,11 +1155,11 @@ struct Widget {
 	}
 
 	void update() {
-		customUpdate();
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->updateDisplay();
 		}
 		measureWindowPositions();
+		customUpdate();
 	}
 
 	virtual void cleanupSubClasses() {
