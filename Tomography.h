@@ -163,10 +163,10 @@ public:
 		imageData finish = FINISHBUTTON;
 		Material* finishMat = newMaterial(&finish, "FinishBtn");
 
-		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, -1.0f, 0.875f, 0.4f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, -1.0f, 0.875f, 0.3f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.05f, 0.01f);
-		Arrangement* loadButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.05f, 0.01f, ARRANGE_START);
+		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.1f, 0.01f);
+		Arrangement* loadButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.1f, 0.01f, ARRANGE_START);
 
 		std::function<void(UIItem*)> tomogLoad = bind(&TomographyMenu::loadFile, this, std::placeholders::_1);
 		std::function<void(UIItem*)> performTomog = bind(&TomographyMenu::performTomog, this, std::placeholders::_1);
@@ -179,7 +179,7 @@ public:
 		loadButtons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, toggleFunction)));
 
 		column->addItem(getPtr(loadButtons));
-		column->addItem(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.0f, 0.9f, 0.3f, 0.01f)));
+		column->addItem(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.3f, 0.01f)));
 
 		grid = column->Items[1];
 

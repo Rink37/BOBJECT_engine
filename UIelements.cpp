@@ -94,6 +94,12 @@ void Arrangement::arrangeItems() {
 	float totalArea = 0;
 	int numSpacers = 0;
 
+	for (size_t i = 0; i != Items.size(); i++) {
+		if (Items[i]->isSpacer()) {
+			numSpacers++;
+		}
+	}
+
 	float buffer;
 	if (orientation == ORIENT_HORIZONTAL) {
 		buffer = this->extentx * 2 * this->spacing; // Each item will have half of this value of empty space on each side
@@ -122,12 +128,17 @@ void Arrangement::arrangeItems() {
 			rescale = (this->extenty * 2 - this->spacing) / maxSize;
 			for (size_t i = 0; i != Items.size(); i++) {
 				if (!Items[i]->isSpacer()) {
-					extents.push_back((Items[i]->extenty * rescale / (Items[i]->sqAxisRatio * W / H)));
+					if (!Items[i]->isArrangement() || numSpacers != 0) {
+						extents.push_back((Items[i]->extenty * rescale / (Items[i]->sqAxisRatio * W / H)));
+					}
+					else {
+						extents.push_back(Items[i]->extentx * rescale);
+					}
+					
 					totalArea += extents[i] * 2;
 				}
 				else {
 					extents.push_back(0.0f);
-					numSpacers++;
 				}
 			}
 		}
@@ -142,12 +153,17 @@ void Arrangement::arrangeItems() {
 			rescale = (this->extentx * 2 - this->spacing) / maxSize;
 			for (size_t i = 0; i != Items.size(); i++) {
 				if (!Items[i]->isSpacer()) {
-					extents.push_back(Items[i]->extentx * rescale * Items[i]->sqAxisRatio);
-					totalArea += extents[i] * 2 * W / H;
+					if (!Items[i]->isArrangement() || numSpacers != 0) {
+						extents.push_back(Items[i]->extentx * rescale * Items[i]->sqAxisRatio);
+						totalArea += extents[i] * 2 * W / H;
+					}
+					else {
+						extents.push_back(Items[i]->extenty * rescale);
+						totalArea += extents[i] * 2;
+					}
 				}
 				else {
 					extents.push_back(0.0f);
-					numSpacers++;
 				}
 			}
 		}
@@ -156,24 +172,34 @@ void Arrangement::arrangeItems() {
 		if (orientation == ORIENT_HORIZONTAL) {
 			for (size_t i = 0; i != Items.size(); i++) {
 				if (!Items[i]->isSpacer()) {
-					extents.push_back((this->extenty * (1 - this->spacing) / (Items[i]->sqAxisRatio * W / H)));
+					if (!Items[i]->isArrangement() || numSpacers != 0) {
+						extents.push_back((this->extenty * (1.0f - this->spacing) / (Items[i]->sqAxisRatio * W / H)));
+					}
+					else {
+						extents.push_back(Items[i]->extentx * (1.0f - this->spacing));
+					}
 					totalArea += extents[i] * 2;
 				}
 				else {
 					extents.push_back(0.0f);
-					numSpacers++;
 				}
 			}
 		}
 		else if (orientation == ORIENT_VERTICAL) {
 			for (size_t i = 0; i != Items.size(); i++) {
 				if (!Items[i]->isSpacer()) {
-					extents.push_back(this->extentx * (1 - this->spacing) * Items[i]->sqAxisRatio);
-					totalArea += extents[i] * 2 * W / H;
+					if (!Items[i]->isArrangement() || numSpacers != 0) {
+						extents.push_back(this->extentx * (1.0f - this->spacing) * Items[i]->sqAxisRatio);
+						totalArea += extents[i] * 2 * W / H;
+					}
+					else {
+						extents.push_back(Items[i]->extenty * (1.0f- this->spacing));
+						totalArea += extents[i] * 2;
+					}
+					
 				}
 				else {
 					extents.push_back(0.0f);
-					numSpacers++;
 				}
 			}
 		}
@@ -253,7 +279,7 @@ void Arrangement::calculateVPositions(float ybuffer, float spacerSize, float sca
 				yp = this->posy - this->extenty + currentPosition + ysc * vScale; // vScale = W/H
 			}
 			else {
-				yp = this->posy - this->extenty + currentPosition + ysc; // vScale = W/H
+				yp = this->posy - this->extenty + currentPosition + ysc;
 				xsc = this->extentx * (1.0f - this->spacing);
 			}
 			
@@ -369,13 +395,16 @@ bool Arrangement::checkForSpace(UIItem* checkItem) {
 					}
 				}
 			}
-			if (checkItem->extenty * 2 > maxSize) {
-				maxSize = checkItem->extenty * 2;
-			}
 			rescale = (this->extenty * 2 - this->spacing) / maxSize;
 			for (size_t i = 0; i != Items.size(); i++) {
 				if (!Items[i]->isSpacer()) {
-					extents.push_back((Items[i]->extenty * rescale / (Items[i]->sqAxisRatio * W / H)));
+					if (!Items[i]->isArrangement()) {
+						extents.push_back((Items[i]->extenty * rescale / (Items[i]->sqAxisRatio * W / H)));
+					}
+					else {
+						extents.push_back(Items[i]->extentx * rescale);
+					}
+
 					totalArea += extents[i] * 2;
 				}
 				else {
@@ -383,8 +412,6 @@ bool Arrangement::checkForSpace(UIItem* checkItem) {
 					numSpacers++;
 				}
 			}
-			extents.push_back((checkItem->extenty * rescale / (checkItem->sqAxisRatio * W / H)));
-			totalArea += extents[Items.size()] * 2;
 		}
 		else if (orientation == ORIENT_VERTICAL) {
 			for (size_t i = 0; i != Items.size(); i++) {
@@ -394,29 +421,35 @@ bool Arrangement::checkForSpace(UIItem* checkItem) {
 					}
 				}
 			}
-			if (checkItem->extentx * 2 > maxSize) {
-				maxSize = checkItem->extentx * 2;
-			}
 			rescale = (this->extentx * 2 - this->spacing) / maxSize;
 			for (size_t i = 0; i != Items.size(); i++) {
 				if (!Items[i]->isSpacer()) {
-					extents.push_back(Items[i]->extentx * rescale * Items[i]->sqAxisRatio);
-					totalArea += extents[i] * 2 * W / H;
+					if (!Items[i]->isArrangement()) {
+						extents.push_back(Items[i]->extentx * rescale * Items[i]->sqAxisRatio);
+						totalArea += extents[i] * 2 * W / H;
+					}
+					else {
+						extents.push_back(Items[i]->extenty * rescale);
+						totalArea += extents[i] * 2;
+					}
 				}
 				else {
 					extents.push_back(0.0f);
 					numSpacers++;
 				}
 			}
-			extents.push_back(checkItem->extentx * rescale * checkItem->sqAxisRatio);
-			totalArea += extents[Items.size()] * 2 * W / H;
 		}
 		break;
 	default:
 		if (orientation == ORIENT_HORIZONTAL) {
 			for (size_t i = 0; i != Items.size(); i++) {
 				if (!Items[i]->isSpacer()) {
-					extents.push_back((this->extenty * (1 - this->spacing) / (Items[i]->sqAxisRatio * W / H)));
+					if (!Items[i]->isArrangement()) {
+						extents.push_back((this->extenty * (1.0f - this->spacing) / (Items[i]->sqAxisRatio * W / H)));
+					}
+					else {
+						extents.push_back(Items[i]->extentx * (1.0f - this->spacing));
+					}
 					totalArea += extents[i] * 2;
 				}
 				else {
@@ -424,22 +457,25 @@ bool Arrangement::checkForSpace(UIItem* checkItem) {
 					numSpacers++;
 				}
 			}
-			extents.push_back((this->extenty * (1 - this->spacing) / (checkItem->sqAxisRatio * W / H)));
-			totalArea += extents[Items.size()] * 2;
 		}
 		else if (orientation == ORIENT_VERTICAL) {
 			for (size_t i = 0; i != Items.size(); i++) {
 				if (!Items[i]->isSpacer()) {
-					extents.push_back(this->extentx * (1 - this->spacing) * Items[i]->sqAxisRatio);
-					totalArea += extents[i] * 2 * W / H;
+					if (!Items[i]->isArrangement()) {
+						extents.push_back(this->extentx * (1.0f - this->spacing) * Items[i]->sqAxisRatio);
+						totalArea += extents[i] * 2 * W / H;
+					}
+					else {
+						extents.push_back(Items[i]->extenty * (1.0f - this->spacing));
+						totalArea += extents[i] * 2;
+					}
+
 				}
 				else {
 					extents.push_back(0.0f);
 					numSpacers++;
 				}
 			}
-			extents.push_back(this->extentx * (1 - this->spacing) * checkItem->sqAxisRatio);
-			totalArea += extents[Items.size()] * 2 * W / H;
 		}
 		break;
 	}
@@ -501,12 +537,12 @@ void Grid::arrangeItems() {
 	float H = static_cast<float>(Engine::get()->windowHeight);
 
 	if (orientation == ORIENT_HORIZONTAL) {
-		mainArrangement = new Arrangement(ORIENT_VERTICAL, this->posx, -1*this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		mainArrangement = new Arrangement(ORIENT_VERTICAL, this->posx, -1*this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START);
 		subExtentx = 1.0f;
-		subExtenty = 1.0f / (float(numArrangements) * 1.1f) * this->extenty/this->extentx;
+		subExtenty = 1.0f / (float(numArrangements) * 1.1f) * this->extenty / this->extentx;
 	}
 	else if (orientation == ORIENT_VERTICAL) {
-		mainArrangement = new Arrangement(ORIENT_HORIZONTAL, this->posx, -1*this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		mainArrangement = new Arrangement(ORIENT_HORIZONTAL, this->posx, -1*this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_FILL);
 		subExtenty = 1.0f;
 		subExtentx = 1.0f / (float(numArrangements) * 1.1f) * this->extentx/this->extenty;
 	}
