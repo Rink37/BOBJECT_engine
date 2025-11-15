@@ -26,6 +26,7 @@ public:
 
 	void calculate_normal();
 	void calculate_diffuse();
+	void calculate_NormAndDiff();
 
 	void setLoadList(LoadList* ll) {
 		loadList = ll;
@@ -171,8 +172,6 @@ public:
 
 		std::function<void(UIItem*)> toggleDiffuse = bind(&TomographyMenu::updateDiffuseGen, this, std::placeholders::_1);
 		std::function<void(UIItem*)> toggleNormal = bind(&TomographyMenu::updateNormalGen, this, std::placeholders::_1);
-
-		//std::function<void(UIItem*)> finishTomog = bind(&TomographyMenu::finish, this, std::placeholders::_1);
 
 		loadButtons->addItem(getPtr(new Button(openMat, tomogLoad)));
 		loadButtons->addItem(getPtr(new spacer));
@@ -320,8 +319,7 @@ private:
 			renderPipeline = "TSNormBF";
 		}
 		else if (generateNormal && generateDiffuse) {
-			tomographer.calculate_normal();
-			tomographer.calculate_diffuse();
+			tomographer.calculate_NormAndDiff();
 			normalAvailable = true;
 			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogDiffTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal), "TomogNormTex"));
 			renderPipeline = "TSNormBF";

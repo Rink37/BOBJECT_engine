@@ -1223,9 +1223,6 @@ struct Widget {
 			}
 			return loadList->getPtr(new Material(tex), name + "Mat");
 		}
-		//Texture* tex = loadList->getPtr(new imageTexture(imgData), name + "Tex");
-		//Material* newMat = loadList->getPtr(new Material(tex), name + "Mat");
-		//return newMat;
 	}
 
 	UIItem* getPtr(ImagePanel* ip) {

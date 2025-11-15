@@ -80,9 +80,9 @@ struct Texture {
 
 	Texture() = default;
 	
-	~Texture() {
-		cleanup();
-	}
+	//~Texture() {
+	//	cleanup();
+	//}
 };
 
 class imageTexture : public Texture {

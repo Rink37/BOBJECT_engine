@@ -502,8 +502,8 @@ Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calcu
 	vector<Mat> grayImages;
 
 	for (int i = 0; i != images.size(); i++) {
-		Mat gray;// = getDiffuseGray(images[i]);
-		cvtColor(images[i]->texMat, gray, COLOR_RGB2GRAY); // These are fine
+		Mat gray;
+		cvtColor(images[i]->texMat, gray, COLOR_RGB2GRAY);
 		grayImages.push_back(gray);
 	}
 
@@ -523,7 +523,6 @@ Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calcu
 			}
 			if (validIndexes.size() == 0) {
 				normal.at<Vec3b>(x, y) = Vec3b(127, 127, 255);
-				//cout << "No valid indexes" << endl;
 				continue;
 			}
 
@@ -555,8 +554,6 @@ Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calcu
 			
 			normal.at<Vec3b>(x, y) = Vec3b(normalPixel[0], normalPixel[1], normalPixel[2]);
 
-			//std::cout << normalPixel[0] << " " << normalPixel[1] << " " << normalPixel[2] << std::endl;
-
 		}
 	}
 
@@ -572,8 +569,7 @@ Mat calculateDiffuse(vector<Texture*> images, vector<vector<float>> D, Mat norma
 
 	vector<Mat> grayImages;
 	for (int k = 0; k != images.size(); k++) {
-		//Mat grayImg;
-		Mat grayImg;// = getDiffuseGray(images[k]);
+		Mat grayImg;
 		cvtColor(images[k]->texMat, grayImg, COLOR_RGB2GRAY);
 		grayImages.push_back(grayImg);
 	}
@@ -629,6 +625,123 @@ Mat calculateDiffuse(vector<Texture*> images, vector<vector<float>> D, Mat norma
 	return diffuse;
 }
 
+std::vector<Mat> calculate_norm_diff(vector<Texture*> images, vector<vector<float>> D) {
+	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
+	// Seems like CPU compute takes a few minutes so worth investigating GPU
+	// D represents the list of light vectors for each image
+	// Assumes that the painting is a lambertian surface
+
+	assert(images.size() == D.size(), "Input vectors must be the same size");
+
+	vector<vector<float>> tomogMatrix;
+
+	Mat normal = images[0]->texMat.clone();
+	normal = Scalar(0, 0, 0);
+
+	Mat diffuse = images[0]->texMat.clone();
+	diffuse = Scalar(0, 0, 0);
+
+	map <string, vector<vector<float>>> tomogMatrices;
+
+	vector<Mat> grayImages;
+
+	for (int i = 0; i != images.size(); i++) {
+		Mat gray;
+		cvtColor(images[i]->texMat, gray, COLOR_RGB2GRAY);
+		grayImages.push_back(gray);
+	}
+
+	for (int y = 0; y != normal.cols; y++) {
+		cout << y << endl;
+		for (int x = 0; x != normal.rows; x++) {
+			vector<vector<float>> L;
+			vector<float> Lcol;
+			vector<int> validIndexes;
+			string keyName = "";
+			for (int i = 0; i != images.size(); i++) {
+				if (!checkForEmptyInArea(grayImages[i], x, y, 2)) {
+					validIndexes.push_back(i);
+					Lcol.push_back(grayImages[i].at<uint8_t>(x, y));
+					keyName += to_string(i);
+				}
+			}
+			if (validIndexes.size() == 0) {
+				normal.at<Vec3b>(x, y) = Vec3b(127, 127, 255);
+				continue;
+			}
+
+			if (tomogMatrices.find(keyName) == tomogMatrices.end()) {
+				tomogMatrices.insert({ keyName, constructTomogMatrix(validIndexes, D) });
+			}
+
+			tomogMatrix = tomogMatrices.at(keyName);
+
+			L.push_back(Lcol);
+
+			vector<vector<float>> normalMatrix;
+
+			matrixDot(tomogMatrix, L, normalMatrix);
+
+			assert(normalMatrix.size() == 1 && normalMatrix[0].size() == 3);
+
+			vector<float> normalVector = normalMatrix[0];
+
+			float normalLength = sqrt(normalVector[0] * normalVector[0] + normalVector[1] * normalVector[1] + normalVector[2] * normalVector[2]);
+
+			vector<int> normalPixel = { 128, 128, 128 };
+
+			if (normalLength != 0.0f) {
+				for (int i = 0; i != 3; i++) {
+					normalPixel[i] = static_cast<uint8_t>(((normalVector[i] / normalLength) - 1.0) / -2.0 * 255.0);
+				}
+			}
+
+			normal.at<Vec3b>(x, y) = Vec3b(normalPixel[0], normalPixel[1], normalPixel[2]);
+
+			if (normalLength == 0.0f) {
+				diffuse.at<Vec3b>(x, y) = images[0]->texMat.at<Vec3b>(x, y);
+				continue;
+			}
+
+			Vec2f xyNormal = Vec2f(normalVector[0]/normalLength, normalVector[1]/normalLength);
+
+			vector<float> weights;
+			float total = 0;
+
+			for (int k = 0; k != images.size(); k++) {
+				if (checkForEmptyInArea(grayImages[k], x, y, 2)) {
+					weights.push_back(0.0f);
+					continue;
+				}
+				Vec2f imageVector = Vec2f(D[k][0], D[k][1]);
+				float imageVectorLength = sqrt(imageVector[0] * imageVector[0] + imageVector[1] * imageVector[1]);
+				imageVector[0] /= imageVectorLength;
+				imageVector[1] /= imageVectorLength;
+
+				float comp = abs(xyNormal[0] * imageVector[0] + xyNormal[1] * imageVector[1]);
+
+				weights.push_back(1.0f - comp);
+				total += weights[weights.size() - 1];
+			}
+
+			Vec3f floatPixel = Vec3f(0.0f, 0.0f, 0.0f);
+
+			for (int k = 0; k != images.size(); k++) {
+				Vec3f pixel = static_cast<Vec3f>(images[k]->texMat.at<Vec3b>(x, y));
+				floatPixel[0] += pixel[0] * weights[k] / total;
+				floatPixel[1] += pixel[1] * weights[k] / total;
+				floatPixel[2] += pixel[2] * weights[k] / total;
+			}
+
+			diffuse.at<Vec3b>(x, y) = static_cast<Vec3b>(floatPixel);
+		}
+	}
+
+	cvtColor(normal, normal, COLOR_RGB2BGR);
+
+	return std::vector<Mat>{diffuse, normal};
+}
+
 void Tomographer::add_image(string filename, string name) {
 	Mat image = imread(filename);
 	Texture* texture = loadList->getPtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name);
@@ -657,24 +770,8 @@ void Tomographer::add_lightVector(float phi, float theta) {
 }
 
 void Tomographer::calculate_normal() {
-	//if (alignRequired && (alignTemplate != nullptr)) {
-		// perform template matching for each image in the set
-	//	Mat scaledAlign = alignTemplate->clone();
-	//	Size dims(scaledAlign.cols, scaledAlign.rows);
-	//	int height = 1024;
-	//	resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
-
-	//	for (int i = 0; i != images.size(); i++) {
-	//		match_partial(scaledAlign, &images[i], dims);
-	//		match_template(scaledAlign, &images[i], dims);
-	//	}
-		//waitKey(0);
-	//}
 	computedNormal = calculateNormal(images, vectors);
 	normalExists = true;
-
-	//imshow("Calculated normal", computedNormal);
-	//waitKey(0);
 }
 
 void Tomographer::calculate_diffuse() {
@@ -682,7 +779,10 @@ void Tomographer::calculate_diffuse() {
 		calculate_normal(); // This will also match the image layouts
 	}
 	computedDiffuse = calculateDiffuse(images, vectors, computedNormal);
+}
 
-	//imshow("Calculated diffuse", computedDiffuse);
-	//waitKey(0);
+void Tomographer::calculate_NormAndDiff() {
+	std::vector<Mat> results = calculate_norm_diff(images, vectors);
+	computedDiffuse = results[0];
+	computedNormal = results[1];
 }
