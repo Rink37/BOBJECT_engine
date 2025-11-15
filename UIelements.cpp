@@ -396,8 +396,6 @@ bool Arrangement::checkForSpace(UIItem* checkItem) {
 		scaleFactor = (this->extenty * 2 - bufferSpace) / (totalArea);
 	}
 
-	std::cout << scaleFactor << std::endl;
-
 	if (scaleFactor > 1.0f) {
 		return true;
 	}
@@ -472,7 +470,6 @@ void Grid::arrangeItems() {
 	mainArrangement->addItem(subArrangement);
 	mainArrangement->arrangeItems();
 
-	std::cout << numArrangements << std::endl;
 	if (index > numArrangements) {
 		numArrangements = index;
 		arrangeItems();

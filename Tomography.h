@@ -83,7 +83,12 @@ public:
 		Material* finishMat = newMaterial(&finish, "FinishBtn");
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f);
+		Arrangement* imageArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.4f, 0.01f, ARRANGE_CENTER);
 		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+
+		Slider* polarSlider = new Slider(ORIENT_VERTICAL, visibleMat, 0.0f, 0.0f, 0.1f, 1.0f);
+		polarSlider->setSlideValues(0.0f, 90.0f, polar);
+		polarSlider->setFloatCallback(std::bind(&TomographyLoad::setPolar, this, std::placeholders::_1), false);
 
 		std::function<void(UIItem*)> finishFunct = std::bind(&TomographyLoad::finish, this, std::placeholders::_1);
 
@@ -93,7 +98,10 @@ public:
 		buttons->addItem(getPtr(cancelButton));
 		buttons->addItem(getPtr(finishButton));
 
-		column->addItem(getPtr(loadedUI));
+		imageArrangement->addItem(getPtr(loadedUI));
+		imageArrangement->addItem(getPtr(polarSlider));
+
+		column->addItem(getPtr(imageArrangement));
 		column->addItem(getPtr(buttons));
 		column->updateDisplay();
 
@@ -119,7 +127,10 @@ private:
 	void setAzimuth(float az) {
 		az = 90.0f - az;
 		azimuth = (az < 0) ? az + 360.0f : az;
-		std::cout << azimuth << std::endl;
+	}
+
+	void setPolar(float pol) {
+		polar = pol;
 	}
 
 	void finish(UIItem* nothing) {
@@ -312,18 +323,16 @@ private:
 	}
 
 	void performTomog(UIItem* owner) {
-		//tomographer.outdims = cv::Size(baseDiffuse->texMat.cols, baseDiffuse->texMat.rows);
-		//tomographer.alignTemplate = &baseDiffuse->texMat;
 		if (generateNormal && !generateDiffuse) {
 			tomographer.calculate_normal();
 			normalAvailable = true;
-			scannedMaterial.init(baseDiffuse, loadList->replacePtr(new imageTexture(tomographer.computedNormal), "TomogNormTex"));
+			scannedMaterial.init(baseDiffuse, loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"));
 			renderPipeline = "TSNormBF";
 		}
 		else if (generateNormal && generateDiffuse) {
 			tomographer.calculate_NormAndDiff();
 			normalAvailable = true;
-			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogDiffTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal), "TomogNormTex"));
+			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogDiffTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"));
 			renderPipeline = "TSNormBF";
 		}
 		else {
