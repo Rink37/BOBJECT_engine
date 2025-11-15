@@ -254,6 +254,7 @@ void Arrangement::calculateVPositions(float ybuffer, float spacerSize, float sca
 			}
 			else {
 				yp = this->posy - this->extenty + currentPosition + ysc; // vScale = W/H
+				xsc = this->extentx * (1.0f - this->spacing);
 			}
 			
 
@@ -313,6 +314,9 @@ void Arrangement::calculateHPositions(float xbuffer, float spacerSize, float sca
 			ysc = xsc * Items[i]->sqAxisRatio;
 			yp = this->posy;
 			xp = this->posx - this->extentx + currentPosition + xsc;
+			if (Items[i]->isArrangement()) {
+				ysc = this->extenty * (1.0f - this->spacing);
+			}
 
 			Items[i]->update(xp, yp, xsc, ysc);
 			Items[i]->updateDisplay();
