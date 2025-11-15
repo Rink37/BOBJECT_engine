@@ -539,6 +539,8 @@ private:
 		this->sqAxisRatio = ey / ex;
 	}
 
+	void getItemProperties(float&, int&, float&, std::vector<float>&);
+
 	void calculateVSpacing(float&, int, float&, float&, float&);
 	void calculateVPositions(float, float, float, std::vector<float>, float, float);
 

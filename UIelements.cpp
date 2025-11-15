@@ -81,18 +81,9 @@ void Arrangement::updateDisplay() {
 	}
 }
 
-void Arrangement::arrangeItems() {
-	if (orientation != ORIENT_VERTICAL && orientation != ORIENT_HORIZONTAL) {
-		cout << "Invalid orientation" << endl;
-		return;
-	}
-
-	this->calculateScreenPosition();
+void Arrangement::getItemProperties(float& totalArea, int& numSpacers, float& buffer, std::vector<float>& extents) {
 	float W = static_cast<float>(Engine::get()->windowWidth);
 	float H = static_cast<float>(Engine::get()->windowHeight);
-
-	float totalArea = 0;
-	int numSpacers = 0;
 
 	for (size_t i = 0; i != Items.size(); i++) {
 		if (Items[i]->isSpacer()) {
@@ -100,17 +91,14 @@ void Arrangement::arrangeItems() {
 		}
 	}
 
-	float buffer;
 	if (orientation == ORIENT_HORIZONTAL) {
 		buffer = this->extentx * 2 * this->spacing; // Each item will have half of this value of empty space on each side
 	}
 	else if (orientation == ORIENT_VERTICAL) {
-		buffer = this->extenty * 2 * this->spacing; 
+		buffer = this->extenty * 2 * this->spacing;
 	}
 
 	// We scale all items to have a height equal to the height of this arrangement, then calculate the width of all items summed up
-
-	vector<float> extents;
 
 	float rescale = 0;
 	float maxSize = 0;
@@ -134,7 +122,7 @@ void Arrangement::arrangeItems() {
 					else {
 						extents.push_back(Items[i]->extentx * rescale);
 					}
-					
+
 					totalArea += extents[i] * 2;
 				}
 				else {
@@ -193,10 +181,10 @@ void Arrangement::arrangeItems() {
 						totalArea += extents[i] * 2 * W / H;
 					}
 					else {
-						extents.push_back(Items[i]->extenty * (1.0f- this->spacing));
+						extents.push_back(Items[i]->extenty * (1.0f - this->spacing));
 						totalArea += extents[i] * 2;
 					}
-					
+
 				}
 				else {
 					extents.push_back(0.0f);
@@ -205,6 +193,22 @@ void Arrangement::arrangeItems() {
 		}
 		break;
 	}
+}
+
+void Arrangement::arrangeItems() {
+	if (orientation != ORIENT_VERTICAL && orientation != ORIENT_HORIZONTAL) {
+		cout << "Invalid orientation" << endl;
+		return;
+	}
+
+	this->calculateScreenPosition();
+	
+	float totalArea = 0;
+	int numSpacers = 0;
+	float buffer = 0.0f;
+	vector<float> extents = {};
+
+	getItemProperties(totalArea, numSpacers, buffer, extents);
 
 	float bufferSpace = buffer * Items.size(); // Total space occupied by x buffers
 	float spacerSize = 0.0f;
@@ -231,6 +235,9 @@ void Arrangement::arrangeItems() {
 		float remainingHeight = this->extenty * 2 - totalArea * scaleFactor - bufferSpace;
 
 		// Finally for all items we calculate their positions on the screen and their sizes 
+
+		float W = static_cast<float>(Engine::get()->windowWidth);
+		float H = static_cast<float>(Engine::get()->windowHeight);
 
 		calculateVPositions(buffer, spacerSize, scaleFactor, extents, remainingHeight, W / H);
 	}
@@ -364,121 +371,16 @@ bool Arrangement::checkForSpace(UIItem* checkItem) {
 	}
 
 	this->calculateScreenPosition();
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
-
 	float totalArea = 0;
 	int numSpacers = 0;
+	float buffer = 0.0f;
+	vector<float> extents = {};
 
-	float buffer;
-	if (orientation == ORIENT_HORIZONTAL) {
-		buffer = this->extentx * 2 * this->spacing; // Each item will have half of this value of empty space on each side
-	}
-	else if (orientation == ORIENT_VERTICAL) {
-		buffer = this->extenty * 2 * this->spacing;
-	}
+	Items.push_back(checkItem);
 
-	// We scale all items to have a height equal to the height of this arrangement, then calculate the width of all items summed up
+	getItemProperties(totalArea, numSpacers, buffer, extents);
 
-	vector<float> extents;
-
-	float rescale = 0;
-	float maxSize = 0;
-
-	switch (sizing) {
-	case SCALE_BY_DIMENSIONS:
-		if (orientation == ORIENT_HORIZONTAL) {
-			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
-					if (Items[i]->extenty * 2 > maxSize) {
-						maxSize = Items[i]->extenty * 2;
-					}
-				}
-			}
-			rescale = (this->extenty * 2 - this->spacing) / maxSize;
-			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
-					if (!Items[i]->isArrangement()) {
-						extents.push_back((Items[i]->extenty * rescale / (Items[i]->sqAxisRatio * W / H)));
-					}
-					else {
-						extents.push_back(Items[i]->extentx * rescale);
-					}
-
-					totalArea += extents[i] * 2;
-				}
-				else {
-					extents.push_back(0.0f);
-					numSpacers++;
-				}
-			}
-		}
-		else if (orientation == ORIENT_VERTICAL) {
-			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
-					if (Items[i]->extentx * 2 > maxSize) {
-						maxSize = Items[i]->extentx * 2;
-					}
-				}
-			}
-			rescale = (this->extentx * 2 - this->spacing) / maxSize;
-			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
-					if (!Items[i]->isArrangement()) {
-						extents.push_back(Items[i]->extentx * rescale * Items[i]->sqAxisRatio);
-						totalArea += extents[i] * 2 * W / H;
-					}
-					else {
-						extents.push_back(Items[i]->extenty * rescale);
-						totalArea += extents[i] * 2;
-					}
-				}
-				else {
-					extents.push_back(0.0f);
-					numSpacers++;
-				}
-			}
-		}
-		break;
-	default:
-		if (orientation == ORIENT_HORIZONTAL) {
-			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
-					if (!Items[i]->isArrangement()) {
-						extents.push_back((this->extenty * (1.0f - this->spacing) / (Items[i]->sqAxisRatio * W / H)));
-					}
-					else {
-						extents.push_back(Items[i]->extentx * (1.0f - this->spacing));
-					}
-					totalArea += extents[i] * 2;
-				}
-				else {
-					extents.push_back(0.0f);
-					numSpacers++;
-				}
-			}
-		}
-		else if (orientation == ORIENT_VERTICAL) {
-			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
-					if (!Items[i]->isArrangement()) {
-						extents.push_back(this->extentx * (1.0f - this->spacing) * Items[i]->sqAxisRatio);
-						totalArea += extents[i] * 2 * W / H;
-					}
-					else {
-						extents.push_back(Items[i]->extenty * (1.0f - this->spacing));
-						totalArea += extents[i] * 2;
-					}
-
-				}
-				else {
-					extents.push_back(0.0f);
-					numSpacers++;
-				}
-			}
-		}
-		break;
-	}
+	Items.erase(Items.end() - 1);
 
 	float bufferSpace = buffer * Items.size(); // Total space occupied by x buffers
 	float spacerSize = 0.0f;
@@ -493,6 +395,8 @@ bool Arrangement::checkForSpace(UIItem* checkItem) {
 	else if (orientation == ORIENT_VERTICAL) {
 		scaleFactor = (this->extenty * 2 - bufferSpace) / (totalArea);
 	}
+
+	std::cout << scaleFactor << std::endl;
 
 	if (scaleFactor > 1.0f) {
 		return true;
@@ -538,18 +442,18 @@ void Grid::arrangeItems() {
 
 	if (orientation == ORIENT_HORIZONTAL) {
 		mainArrangement = new Arrangement(ORIENT_VERTICAL, this->posx, -1*this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START);
-		subExtentx = 1.0f;
-		subExtenty = 1.0f / (float(numArrangements) * 1.1f) * this->extenty / this->extentx;
+		subExtentx = this->extentx;
+		subExtenty = this->extentx / (float(numArrangements) * 1.1f) * this->extenty / this->extentx;
 	}
 	else if (orientation == ORIENT_VERTICAL) {
 		mainArrangement = new Arrangement(ORIENT_HORIZONTAL, this->posx, -1*this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_FILL);
-		subExtenty = 1.0f;
-		subExtentx = 1.0f / (float(numArrangements) * 1.1f) * this->extentx/this->extenty;
+		subExtenty = this->extenty;
+		subExtentx = this->extenty / (float(numArrangements) * 1.1f) * this->extentx/this->extenty;
 	}
 
 	Arrangement* subArrangement = new Arrangement(orientation, 0.0f, 0.0f, subExtentx, subExtenty, this->spacing, ARRANGE_START);
 
-	int index = 0;
+	int index = 1;
 
 	for (size_t i = 0; i != Items.size(); i++) {
 		Items[i]->update(0.0f, 0.0f, 1.0f, 1.0f);
@@ -565,16 +469,12 @@ void Grid::arrangeItems() {
 		}
 	}
 
-	index -= (numArrangements-3);
-	if (index < 0) {
-		index = 0;
-	}
-
 	mainArrangement->addItem(subArrangement);
 	mainArrangement->arrangeItems();
 
-	if (index > 0) {
-		numArrangements = numArrangements + index;
+	std::cout << numArrangements << std::endl;
+	if (index > numArrangements) {
+		numArrangements = index;
 		arrangeItems();
 	}
 }
