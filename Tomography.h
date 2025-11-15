@@ -24,6 +24,8 @@ public:
 	void add_image(std::string, std::string);
 	void add_lightVector(float phi, float theta);
 
+	void remove_element(int);
+
 	void calculate_normal();
 	void calculate_diffuse();
 	void calculate_NormAndDiff();
@@ -260,6 +262,8 @@ public:
 	Material scannedMaterial;
 	bool normalAvailable = false;
 
+	int imageCount = 0;
+
 private:
 	Tomographer tomographer;
 	TomographyLoad* tomogLoadMenu = nullptr;
@@ -272,7 +276,7 @@ private:
 	void loadFile(UIItem* owner) {
 		std::string fileName = winFile::OpenFileDialog();
 		if (fileName != std::string("fail")) {
-			std::string name = "Image" + std::to_string(grid->Items.size());
+			std::string name = "Image" + std::to_string(imageCount);
 			tomographer.add_image(fileName, name + "Tex");
 			Material* imageMat = loadList->getPtr(new Material(tomographer.images[tomographer.images.size() - 1]), name + "Mat");
 			tomogLoadMenu = new TomographyLoad(loadList);
@@ -290,8 +294,16 @@ private:
 
 	void addItem(Material* imageMat, float azimuth, float polar) {
 		ImagePanel* loadedUI = new ImagePanel(imageMat, false);
+		Material* visibleMat = loadList->findMatPtr("CheckboxBtnMat");
+		Button* deleteButton = new Button(visibleMat, std::bind(&TomographyMenu::removeItem, this, std::placeholders::_1));
+		deleteButton->Name = std::to_string(imageCount);
+		imageCount++;
 		grid->addItem(getPtr(loadedUI));
 		grid->updateDisplay();
+		UIItem* ref = grid->Items[grid->Items.size() - 1];
+		deleteButton->update(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
+		deleteButton->updateDisplay();
+		canvas.push_back(getPtr(deleteButton));
 		tomographer.add_lightVector(azimuth, polar);
 		mouseManager->removeClickListener(loadClickIdx);
 		mouseManager->removePositionListener(loadPosIdx);
@@ -300,6 +312,31 @@ private:
 		for (UIItem* item : canvas) {
 			item->setIsEnabled(true);
 			item->setVisibility(true);
+		}
+	}
+
+	void removeItem(UIItem* owner) {
+		int index = std::stoi(owner->Name);
+		vkQueueWaitIdle(Engine::get()->graphicsQueue);
+		tomographer.remove_element(index);
+		grid->Items.erase(grid->Items.begin() + index);
+		grid->updateDisplay();
+		for (size_t i = 1; i != canvas.size(); i++) {
+			int currentIndex = std::stoi(canvas[i]->Name);
+			if (currentIndex > index) {
+				UIItem* ref = grid->Items[currentIndex-1];
+				canvas[i]->update(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
+				canvas[i]->updateDisplay();
+				canvas[i]->Name = std::to_string(currentIndex - 1);
+			}
+		}
+		owner->cleanup();
+		canvas.erase(find(canvas.begin(), canvas.end(), owner));
+	}
+
+	void customUpdate() {
+		if (tomogLoadMenu != nullptr) {
+			tomogLoadMenu->update();
 		}
 	}
 

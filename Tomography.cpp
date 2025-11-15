@@ -764,6 +764,16 @@ void Tomographer::add_image(string filename, string name) {
 	images.push_back(matchedTex);
 }
 
+void Tomographer::remove_element(int index) {
+	originalImages.at(index)->cleanup();
+	originalImages.erase(originalImages.begin() + index);
+
+	images.at(index)->cleanup();
+	images.erase(images.begin() + index);
+
+	vectors.erase(vectors.begin() + index);
+}
+
 void Tomographer::add_lightVector(float phi, float theta) {
 	vector<float> lightVec;
 	calculateVector(lightVec, phi, theta);

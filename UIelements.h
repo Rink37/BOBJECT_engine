@@ -1155,6 +1155,7 @@ struct Widget {
 	}
 
 	void update() {
+		customUpdate();
 		for (size_t i = 0; i != canvas.size(); i++) {
 			canvas[i]->updateDisplay();
 		}
@@ -1162,6 +1163,9 @@ struct Widget {
 	}
 
 	virtual void cleanupSubClasses() {
+	}
+
+	virtual void customUpdate() {
 	}
 
 	void cleanup() {
