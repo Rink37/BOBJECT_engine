@@ -178,11 +178,20 @@ public:
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "CheckboxBtn");
 
+		imageData plb = PLANEBUTTON;
+		Material* planeMat = newMaterial(&plb, "PlaneBtn");
+
 		imageData update = UPDATEBUTTON;
 		Material* updateMat = newMaterial(&update, "UpdateBtn");
 
 		imageData finish = FINISHBUTTON;
 		Material* finishMat = newMaterial(&finish, "FinishBtn");
+
+		imageData crs = CLOSEBUTTON;
+		Material* crossMat = newMaterial(&crs, "CrossBtn");
+
+		imageData rb = RENDEREDBUTTON;
+		Material* renderedMat = newMaterial(&rb, "RenderBtn");
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, -1.0f, 0.875f, 0.3f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -197,7 +206,7 @@ public:
 
 		loadButtons->addItem(getPtr(new Button(openMat, tomogLoad)));
 		loadButtons->addItem(getPtr(new spacer));
-		loadButtons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, toggleFunction)));
+		loadButtons->addItem(getPtr(new Checkbox(planeMat, renderedMat, toggleFunction)));
 
 		column->addItem(getPtr(loadButtons));
 		column->addItem(getPtr(new Grid(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.3f, 0.01f)));
@@ -306,7 +315,7 @@ private:
 
 	void addItem(Material* imageMat, float azimuth, float polar) {
 		ImagePanel* loadedUI = new ImagePanel(imageMat, false);
-		Material* visibleMat = loadList->findMatPtr("CheckboxBtnMat");
+		Material* visibleMat = loadList->findMatPtr("CrossBtnMat");
 		Button* deleteButton = new Button(visibleMat, std::bind(&TomographyMenu::removeItem, this, std::placeholders::_1));
 		deleteButton->Name = std::to_string(activeImageCount);
 		imageCount++;

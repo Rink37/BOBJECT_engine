@@ -191,4 +191,18 @@ extern unsigned char UpdateButtonBytes[];
 
 #define UPDATEBUTTON imageData(UpdateButtonWidth, UpdateButtonHeight, UpdateButtonChannels, UpdateButtonBytes )
 
+extern const int CloseButtonWidth;
+extern const int CloseButtonHeight;
+extern const int CloseButtonChannels;
+extern unsigned char CloseButtonBytes[];
+
+#define CLOSEBUTTON imageData(CloseButtonWidth, CloseButtonHeight, CloseButtonChannels, CloseButtonBytes )
+
+extern const int PlaneButtonWidth;
+extern const int PlaneButtonHeight;
+extern const int PlaneButtonChannels;
+extern unsigned char PlaneButtonBytes[];
+
+#define PLANEBUTTON imageData(PlaneButtonWidth, PlaneButtonHeight, PlaneButtonChannels, PlaneButtonBytes )
+
 #endif
