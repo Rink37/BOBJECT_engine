@@ -1210,9 +1210,22 @@ struct Widget {
 	}
 
 	Material* newMaterial(imageData* imgData, std::string name) {
-		Texture* tex = loadList->getPtr(new imageTexture(imgData), name + "Tex");
-		Material* newMat = loadList->getPtr(new Material(tex), name + "Mat");
-		return newMat;
+		if (loadList->checkForMaterial(name+"Mat")) {
+			return loadList->findMatPtr(name + "Mat");
+		}
+		else {
+			Texture* tex = nullptr;
+			if (loadList->checkForTexture(name + "Tex")) {
+				tex = loadList->findTexPtr(name + "Tex");
+			}
+			else {
+				tex = loadList->getPtr(new imageTexture(imgData), name + "Tex");
+			}
+			return loadList->getPtr(new Material(tex), name + "Mat");
+		}
+		//Texture* tex = loadList->getPtr(new imageTexture(imgData), name + "Tex");
+		//Material* newMat = loadList->getPtr(new Material(tex), name + "Mat");
+		//return newMat;
 	}
 
 	UIItem* getPtr(ImagePanel* ip) {
