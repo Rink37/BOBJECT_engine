@@ -157,74 +157,226 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 
 	int defaultHeight = src.rows;
 	int defaultWidth = src.cols;
-	int stepsPerIter = 8;
+	int stepsPerIter = 16;
+	int rotationsPerIter = 8;
 
 	bool vertical = (target->rows >= target->cols);
 
 	int index = 0;
+	float rotation = 0.0f;
 	int secondIndex = 0;
 	float correlation = 0.0f;
+	float imgCorrelation = 0.0f;
 	float secondCorrelation = 0.0f;
 
-	Mat shrunkTarget;
-	if (!vertical) {
-		resize(*target, shrunkTarget, Size(defaultWidth, defaultWidth * static_cast<float>(target->rows) / static_cast<float>(target->cols)));
+	//Mat shrunkTarget;
+	//if (!vertical) {
+	//	cv::resize(*target, shrunkTarget, Size(defaultWidth * 1.25, defaultWidth * 1.25 * static_cast<float>(target->rows) / static_cast<float>(target->cols)));
+	//}
+	//else {
+	//	cv::resize(*target, shrunkTarget, Size(defaultHeight * 1.25 * static_cast<float>(target->cols) / static_cast<float>(target->rows), defaultHeight*1.25));
+	//}
+
+	int targetHeight = target->rows;
+	int targetWidth = target->cols;
+	if (max(targetHeight, targetWidth) < max(defaultHeight, defaultWidth) * 1.25) {
+		if (vertical) {
+			targetHeight = defaultHeight * 1.25;
+			targetWidth = defaultHeight * 1.25 * static_cast<float>(target->cols)/static_cast<float>(target->rows);
+		}
+		else {
+			targetWidth = defaultWidth * 1.25;
+			targetHeight = defaultWidth * 1.25 * static_cast<float>(target->rows) / static_cast<float>(target->cols);
+		}
 	}
-	else {
-		resize(*target, shrunkTarget, Size(defaultHeight * static_cast<float>(target->cols) / static_cast<float>(target->rows), defaultHeight));
-	}
+	int defaultDim = sqrtf(targetHeight * targetHeight + targetWidth * targetWidth);
 
 	Point matchedLoc;
 
-	for (int i = 0; i != stepsPerIter; i++) {
-		
-
-		Mat downscaled;
-		if (!vertical) {
-			int iterWidth = defaultWidth * static_cast<float>(i + 1) / static_cast<float>(stepsPerIter);
-			resize(shrunkTarget, downscaled, Size(iterWidth, iterWidth * static_cast<float>(shrunkTarget.rows) / static_cast<float>(shrunkTarget.cols)));
-		}
-		else {
-			int iterHeight = defaultHeight * static_cast<float>(i + 1) / static_cast<float>(stepsPerIter);
-			resize(shrunkTarget, downscaled, Size(iterHeight * static_cast<float>(shrunkTarget.cols) / static_cast<float>(shrunkTarget.rows), iterHeight));
-		}
-		
-		Mat res;
-		int result_cols = src.cols - downscaled.cols + 1;
-		int result_rows = src.rows - downscaled.rows + 1;
-
-		res.create(result_rows, result_cols, CV_32FC1);
-
-		matchTemplate(src, downscaled, res, TM_CCORR_NORMED);
-
-		double min, max;
-		Point minLoc, maxLoc;
-		minMaxLoc(res, &min, &max, &minLoc, &maxLoc);
-
-		float maxCorr = max;
-		
-		if (maxCorr > correlation) {
-			matchedLoc = maxLoc;
-			index = i;
-			correlation = maxCorr;
-		}
-	}
-
-	float scaleFactor;
+	int resizeHeight = 0;
+	int resizeWidth = 0;
 	if (vertical) {
-		scaleFactor = static_cast<float>(stepsPerIter) / static_cast<float>(index + 1) * target->rows / src.rows;
+		resizeHeight = max(defaultHeight, targetHeight);
+		resizeWidth = resizeHeight * static_cast<float>(defaultWidth) / static_cast<float>(defaultHeight);
 	}
 	else {
-		scaleFactor = static_cast<float>(stepsPerIter) / static_cast<float>(index + 1) * target->cols / src.cols;
+		resizeWidth = max(defaultWidth, targetWidth);
+		resizeHeight = resizeWidth * static_cast<float>(defaultHeight) / static_cast<float>(defaultWidth);
 	}
 
-	Mat matched = src.clone();
+	int srcResizeDim = sqrtf(resizeHeight*resizeHeight + resizeWidth * resizeWidth);
+	Point src_imageCenter = Point(static_cast<float>(src.cols - 1) / 2.0f, static_cast<float>(src.rows - 1) / 2.0f);
+	Point src_resultCenter = Point(static_cast<float>(srcResizeDim - 1) / 2.0f, static_cast<float>(srcResizeDim - 1) / 2.0f);
 
-	resize(matched, matched, Size(matched.cols * scaleFactor, matched.rows * scaleFactor));
+	int src_tx = static_cast<int>(src_resultCenter.x - src_imageCenter.x);
+	int src_ty = static_cast<int>(src_resultCenter.y - src_imageCenter.y);
+	cv::Mat src_translation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, src_tx, 0, 1, src_ty);
 
-	matched = Scalar(0, 0, 0, 0);
+	cv::Mat srcPadded;
+	cv::warpAffine(src, srcPadded, src_translation_matrix, Size(srcResizeDim, srcResizeDim));
 
-	target->copyTo(matched.colRange(matchedLoc.x * scaleFactor, matchedLoc.x * scaleFactor + target->cols).rowRange(matchedLoc.y * scaleFactor, matchedLoc.y * scaleFactor + target->rows));
+	cv::Mat srcSobel;
+	cv::GaussianBlur(srcPadded, srcSobel, Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+	cv::cvtColor(srcSobel, srcSobel, cv::COLOR_BGR2GRAY);
+
+	Mat grad_x, grad_y;
+	cv::Sobel(srcSobel, grad_x, CV_16S, 1, 0);
+	cv::Sobel(srcSobel, grad_y, CV_16S, 0, 1);
+	cv::convertScaleAbs(grad_x, grad_x);
+	cv::convertScaleAbs(grad_y, grad_y);
+	cv::addWeighted(grad_x, 0.5, grad_y, 0.5, 0, srcSobel);
+
+	double thresh = 0.1;
+	double min, max;
+	Point minLoc, maxLoc;
+	minMaxLoc(srcSobel, &min, &max, &minLoc, &maxLoc);
+
+	cv::Mat srcSobelMin;
+	cv::threshold(srcSobel, srcSobelMin, thresh*max, 255.0, cv::THRESH_TRUNC);
+	cv::subtract(srcSobel, srcSobelMin, srcSobel);
+
+	cv::imshow("SrcSobel", srcSobel);
+	cv::waitKey(0);
+
+	cv::Mat matched;
+
+	for (int i = 0; i != stepsPerIter; i++) {
+		int iterDim = defaultDim * (0.5+static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
+		int iterHeight = targetHeight * (0.5+static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
+		int iterWidth = targetWidth * (0.5+static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
+
+		Mat downscaled;
+
+		cv::resize(*target, downscaled, Size(iterWidth, iterHeight));
+		
+		cv::GaussianBlur(downscaled, downscaled, Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+		cv::cvtColor(downscaled, downscaled, cv::COLOR_BGR2GRAY);
+
+		cv::Sobel(downscaled, grad_x, CV_16S, 1, 0);
+		cv::Sobel(downscaled, grad_y, CV_16S, 0, 1);
+		cv::convertScaleAbs(grad_x, grad_x);
+		cv::convertScaleAbs(grad_y, grad_y);
+		cv::addWeighted(grad_x, 0.5, grad_y, 0.5, 0, downscaled);
+
+		minMaxLoc(downscaled, &min, &max, &minLoc, &maxLoc);
+
+		cv::Mat downscaledMin;
+		cv::threshold(downscaled, downscaledMin, thresh * max, 255.0, cv::THRESH_TRUNC);
+		cv::subtract(downscaled, downscaledMin, downscaled);
+		
+		cv::Mat cDownscaled;
+		cv::cvtColor(downscaled, cDownscaled, cv::COLOR_GRAY2BGR);
+
+		vector<Vec4i> lines;
+		int largestLines[2] = { 0, 0 };
+		float length = 0.0f;
+		float maxLength = 0.0f;
+		HoughLinesP(downscaled, lines, 1, CV_PI / 180, 50, 50, 10);
+		for (size_t i = 0; i < lines.size(); i++)
+		{
+			Vec4i l = lines[i];
+			length = sqrt((l[0] - l[2]) * (l[0] - l[2]) + (l[1] - l[3]) * (l[1] - l[3]));
+			if (length > maxLength) {
+				maxLength = length;
+				largestLines[1] = largestLines[0];
+				largestLines[0] = i;
+			}
+			//line(cDownscaled, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3);
+		}
+		//imshow("source", src);
+		Vec4i l = lines[largestLines[0]];
+		line(cDownscaled, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3);
+		l = lines[largestLines[1]];
+		line(cDownscaled, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3);
+		imshow("detected lines", cDownscaled);
+		cv::waitKey(0);
+
+		//cv::imshow("downscaled", downscaled);
+		//cv::waitKey(0);
+
+		Point imageCenter = Point(static_cast<float>(downscaled.cols - 1) / 2.0f, static_cast<float>(downscaled.rows - 1) / 2.0f);
+		Point resultCenter = Point(static_cast<float>(iterDim - 1) / 2.0f, static_cast<float>(iterDim - 1) / 2.0f);
+
+		int tx = static_cast<int>(resultCenter.x - imageCenter.x);
+		int ty = static_cast<int>(resultCenter.y - imageCenter.y);
+		cv::Mat translation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, tx, 0, 1, ty);
+
+		cv::warpAffine(downscaled, downscaled, translation_matrix, Size(iterDim, iterDim));
+
+		for (int j = 0; j != rotationsPerIter; j++) {
+			float rotAngle = 360.0f * static_cast<float>(j) / static_cast<float>(rotationsPerIter);
+
+			cv::Mat rotation_matrix = cv::getRotationMatrix2D(Point(static_cast<float>(iterDim - 1) / 2.0f, static_cast<float>(iterDim - 1) / 2.0f), rotAngle, 1);
+			
+			cv::Mat translated;
+			cv::warpAffine(downscaled, translated, rotation_matrix, Size(iterDim, iterDim));
+
+			Mat res;
+			int result_cols = srcSobel.cols - translated.cols + 1;
+			int result_rows = srcSobel.rows - translated.rows + 1;
+
+			res.create(result_rows, result_cols, CV_32FC1);
+
+			matchTemplate(srcSobel, translated, res, TM_CCORR_NORMED);
+
+			minMaxLoc(res, &min, &max, &minLoc, &maxLoc);
+
+			float maxCorr = max;
+			std::cout << maxCorr << std::endl;
+
+			if (maxCorr > correlation) {
+				Mat currentMatch;
+				cv::resize(*target, currentMatch, Size(iterWidth, iterHeight));
+				cv::warpAffine(currentMatch, currentMatch, translation_matrix, Size(iterDim, iterDim));
+				cv::warpAffine(currentMatch, currentMatch, rotation_matrix, Size(iterDim, iterDim));
+
+				matchTemplate(srcSobel, translated, res, TM_CCORR_NORMED);
+
+				minMaxLoc(res, &min, &max, &minLoc, &maxLoc);
+
+				correlation = maxCorr;
+
+				float maxImgCorr = max;
+
+				if (maxImgCorr > imgCorrelation) {
+					cv::Mat backtranslation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, maxLoc.x - src_tx, 0, 1, maxLoc.y - src_ty);
+					cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
+					cv::imshow("Transformed", currentMatch);
+					cv::waitKey(0);
+					matched = currentMatch.clone();
+					matchedLoc = maxLoc;
+					index = i;
+					rotation = rotAngle;
+					imgCorrelation = maxImgCorr;
+				}
+				
+				//std::cout << maxCorr << std::endl;
+			}
+		}
+	}
+
+	//float scaleFactor;
+	//if (vertical) {
+	//	scaleFactor = static_cast<float>(stepsPerIter) / static_cast<float>(index + 1) * target->rows / src.rows;
+	//}
+	//else {
+	//	scaleFactor = static_cast<float>(stepsPerIter) / static_cast<float>(index + 1) * target->cols / src.cols;
+	//}
+
+	//std::cout << scaleFactor << " " << rotation << std::endl;
+
+	//cv::Mat matched = src.clone();
+
+	//cv::resize(matched, matched, Size(matched.cols * scaleFactor, matched.rows * scaleFactor));
+
+	//matched = Scalar(0, 0, 0, 0);
+
+	//target->copyTo(matched.colRange(matchedLoc.x * scaleFactor, matchedLoc.x * scaleFactor + target->cols).rowRange(matchedLoc.y * scaleFactor, matchedLoc.y * scaleFactor + target->rows));
+	
+	//Mat M = cv::getRotationMatrix2D(Point(static_cast<float>(matched.cols - 1) / 2.0f, static_cast<float>(matched.rows - 1) / 2.0f), rotation, 1);
+	//cv::warpAffine(matched, matched, M, Size(matched.cols, matched.rows));
+	//cv::imshow("Matched with rot", matched);
+	//cv::waitKey(0);
 
 	*target = matched.clone();
 }
@@ -264,7 +416,6 @@ void match_template(Mat src, Mat* target, Size outdims) {
 
 	Mat imMatches;
 	drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
-
 
 	for (size_t i = 0; i < matches.size(); i++) {
 		if (norm(keypoints1[matches[i].queryIdx].pt - keypoints2[matches[i].trainIdx].pt) < 100) {
