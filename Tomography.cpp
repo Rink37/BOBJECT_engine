@@ -165,7 +165,7 @@ float angleBetweenLines(Vec4i l1, Vec4i l2) {
 }
 
 Point rotate(Point a, float angle) {
-	float ang = angle * 3.14159265f / 180.0f;
+	float ang = - angle * 3.14159265f / 180.0f;
 	return Point(a.x * cos(ang) - a.y * sin(ang), a.x * sin(ang) + a.y * cos(ang));
 }
 
@@ -223,35 +223,40 @@ Point intersectionOfLines(Vec4i l1, Vec4i l2) {
 	return intersect;
 }
 
+float pointDist(Point a, Point b) {
+	return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+}
+
 int findCornerType(Vec4i l1, Vec4i l2, Point cornerPos) {
-	float max_x_dist = cornerPos.x - l1[0];
-	float max_y_dist = cornerPos.y - l1[1];
-	if (abs(cornerPos.x - l1[2]) > abs(max_x_dist)) {
-		max_x_dist = cornerPos.x - l1[2];
+	// Assume that lines have been rotated so that they match the newly rotated image
+	Point l1_1 = Point(l1[0], l1[1]);
+	Point l1_2 = Point(l1[2], l1[3]);
+	Point l2_1 = Point(l2[0], l2[1]);
+	Point l2_2 = Point(l2[2], l2[3]);
+	Point a;
+	Point b;
+	if (pointDist(l1_1, cornerPos) > pointDist(l1_2, cornerPos)) {
+		a = l1_1;
 	}
-	if (abs(cornerPos.x - l2[0]) > abs(max_x_dist)) {
-		max_x_dist = cornerPos.x - l2[0];
+	else {
+		a = l1_2;
 	}
-	if (abs(cornerPos.x - l2[2]) > abs(max_x_dist)) {
-		max_x_dist = cornerPos.x - l2[2];
+	if (pointDist(l2_1, cornerPos) > pointDist(l2_2, cornerPos)) {
+		b = l2_1;
 	}
-	if (abs(cornerPos.y - l1[3]) > abs(max_y_dist)) {
-		max_y_dist = cornerPos.y - l1[3];
+	else {
+		b = l2_2;
 	}
-	if (abs(cornerPos.y - l2[1]) > abs(max_y_dist)) {
-		max_y_dist = cornerPos.y - l2[1];
-	}
-	if (abs(cornerPos.y - l2[3]) > abs(max_y_dist)) {
-		max_y_dist = cornerPos.y - l2[3];
-	}
+	float max_x_dist = (abs(a.x - cornerPos.x) > abs(b.x - cornerPos.x))? a.x - cornerPos.x: b.x - cornerPos.x;
+	float max_y_dist = (abs(a.y - cornerPos.y) > abs(b.y - cornerPos.y)) ? a.y - cornerPos.y : b.y - cornerPos.y;
 	std::cout << max_x_dist << " " << max_y_dist << std::endl;
-	if (max_x_dist < 0.0f && max_y_dist > 0.0f) {
+	if (max_x_dist > 0.0f && max_y_dist > 0.0f) {
 		return 0; // Top left
 	}
-	else if (max_x_dist > 0.0f && max_y_dist > 0.0f) {
+	else if (max_x_dist < 0.0f && max_y_dist > 0.0f) {
 		return 1; // Top right
 	}
-	else if (max_x_dist > 0.0f && max_y_dist < 0.0f) {
+	else if (max_x_dist < 0.0f && max_y_dist < 0.0f) {
 		return 2; // Bottom right
 	}
 	return 3; // Bottom left
@@ -399,6 +404,7 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 				if (intersection != Point(-1.0f, -1.0f)) {
 					Vec4i l1 = lines[largestLines[0]];
 					Vec4i l2 = lines[largestLines[1]];
+					//rotateLines(l1, l2, rotateAngle, intersection);
 					if (intersection.x > 0) {
 						cv::line(downscaled, Point(l1[0], l1[1]), Point(l1[2], l1[3]), Scalar(255, 255, 255));
 						cv::line(downscaled, Point(l2[0], l2[1]), Point(l2[2], l2[3]), Scalar(255, 255, 255));
