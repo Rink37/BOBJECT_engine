@@ -164,6 +164,99 @@ float angleBetweenLines(Vec4i l1, Vec4i l2) {
 	return angle * 180.0f / 3.14159265f;
 }
 
+Point rotate(Point a, float angle) {
+	float ang = angle * 3.14159265f / 180.0f;
+	return Point(a.x * cos(ang) - a.y * sin(ang), a.x * sin(ang) + a.y * cos(ang));
+}
+
+void rotateLines(Vec4i& l1, Vec4i& l2, float angle, Point rotationCenter) {
+	Point l1_1 = Point(l1[0], l1[1]);
+	Point l1_2 = Point(l1[2], l1[3]);
+	Point l2_1 = Point(l2[0], l2[1]);
+	Point l2_2 = Point(l2[2], l2[3]);
+	l1_1 -= rotationCenter;
+	l1_2 -= rotationCenter;
+	l2_1 -= rotationCenter;
+	l2_2 -= rotationCenter;
+	l1_1 = rotate(l1_1, angle);
+	l1_2 = rotate(l1_2, angle);
+	l2_1 = rotate(l2_1, angle);
+	l2_2 = rotate(l2_2, angle);
+	l1_1 += rotationCenter;
+	l1_2 += rotationCenter;
+	l2_2 += rotationCenter;
+	l2_1 += rotationCenter;
+	l1 = Vec4i(l1_1.x, l1_1.y, l1_2.x, l1_2.y);
+	l2 = Vec4i(l2_1.x, l2_1.y, l2_2.x, l2_2.y);
+	std::cout << l1[0] << " " << l1[1] << " " << l1[2] << " " << l1[3] << std::endl;
+}
+
+Point intersectionOfLines(Vec4i l1, Vec4i l2) {
+	float determinant = (l1[0] - l1[2]) * (l2[0] - l2[2]) - (l1[1] - l1[3]) * (l2[1] - l2[3]);
+	float x = (l1[0] * l1[3] - l1[1] * l1[2]) * (l2[0] - l2[2]) - (l1[0] - l1[2]) * (l2[0] * l2[3] - l2[1] * l2[2]);
+	float y = (l1[0] * l1[3] - l1[1] * l1[2]) * (l2[1] - l2[3]) - (l1[1] - l1[3]) * (l2[0] * l2[3] - l2[1] * l2[2]);
+	if (determinant == 0.0f) {
+		// We assume that this function will never be called on parallel lines, so this case is only found if lines are perfectly vertical/horizontal
+		if (l1[0] - l1[2] == 0.0f && l2[0] - l2[2] != 0.0f) {
+			x = l1[0];
+		}
+		else if (l1[0] - l1[2] != 0.0f && l2[0] - l2[2] == 0.0f) {
+			x = l2[0];
+		}
+		else {
+			x = -1.0f;
+		}
+		if (l1[1] - l1[3] == 0.0f && l2[1] - l2[3] != 0.0f) {
+			y = l1[1];
+		}
+		else if (l1[1] - l1[3] != 0.0f && l2[1] - l2[3] == 0.0f) {
+			y = l2[1];
+		}
+		else {
+			y = -1.0f;
+		}
+		y = (x == -1.0f) ? -1.0f : y;
+		x = (y == -1.0f) ? -1.0f : x;
+		return Point(x, y);
+	}
+	Point intersect = Point(x / determinant, y / determinant);
+	return intersect;
+}
+
+int findCornerType(Vec4i l1, Vec4i l2, Point cornerPos) {
+	float max_x_dist = cornerPos.x - l1[0];
+	float max_y_dist = cornerPos.y - l1[1];
+	if (abs(cornerPos.x - l1[2]) > abs(max_x_dist)) {
+		max_x_dist = cornerPos.x - l1[2];
+	}
+	if (abs(cornerPos.x - l2[0]) > abs(max_x_dist)) {
+		max_x_dist = cornerPos.x - l2[0];
+	}
+	if (abs(cornerPos.x - l2[2]) > abs(max_x_dist)) {
+		max_x_dist = cornerPos.x - l2[2];
+	}
+	if (abs(cornerPos.y - l1[3]) > abs(max_y_dist)) {
+		max_y_dist = cornerPos.y - l1[3];
+	}
+	if (abs(cornerPos.y - l2[1]) > abs(max_y_dist)) {
+		max_y_dist = cornerPos.y - l2[1];
+	}
+	if (abs(cornerPos.y - l2[3]) > abs(max_y_dist)) {
+		max_y_dist = cornerPos.y - l2[3];
+	}
+	std::cout << max_x_dist << " " << max_y_dist << std::endl;
+	if (max_x_dist < 0.0f && max_y_dist > 0.0f) {
+		return 0; // Top left
+	}
+	else if (max_x_dist > 0.0f && max_y_dist > 0.0f) {
+		return 1; // Top right
+	}
+	else if (max_x_dist > 0.0f && max_y_dist < 0.0f) {
+		return 2; // Bottom right
+	}
+	return 3; // Bottom left
+}
+
 void match_partial(Mat src, Mat* target, Size outdims) {
 
 	int defaultHeight = src.rows;
@@ -229,7 +322,7 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 	cv::convertScaleAbs(grad_y, grad_y);
 	cv::addWeighted(grad_x, 0.5, grad_y, 0.5, 0, srcSobel);
 
-	double thresh = 0.1;
+	double thresh = 0.2;
 	double min, max;
 	Point minLoc, maxLoc;
 	minMaxLoc(srcSobel, &min, &max, &minLoc, &maxLoc);
@@ -238,12 +331,12 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 	cv::threshold(srcSobel, srcSobelMin, thresh*max, 255.0, cv::THRESH_TRUNC);
 	cv::subtract(srcSobel, srcSobelMin, srcSobel);
 
-	//cv::imshow("SrcSobel", srcSobel);
-	//cv::waitKey(0);
-
 	cv::Mat matched;
 
 	float rotateAngle = -10.0f;
+	Point intersection = Point(-1.0f, -1.0f);
+	float intersectionScale = 0.0f;
+	int cornerType = -1;
 
 	for (int i = 0; i != stepsPerIter; i++) {
 		int iterDim = defaultDim * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
@@ -287,7 +380,6 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 			}
 
 			if (largestLines[0] != largestLines[1] && 87.5f < angleBetweenLines(lines[largestLines[0]], lines[largestLines[1]]) < 92.5f) {
-				std::cout << "Angle between corner lines = " << angleBetweenLines(lines[largestLines[0]], lines[largestLines[1]]) << std::endl;
 				float rotateAngle1 = angleBetweenLines(lines[largestLines[0]], Vec4i(0, 0, 0, 10));
 				float rotateAngle2 = angleBetweenLines(lines[largestLines[1]], Vec4i(0, 0, 0, 10));
 				std::cout << rotateAngle1 << " " << rotateAngle2 << std::endl;
@@ -298,26 +390,93 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 				else if (rotateAngle2 > 90.0f && rotateAngle1 <= 90.0f) {
 					rotateAngle2 = 180.0f - rotateAngle2;
 					rotateAngle1 = 90.0f - rotateAngle1;
-
 				}
 				std::cout << rotateAngle1 << " " << rotateAngle2 << std::endl;
 				rotateAngle = (rotateAngle1 + rotateAngle2) / 2;
 				std::cout << "Rotate angle = " << rotateAngle << std::endl;
 				rotationsPerIter = 4;
+				intersection = intersectionOfLines(lines[largestLines[0]], lines[largestLines[1]]);
+				if (intersection != Point(-1.0f, -1.0f)) {
+					Vec4i l1 = lines[largestLines[0]];
+					Vec4i l2 = lines[largestLines[1]];
+					if (intersection.x > 0) {
+						cv::line(downscaled, Point(l1[0], l1[1]), Point(l1[2], l1[3]), Scalar(255, 255, 255));
+						cv::line(downscaled, Point(l2[0], l2[1]), Point(l2[2], l2[3]), Scalar(255, 255, 255));
+						cv::circle(downscaled, intersection, 10, Scalar(255, 255, 255));
+						cv::imshow("Corner", downscaled);
+						cv::waitKey(0);
+					}
+					rotateLines(l1, l2, rotateAngle, intersection);
+					intersectionScale = static_cast<float>(iterDim);
+					std::cout << intersection.x << " " << intersection.y << std::endl;
+					cornerType = findCornerType(l1, l2, intersection);
+				}
 			}
 		}
 
 		Point imageCenter = Point(static_cast<float>(downscaled.cols - 1) / 2.0f, static_cast<float>(downscaled.rows - 1) / 2.0f);
 		Point resultCenter = Point(static_cast<float>(iterDim - 1) / 2.0f, static_cast<float>(iterDim - 1) / 2.0f);
 
-		int tx = static_cast<int>(resultCenter.x - imageCenter.x);
-		int ty = static_cast<int>(resultCenter.y - imageCenter.y);
+		Point currentIntersection = intersection * static_cast<float>(iterDim) / intersectionScale;
+
+		int tx = 0; 
+		int ty = 0;
+		Point rotationCenter = Point(0.0f, 0.0f);
+
+		switch (cornerType) {
+		case(0):
+			std::cout << "Top left" << std::endl;
+			iterDim = srcResizeDim;
+			tx = static_cast<int>((src_resultCenter.x - defaultWidth / 2) - currentIntersection.x);
+			ty = static_cast<int>((src_resultCenter.y - defaultHeight / 2) - currentIntersection.y);
+			rotationCenter = Point((src_resultCenter.x - defaultWidth / 2), (src_resultCenter.y - defaultHeight / 2));
+			break;
+		case(1):
+			std::cout << "Top right" << std::endl;
+			iterDim = srcResizeDim;
+			tx = static_cast<int>((src_resultCenter.x + defaultWidth / 2) - currentIntersection.x);
+			ty = static_cast<int>((src_resultCenter.y - defaultHeight / 2) - currentIntersection.y);
+			rotationCenter = Point((src_resultCenter.x + defaultWidth / 2), (src_resultCenter.y - defaultHeight / 2));
+			std::cout << tx << " " << ty << std::endl;
+			break;
+		case(2):
+			std::cout << "Bottom right" << std::endl;
+			iterDim = srcResizeDim;
+			tx = static_cast<int>((src_resultCenter.x + defaultWidth / 2) - currentIntersection.x);
+			ty = static_cast<int>((src_resultCenter.y + defaultHeight / 2) - currentIntersection.y);
+			rotationCenter = Point((src_resultCenter.x + defaultWidth / 2), (src_resultCenter.y + defaultHeight / 2));
+			break;
+		case(3):
+			std::cout << "Bottom left" << std::endl;
+			iterDim = srcResizeDim;
+			tx = static_cast<int>((src_resultCenter.x - defaultWidth / 2) - currentIntersection.x);
+			ty = static_cast<int>((src_resultCenter.y + defaultHeight / 2) - currentIntersection.y);
+			rotationCenter = Point((src_resultCenter.x - defaultWidth / 2), (src_resultCenter.y + defaultHeight / 2));
+			break;
+		default:
+			std::cout << "Corner Type unknown" << std::endl;
+			tx = static_cast<int>(resultCenter.x - imageCenter.x);
+			ty = static_cast<int>(resultCenter.y - imageCenter.y); 
+			rotationCenter = Point(static_cast<float>(iterDim - 1) / 2.0f, static_cast<float>(iterDim - 1) / 2.0f);
+			break;
+		}
+
 		cv::Mat translation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, tx, 0, 1, ty);
 
 		cv::warpAffine(downscaled, downscaled, translation_matrix, Size(iterDim, iterDim));
 
+		if (rotateAngle >= 0.0f) {
+			cv::Mat rotation_matrix = cv::getRotationMatrix2D(rotationCenter, rotateAngle, 1);
+			cv::warpAffine(downscaled, downscaled, rotation_matrix, Size(iterDim, iterDim));
+
+			cv::circle(downscaled, rotationCenter, 5, Scalar(255, 255, 255));
+
+			cv::imshow("Downscaled", downscaled);
+			cv::waitKey(0);
+		}
+
 		for (int j = 0; j != rotationsPerIter; j++) {
-			float rotAngle = (rotateAngle >= 0.0f)?360.0f * static_cast<float>(j) / static_cast<float>(rotationsPerIter) + rotateAngle: 360.0f * static_cast<float>(j) / static_cast<float>(rotationsPerIter);
+			float rotAngle = 360.0f * static_cast<float>(j) / static_cast<float>(rotationsPerIter);
 
 			cv::Mat rotation_matrix = cv::getRotationMatrix2D(Point(static_cast<float>(iterDim - 1) / 2.0f, static_cast<float>(iterDim - 1) / 2.0f), rotAngle, 1);
 			
@@ -327,6 +486,8 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 			Mat res;
 			int result_cols = srcSobel.cols - translated.cols + 1;
 			int result_rows = srcSobel.rows - translated.rows + 1;
+
+			std::cout << result_cols << " " << result_rows << std::endl;
 
 			res.create(result_rows, result_cols, CV_32FC1);
 
@@ -341,6 +502,9 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 				Mat currentMatch;
 				cv::resize(*target, currentMatch, Size(iterWidth, iterHeight));
 				cv::warpAffine(currentMatch, currentMatch, translation_matrix, Size(iterDim, iterDim));
+				if (rotateAngle >= 0.0f) {
+					cv::warpAffine(currentMatch, currentMatch, cv::getRotationMatrix2D(rotationCenter, rotateAngle, 1), Size(iterDim, iterDim));
+				}
 				cv::warpAffine(currentMatch, currentMatch, rotation_matrix, Size(iterDim, iterDim));
 
 				matchTemplate(srcSobel, translated, res, TM_CCORR_NORMED);
