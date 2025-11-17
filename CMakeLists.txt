@@ -50,11 +50,10 @@ if (OPENCV_FOUND)
 		message(STATUS "OpenCV found, linking now")
 		target_include_directories(VulkanRenderer PUBLIC ${OPENCV_INCLUDE_DIR}) # Sometimes the include directory has opencv2 in it which will break the imports - check the cmake message log, if OPENCV_INCLUDE_DIR ends in /opencv2 then uncomment the /../)
 		if (CMAKE_BUILD_TYPE STREQUAL Debug)
-			target_link_libraries(VulkanRenderer PUBLIC ${OPENCV_DEBUG_LIBRARY})#/../opencv_world4100d.lib) # Similarly if the OPENCV_LIBRARY doesn't end with the lib then uncomment the last bit of this line'
+			target_link_libraries(VulkanRenderer PUBLIC ${OPENCV_DEBUG_LIBRARY})
 		else()
-			target_link_libraries(VulkanRenderer PUBLIC ${OPENCV_RELEASE_LIBRARY})#/../opencv_world4100.lib) # Similarly if the OPENCV_LIBRARY doesn't end with the lib then uncomment the last bit of this line'
+			target_link_libraries(VulkanRenderer PUBLIC ${OPENCV_RELEASE_LIBRARY})
 		endif()
-		#target_link_libraries(VulkanRenderer PUBLIC ${OPENCV_LIBRARY})#/../opencv_world4100d.lib) # Similarly if the OPENCV_LIBRARY doesn't end with the lib then uncomment the last bit of this line'
 	#endif()
 else()
 	message(STATUS "OpenCV has not been found, cannot link. Ensure that OpenCV is installed and can be found in one of the search folders in FindOpenCV.cmake")
@@ -78,11 +77,11 @@ target_include_directories(VulkanRenderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${C
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	add_custom_command(TARGET VulkanRenderer POST_BUILD
 				   COMMAND ${CMAKE_COMMAND} -E copy
-				   ${OPENCV_DEBUG_DLL_DIR}#/bin/opencv_world4100d.dll # Sometimes the path will terminate one directory before /bin - in that case replace the end segment with this
+				   ${OPENCV_DEBUG_DLL_DIR}
 				   $<TARGET_FILE_DIR:VulkanRenderer>)
 else()
 	add_custom_command(TARGET VulkanRenderer POST_BUILD
 				   COMMAND ${CMAKE_COMMAND} -E copy
-				   ${OPENCV_RELEASE_DLL_DIR}#/bin/opencv_world4100.dll # Sometimes the path will terminate one directory before /bin - in that case replace the end segment with this
+				   ${OPENCV_RELEASE_DLL_DIR}
 				   $<TARGET_FILE_DIR:VulkanRenderer>)
 endif()

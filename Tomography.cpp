@@ -168,7 +168,7 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 
 	int defaultHeight = src.rows;
 	int defaultWidth = src.cols;
-	int stepsPerIter = 16;
+	int stepsPerIter = 8;
 	int rotationsPerIter = 8;
 
 	bool vertical = (target->rows >= target->cols);
@@ -238,17 +238,17 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 	cv::threshold(srcSobel, srcSobelMin, thresh*max, 255.0, cv::THRESH_TRUNC);
 	cv::subtract(srcSobel, srcSobelMin, srcSobel);
 
-	cv::imshow("SrcSobel", srcSobel);
-	cv::waitKey(0);
+	//cv::imshow("SrcSobel", srcSobel);
+	//cv::waitKey(0);
 
 	cv::Mat matched;
 
-	float rotateAngle = 0.0f;
+	float rotateAngle = -10.0f;
 
 	for (int i = 0; i != stepsPerIter; i++) {
-		int iterDim = defaultDim * (0.5+static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
-		int iterHeight = targetHeight * (0.5+static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
-		int iterWidth = targetWidth * (0.5+static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
+		int iterDim = defaultDim * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
+		int iterHeight = targetHeight * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
+		int iterWidth = targetWidth * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
 
 		Mat downscaled;
 
@@ -269,14 +269,14 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 		cv::threshold(downscaled, downscaledMin, thresh * max, 255.0, cv::THRESH_TRUNC);
 		cv::subtract(downscaled, downscaledMin, downscaled);
 
-		if (rotateAngle == 0.0f) {
+		if (rotateAngle == -10.0f) {
 			vector<Vec4i> lines;
 			int largestLines[2] = { 0, 0 };
 			HoughLinesP(downscaled, lines, 1, CV_PI / 180, 50, 50, 10);
 
 			std::sort(lines.begin(), lines.end(), [](Vec4i a, Vec4i b) {return lineLength(a) > lineLength(b); });
 			largestLines[0] = 0;
-			for (size_t i = 0; i < lines.size(); i++)
+			for (size_t i = 0; i < 5; i++)
 			{
 				Vec4i l = lines[i];
 				float angle = angleBetweenLines(l, lines[0]);
@@ -286,9 +286,22 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 				}
 			}
 
-			if (85 < angleBetweenLines(lines[largestLines[0]], lines[largestLines[1]]) < 95) {
-				rotateAngle = abs(90.0f - angleBetweenLines(lines[largestLines[0]], Vec4i(0, 0, 0, 10)));
-				//rotateAngle = 90.0f - (rotateAngle1 + rotateAngle2) / 2;
+			if (largestLines[0] != largestLines[1] && 87.5f < angleBetweenLines(lines[largestLines[0]], lines[largestLines[1]]) < 92.5f) {
+				std::cout << "Angle between corner lines = " << angleBetweenLines(lines[largestLines[0]], lines[largestLines[1]]) << std::endl;
+				float rotateAngle1 = angleBetweenLines(lines[largestLines[0]], Vec4i(0, 0, 0, 10));
+				float rotateAngle2 = angleBetweenLines(lines[largestLines[1]], Vec4i(0, 0, 0, 10));
+				std::cout << rotateAngle1 << " " << rotateAngle2 << std::endl;
+				if (rotateAngle1 > 90.0f && rotateAngle2 <= 90.0f) {
+					rotateAngle1 = 180.0f - rotateAngle1;
+					rotateAngle2 = 90.0f - rotateAngle2;
+				}
+				else if (rotateAngle2 > 90.0f && rotateAngle1 <= 90.0f) {
+					rotateAngle2 = 180.0f - rotateAngle2;
+					rotateAngle1 = 90.0f - rotateAngle1;
+
+				}
+				std::cout << rotateAngle1 << " " << rotateAngle2 << std::endl;
+				rotateAngle = (rotateAngle1 + rotateAngle2) / 2;
 				std::cout << "Rotate angle = " << rotateAngle << std::endl;
 				rotationsPerIter = 4;
 			}
@@ -304,7 +317,7 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 		cv::warpAffine(downscaled, downscaled, translation_matrix, Size(iterDim, iterDim));
 
 		for (int j = 0; j != rotationsPerIter; j++) {
-			float rotAngle = 360.0f * static_cast<float>(j) / static_cast<float>(rotationsPerIter) + rotateAngle;
+			float rotAngle = (rotateAngle >= 0.0f)?360.0f * static_cast<float>(j) / static_cast<float>(rotationsPerIter) + rotateAngle: 360.0f * static_cast<float>(j) / static_cast<float>(rotationsPerIter);
 
 			cv::Mat rotation_matrix = cv::getRotationMatrix2D(Point(static_cast<float>(iterDim - 1) / 2.0f, static_cast<float>(iterDim - 1) / 2.0f), rotAngle, 1);
 			
@@ -322,7 +335,7 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 			minMaxLoc(res, &min, &max, &minLoc, &maxLoc);
 
 			float maxCorr = max;
-			std::cout << maxCorr << std::endl;
+			std::cout << i << " " << j << " " << maxCorr << std::endl;
 
 			if (maxCorr > correlation) {
 				Mat currentMatch;
@@ -349,34 +362,9 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 					rotation = rotAngle;
 					imgCorrelation = maxImgCorr;
 				}
-				
-				//std::cout << maxCorr << std::endl;
 			}
 		}
 	}
-
-	//float scaleFactor;
-	//if (vertical) {
-	//	scaleFactor = static_cast<float>(stepsPerIter) / static_cast<float>(index + 1) * target->rows / src.rows;
-	//}
-	//else {
-	//	scaleFactor = static_cast<float>(stepsPerIter) / static_cast<float>(index + 1) * target->cols / src.cols;
-	//}
-
-	//std::cout << scaleFactor << " " << rotation << std::endl;
-
-	//cv::Mat matched = src.clone();
-
-	//cv::resize(matched, matched, Size(matched.cols * scaleFactor, matched.rows * scaleFactor));
-
-	//matched = Scalar(0, 0, 0, 0);
-
-	//target->copyTo(matched.colRange(matchedLoc.x * scaleFactor, matchedLoc.x * scaleFactor + target->cols).rowRange(matchedLoc.y * scaleFactor, matchedLoc.y * scaleFactor + target->rows));
-	
-	//Mat M = cv::getRotationMatrix2D(Point(static_cast<float>(matched.cols - 1) / 2.0f, static_cast<float>(matched.rows - 1) / 2.0f), rotation, 1);
-	//cv::warpAffine(matched, matched, M, Size(matched.cols, matched.rows));
-	//cv::imshow("Matched with rot", matched);
-	//cv::waitKey(0);
 
 	*target = matched.clone();
 }
