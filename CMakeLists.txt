@@ -44,18 +44,18 @@ endif()
 
 find_package(OpenCV REQUIRED)
 if (OPENCV_FOUND)
-	if(TARGET OpenCV::OpenCV)
-		target_link_libraries(VulkanRenderer PUBLIC OpenCV::OpenCV)
-	else()
+	#if(TARGET OpenCV::OpenCV)
+	#	target_link_libraries(VulkanRenderer PUBLIC OpenCV::OpenCV)
+	#else()
 		message(STATUS "OpenCV found, linking now")
-		target_include_directories(VulkanRenderer PUBLIC ${OPENCV_INCLUDE_DIR})# /../) # Sometimes the include directory has opencv2 in it which will break the imports - check the cmake message log, if OPENCV_INCLUDE_DIR ends in /opencv2 then uncomment the /../)
+		target_include_directories(VulkanRenderer PUBLIC ${OPENCV_INCLUDE_DIR}) # Sometimes the include directory has opencv2 in it which will break the imports - check the cmake message log, if OPENCV_INCLUDE_DIR ends in /opencv2 then uncomment the /../)
 		if (CMAKE_BUILD_TYPE STREQUAL Debug)
 			target_link_libraries(VulkanRenderer PUBLIC ${OPENCV_DEBUG_LIBRARY})#/../opencv_world4100d.lib) # Similarly if the OPENCV_LIBRARY doesn't end with the lib then uncomment the last bit of this line'
 		else()
 			target_link_libraries(VulkanRenderer PUBLIC ${OPENCV_RELEASE_LIBRARY})#/../opencv_world4100.lib) # Similarly if the OPENCV_LIBRARY doesn't end with the lib then uncomment the last bit of this line'
 		endif()
 		#target_link_libraries(VulkanRenderer PUBLIC ${OPENCV_LIBRARY})#/../opencv_world4100d.lib) # Similarly if the OPENCV_LIBRARY doesn't end with the lib then uncomment the last bit of this line'
-	endif()
+	#endif()
 else()
 	message(STATUS "OpenCV has not been found, cannot link. Ensure that OpenCV is installed and can be found in one of the search folders in FindOpenCV.cmake")
 endif()

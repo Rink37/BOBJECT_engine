@@ -39,9 +39,11 @@ FIND_FILE(OPENCV_RELEASE_DLL_DIR NAMES "opencv_world4100.dll" "opencv_world4110.
 PATHS ${_OpenCV_DLL_SEARCH_DIRS} )
 
 # Search for the library
-FIND_LIBRARY(OPENCV_DEBUG_LIBRARY NAMES opencv_world4100d opencv_world4110d opencv_world4120d
+FIND_LIBRARY(OPENCV_DEBUG_LIBRARY NAMES opencv_world4100d opencv_world4110d opencv_world4120d opencv_world4100d opencv_world4110d
 PATHS ${_OpenCV_LIB_SEARCH_DIRS})
-FIND_LIBRARY(OPENCV_RELEASE_LIBRARY NAMES opencv_world4100 opencv_world4110 opencv_world4120
+FIND_LIBRARY(OPENCV_LIBRARY NAMES opencv_world4100d opencv_world4110d opencv_world4120d opencv_world4100d opencv_world4110d
+PATHS ${_OpenCV_LIB_SEARCH_DIRS})
+FIND_LIBRARY(OPENCV_RELEASE_LIBRARY NAMES opencv_world4100 opencv_world4110 opencv_world4120 opencv_world4100 opencv_world4110
 PATHS ${_OpenCV_LIB_SEARCH_DIRS})
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(OpenCV DEFAULT_MSG
