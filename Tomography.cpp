@@ -396,6 +396,12 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 					rotateAngle2 = 180.0f - rotateAngle2;
 					rotateAngle1 = 90.0f - rotateAngle1;
 				}
+				else if (rotateAngle1 < 90.0f && rotateAngle2 >= 90.0f) {
+					rotateAngle2 = 90.0f - rotateAngle2;
+				}
+				else if (rotateAngle2 < 90.0f && rotateAngle2 >= 90.0f) {
+					rotateAngle1 = 90.0f - rotateAngle1;
+				}
 				std::cout << rotateAngle1 << " " << rotateAngle2 << std::endl;
 				rotateAngle = (rotateAngle1 + rotateAngle2) / 2;
 				std::cout << "Rotate angle = " << rotateAngle << std::endl;
@@ -405,13 +411,13 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 					Vec4i l1 = lines[largestLines[0]];
 					Vec4i l2 = lines[largestLines[1]];
 					//rotateLines(l1, l2, rotateAngle, intersection);
-					if (intersection.x > 0) {
-						cv::line(downscaled, Point(l1[0], l1[1]), Point(l1[2], l1[3]), Scalar(255, 255, 255));
-						cv::line(downscaled, Point(l2[0], l2[1]), Point(l2[2], l2[3]), Scalar(255, 255, 255));
-						cv::circle(downscaled, intersection, 10, Scalar(255, 255, 255));
-						cv::imshow("Corner", downscaled);
-						cv::waitKey(0);
-					}
+					//if (intersection.x > 0) {
+					//	cv::line(downscaled, Point(l1[0], l1[1]), Point(l1[2], l1[3]), Scalar(255, 255, 255));
+					//	cv::line(downscaled, Point(l2[0], l2[1]), Point(l2[2], l2[3]), Scalar(255, 255, 255));
+					//	cv::circle(downscaled, intersection, 10, Scalar(255, 255, 255));
+					//	cv::imshow("Corner", downscaled);
+					//	cv::waitKey(0);
+					//}
 					rotateLines(l1, l2, rotateAngle, intersection);
 					intersectionScale = static_cast<float>(iterDim);
 					std::cout << intersection.x << " " << intersection.y << std::endl;
@@ -475,10 +481,10 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 			cv::Mat rotation_matrix = cv::getRotationMatrix2D(rotationCenter, rotateAngle, 1);
 			cv::warpAffine(downscaled, downscaled, rotation_matrix, Size(iterDim, iterDim));
 
-			cv::circle(downscaled, rotationCenter, 5, Scalar(255, 255, 255));
+			//cv::circle(downscaled, rotationCenter, 5, Scalar(255, 255, 255));
 
-			cv::imshow("Downscaled", downscaled);
-			cv::waitKey(0);
+			//cv::imshow("Downscaled", downscaled);
+			//cv::waitKey(0);
 		}
 
 		for (int j = 0; j != rotationsPerIter; j++) {
