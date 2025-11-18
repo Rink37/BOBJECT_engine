@@ -66,6 +66,7 @@ struct Texture {
 		if (cleaned) {
 			return;
 		}
+		vkDeviceWaitIdle(Engine::get()->device);
 		if (textureImage != nullptr) {
 			vkDestroyImage(Engine::get()->device, textureImage, nullptr);
 			

@@ -126,6 +126,8 @@ public:
 				tex->cleanup();
 			}
 		}
+		vkDeviceWaitIdle(Engine::get()->device);
+
 		vkDestroyPipeline(Engine::get()->device, filterPipeline, nullptr);
 		vkDestroyPipelineLayout(Engine::get()->device, filterPipelineLayout, nullptr);
 

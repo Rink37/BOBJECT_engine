@@ -65,6 +65,7 @@ public:
 				tex->cleanup();
 			}
 		}
+		vkDeviceWaitIdle(Engine::get()->device);
 		vkDestroyDescriptorPool(Engine::get()->device, this->descriptorPool, nullptr);
 		this->descriptorPool = nullptr;
 	}
@@ -73,6 +74,7 @@ public:
 		if (cleaned || this->descriptorPool == nullptr) {
 			return;
 		}
+		vkDeviceWaitIdle(Engine::get()->device);
 		vkDestroyDescriptorPool(Engine::get()->device, this->descriptorPool, nullptr);
 		this->descriptorPool = nullptr;
 	}

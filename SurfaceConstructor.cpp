@@ -50,6 +50,7 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 	TSNormTex->textureImageView = TSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 	Normal[2] = loadList->replacePtr(new Material(TSNormTex), "TSNormMat");
+	
 	generator.cleanupTS();
 }
 
@@ -69,6 +70,7 @@ void surfaceConstructor::transitionToOS(Mesh* inputMesh) {
 	OSNormTex->textureImageView = OSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 	Normal[1] = loadList->replacePtr(new Material(OSNormTex), "OSNormMat");
+	
 	generator.cleanupOS();
 }
 
