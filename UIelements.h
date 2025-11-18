@@ -903,7 +903,10 @@ public:
 		minValue = static_cast<float>(min);
 		maxValue = static_cast<float>(max);
 
-		slideValue = (static_cast<float>(position) - minValue) / (maxValue - minValue);
+		//(1.0f - slideValue)* (maxValue - minValue) + minValue = angle
+		// angle-minValue = (1.0f - slideValue);
+
+		slideValue = 1.0f - (static_cast<float>(position) - minValue) / (maxValue - minValue);
 	}
 
 	void setSlideValues(float min, float max, float position) {
@@ -911,7 +914,8 @@ public:
 		minValue = min;
 		maxValue = max;
 
-		slideValue = (position - minValue) / (maxValue - minValue);
+		slideValue = 1.0f - (position - minValue) / (maxValue - minValue);
+		//slideValue = std::clamp(slideValue, 0.0f, 1.0f);
 	}
 
 	void setIntCallback(std::function<void(int)> function, bool onUpdate) {

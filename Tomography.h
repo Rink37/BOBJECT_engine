@@ -156,11 +156,11 @@ public:
 		canvas[0]->Items[0]->Items[0]->updateDisplay();
 		canvas[0]->Items[1]->Items[1]->cleanup();
 		canvas[0]->Items[1]->Items.erase(canvas[0]->Items[1]->Items.begin() + 1);
-		std::cout << lightDirection->getValue() << " " << angle << std::endl;
+		//std::cout << lightDirection->getValue() << " " << angle << std::endl;
 		customUpdate();
 		update();
 		lightDirection->update(canvas[0]->Items[0]->Items[0]->posx, canvas[0]->Items[0]->Items[0]->posy, canvas[0]->Items[0]->Items[0]->extentx, canvas[0]->Items[0]->Items[0]->extentx * canvas[0]->Items[0]->Items[0]->sqAxisRatio);
-		lightDirection->setSlideValues(0.0f, 360.0f, lightDirection->getValue() + angle);
+		lightDirection->setSlideValues(0.0f, 360.0f, lightDirection->getValue() - angle);
 		lightDirection->updateDisplay();
 	}
 
@@ -173,7 +173,7 @@ private:
 	float azimuth = 90.0f;
 
 	void setAzimuth(float az) {
-		std::cout << az << std::endl;
+		//std::cout << az << std::endl;
 		az = 90.0f - az;
 		azimuth = (az < 0) ? az + 360.0f : az;
 	}
