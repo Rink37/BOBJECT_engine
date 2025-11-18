@@ -358,10 +358,20 @@ private:
 		canvas.erase(find(canvas.begin(), canvas.end(), owner));
 	}
 
+	void updateDeleteButtons() {
+		for (size_t i = 1; i != canvas.size(); i++) {
+			int currentIndex = std::stoi(canvas[i]->Name);
+			UIItem* ref = grid->Items[currentIndex];
+			canvas[i]->update(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
+			canvas[i]->updateDisplay();
+		}
+	}
+
 	void customUpdate() {
 		if (tomogLoadMenu != nullptr) {
 			tomogLoadMenu->update();
 		}
+		updateDeleteButtons();
 	}
 
 	void cancelLoad(UIItem* owner) {
