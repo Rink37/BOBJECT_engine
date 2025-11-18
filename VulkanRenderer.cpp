@@ -589,13 +589,11 @@ private:
 			surfaceMenu.setDiffuse(sConst->currentDiffuse());
 		}
 		if (tomogNorm != nullptr) {
-			if (!sConst->normalAvailable) {
-				surfaceMenu.createNormalMenu(owner);
-				vkQueueWaitIdle(engine->graphicsQueue);
-				surfaceMenu.toggleNormalState(false); // Sometimes this will throw a nullptr error, but hopefully it has been fixed by queue wait idle
-			}
 			sConst->normalType = 1;
 			sConst->loadNormal(tomogNorm->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0));
+			if (!sConst->normalAvailable) {
+				surfaceMenu.createNormalMenu(owner);
+			}
 			surfaceMenu.setNormal(sConst->currentNormal());
 		}
 		tomogActive = false;

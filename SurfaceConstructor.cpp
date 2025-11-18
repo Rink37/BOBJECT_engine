@@ -383,7 +383,7 @@ void SurfaceMenu::contextConvertMap(UIItem* owner) {
 
 void SurfaceMenu::createNormalMenu(UIItem* owner) {
 
-	if (staticObjects->size() == 0) {
+	if (staticObjects->size() == 0 && sConst->OSNormTex == nullptr && sConst->TSNormTex == nullptr) {
 		return;
 	}
 
@@ -395,8 +395,11 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 
 	sConst->normalType = 0;
 
-	if (sConst->OSNormTex == nullptr) {
+	if (staticObjects->size() > 0 && sConst->OSNormTex == nullptr) {
 		sConst->generateOSMap(staticObjects->at(staticObjects->size() - 1).mesh); // This function is definitely the source of the memory problems - I just don't know why
+	}
+	else if (sConst->TSNormTex != nullptr) {
+		sConst->normalType = 1;
 	}
 
 	sConst->normalAvailable = true;
@@ -450,6 +453,11 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	normalTog->image->matidx = 1;
 
 	Checkbox* mapTypeToggle = new Checkbox(osMat, tsMat, toggleType);
+	if (sConst->normalType == 1){
+		bool state = false;
+		mapTypeToggle->activestate = state;
+		mapTypeToggle->image->matidx = static_cast<int>(!state);
+	}
 	Button* copyLayout = new Button(dtnMat, remapCallback);
 	Button* normalLoad = new Button(openMat, loadNorm);
 	Button* normalSave = new Button(saveMat, saveNorm);
