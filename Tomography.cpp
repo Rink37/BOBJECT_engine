@@ -9,7 +9,7 @@ float eucDist(Point a, Point b) {
 }
 
 const int MAX_FEATURES = 5000;
-const float GOOD_MATCH_PERCENT = 0.5f;
+const float GOOD_MATCH_PERCENT = 0.05f;
 
 void change_contrast(Mat* img, float alpha, int beta) {
 	if (img->channels() == 3) {
@@ -262,11 +262,16 @@ int findCornerType(Vec4i l1, Vec4i l2, Point cornerPos) {
 	return 3; // Bottom left
 }
 
+float estMaxDist(Point corner, Size imageSize, int cornerType) {
+	// Need a function which can determine the maximum size we should check for so we can reduce the number of scale iterations
+	return 0.0f;
+}
+
 void match_partial(Mat src, Mat* target, Size outdims) {
 
 	int defaultHeight = src.rows;
 	int defaultWidth = src.cols;
-	int stepsPerIter = 8;
+	int stepsPerIter = 16;
 	int rotationsPerIter = 8;
 
 	bool vertical = (target->rows >= target->cols);
@@ -280,16 +285,16 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 
 	int targetHeight = target->rows;
 	int targetWidth = target->cols;
-	if (max(targetHeight, targetWidth) < max(defaultHeight, defaultWidth) * 1.25) {
-		if (vertical) {
-			targetHeight = defaultHeight * 1.25;
-			targetWidth = defaultHeight * 1.25 * static_cast<float>(target->cols)/static_cast<float>(target->rows);
-		}
-		else {
-			targetWidth = defaultWidth * 1.25;
-			targetHeight = defaultWidth * 1.25 * static_cast<float>(target->rows) / static_cast<float>(target->cols);
-		}
-	}
+	//if (max(targetHeight, targetWidth) < max(defaultHeight, defaultWidth) * 1.25) {
+	//	if (vertical) {
+	//		targetHeight = defaultHeight * 1.25;
+	//		targetWidth = defaultHeight * 1.25 * static_cast<float>(target->cols)/static_cast<float>(target->rows);
+	//	}
+	//	else {
+	//		targetWidth = defaultWidth * 1.25;
+	//		targetHeight = defaultWidth * 1.25 * static_cast<float>(target->rows) / static_cast<float>(target->cols);
+	//	}
+	//}
 	int defaultDim = sqrtf(targetHeight * targetHeight + targetWidth * targetWidth);
 
 	Point matchedLoc;
@@ -327,7 +332,8 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 	cv::convertScaleAbs(grad_y, grad_y);
 	cv::addWeighted(grad_x, 0.5, grad_y, 0.5, 0, srcSobel);
 
-	double thresh = 0.2;
+	double thresh = 0.1;
+	double edgeThresh = 0.2;
 	double min, max;
 	Point minLoc, maxLoc;
 	minMaxLoc(srcSobel, &min, &max, &minLoc, &maxLoc);
@@ -361,16 +367,22 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 		cv::convertScaleAbs(grad_y, grad_y);
 		cv::addWeighted(grad_x, 0.5, grad_y, 0.5, 0, downscaled);
 
+		cv::Mat threshDownscaled = downscaled.clone();
+
 		minMaxLoc(downscaled, &min, &max, &minLoc, &maxLoc);
 
 		cv::Mat downscaledMin;
 		cv::threshold(downscaled, downscaledMin, thresh * max, 255.0, cv::THRESH_TRUNC);
 		cv::subtract(downscaled, downscaledMin, downscaled);
 
+		cv::Mat threshDownscaledMin;
+		cv::threshold(threshDownscaled, threshDownscaledMin, edgeThresh * max, 255.0, cv::THRESH_TRUNC);
+		cv::subtract(threshDownscaled, threshDownscaledMin, threshDownscaled);
+
 		if (rotateAngle == -10.0f) {
 			vector<Vec4i> lines;
 			int largestLines[2] = { 0, 0 };
-			HoughLinesP(downscaled, lines, 1, CV_PI / 180, 50, 50, 10);
+			HoughLinesP(threshDownscaled, lines, 1, CV_PI / 180, 50, 50, 10);
 
 			std::sort(lines.begin(), lines.end(), [](Vec4i a, Vec4i b) {return lineLength(a) > lineLength(b); });
 			largestLines[0] = 0;
@@ -387,7 +399,7 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 			if (largestLines[0] != largestLines[1] && 87.5f < angleBetweenLines(lines[largestLines[0]], lines[largestLines[1]]) < 92.5f) {
 				float rotateAngle1 = angleBetweenLines(lines[largestLines[0]], Vec4i(0, 0, 0, 10));
 				float rotateAngle2 = angleBetweenLines(lines[largestLines[1]], Vec4i(0, 0, 0, 10));
-				std::cout << rotateAngle1 << " " << rotateAngle2 << std::endl;
+				//std::cout << rotateAngle1 << " " << rotateAngle2 << std::endl;
 				if (rotateAngle1 > 90.0f && rotateAngle2 <= 90.0f) {
 					rotateAngle1 = 180.0f - rotateAngle1;
 					rotateAngle2 = 90.0f - rotateAngle2;
@@ -402,25 +414,29 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 				else if (rotateAngle2 < 90.0f && rotateAngle2 >= 90.0f) {
 					rotateAngle1 = 90.0f - rotateAngle1;
 				}
-				std::cout << rotateAngle1 << " " << rotateAngle2 << std::endl;
+				//std::cout << rotateAngle1 << " " << rotateAngle2 << std::endl;
 				rotateAngle = (rotateAngle1 + rotateAngle2) / 2;
-				std::cout << "Rotate angle = " << rotateAngle << std::endl;
+				//std::cout << "Rotate angle = " << rotateAngle << std::endl;
 				rotationsPerIter = 4;
 				intersection = intersectionOfLines(lines[largestLines[0]], lines[largestLines[1]]);
 				if (intersection != Point(-1.0f, -1.0f)) {
 					Vec4i l1 = lines[largestLines[0]];
 					Vec4i l2 = lines[largestLines[1]];
 					//rotateLines(l1, l2, rotateAngle, intersection);
-					//if (intersection.x > 0) {
+					//if (thirdLine != 0 && 87.5f < angleBetweenLines(lines[0], lines[thirdLine]) < 92.5f) {
+					//	Vec4i l3 = lines[thirdLine];
 					//	cv::line(downscaled, Point(l1[0], l1[1]), Point(l1[2], l1[3]), Scalar(255, 255, 255));
 					//	cv::line(downscaled, Point(l2[0], l2[1]), Point(l2[2], l2[3]), Scalar(255, 255, 255));
+					//	cv::line(downscaled, Point(l3[0], l3[1]), Point(l3[2], l3[3]), Scalar(255, 255, 255));
 					//	cv::circle(downscaled, intersection, 10, Scalar(255, 255, 255));
-					//	cv::imshow("Corner", downscaled);
+					//	Point intersection2 = intersectionOfLines(lines[largestLines[0]], lines[thirdLine]);
+					//	cv::circle(downscaled, intersection, 20, Scalar(255, 255, 255));
+					//	cv::imshow("Corners", downscaled);
 					//	cv::waitKey(0);
 					//}
 					rotateLines(l1, l2, rotateAngle, intersection);
 					intersectionScale = static_cast<float>(iterDim);
-					std::cout << intersection.x << " " << intersection.y << std::endl;
+					//std::cout << intersection.x << " " << intersection.y << std::endl;
 					cornerType = findCornerType(l1, l2, intersection);
 				}
 			}
@@ -487,6 +503,8 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 			//cv::waitKey(0);
 		}
 
+		vector<float> corrs = {};
+
 		for (int j = 0; j != rotationsPerIter; j++) {
 			float rotAngle = 360.0f * static_cast<float>(j) / static_cast<float>(rotationsPerIter);
 
@@ -509,6 +527,8 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 
 			float maxCorr = max;
 			std::cout << i << " " << j << " " << maxCorr << std::endl;
+
+			corrs.push_back(maxCorr);
 
 			if (maxCorr > correlation) {
 				Mat currentMatch;
@@ -539,6 +559,17 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 					imgCorrelation = maxImgCorr;
 				}
 			}
+		}
+
+		float avgCorr = 0.0f;
+		for (float c : corrs) {
+			avgCorr += c;
+		}
+		avgCorr /= static_cast<float>(corrs.size());
+
+		if (avgCorr < correlation / 2) {
+			*target = matched.clone();
+			return;
 		}
 	}
 
@@ -588,14 +619,17 @@ void match_template(Mat src, Mat* target, Size outdims) {
 		}
 	}
 
+	std::cout << srcPoints.size() << std::endl;
+
 	for (size_t i = 0; i < srcPoints.size(); i++) {
 		srcPoints[i] = Point2f(srcPoints[i].x * outdims.width / src.cols, srcPoints[i].y * outdims.height / src.rows);
 		matchPoints[i] = Point2f(matchPoints[i].x * target->cols / targetGray.cols, matchPoints[i].y * target->rows / targetGray.rows);
 	}
+	if (srcPoints.size() > 50) {
+		cv::Mat h = cv::estimateAffine2D(matchPoints, srcPoints);
 
-	Mat h = estimateAffine2D(matchPoints, srcPoints);
-
-	warpAffine(*target, *target, h, outdims);
+		warpAffine(*target, *target, h, outdims);
+	}
 }
 
 void calculateVector(vector<float>& lightVec, float phi, float theta) {
