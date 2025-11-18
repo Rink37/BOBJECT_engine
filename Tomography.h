@@ -10,6 +10,23 @@
 #include"InputManager.h"
 #include"WindowsFileManager.h"
 
+struct TomogItem {
+	Texture* baseImage = nullptr;
+	Texture* correctedImage = nullptr;
+	float rotation = 0.0f;
+	std::vector<float> lightDirection = {0.0f, 0.0f, 0.0f};
+	std::string name = "";
+
+	~TomogItem() {
+		if (baseImage != nullptr) {
+			baseImage->cleanup();
+		}
+		if (correctedImage != nullptr) {
+			correctedImage->cleanup();
+		}
+	}
+};
+
 class Tomographer {
 public:
 	// The assumption is that the normal and the template exist elsewhere
@@ -22,9 +39,9 @@ public:
 	cv::Size outdims;
 
 	void add_image(std::string, std::string);
-	void add_lightVector(float phi, float theta);
+	void align(int);
+	void add_lightVector(float phi, float theta, int idx);
 
-	void remove_imageOnly(int);
 	void remove_element(int);
 
 	void calculate_normal();
@@ -36,8 +53,9 @@ public:
 	}
 
 	void clearData() {
-		images.clear();
-		vectors.clear();
+		//images.clear();
+		//vectors.clear();
+		items.clear();
 		computedNormal.release();
 		computedDiffuse.release();
 		alignTemplate.release();
@@ -49,12 +67,13 @@ public:
 
 	LoadList* loadList = nullptr;
 
-	std::vector<Texture*> images;
+	//std::vector<Texture*> images;
+	std::vector<TomogItem*> items = {};
 private:
 	bool normalExists = false;
-	std::vector<Texture*> originalImages;
+	//std::vector<Texture*> originalImages;
 	
-	std::vector<std::vector<float>> vectors;
+	//std::vector<std::vector<float>> vectors;
 };
 
 class TomographyLoad : public Widget {
@@ -63,7 +82,7 @@ public:
 		loadList = assets;
 	}
 
-	void setup(Material* loadedMat, std::function<void(Material*, float, float)> callback, std::function<void(UIItem*)> cancelCallback) {
+	void setup(Material* loadedMat, std::function<void(Material*, float, float)> callback, std::function<void(UIItem*)> cancelCallback, std::function<void(UIItem*)> updateCallback) {
 		if (isSetup) {
 			return;
 		}
@@ -85,6 +104,9 @@ public:
 		imageData finish = FINISHBUTTON;
 		Material* finishMat = newMaterial(&finish, "FinishBtn");
 
+		imageData update = UPDATEBUTTON;
+		Material* updateMat = newMaterial(&update, "UpdateBtn");
+
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f);
 		Arrangement* imageArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.4f, 0.01f, ARRANGE_CENTER);
 		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
@@ -96,9 +118,11 @@ public:
 		std::function<void(UIItem*)> finishFunct = std::bind(&TomographyLoad::finish, this, std::placeholders::_1);
 
 		Button* cancelButton = new Button(cancelMat, cancelCallback);
+		Button* updateButton = new Button(updateMat, updateCallback);
 		Button* finishButton = new Button(finishMat, finishFunct);
 
 		buttons->addItem(getPtr(cancelButton));
+		buttons->addItem(getPtr(updateButton));
 		buttons->addItem(getPtr(finishButton));
 
 		imageArrangement->addItem(getPtr(loadedUI));
@@ -120,6 +144,26 @@ public:
 
 		isSetup = true;
 	}
+
+	void recreateUI(Material* loadedMat, float angle) {
+		if (!isSetup) {
+			return;
+		}
+		outMat = loadedMat;
+		canvas[0]->Items[0]->Items[0]->cleanup();
+		canvas[0]->Items[0]->Items[0] = getPtr(new ImagePanel(loadedMat, false));
+		canvas[0]->Items[0]->Items[0]->update(0.0f, 0.0f, 0.4f, 0.4f);
+		canvas[0]->Items[0]->Items[0]->updateDisplay();
+		canvas[0]->Items[1]->Items[1]->cleanup();
+		canvas[0]->Items[1]->Items.erase(canvas[0]->Items[1]->Items.begin() + 1);
+		std::cout << lightDirection->getValue() << " " << angle << std::endl;
+		customUpdate();
+		update();
+		lightDirection->update(canvas[0]->Items[0]->Items[0]->posx, canvas[0]->Items[0]->Items[0]->posy, canvas[0]->Items[0]->Items[0]->extentx, canvas[0]->Items[0]->Items[0]->extentx * canvas[0]->Items[0]->Items[0]->sqAxisRatio);
+		lightDirection->setSlideValues(0.0f, 360.0f, lightDirection->getValue() + angle);
+		lightDirection->updateDisplay();
+	}
+
 private:
 	std::function<void(Material*, float, float)> doneCallback = nullptr;
 	Rotator* lightDirection = nullptr;
@@ -129,6 +173,7 @@ private:
 	float azimuth = 90.0f;
 
 	void setAzimuth(float az) {
+		std::cout << az << std::endl;
 		az = 90.0f - az;
 		azimuth = (az < 0) ? az + 360.0f : az;
 	}
@@ -144,8 +189,6 @@ private:
 	}
 
 	void customUpdate() {
-		//float W = static_cast<float>(Engine::get()->windowWidth);
-		//float H = static_cast<float>(Engine::get()->windowHeight);
 		canvas[0]->Items[0]->Items[1]->extenty = canvas[0]->Items[0]->Items[0]->extenty;
 		canvas[0]->Items[0]->Items[1]->updateDisplay();
 	}
@@ -300,11 +343,12 @@ private:
 		if (fileName != std::string("fail")) {
 			std::string name = "Image" + std::to_string(imageCount);
 			tomographer.add_image(fileName, name + "Tex");
-			Material* imageMat = loadList->replacePtr(new Material(tomographer.images[tomographer.images.size() - 1]), name + "Mat");
+			Material* imageMat = loadList->replacePtr(new Material(tomographer.items[activeImageCount]->baseImage), name + "Mat");
 			tomogLoadMenu = new TomographyLoad(loadList);
 			std::function<void(Material*, float, float)> loadCallback = std::bind(&TomographyMenu::addItem, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 			std::function<void(UIItem*)> cancelCallback = std::bind(&TomographyMenu::cancelLoad, this, std::placeholders::_1);
-			tomogLoadMenu->setup(imageMat, loadCallback, cancelCallback);
+			std::function<void(UIItem*)> updateCallback = std::bind(&TomographyMenu::updateCallback, this, std::placeholders::_1);
+			tomogLoadMenu->setup(imageMat, loadCallback, cancelCallback, updateCallback);
 			for (UIItem* item : canvas) {
 				item->setIsEnabled(false);
 				item->setVisibility(false);
@@ -312,6 +356,12 @@ private:
 			loadClickIdx = mouseManager->addClickListener(tomogLoadMenu->getClickCallback());
 			loadPosIdx = mouseManager->addPositionListener(tomogLoadMenu->getPosCallback());
 		}
+	}
+
+	void updateCallback(UIItem* owner) {
+		tomographer.align(activeImageCount);
+		Material* imageMat = loadList->replacePtr(new Material(tomographer.items[tomographer.items.size() - 1]->correctedImage), tomographer.items[tomographer.items.size() - 1]->name + "Mat");
+		tomogLoadMenu->recreateUI(imageMat, tomographer.items[activeImageCount]->rotation);
 	}
 
 	void addItem(Material* imageMat, float azimuth, float polar) {
@@ -327,7 +377,7 @@ private:
 		deleteButton->update(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
 		deleteButton->updateDisplay();
 		canvas.push_back(getPtr(deleteButton));
-		tomographer.add_lightVector(azimuth, polar);
+		tomographer.add_lightVector(azimuth, polar, activeImageCount-1);
 		mouseManager->removeClickListener(loadClickIdx);
 		mouseManager->removePositionListener(loadPosIdx);
 		tomogLoadMenu->cleanup();
@@ -384,7 +434,7 @@ private:
 			item->setIsEnabled(true);
 			item->setVisibility(true);
 		}
-		tomographer.remove_imageOnly(tomographer.images.size()-1);
+		//tomographer.remove_imageOnly(tomographer.images.size()-1);
 	}
 
 	void updateDiffuseGen(UIItem* owner) {

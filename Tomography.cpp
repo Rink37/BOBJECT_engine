@@ -287,7 +287,7 @@ float estMaxDist(Point corner, Size imageSize, float rotation) {
 	return maxDist;
 }
 
-void match_partial(Mat src, Mat* target, Size outdims) {
+void match_partial(Mat src, Mat* target, Size outdims, float& finalRot) {
 
 	int defaultHeight = src.rows;
 	int defaultWidth = src.cols;
@@ -579,6 +579,7 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 					cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
 					//cv::imshow("Transformed", currentMatch);
 					//cv::waitKey(0);
+					finalRot = rotateAngle + rotAngle;
 					matched = currentMatch.clone();
 					matchedLoc = maxLoc;
 					index = i;
@@ -860,11 +861,21 @@ bool checkForEmptyInArea(Mat img, int x, int y, int range) {
 	return false;
 }
 
-Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
+Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
 	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
 	// Seems like CPU compute takes a few minutes so worth investigating GPU
 	// D represents the list of light vectors for each image
 	// Assumes that the painting is a lambertian surface
+
+	std::vector<Texture*> images = {};
+	std::vector<std::vector<float>> D = {};
+
+	for (size_t i = 0; i != items.size(); i++) {
+		if (items[i]->correctedImage != nullptr && items[i]->lightDirection != std::vector<float>{0.0f, 0.0f, 0.0f}) {
+			images.push_back(items[i]->correctedImage);
+			D.push_back(items[i]->lightDirection);
+		}
+	}
 
 	assert(images.size() == D.size(), "Input vectors must be the same size");
 
@@ -940,7 +951,17 @@ Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calcu
 	return normal;
 }
 
-Mat calculateDiffuse(vector<Texture*> images, vector<vector<float>> D, Mat normal) {
+Mat calculateDiffuse(std::vector<TomogItem*> items, Mat normal) {
+
+	std::vector<Texture*> images = {};
+	std::vector<std::vector<float>> D = {};
+
+	for (size_t i = 0; i != items.size(); i++) {
+		if (items[i]->correctedImage != nullptr && items[i]->lightDirection != std::vector<float>{0.0f, 0.0f, 0.0f}) {
+			images.push_back(items[i]->correctedImage);
+			D.push_back(items[i]->lightDirection);
+		}
+	}
 
 	Mat diffuse = images[0]->texMat.clone();
 	diffuse = Scalar(0, 0, 0);
@@ -1005,11 +1026,21 @@ Mat calculateDiffuse(vector<Texture*> images, vector<vector<float>> D, Mat norma
 	return diffuse;
 }
 
-std::vector<Mat> calculate_norm_diff(vector<Texture*> images, vector<vector<float>> D) {
+std::vector<Mat> calculate_norm_diff(std::vector<TomogItem*> items) {
 	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
 	// Seems like CPU compute takes a few minutes so worth investigating GPU
 	// D represents the list of light vectors for each image
 	// Assumes that the painting is a lambertian surface
+
+	std::vector<Texture*> images = {};
+	std::vector<std::vector<float>> D = {};
+
+	for (size_t i = 0; i != items.size(); i++) {
+		if (items[i]->correctedImage != nullptr && items[i]->lightDirection != std::vector<float>{0.0f, 0.0f, 0.0f}) {
+			images.push_back(items[i]->correctedImage);
+			D.push_back(items[i]->lightDirection);
+		}
+	}
 
 	assert(images.size() == D.size(), "Input vectors must be the same size");
 
@@ -1125,11 +1156,30 @@ std::vector<Mat> calculate_norm_diff(vector<Texture*> images, vector<vector<floa
 }
 
 void Tomographer::add_image(string filename, string name) {
-	Mat image = imread(filename);
-	Texture* texture = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name);
-	texture->getCVMat();
+	TomogItem* newItem = new TomogItem;
+	newItem->name = name;
 
-	originalImages.push_back(texture);
+	Mat image = imread(filename);
+	newItem->baseImage = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name);
+	newItem->baseImage->getCVMat();
+
+	//Mat scaledAlign = alignTemplate.clone();
+	//Size dims(scaledAlign.cols, scaledAlign.rows);
+	//int height = 1024;
+	//Size dims(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height);
+	//resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
+
+	//match_partial(scaledAlign, &image, dims, newItem->rotation);
+	//match_template(scaledAlign, &image, dims);
+
+	//newItem->correctedImage = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name+"Matched");
+	//newItem->correctedImage->getCVMat();
+
+	items.push_back(newItem);
+}
+
+void Tomographer::align(int index) {
+	TomogItem* item = items[index];
 
 	Mat scaledAlign = alignTemplate.clone();
 	//Size dims(scaledAlign.cols, scaledAlign.rows);
@@ -1137,37 +1187,27 @@ void Tomographer::add_image(string filename, string name) {
 	Size dims(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height);
 	resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
 
-	match_partial(scaledAlign, &image, dims);
+	cv::Mat image = item->baseImage->texMat.clone();
+
+	match_partial(scaledAlign, &image, dims, item->rotation);
 	match_template(scaledAlign, &image, dims);
 
-	Texture* matchedTex = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name+"Matched");
-	matchedTex->getCVMat();
-
-	images.push_back(matchedTex);
-}
-
-void Tomographer::remove_imageOnly(int index) {
-	originalImages.at(index)->cleanup();
-	originalImages.erase(originalImages.begin() + index);
-
-	images.at(index)->cleanup();
-	images.erase(images.begin() + index);
+	item->correctedImage = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), item->name + "Matched");
+	item->correctedImage->getCVMat();
 }
 
 void Tomographer::remove_element(int index) {
-	remove_imageOnly(index);
-
-	vectors.erase(vectors.begin() + index);
+	items.erase(items.begin() + index);
 }
 
-void Tomographer::add_lightVector(float phi, float theta) {
+void Tomographer::add_lightVector(float phi, float theta, int index) {
 	vector<float> lightVec;
 	calculateVector(lightVec, phi, theta);
-	vectors.push_back(lightVec);
+	items[index]->lightDirection = lightVec;
 }
 
 void Tomographer::calculate_normal() {
-	computedNormal = calculateNormal(images, vectors);
+	computedNormal = calculateNormal(items);
 	normalExists = true;
 }
 
@@ -1175,11 +1215,11 @@ void Tomographer::calculate_diffuse() {
 	if (!normalExists) {
 		calculate_normal(); // This will also match the image layouts
 	}
-	computedDiffuse = calculateDiffuse(images, vectors, computedNormal);
+	computedDiffuse = calculateDiffuse(items, computedNormal);
 }
 
 void Tomographer::calculate_NormAndDiff() {
-	std::vector<Mat> results = calculate_norm_diff(images, vectors);
+	std::vector<Mat> results = calculate_norm_diff(items);
 	computedDiffuse = results[0];
 	computedNormal = results[1];
 }

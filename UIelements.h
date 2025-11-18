@@ -950,6 +950,10 @@ public:
 
 	void calculateSlideValue(double, double);
 
+	float getValue() {
+		return (1.0f - slideValue) * (maxValue - minValue) + minValue;
+	}
+
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
 		if (isInArea(mouseX, mouseY) && eventType == LMB_PRESS) {
 			isHeld = true;
