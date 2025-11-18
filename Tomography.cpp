@@ -553,7 +553,7 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 			minMaxLoc(res, &min, &max, &minLoc, &maxLoc);
 
 			float maxCorr = max;
-			std::cout << i << " " << j << " " << maxCorr << std::endl;
+			//std::cout << i << " " << j << " " << maxCorr << std::endl;
 
 			corrs.push_back(maxCorr);
 
@@ -577,8 +577,8 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 				if (maxImgCorr > imgCorrelation) {
 					cv::Mat backtranslation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, maxLoc.x - src_tx, 0, 1, maxLoc.y - src_ty);
 					cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
-					cv::imshow("Transformed", currentMatch);
-					cv::waitKey(0);
+					//cv::imshow("Transformed", currentMatch);
+					//cv::waitKey(0);
 					matched = currentMatch.clone();
 					matchedLoc = maxLoc;
 					index = i;
@@ -1126,7 +1126,7 @@ std::vector<Mat> calculate_norm_diff(vector<Texture*> images, vector<vector<floa
 
 void Tomographer::add_image(string filename, string name) {
 	Mat image = imread(filename);
-	Texture* texture = loadList->getPtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name);
+	Texture* texture = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name);
 	texture->getCVMat();
 
 	originalImages.push_back(texture);
@@ -1140,18 +1140,22 @@ void Tomographer::add_image(string filename, string name) {
 	match_partial(scaledAlign, &image, dims);
 	match_template(scaledAlign, &image, dims);
 
-	Texture* matchedTex = loadList->getPtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name+"Matched");
+	Texture* matchedTex = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name+"Matched");
 	matchedTex->getCVMat();
 
 	images.push_back(matchedTex);
 }
 
-void Tomographer::remove_element(int index) {
+void Tomographer::remove_imageOnly(int index) {
 	originalImages.at(index)->cleanup();
 	originalImages.erase(originalImages.begin() + index);
 
 	images.at(index)->cleanup();
 	images.erase(images.begin() + index);
+}
+
+void Tomographer::remove_element(int index) {
+	remove_imageOnly(index);
 
 	vectors.erase(vectors.begin() + index);
 }

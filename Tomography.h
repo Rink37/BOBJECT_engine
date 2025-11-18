@@ -24,6 +24,7 @@ public:
 	void add_image(std::string, std::string);
 	void add_lightVector(float phi, float theta);
 
+	void remove_imageOnly(int);
 	void remove_element(int);
 
 	void calculate_normal();
@@ -299,7 +300,7 @@ private:
 		if (fileName != std::string("fail")) {
 			std::string name = "Image" + std::to_string(imageCount);
 			tomographer.add_image(fileName, name + "Tex");
-			Material* imageMat = loadList->getPtr(new Material(tomographer.images[tomographer.images.size() - 1]), name + "Mat");
+			Material* imageMat = loadList->replacePtr(new Material(tomographer.images[tomographer.images.size() - 1]), name + "Mat");
 			tomogLoadMenu = new TomographyLoad(loadList);
 			std::function<void(Material*, float, float)> loadCallback = std::bind(&TomographyMenu::addItem, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 			std::function<void(UIItem*)> cancelCallback = std::bind(&TomographyMenu::cancelLoad, this, std::placeholders::_1);
@@ -366,12 +367,14 @@ private:
 	void cancelLoad(UIItem* owner) {
 		mouseManager->removeClickListener(loadClickIdx);
 		mouseManager->removePositionListener(loadPosIdx);
+		vkQueueWaitIdle(Engine::get()->graphicsQueue);
 		tomogLoadMenu->cleanup();
 		tomogLoadMenu = nullptr;
 		for (UIItem* item : canvas) {
 			item->setIsEnabled(true);
 			item->setVisibility(true);
 		}
+		tomographer.remove_imageOnly(tomographer.images.size()-1);
 	}
 
 	void updateDiffuseGen(UIItem* owner) {
