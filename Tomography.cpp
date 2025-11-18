@@ -219,7 +219,7 @@ Point intersectionOfLines(Vec4i l1, Vec4i l2) {
 		x = (y == -1.0f) ? -1.0f : x;
 		return Point(x, y);
 	}
-	Point intersect = Point(x / determinant, y / determinant);
+	Point intersect = Point(abs(x / determinant), abs(y / determinant));
 	return intersect;
 }
 
@@ -460,14 +460,14 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 					//rotateLines(l1, l2, rotateAngle, intersection);
 					//if (thirdLine != 0 && 87.5f < angleBetweenLines(lines[0], lines[thirdLine]) < 92.5f) {
 					//	Vec4i l3 = lines[thirdLine];
-					//	cv::line(downscaled, Point(l1[0], l1[1]), Point(l1[2], l1[3]), Scalar(255, 255, 255));
-					//	cv::line(downscaled, Point(l2[0], l2[1]), Point(l2[2], l2[3]), Scalar(255, 255, 255));
+					//cv::line(downscaled, Point(l1[0], l1[1]), Point(l1[2], l1[3]), Scalar(255, 255, 255));
+					//cv::line(downscaled, Point(l2[0], l2[1]), Point(l2[2], l2[3]), Scalar(255, 255, 255));
 					//	cv::line(downscaled, Point(l3[0], l3[1]), Point(l3[2], l3[3]), Scalar(255, 255, 255));
-					//	cv::circle(downscaled, intersection, 10, Scalar(255, 255, 255));
+					//cv::circle(downscaled, intersection, 10, Scalar(255, 255, 255));
 					//	Point intersection2 = intersectionOfLines(lines[largestLines[0]], lines[thirdLine]);
 					//	cv::circle(downscaled, intersection, 20, Scalar(255, 255, 255));
-					//	cv::imshow("Corners", downscaled);
-					//	cv::waitKey(0);
+					//cv::imshow("Corners", downscaled);
+					//cv::waitKey(0);
 					//}
 					intersectionScale = static_cast<float>(iterDim);
 					//std::cout << intersection.x << " " << intersection.y << std::endl;
@@ -884,7 +884,7 @@ Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calcu
 	}
 
 	for (int y = 0; y != normal.cols; y++) {
-		if (y % 100 == 0) {
+		if (y % 25 == 0) {
 			cout << y << endl;
 		}
 		for (int x = 0; x != normal.rows; x++) {
@@ -953,7 +953,7 @@ Mat calculateDiffuse(vector<Texture*> images, vector<vector<float>> D, Mat norma
 	}
 
 	for (int y = 0; y != diffuse.cols; y++) {
-		if (y % 100 == 0) {
+		if (y % 25 == 0) {
 			cout << y << endl;
 		}
 		for (int x = 0; x != diffuse.rows; x++) {
@@ -1032,7 +1032,7 @@ std::vector<Mat> calculate_norm_diff(vector<Texture*> images, vector<vector<floa
 	}
 
 	for (int y = 0; y != normal.cols; y++) {
-		if (y % 100 == 0) {
+		if (y % 25 == 0) {
 			cout << y << endl;
 		}
 		for (int x = 0; x != normal.rows; x++) {
