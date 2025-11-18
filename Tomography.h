@@ -101,9 +101,6 @@ public:
 		imageData cancel = CANCELBUTTON;
 		Material* cancelMat = newMaterial(&cancel, "CancelBtn");
 
-		imageData finish = FINISHBUTTON;
-		Material* finishMat = newMaterial(&finish, "FinishBtn");
-
 		imageData update = UPDATEBUTTON;
 		Material* updateMat = newMaterial(&update, "UpdateBtn");
 
@@ -115,15 +112,11 @@ public:
 		polarSlider->setSlideValues(0.0f, 90.0f, polar);
 		polarSlider->setFloatCallback(std::bind(&TomographyLoad::setPolar, this, std::placeholders::_1), false);
 
-		std::function<void(UIItem*)> finishFunct = std::bind(&TomographyLoad::finish, this, std::placeholders::_1);
-
 		Button* cancelButton = new Button(cancelMat, cancelCallback);
 		Button* updateButton = new Button(updateMat, updateCallback);
-		Button* finishButton = new Button(finishMat, finishFunct);
 
 		buttons->addItem(getPtr(cancelButton));
 		buttons->addItem(getPtr(updateButton));
-		buttons->addItem(getPtr(finishButton));
 
 		imageArrangement->addItem(getPtr(loadedUI));
 		imageArrangement->addItem(getPtr(polarSlider));
@@ -156,6 +149,14 @@ public:
 		canvas[0]->Items[0]->Items[0]->updateDisplay();
 		canvas[0]->Items[1]->Items[1]->cleanup();
 		canvas[0]->Items[1]->Items.erase(canvas[0]->Items[1]->Items.begin() + 1);
+		
+		imageData finish = FINISHBUTTON;
+		Material* finishMat = newMaterial(&finish, "FinishBtn");
+		
+		std::function<void(UIItem*)> finishFunct = std::bind(&TomographyLoad::finish, this, std::placeholders::_1);
+		Button* finishButton = new Button(finishMat, finishFunct);
+		canvas[0]->Items[1]->addItem(getPtr(finishButton));
+
 		//std::cout << lightDirection->getValue() << " " << angle << std::endl;
 		customUpdate();
 		update();
