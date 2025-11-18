@@ -188,7 +188,7 @@ void rotateLines(Vec4i& l1, Vec4i& l2, float angle, Point rotationCenter) {
 	l2_1 += rotationCenter;
 	l1 = Vec4i(l1_1.x, l1_1.y, l1_2.x, l1_2.y);
 	l2 = Vec4i(l2_1.x, l2_1.y, l2_2.x, l2_2.y);
-	std::cout << l1[0] << " " << l1[1] << " " << l1[2] << " " << l1[3] << std::endl;
+	//std::cout << l1[0] << " " << l1[1] << " " << l1[2] << " " << l1[3] << std::endl;
 }
 
 Point intersectionOfLines(Vec4i l1, Vec4i l2) {
@@ -262,9 +262,29 @@ int findCornerType(Vec4i l1, Vec4i l2, Point cornerPos) {
 	return 3; // Bottom left
 }
 
-float estMaxDist(Point corner, Size imageSize, int cornerType) {
+float estMaxDist(Point corner, Size imageSize, float rotation) {
 	// Need a function which can determine the maximum size we should check for so we can reduce the number of scale iterations
-	return 0.0f;
+	Point a = Point(0.0f, 0.0f);
+	Point b = Point(0.0f, imageSize.height);
+	Point c = Point(imageSize.width, 0.0f);
+	Point d = Point(imageSize.width, imageSize.height);
+	Point furthestCorner;
+	float furthestDist = 0.0f;
+	vector<Point> imageCorners = { a, b, c, d };
+	for (Point imgCorner : imageCorners) {
+		float dist = pointDist(imgCorner, corner);
+		if (dist > furthestDist) {
+			furthestDist = dist;
+			furthestCorner = imgCorner;
+		}
+	}
+	Vec4i line = Vec4i(furthestCorner.x, furthestCorner.y, corner.x, corner.y);
+	Vec4i line2 = Vec4i(furthestCorner.x, furthestCorner.y, corner.x, corner.y);
+	rotateLines(line, line2, rotation, corner);
+	Point furthestCornerRotated = Point(line[0], line[1]) - corner;
+	float maxDist = max(abs(furthestCornerRotated.x), abs(furthestCornerRotated.y));
+	std::cout << "Maximum distance = " << maxDist << std::endl;
+	return maxDist;
 }
 
 void match_partial(Mat src, Mat* target, Size outdims) {
@@ -349,10 +369,12 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 	float intersectionScale = 0.0f;
 	int cornerType = -1;
 
+	float rescaleFac = 1.0f;
+
 	for (int i = 0; i != stepsPerIter; i++) {
-		int iterDim = defaultDim * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
-		int iterHeight = targetHeight * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
-		int iterWidth = targetWidth * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f;
+		int iterDim = defaultDim * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
+		int iterHeight = targetHeight * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
+		int iterWidth = targetWidth * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
 
 		Mat downscaled;
 
@@ -422,6 +444,19 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 				if (intersection != Point(-1.0f, -1.0f)) {
 					Vec4i l1 = lines[largestLines[0]];
 					Vec4i l2 = lines[largestLines[1]];
+					float maxDist = estMaxDist(intersection, Size(iterWidth, iterHeight), rotateAngle);
+					rescaleFac = static_cast<float>(std::max(src.rows, src.cols)) / maxDist;
+					std::cout << "Rescale factor = " << rescaleFac << std::endl;
+					rescaleFac = (rescaleFac > 1.0f) ? 1.0f : rescaleFac;
+					iterDim = defaultDim * (1.5 - static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
+					iterHeight = targetHeight * (1.5 - static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
+					iterWidth = targetWidth * (1.5 - static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
+					
+					rotateLines(l1, l2, rotateAngle, intersection);
+					cornerType = findCornerType(l1, l2, intersection);
+
+					intersection *= rescaleFac;
+					cv::resize(downscaled, downscaled, Size(iterWidth, iterHeight));
 					//rotateLines(l1, l2, rotateAngle, intersection);
 					//if (thirdLine != 0 && 87.5f < angleBetweenLines(lines[0], lines[thirdLine]) < 92.5f) {
 					//	Vec4i l3 = lines[thirdLine];
@@ -434,10 +469,9 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 					//	cv::imshow("Corners", downscaled);
 					//	cv::waitKey(0);
 					//}
-					rotateLines(l1, l2, rotateAngle, intersection);
 					intersectionScale = static_cast<float>(iterDim);
 					//std::cout << intersection.x << " " << intersection.y << std::endl;
-					cornerType = findCornerType(l1, l2, intersection);
+					
 				}
 			}
 		}
@@ -543,8 +577,8 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 				if (maxImgCorr > imgCorrelation) {
 					cv::Mat backtranslation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, maxLoc.x - src_tx, 0, 1, maxLoc.y - src_ty);
 					cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
-					//cv::imshow("Transformed", currentMatch);
-					//cv::waitKey(0);
+					cv::imshow("Transformed", currentMatch);
+					cv::waitKey(0);
 					matched = currentMatch.clone();
 					matchedLoc = maxLoc;
 					index = i;
