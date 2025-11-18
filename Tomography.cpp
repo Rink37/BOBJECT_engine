@@ -453,14 +453,14 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 
 		switch (cornerType) {
 		case(0):
-			std::cout << "Top left" << std::endl;
+			//std::cout << "Top left" << std::endl;
 			iterDim = srcResizeDim;
 			tx = static_cast<int>((src_resultCenter.x - defaultWidth / 2) - currentIntersection.x);
 			ty = static_cast<int>((src_resultCenter.y - defaultHeight / 2) - currentIntersection.y);
 			rotationCenter = Point((src_resultCenter.x - defaultWidth / 2), (src_resultCenter.y - defaultHeight / 2));
 			break;
 		case(1):
-			std::cout << "Top right" << std::endl;
+			//std::cout << "Top right" << std::endl;
 			iterDim = srcResizeDim;
 			tx = static_cast<int>((src_resultCenter.x + defaultWidth / 2) - currentIntersection.x);
 			ty = static_cast<int>((src_resultCenter.y - defaultHeight / 2) - currentIntersection.y);
@@ -468,21 +468,21 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 			std::cout << tx << " " << ty << std::endl;
 			break;
 		case(2):
-			std::cout << "Bottom right" << std::endl;
+			//std::cout << "Bottom right" << std::endl;
 			iterDim = srcResizeDim;
 			tx = static_cast<int>((src_resultCenter.x + defaultWidth / 2) - currentIntersection.x);
 			ty = static_cast<int>((src_resultCenter.y + defaultHeight / 2) - currentIntersection.y);
 			rotationCenter = Point((src_resultCenter.x + defaultWidth / 2), (src_resultCenter.y + defaultHeight / 2));
 			break;
 		case(3):
-			std::cout << "Bottom left" << std::endl;
+			//std::cout << "Bottom left" << std::endl;
 			iterDim = srcResizeDim;
 			tx = static_cast<int>((src_resultCenter.x - defaultWidth / 2) - currentIntersection.x);
 			ty = static_cast<int>((src_resultCenter.y + defaultHeight / 2) - currentIntersection.y);
 			rotationCenter = Point((src_resultCenter.x - defaultWidth / 2), (src_resultCenter.y + defaultHeight / 2));
 			break;
 		default:
-			std::cout << "Corner Type unknown" << std::endl;
+			//std::cout << "Corner Type unknown" << std::endl;
 			tx = static_cast<int>(resultCenter.x - imageCenter.x);
 			ty = static_cast<int>(resultCenter.y - imageCenter.y); 
 			rotationCenter = Point(static_cast<float>(iterDim - 1) / 2.0f, static_cast<float>(iterDim - 1) / 2.0f);
@@ -496,11 +496,6 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 		if (rotateAngle >= 0.0f) {
 			cv::Mat rotation_matrix = cv::getRotationMatrix2D(rotationCenter, rotateAngle, 1);
 			cv::warpAffine(downscaled, downscaled, rotation_matrix, Size(iterDim, iterDim));
-
-			//cv::circle(downscaled, rotationCenter, 5, Scalar(255, 255, 255));
-
-			//cv::imshow("Downscaled", downscaled);
-			//cv::waitKey(0);
 		}
 
 		vector<float> corrs = {};
@@ -516,8 +511,6 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 			Mat res;
 			int result_cols = srcSobel.cols - translated.cols + 1;
 			int result_rows = srcSobel.rows - translated.rows + 1;
-
-			std::cout << result_cols << " " << result_rows << std::endl;
 
 			res.create(result_rows, result_cols, CV_32FC1);
 
@@ -550,8 +543,8 @@ void match_partial(Mat src, Mat* target, Size outdims) {
 				if (maxImgCorr > imgCorrelation) {
 					cv::Mat backtranslation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, maxLoc.x - src_tx, 0, 1, maxLoc.y - src_ty);
 					cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
-					cv::imshow("Transformed", currentMatch);
-					cv::waitKey(0);
+					//cv::imshow("Transformed", currentMatch);
+					//cv::waitKey(0);
 					matched = currentMatch.clone();
 					matchedLoc = maxLoc;
 					index = i;
@@ -857,7 +850,9 @@ Mat calculateNormal(vector<Texture*> images, vector<vector<float>> D) { // Calcu
 	}
 
 	for (int y = 0; y != normal.cols; y++) {
-		cout << y << endl;
+		if (y % 100 == 0) {
+			cout << y << endl;
+		}
 		for (int x = 0; x != normal.rows; x++) {
 			vector<vector<float>> L;
 			vector<float> Lcol;
@@ -924,7 +919,9 @@ Mat calculateDiffuse(vector<Texture*> images, vector<vector<float>> D, Mat norma
 	}
 
 	for (int y = 0; y != diffuse.cols; y++) {
-		cout << y << endl;
+		if (y % 100 == 0) {
+			cout << y << endl;
+		}
 		for (int x = 0; x != diffuse.rows; x++) {
 			Vec3f normalVector = static_cast<Vec3f>(normal.at<Vec3b>(x, y));
 			for (int k = 0; k != 3; k++) {
@@ -1001,7 +998,9 @@ std::vector<Mat> calculate_norm_diff(vector<Texture*> images, vector<vector<floa
 	}
 
 	for (int y = 0; y != normal.cols; y++) {
-		cout << y << endl;
+		if (y % 100 == 0) {
+			cout << y << endl;
+		}
 		for (int x = 0; x != normal.rows; x++) {
 			vector<vector<float>> L;
 			vector<float> Lcol;
