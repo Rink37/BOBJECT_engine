@@ -296,6 +296,10 @@ void SurfaceMenu::toggleNormalCam(UIItem* owner) {
 }
 
 void SurfaceMenu::toggleNormalType(UIItem* owner) {
+	if (staticObjects->size() == 0) {
+		toggleNormalState(!NormalButtons->Items[2]->activestate);
+		return;
+	}
 	sConst->toggleNormType();
 	if (sConst->normalType == 1 && sConst->OSNormTex != nullptr && !sConst->TSmatching) {
 		if (sConst->TSNormTex != nullptr) {
