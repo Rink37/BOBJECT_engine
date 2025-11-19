@@ -126,8 +126,6 @@ Mat getDiffuseGray(Mat img) {
 	Mat imgMatched = PSF_img_channels[0].clone();
 	LUT(imgMatched, lookup, imgMatched);
 
-	cout << "Image matched" << endl;
-
 	imshow("Matched", imgMatched);
 	waitKey(0);
 
@@ -188,7 +186,6 @@ void rotateLines(Vec4i& l1, Vec4i& l2, float angle, Point rotationCenter) {
 	l2_1 += rotationCenter;
 	l1 = Vec4i(l1_1.x, l1_1.y, l1_2.x, l1_2.y);
 	l2 = Vec4i(l2_1.x, l2_1.y, l2_2.x, l2_2.y);
-	//std::cout << l1[0] << " " << l1[1] << " " << l1[2] << " " << l1[3] << std::endl;
 }
 
 Point intersectionOfLines(Vec4i l1, Vec4i l2) {
@@ -421,7 +418,6 @@ void match_partial(Mat src, Mat* target, Size outdims, float& finalRot) {
 			if (largestLines[0] != largestLines[1] && 87.5f < angleBetweenLines(lines[largestLines[0]], lines[largestLines[1]]) < 92.5f) {
 				float rotateAngle1 = angleBetweenLines(lines[largestLines[0]], Vec4i(0, 0, 0, 10));
 				float rotateAngle2 = angleBetweenLines(lines[largestLines[1]], Vec4i(0, 0, 0, 10));
-				//std::cout << rotateAngle1 << " " << rotateAngle2 << std::endl;
 				if (rotateAngle1 > 90.0f && rotateAngle2 <= 90.0f) {
 					rotateAngle1 = 180.0f - rotateAngle1;
 					rotateAngle2 = 90.0f - rotateAngle2;
@@ -436,9 +432,7 @@ void match_partial(Mat src, Mat* target, Size outdims, float& finalRot) {
 				else if (rotateAngle2 < 90.0f && rotateAngle2 >= 90.0f) {
 					rotateAngle1 = 90.0f - rotateAngle1;
 				}
-				//std::cout << rotateAngle1 << " " << rotateAngle2 << std::endl;
 				rotateAngle = (rotateAngle1 + rotateAngle2) / 2;
-				//std::cout << "Rotate angle = " << rotateAngle << std::endl;
 				rotationsPerIter = 4;
 				intersection = intersectionOfLines(lines[largestLines[0]], lines[largestLines[1]]);
 				if (intersection != Point(-1.0f, -1.0f)) {
@@ -457,21 +451,7 @@ void match_partial(Mat src, Mat* target, Size outdims, float& finalRot) {
 
 					intersection *= rescaleFac;
 					cv::resize(downscaled, downscaled, Size(iterWidth, iterHeight));
-					//rotateLines(l1, l2, rotateAngle, intersection);
-					//if (thirdLine != 0 && 87.5f < angleBetweenLines(lines[0], lines[thirdLine]) < 92.5f) {
-					//	Vec4i l3 = lines[thirdLine];
-					//cv::line(downscaled, Point(l1[0], l1[1]), Point(l1[2], l1[3]), Scalar(255, 255, 255));
-					//cv::line(downscaled, Point(l2[0], l2[1]), Point(l2[2], l2[3]), Scalar(255, 255, 255));
-					//	cv::line(downscaled, Point(l3[0], l3[1]), Point(l3[2], l3[3]), Scalar(255, 255, 255));
-					//cv::circle(downscaled, intersection, 10, Scalar(255, 255, 255));
-					//	Point intersection2 = intersectionOfLines(lines[largestLines[0]], lines[thirdLine]);
-					//	cv::circle(downscaled, intersection, 20, Scalar(255, 255, 255));
-					//cv::imshow("Corners", downscaled);
-					//cv::waitKey(0);
-					//}
-					intersectionScale = static_cast<float>(iterDim);
-					//std::cout << intersection.x << " " << intersection.y << std::endl;
-					
+					intersectionScale = static_cast<float>(iterDim);					
 				}
 			}
 		}
@@ -487,14 +467,12 @@ void match_partial(Mat src, Mat* target, Size outdims, float& finalRot) {
 
 		switch (cornerType) {
 		case(0):
-			//std::cout << "Top left" << std::endl;
 			iterDim = srcResizeDim;
 			tx = static_cast<int>((src_resultCenter.x - defaultWidth / 2) - currentIntersection.x);
 			ty = static_cast<int>((src_resultCenter.y - defaultHeight / 2) - currentIntersection.y);
 			rotationCenter = Point((src_resultCenter.x - defaultWidth / 2), (src_resultCenter.y - defaultHeight / 2));
 			break;
 		case(1):
-			//std::cout << "Top right" << std::endl;
 			iterDim = srcResizeDim;
 			tx = static_cast<int>((src_resultCenter.x + defaultWidth / 2) - currentIntersection.x);
 			ty = static_cast<int>((src_resultCenter.y - defaultHeight / 2) - currentIntersection.y);
@@ -502,21 +480,18 @@ void match_partial(Mat src, Mat* target, Size outdims, float& finalRot) {
 			std::cout << tx << " " << ty << std::endl;
 			break;
 		case(2):
-			//std::cout << "Bottom right" << std::endl;
 			iterDim = srcResizeDim;
 			tx = static_cast<int>((src_resultCenter.x + defaultWidth / 2) - currentIntersection.x);
 			ty = static_cast<int>((src_resultCenter.y + defaultHeight / 2) - currentIntersection.y);
 			rotationCenter = Point((src_resultCenter.x + defaultWidth / 2), (src_resultCenter.y + defaultHeight / 2));
 			break;
 		case(3):
-			//std::cout << "Bottom left" << std::endl;
 			iterDim = srcResizeDim;
 			tx = static_cast<int>((src_resultCenter.x - defaultWidth / 2) - currentIntersection.x);
 			ty = static_cast<int>((src_resultCenter.y + defaultHeight / 2) - currentIntersection.y);
 			rotationCenter = Point((src_resultCenter.x - defaultWidth / 2), (src_resultCenter.y + defaultHeight / 2));
 			break;
 		default:
-			//std::cout << "Corner Type unknown" << std::endl;
 			tx = static_cast<int>(resultCenter.x - imageCenter.x);
 			ty = static_cast<int>(resultCenter.y - imageCenter.y); 
 			rotationCenter = Point(static_cast<float>(iterDim - 1) / 2.0f, static_cast<float>(iterDim - 1) / 2.0f);
@@ -553,7 +528,6 @@ void match_partial(Mat src, Mat* target, Size outdims, float& finalRot) {
 			minMaxLoc(res, &min, &max, &minLoc, &maxLoc);
 
 			float maxCorr = max;
-			//std::cout << i << " " << j << " " << maxCorr << std::endl;
 
 			corrs.push_back(maxCorr);
 
@@ -577,8 +551,6 @@ void match_partial(Mat src, Mat* target, Size outdims, float& finalRot) {
 				if (maxImgCorr > imgCorrelation) {
 					cv::Mat backtranslation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, maxLoc.x - src_tx, 0, 1, maxLoc.y - src_ty);
 					cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
-					//cv::imshow("Transformed", currentMatch);
-					//cv::waitKey(0);
 					finalRot = rotateAngle + rotAngle;
 					matched = currentMatch.clone();
 					matchedLoc = maxLoc;
@@ -1163,18 +1135,6 @@ void Tomographer::add_image(string filename, string name) {
 	newItem->baseImage = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name);
 	newItem->baseImage->getCVMat();
 
-	//Mat scaledAlign = alignTemplate.clone();
-	//Size dims(scaledAlign.cols, scaledAlign.rows);
-	//int height = 1024;
-	//Size dims(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height);
-	//resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
-
-	//match_partial(scaledAlign, &image, dims, newItem->rotation);
-	//match_template(scaledAlign, &image, dims);
-
-	//newItem->correctedImage = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name+"Matched");
-	//newItem->correctedImage->getCVMat();
-
 	items.push_back(newItem);
 }
 
@@ -1182,7 +1142,6 @@ void Tomographer::align(int index) {
 	TomogItem* item = items[index];
 
 	Mat scaledAlign = alignTemplate.clone();
-	//Size dims(scaledAlign.cols, scaledAlign.rows);
 	int height = 1024;
 	Size dims(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height);
 	resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));

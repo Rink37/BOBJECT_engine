@@ -53,8 +53,6 @@ public:
 	}
 
 	void clearData() {
-		//images.clear();
-		//vectors.clear();
 		items.clear();
 		computedNormal.release();
 		computedDiffuse.release();
@@ -67,13 +65,10 @@ public:
 
 	LoadList* loadList = nullptr;
 
-	//std::vector<Texture*> images;
 	std::vector<TomogItem*> items = {};
 private:
 	bool normalExists = false;
-	//std::vector<Texture*> originalImages;
-	
-	//std::vector<std::vector<float>> vectors;
+
 };
 
 class TomographyLoad : public Widget {
@@ -157,7 +152,6 @@ public:
 		Button* finishButton = new Button(finishMat, finishFunct);
 		canvas[0]->Items[1]->addItem(getPtr(finishButton));
 
-		//std::cout << lightDirection->getValue() << " " << angle << std::endl;
 		customUpdate();
 		update();
 		lightDirection->update(canvas[0]->Items[0]->Items[0]->posx, canvas[0]->Items[0]->Items[0]->posy, canvas[0]->Items[0]->Items[0]->extentx, canvas[0]->Items[0]->Items[0]->extentx * canvas[0]->Items[0]->Items[0]->sqAxisRatio);
@@ -174,7 +168,6 @@ private:
 	float azimuth = 90.0f;
 
 	void setAzimuth(float az) {
-		//std::cout << az << std::endl;
 		az = 90.0f - az;
 		azimuth = (az < 0) ? az + 360.0f : az;
 	}
