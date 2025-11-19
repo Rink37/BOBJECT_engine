@@ -56,9 +56,18 @@ The function of the sliders is as follows:
 4. Stroke Flatness: Modifies the extent to which each stroke is flattened - smaller values mean that the brushstrokes will appear more rounded and higher values make the brushstrokes appear more uniformly lit.
 5. Flatten Threshold: Modifies the threshold which the system uses to separate faces that are flattened. Smaller values lead to smaller flattened areas, whereas larger values lead to flattening being performed over larger distances. However, when the value is too large this can also lead to 'bleed' where adjacent similar colours are flattened to face in the same direction as each other rather than unique stroke specific directions.
 
-
 >[!Note]
 > The remapping algorithm currently has a maximum diffuse height resolution limit of 1024px due to the risks of GPU timeout when using some of the more complex compute shaders used in the remap pipeline. Larger diffuse images can be loaded and will not cause issues, but the remapper will downscale them before performing any filtering and then upscale them to the original dimensions after, yielding no quality improvement from larger diffuse images. 
+
+### Extract physical canvas surface details
+The application contains basic 3D scanning functionality which is designed to calculate diffuse and normal maps that describe the physical canvas surface using multiple photos of the canvas with the light source in multiple different locations. This functionality can be used to produce diffuse maps with no shadows produced by surface details or to create normals that digitally reproduce the lighting effects of the painting surface details.
+
+This functionality can be toggled by pressing the "T"  key while a diffuse map is loaded in the surface menu. This diffuse map is used as a template reference which all other loaded images are matched to, so it needs to be a complete picture of the scan which is correctly aligned with the UV map. When the tomography menu is open, individual scans of the painting with different light angles can be loaded (which don't need to contain the entire canvas, since the matching functionality works with an incomplete image). When an image has been loaded, you'll need to drag the button which appears over the image until it matches the position of the light relative to the image. The slider to the right is used to set the angle of the light above the surface of the canvas. Hitting the 'update' button will then correct the loaded image so that it matches the shape of the reference diffuse (and will rotate the light position slider by the same amount). Then hitting 'finish' will add the image to the set of images used in the map generation. 
+
+Once a reasonable set of images has been loaded, use the checkboxes next to the image type labels to specify what maps should be generated, then hit 'update' to perform map generation. Once this process is finished, the material applied to the mesh/plane in the tomography menu will be changed to use the newly generated maps. When you are happy with the generated maps, hit 'finish' and the menu will close and the maps will be applied to the main surface menu.
+
+>[!Note]
+> Matching images to the template is not always successful, and won't work for some images. The matching algorithm will produce the same result each time so the problem can't be solved by attempting the same thing again - simply remove these images from the set either by cancelling them in the load stage or by deleting them from the image table by hitting the 'X' icon.
 
 ## FAQ
 
@@ -68,4 +77,5 @@ The function of the sliders is as follows:
 - [x] Remapping normals using the diffuse texture.
 - [x] Converting a tangent space map while the 'TS' icon is active to an object space map
 - [ ] Changeable webcam devices
-- [ ] Basic tomography functionality to extract information about the physical surface of the painting to be used in rendering
+- [x] Basic tomography functionality to extract information about the physical surface of the painting to be used in rendering
+- [ ] Add automatic light source detection in the tomography menu to avoid manually setting light direction
