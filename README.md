@@ -3,6 +3,8 @@
 An engine to render traditionally painted textures onto 3D meshes in real time, as an all-in-one contained solution.
 
 > [!CAUTION]
+> Only .obj models are supported, attempting to load any other type of model will cause a crash. The engine currently has no ability to determine if an incorrect file is loaded so you will not be alerted of this crash.
+> [!CAUTION]
 > This project is still in development and not fully accessible for a majority of its potential user group. Use with caution / contribute to allow for a faster progression into a more usable state
 
 ## Installation
