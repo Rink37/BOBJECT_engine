@@ -87,6 +87,7 @@ int main(){
 	loadAndWriteShaders(basepath, string("GradRemap"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("OSToTSConverter"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("TSToOSConverter"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("OS_EdgeFill"), 0, outRoot);
 	basepath = rootPath+string("/shaders/");
 	loadAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("OS_BF"), 0, outRoot);

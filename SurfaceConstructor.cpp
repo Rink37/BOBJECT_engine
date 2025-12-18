@@ -10,6 +10,9 @@
 #include"include/Averager.h"
 #include"include/GradRemap.h"
 
+#include"include/OS_EdgeFill.h"
+#include"ImageProcessor.h"
+
 using namespace std;
 using namespace cv;
 
@@ -20,8 +23,11 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 	commandBuffer = generator.drawOSMap(commandBuffer, inputMesh);
 	Engine::get()->endSingleTimeCommands(commandBuffer);
+
+	filter OS_EdgeFill(std::vector<Texture*>({ generator.objectSpaceMap.colour }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+	OS_EdgeFill.filterImage();
 	
-	OSNormTex = loadList->replacePtr(generator.objectSpaceMap.colour->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+	OSNormTex = loadList->replacePtr(OS_EdgeFill.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1), "OSNormalTex");
@@ -31,6 +37,7 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 	Normal[1] = loadList->replacePtr(new Material(OSNormTex), "OSNormMat");
 
 	generator.cleanupGenOS();
+	OS_EdgeFill.cleanup();
 }
 
 void surfaceConstructor::transitionToTS(Mesh* inputMesh) {

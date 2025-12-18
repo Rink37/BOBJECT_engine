@@ -39,3 +39,6 @@ C:/VulkanSDK/1.3.296.0/Bin/glslc.exe NormalGenerator.frag -o GaussBlurXFrag.spv
 
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe GaussBlurY.comp -o GaussBlurYVert.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe NormalGenerator.frag -o GaussBlurYFrag.spv
+
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe OS_EdgeFill.comp -o OS_EdgeFillVert.spv
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe NormalGenerator.frag -o OS_EdgeFillFrag.spv

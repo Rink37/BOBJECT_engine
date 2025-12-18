@@ -1,0 +1,38 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout(binding = 0, rgba8) uniform readonly image2D normalImage;
+layout(binding = 1, rgba8) uniform image2D resultImage;
+
+void main(){
+	// Sets the value of a (0,0,0) pixel to either the nearest value or the average of near values if there are multiple equidistant values
+	int kernsize = 10;
+	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+	vec3 normPix = imageLoad(normalImage, pixelCoords).rgb;
+
+	vec4 nearestPixel = vec4(0,0,0,0);
+
+	if (normPix == vec3(0,0,0)){
+		float minDistance = (kernsize+1)*(kernsize+1);
+
+		for (int x = -kernsize; x != kernsize; x++){
+			for (int y = -kernsize; y != kernsize; y++){
+				float distance = length(vec2(x, y));
+				if (distance <= minDistance){
+					vec3 readPix = imageLoad(normalImage, ivec2(pixelCoords.x+x, pixelCoords.y+y)).rgb;
+					if (readPix != vec3(0,0,0)){
+						minDistance = distance;
+						nearestPixel = (distance<minDistance)?vec4(0,0,0,0):nearestPixel;
+						nearestPixel += vec4(readPix, 1.0);
+					}
+				}
+			}
+		}
+	} else {
+		nearestPixel = vec4(normPix, 1.0);
+	}
+
+	vec4 pixel = vec4((nearestPixel.rgb/nearestPixel.w), 1.0);
+
+	imageStore(resultImage, pixelCoords, pixel);
+}
