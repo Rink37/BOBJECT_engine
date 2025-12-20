@@ -39,7 +39,10 @@ void RemapBackend::createBaseMaps() {
 
 	filter Kuwahara(std::vector<Texture*>{baseDiffuse}, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	Kuwahara.filterImage();
-	
+
+	//Kuwahara.filterTarget[0]->getCVMat();
+	//cv::imwrite("KuwaharaMap.jpg", Kuwahara.filterTarget[0]->texMat);
+
 	filter SobelCombined(std::vector<Texture*>{Kuwahara.filterTarget[0]}, new SOBELCOMBINEDSHADER, VK_FORMAT_R16G16_SFLOAT);
 	SobelCombined.filterImage();
 

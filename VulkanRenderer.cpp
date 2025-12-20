@@ -589,11 +589,13 @@ private:
 			surfaceMenu.setDiffuse(sConst->currentDiffuse());
 		}
 		if (tomogNorm != nullptr) {
+			std::cout << "Normal found" << std::endl;
 			sConst->normalType = 1;
 			sConst->loadNormal(tomogNorm->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0));
 			if (!sConst->normalAvailable) {
 				surfaceMenu.createNormalMenu(owner);
 			}
+			sConst->normalType = 1;
 			surfaceMenu.setNormal(sConst->currentNormal());
 		}
 		tomogActive = false;

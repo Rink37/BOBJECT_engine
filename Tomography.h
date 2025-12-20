@@ -69,6 +69,7 @@ public:
 private:
 	bool normalExists = false;
 
+	bool equalRes = true;
 };
 
 class TomographyLoad : public Widget {
@@ -123,10 +124,12 @@ public:
 		canvas.push_back(getPtr(column));
 
 		lightDirection = new Rotator(visibleMat, loadedUI->posx, loadedUI->posy, loadedUI->extentx, loadedUI->extentx * loadedUI->sqAxisRatio);
+		lightDirection->setSlideValues(0.0f, 360.0f, 180.0f);
 		lightDirection->updateDisplay();
-		lightDirection->setSlideValues(0.0f, 360.0f, 0.0f);
 		lightDirection->setFloatCallback(std::bind(&TomographyLoad::setAzimuth, this, std::placeholders::_1), false);
 		canvas.push_back(getPtr(lightDirection));
+
+		setAzimuth(lightDirection->getValue());
 
 		customUpdate();
 
@@ -157,6 +160,8 @@ public:
 		lightDirection->update(canvas[0]->Items[0]->Items[0]->posx, canvas[0]->Items[0]->Items[0]->posy, canvas[0]->Items[0]->Items[0]->extentx, canvas[0]->Items[0]->Items[0]->extentx * canvas[0]->Items[0]->Items[0]->sqAxisRatio);
 		lightDirection->setSlideValues(0.0f, 360.0f, lightDirection->getValue() - angle);
 		lightDirection->updateDisplay();
+
+		setAzimuth(lightDirection->getValue());
 	}
 
 private:
