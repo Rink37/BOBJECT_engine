@@ -741,58 +741,41 @@ private:
 	void drawFrame() {
 		uint32_t imageIndex = engine->getRenderTarget();
 		uint32_t currentFrame = engine->currentFrame;
-		//vkWaitForFences(engine->device, 1, &engine->inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-
-		//uint32_t imageIndex;
-		//VkResult result = vkAcquireNextImageKHR(engine->device, engine->swapChain, UINT64_MAX, engine->imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-		//if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			
-		//	engine->recreateSwapChain();
-		//	return;
-		//}
-		//else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-		//	throw runtime_error("failed to acquire swap chain image!");
-		//}
-
+		
 		updateUniformBuffer(currentFrame);
-
-		vkResetFences(engine->device, 1, &engine->inFlightFences[currentFrame]);
-
-		vkResetCommandBuffer(engine->commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 		recordCommandBuffer(engine->commandBuffers[currentFrame], imageIndex);
 
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		//VkSubmitInfo submitInfo{};
+		//submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		VkSemaphore waitSemaphores[] = { engine->imageAvailableSemaphores[currentFrame]};
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
+		//VkSemaphore waitSemaphores[] = { engine->imageAvailableSemaphores[currentFrame]};
+		//VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		//submitInfo.waitSemaphoreCount = 1;
+		//submitInfo.pWaitSemaphores = waitSemaphores;
+		//submitInfo.pWaitDstStageMask = waitStages;
 
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &engine->commandBuffers[currentFrame];
+		//submitInfo.commandBufferCount = 1;
+		//submitInfo.pCommandBuffers = &engine->commandBuffers[currentFrame];
 
-		VkSemaphore signalSemaphores[] = { engine->renderFinishedSemaphores[currentFrame]};
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
+		//VkSemaphore signalSemaphores[] = { engine->renderFinishedSemaphores[currentFrame]};
+		//submitInfo.signalSemaphoreCount = 1;
+		//submitInfo.pSignalSemaphores = signalSemaphores;
 
-		if (vkQueueSubmit(engine->graphicsQueue, 1, &submitInfo, engine->inFlightFences[currentFrame]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to submit draw command buffer!");
-		}
+		//if (vkQueueSubmit(engine->graphicsQueue, 1, &submitInfo, engine->inFlightFences[currentFrame]) != VK_SUCCESS) {
+		//	throw std::runtime_error("failed to submit draw command buffer!");
+		//}
 
-		VkSwapchainKHR swapChains[] = { engine->swapChain };
+		//VkSwapchainKHR swapChains[] = { engine->swapChain };
 
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapChains;
-		presentInfo.pImageIndices = &imageIndex;
+		//VkPresentInfoKHR presentInfo{};
+		//presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		//presentInfo.waitSemaphoreCount = 1;
+		//presentInfo.pWaitSemaphores = signalSemaphores;
+		//presentInfo.swapchainCount = 1;
+		//presentInfo.pSwapchains = swapChains;
+		//presentInfo.pImageIndices = &imageIndex;
 
-		VkResult result = vkQueuePresentKHR(engine->presentQueue, &presentInfo);
+		VkResult result = engine->submitAndPresentFrame(imageIndex);//vkQueuePresentKHR(engine->presentQueue, &presentInfo);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine->framebufferResized) {
 			engine->framebufferResized = false;
