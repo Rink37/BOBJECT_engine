@@ -1405,6 +1405,19 @@ void Engine::beginRenderPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
+void Engine::drawObject(VkCommandBuffer commandBuffer, VkBuffer vertexBuffer, VkBuffer indexBuffer, VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet, uint32_t drawCount) {
+	VkBuffer vertexBuffers[] = { vertexBuffer };
+	VkDeviceSize offsets[] = { 0 };
+
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+	vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+
+	vkCmdDrawIndexed(commandBuffer, drawCount, 1, 0, 0, 0);
+}
+
 VkResult Engine::submitAndPresentFrame(uint32_t imageIndex) {
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

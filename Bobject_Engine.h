@@ -231,6 +231,7 @@ public:
 	void recreateSwapChain();
 	std::uint32_t getRenderTarget();
 	void beginRenderPass(VkCommandBuffer, uint32_t, glm::vec3);
+	void drawObject(VkCommandBuffer, VkBuffer, VkBuffer, VkPipelineLayout, VkDescriptorSet, std::uint32_t);
 	VkResult submitAndPresentFrame(std::uint32_t);
 
 	std::uint32_t findMemoryType(std::uint32_t, VkMemoryPropertyFlags);
