@@ -323,6 +323,7 @@ private:
 
 	vector<StaticObject> staticObjects = {};
 	PlaneObject* tomographyPlane = nullptr;
+	vector<uint32_t> visibleObjects = {};
 
 	bool lit = true;
 
@@ -347,6 +348,15 @@ private:
 		tertiaryColour = glm::vec3(0.0f, 0.39f, 0.31f);
 		backgroundColour = glm::vec3(0.0f, 0.55f, 0.32f);
 		updateColourScheme();
+	}
+
+	void updateVisibleObjects() {
+		visibleObjects.clear();
+		for (int32_t i = 0; i != staticObjects.size(); i++) {
+			if (staticObjects[i].isVisible) {
+				visibleObjects.push_back(i);
+			}
+		}
 	}
 
 	void createRemapper(UIItem* owner) {
@@ -420,6 +430,7 @@ private:
 			obj.mesh->cleanup();
 		}
 		staticObjects.clear();
+		updateVisibleObjects();
 
 		objectMenu.clearObjects();
 
@@ -495,6 +506,7 @@ private:
 		}
 		sConst->updateSurfaceMat();
 		webcamTexture::get()->webCam->loadFilter();
+		updateVisibleObjects();
 	}
 	
 	void createCanvas() {
@@ -560,6 +572,7 @@ private:
 			for (size_t i = 0; i != staticObjects.size(); i++) {
 				staticObjects[i].isVisible = false;
 			}
+			updateVisibleObjects();
 			objectMenu.hide();
 			surfaceMenu.hide();
 			
@@ -603,6 +616,7 @@ private:
 		for (size_t i = 0; i != staticObjects.size(); i++) {
 			staticObjects[i].isVisible = true;
 		}
+		updateVisibleObjects();
 		
 		objectMenu.show();
 		surfaceMenu.show();
@@ -625,6 +639,7 @@ private:
 			for (size_t i = 0; i != staticObjects.size(); i++) {
 				staticObjects[i].isVisible = false;
 			}
+			updateVisibleObjects();
 			objectMenu.hide();
 		}
 		else {
@@ -632,6 +647,7 @@ private:
 			for (size_t i = 0; i != staticObjects.size(); i++) {
 				staticObjects[i].isVisible = true;
 			}
+			updateVisibleObjects();
 			objectMenu.show();
 		}
 	}
@@ -654,6 +670,7 @@ private:
 
 	void setObjectVisibility(UIItem* owner) {
 		staticObjects[objectMenu.ObjectMap.at(owner->Name)].isVisible = owner->activestate;
+		updateVisibleObjects();
 	}
 
 	void setObjectWireframe(UIItem* owner) {
@@ -706,12 +723,12 @@ private:
 		std::function<void(UIItem*)> wireFunction = bind(&Application::setObjectWireframe, this, placeholders::_1);
 
 		objectMenu.addObject(visibleFunction, wireFunction);
-
 		newObject.isVisible = true;
 
 		staticObjects.push_back(newObject);
 		session::get()->currentStudio.modelPaths.push_back(modelPath);
 
+		updateVisibleObjects();
 	}
 
 	void cleanup() {
@@ -806,8 +823,8 @@ private:
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UVWireframe")]);
 
-			for (uint32_t i = 0; i != staticObjects.size(); i++) {
-				if (staticObjects[i].isVisible && staticObjects[i].isWireframeVisible) {
+			for (uint32_t i : visibleObjects) {
+				if (staticObjects[i].isWireframeVisible) {
 
 					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, engine->diffusePipelineLayout, sConst->webcamPtr->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 
@@ -831,12 +848,8 @@ private:
 			if (!tomogActive) {
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(sConst->renderPipeline)]);
 
-				for (uint32_t i = 0; i != staticObjects.size(); i++) {
-					if (staticObjects[i].isVisible) {
-
-						engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, sConst->surfaceMat.pipelineLayout, sConst->surfaceMat.descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-
-					}
+				for (uint32_t i : visibleObjects) {
+					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, sConst->surfaceMat.pipelineLayout, sConst->surfaceMat.descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 				}
 
 				
@@ -844,12 +857,8 @@ private:
 			else {
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(tomogUI.renderPipeline)]);
 
-				for (uint32_t i = 0; i != staticObjects.size(); i++) {
-					if (staticObjects[i].isVisible) {
-						
-						engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-
-					}
+				for (uint32_t i : visibleObjects) {
+					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 				}
 
 			}
@@ -865,24 +874,17 @@ private:
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
 
 			if (!tomogActive) {
-				
-				for (uint32_t i = 0; i != staticObjects.size(); i++) {
-					if (staticObjects[i].isVisible) {
-						VkDescriptorSet descriptorSet = (viewIndex == 1) ? sConst->currentDiffuse()->descriptorSets[currentFrame] : sConst->webcamPtr->descriptorSets[currentFrame];
+				for (uint32_t i : visibleObjects) {
+					VkDescriptorSet descriptorSet = (viewIndex == 1) ? sConst->currentDiffuse()->descriptorSets[currentFrame] : sConst->webcamPtr->descriptorSets[currentFrame];
 
-						engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, engine->diffusePipelineLayout, descriptorSet, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-
-					}
+					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, engine->diffusePipelineLayout, descriptorSet, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 				}
 			}
 			else {
+				for (uint32_t i : visibleObjects) {
+					VkDescriptorSet descriptorSet = (viewIndex == 1) ? tomogUI.scannedMaterial.descriptorSets[currentFrame] : sConst->webcamPtr->descriptorSets[currentFrame];
 
-				for (uint32_t i = 0; i != staticObjects.size(); i++) {
-					if (staticObjects[i].isVisible) {
-						VkDescriptorSet descriptorSet = (viewIndex == 1) ? tomogUI.scannedMaterial.descriptorSets[currentFrame] : sConst->webcamPtr->descriptorSets[currentFrame];
-
-						engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, engine->diffusePipelineLayout, descriptorSet, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-					}
+					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, engine->diffusePipelineLayout, descriptorSet, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 				}
 			}
 			
