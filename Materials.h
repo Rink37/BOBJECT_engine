@@ -1,7 +1,6 @@
 #ifndef MATERIALS
 #define MATERIALS
 
-#include"Bobject_Engine.h"
 #include"Textures.h"
 
 class Material {

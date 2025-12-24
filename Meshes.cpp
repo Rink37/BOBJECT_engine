@@ -1,7 +1,6 @@
 #include"Meshes.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include"tiny_obj_loader.h"
-#include"WindowsFileManager.h"
 
 using namespace std;
 
@@ -120,17 +119,9 @@ void UIMesh::updateVertexBuffer() {
 	memcpy(vBuffer, vertices.data(), (size_t)bufferSize);
 }
 
-//StaticMesh::StaticMesh() {
-//	loadModel(modelPath);
-//	createVertexBuffer();
-//	createIndexBuffer();
-//}
-
 StaticMesh::StaticMesh(string modelPath) {
 	loadModel(modelPath);
 	setup();
-	//createVertexBuffer();
-	//createIndexBuffer();
 }
 
 bool StaticMesh::loadModel(string testMODEL_PATH) {

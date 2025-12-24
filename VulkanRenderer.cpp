@@ -840,38 +840,20 @@ private:
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->drawImages(commandBuffer, currentFrame);
 		}
-		
-		if (viewIndex == 1 && lit) {
-			Material* drawMat = &((!tomogActive) ? sConst->surfaceMat : tomogUI.scannedMaterial);
-			std::string renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
 
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(renderPipelineName)]);
+		Material* drawMat = &((!tomogActive) ? sConst->surfaceMat : tomogUI.scannedMaterial);
+		std::string renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
+		uint32_t graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
+		VkPipelineLayout pipelineLayout = (viewIndex == 1 && lit) ? drawMat->pipelineLayout : engine->diffusePipelineLayout;
 
-			for (uint32_t i : visibleObjects) {
-				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, drawMat->pipelineLayout, drawMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-			}
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[graphicsPipelineIndex]);
 
-			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(tomogUI.renderPipeline)]);
-
-				engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));	
-			}
+		for (uint32_t i : visibleObjects) {
+			engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, pipelineLayout, drawMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 		}
-		else {
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
 
-			Material* drawMat = &((!tomogActive) ? sConst->surfaceMat : tomogUI.scannedMaterial);
-
-			VkDescriptorSet descriptorSet = (viewIndex == 1) ? sConst->currentDiffuse()->descriptorSets[currentFrame] : sConst->webcamPtr->descriptorSets[currentFrame];
-
-			for (uint32_t i : visibleObjects) {
-
-				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, engine->diffusePipelineLayout, descriptorSet, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-			}
-			
-			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
-				engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));
-			}
+		if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
+			engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));	
 		}
 
 		vkCmdEndRenderPass(commandBuffer);

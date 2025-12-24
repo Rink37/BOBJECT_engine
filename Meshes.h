@@ -34,7 +34,6 @@ class UIMesh : public Mesh {
 public:
 	UIMesh() {
 		indices = { 0, 3, 2, 2, 1, 0 };
-		//UpdateVertices(0.0f, 0.0f, 1.0f, 1.0f);
 	}
 
 	void* vBuffer = nullptr;
