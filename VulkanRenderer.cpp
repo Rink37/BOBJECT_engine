@@ -745,37 +745,7 @@ private:
 		updateUniformBuffer(currentFrame);
 		recordCommandBuffer(engine->commandBuffers[currentFrame], imageIndex);
 
-		//VkSubmitInfo submitInfo{};
-		//submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-		//VkSemaphore waitSemaphores[] = { engine->imageAvailableSemaphores[currentFrame]};
-		//VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		//submitInfo.waitSemaphoreCount = 1;
-		//submitInfo.pWaitSemaphores = waitSemaphores;
-		//submitInfo.pWaitDstStageMask = waitStages;
-
-		//submitInfo.commandBufferCount = 1;
-		//submitInfo.pCommandBuffers = &engine->commandBuffers[currentFrame];
-
-		//VkSemaphore signalSemaphores[] = { engine->renderFinishedSemaphores[currentFrame]};
-		//submitInfo.signalSemaphoreCount = 1;
-		//submitInfo.pSignalSemaphores = signalSemaphores;
-
-		//if (vkQueueSubmit(engine->graphicsQueue, 1, &submitInfo, engine->inFlightFences[currentFrame]) != VK_SUCCESS) {
-		//	throw std::runtime_error("failed to submit draw command buffer!");
-		//}
-
-		//VkSwapchainKHR swapChains[] = { engine->swapChain };
-
-		//VkPresentInfoKHR presentInfo{};
-		//presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		//presentInfo.waitSemaphoreCount = 1;
-		//presentInfo.pWaitSemaphores = signalSemaphores;
-		//presentInfo.swapchainCount = 1;
-		//presentInfo.pSwapchains = swapChains;
-		//presentInfo.pImageIndices = &imageIndex;
-
-		VkResult result = engine->submitAndPresentFrame(imageIndex);//vkQueuePresentKHR(engine->presentQueue, &presentInfo);
+		VkResult result = engine->submitAndPresentFrame(imageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine->framebufferResized) {
 			engine->framebufferResized = false;
@@ -830,45 +800,7 @@ private:
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		uint32_t currentFrame = engine->currentFrame;
 
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-			throw runtime_error("failed to begin recording command buffer!");
-		}
-
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = engine->renderPass;
-		renderPassInfo.framebuffer = engine->swapChainFramebuffers[imageIndex];
-
-		renderPassInfo.renderArea.offset = { 0,0 };
-		renderPassInfo.renderArea.extent = engine->swapChainExtent;
-
-		array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { {backgroundColour.r, backgroundColour.g, backgroundColour.b, 1.0f} };
-		clearValues[1].depthStencil = { 1.0f, 0 };
-
-		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
-
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(engine->swapChainExtent.width);
-		viewport.height = static_cast<float>(engine->swapChainExtent.height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-		VkRect2D scissor{};
-		scissor.offset = { 0,0 };
-		scissor.extent = engine->swapChainExtent;
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		engine->beginRenderPass(commandBuffer, imageIndex, backgroundColour);
 
 		if (showWireframe) {
 
