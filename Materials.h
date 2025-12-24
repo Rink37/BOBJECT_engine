@@ -81,6 +81,8 @@ public:
 
 	std::vector<Texture*> textures = {};
 
+	VkDescriptorSetLayout descriptorSetLayout = nullptr;
+	VkPipelineLayout pipelineLayout = nullptr;
 	VkDescriptorPool descriptorPool = nullptr;
 	std::vector<VkDescriptorSet> descriptorSets = {};
 

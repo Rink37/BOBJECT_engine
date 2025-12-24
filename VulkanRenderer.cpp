@@ -848,12 +848,7 @@ private:
 
 						vkCmdBindIndexBuffer(commandBuffer, staticObjects[i].mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-						if (sConst->normalAvailable) {
-							vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
-						}
-						else {
-							vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
-						}
+						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sConst->surfaceMat.pipelineLayout, 0, 1, &sConst->surfaceMat.descriptorSets[currentFrame], 0, nullptr);
 
 						vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()), 1, 0, 0, 0);
 					}
@@ -964,12 +959,7 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, tomographyPlane->mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				if (tomogUI.normalAvailable) {
-					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffNormPipelineLayout, 0, 1, &tomogUI.scannedMaterial.descriptorSets[currentFrame], 0, nullptr);
-				}
-				else {
-					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->diffusePipelineLayout, 0, 1, &tomogUI.scannedMaterial.descriptorSets[currentFrame], 0, nullptr);
-				}
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, tomogUI.scannedMaterial.pipelineLayout, 0, 1, &tomogUI.scannedMaterial.descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(tomographyPlane->mesh->indices.size()), 1, 0, 0, 0);
 			}
