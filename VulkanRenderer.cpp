@@ -820,14 +820,11 @@ private:
 		engine->beginRenderPass(commandBuffer, imageIndex, backgroundColour);
 
 		if (showWireframe) {
-
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UVWireframe")]);
 
 			for (uint32_t i : visibleObjects) {
 				if (staticObjects[i].isWireframeVisible) {
-
 					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, engine->diffusePipelineLayout, sConst->webcamPtr->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-
 				}
 			}
 		}
@@ -845,47 +842,31 @@ private:
 		}
 		
 		if (viewIndex == 1 && lit) {
-			if (!tomogActive) {
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(sConst->renderPipeline)]);
+			Material* drawMat = &((!tomogActive) ? sConst->surfaceMat : tomogUI.scannedMaterial);
+			std::string renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
 
-				for (uint32_t i : visibleObjects) {
-					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, sConst->surfaceMat.pipelineLayout, sConst->surfaceMat.descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-				}
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(renderPipelineName)]);
 
-				
-			}
-			else {
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(tomogUI.renderPipeline)]);
-
-				for (uint32_t i : visibleObjects) {
-					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-				}
-
+			for (uint32_t i : visibleObjects) {
+				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, drawMat->pipelineLayout, drawMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 			}
 
 			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at(tomogUI.renderPipeline)]);
 
-				engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));
-				
+				engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));	
 			}
 		}
 		else {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->pipelineindex]);
 
-			if (!tomogActive) {
-				for (uint32_t i : visibleObjects) {
-					VkDescriptorSet descriptorSet = (viewIndex == 1) ? sConst->currentDiffuse()->descriptorSets[currentFrame] : sConst->webcamPtr->descriptorSets[currentFrame];
+			Material* drawMat = &((!tomogActive) ? sConst->surfaceMat : tomogUI.scannedMaterial);
 
-					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, engine->diffusePipelineLayout, descriptorSet, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-				}
-			}
-			else {
-				for (uint32_t i : visibleObjects) {
-					VkDescriptorSet descriptorSet = (viewIndex == 1) ? tomogUI.scannedMaterial.descriptorSets[currentFrame] : sConst->webcamPtr->descriptorSets[currentFrame];
+			VkDescriptorSet descriptorSet = (viewIndex == 1) ? sConst->currentDiffuse()->descriptorSets[currentFrame] : sConst->webcamPtr->descriptorSets[currentFrame];
 
-					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, engine->diffusePipelineLayout, descriptorSet, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-				}
+			for (uint32_t i : visibleObjects) {
+
+				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, engine->diffusePipelineLayout, descriptorSet, static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 			}
 			
 			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
