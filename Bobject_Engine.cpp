@@ -1339,3 +1339,20 @@ void Engine::endSingleTimeComputeCommand(VkCommandBuffer commandBuffer) {
 
 	vkFreeCommandBuffers(device, computeCommandPool, 1, &commandBuffer);
 }
+
+uint32_t Engine::getRenderTarget() {
+	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+
+	uint32_t imageIndex;
+	VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		recreateSwapChain();
+		return imageIndex;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		throw runtime_error("failed to acquire swap chain image!");
+	}
+
+	return imageIndex;
+}

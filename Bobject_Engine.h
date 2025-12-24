@@ -229,6 +229,7 @@ public:
 	void cleanup();
 
 	void recreateSwapChain();
+	std::uint32_t getRenderTarget();
 
 	std::uint32_t findMemoryType(std::uint32_t, VkMemoryPropertyFlags);
 

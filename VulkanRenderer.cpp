@@ -739,20 +739,21 @@ private:
 	}
 
 	void drawFrame() {
+		uint32_t imageIndex = engine->getRenderTarget();
 		uint32_t currentFrame = engine->currentFrame;
-		vkWaitForFences(engine->device, 1, &engine->inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+		//vkWaitForFences(engine->device, 1, &engine->inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-		uint32_t imageIndex;
-		VkResult result = vkAcquireNextImageKHR(engine->device, engine->swapChain, UINT64_MAX, engine->imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+		//uint32_t imageIndex;
+		//VkResult result = vkAcquireNextImageKHR(engine->device, engine->swapChain, UINT64_MAX, engine->imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		//if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			
-			engine->recreateSwapChain();
-			return;
-		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-			throw runtime_error("failed to acquire swap chain image!");
-		}
+		//	engine->recreateSwapChain();
+		//	return;
+		//}
+		//else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		//	throw runtime_error("failed to acquire swap chain image!");
+		//}
 
 		updateUniformBuffer(currentFrame);
 
@@ -791,7 +792,7 @@ private:
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &imageIndex;
 
-		result = vkQueuePresentKHR(engine->presentQueue, &presentInfo);
+		VkResult result = vkQueuePresentKHR(engine->presentQueue, &presentInfo);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine->framebufferResized) {
 			engine->framebufferResized = false;
