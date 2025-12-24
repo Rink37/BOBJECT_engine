@@ -59,16 +59,8 @@ struct UIImage {
 		if (!isVisible) {
 			return commandBuffer;
 		}
-		VkBuffer vertexBuffers[] = { mesh.vertexBuffer };
-		VkDeviceSize offsets[] = { 0 };
 
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-		vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Engine::get()->diffusePipelineLayout, 0, 1, &mat[matidx]->descriptorSets[currentFrame], 0, nullptr);
-
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
+		Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->diffusePipelineLayout, mat[matidx]->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
 
 		return commandBuffer;
 	}
