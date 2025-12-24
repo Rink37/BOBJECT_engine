@@ -1,7 +1,5 @@
 #include "Bobject_Engine.h"
 
-//#include"tiny_obj_loader.h"
-
 using namespace std;
 
 void Engine::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {

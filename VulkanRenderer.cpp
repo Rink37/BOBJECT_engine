@@ -13,6 +13,8 @@
 #include"LoadLists.h"
 #include"Remapper.h"
 
+#include<chrono>
+
 #include"include/BakedImages.h"
 
 using namespace cv;
@@ -277,8 +279,10 @@ public:
 		}
 		std::function<void()> tomogFunct = bind(&Application::toggleTomogMenu, this);
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
+		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
+		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
@@ -329,6 +333,10 @@ private:
 
 	uint8_t viewIndex = 1;
 
+	bool isTrackingFPS = false;
+	uint32_t frameCount = 0;
+	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+
 	// Light position
 
 	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f);
@@ -357,6 +365,26 @@ private:
 				visibleObjects.push_back(i);
 			}
 		}
+	}
+
+	void startFPSTrack() {
+		if (isTrackingFPS) {
+			return;
+		}
+		startTime = std::chrono::steady_clock::now();
+		isTrackingFPS = true;
+		frameCount = 0;
+	}
+
+	void updateFPSTrack() {
+		auto endTime = std::chrono::steady_clock::now();
+		auto timeInterval = std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count();
+		if (timeInterval < 1) {
+			frameCount++;
+			return;
+		}
+		std::cout << "FrameRate is ~" << frameCount << " FPS" << std::endl;
+		isTrackingFPS = false;
 	}
 
 	void createRemapper(UIItem* owner) {
@@ -654,6 +682,9 @@ private:
 
 	void mainLoop() {
 		while (!glfwWindowShouldClose(engine->window)) {
+			if (isTrackingFPS) {
+				updateFPSTrack();
+			}
 			glfwPollEvents();
 			keyBinds.pollRepeatEvents();
 			mouseManager.checkPositionEvents();
