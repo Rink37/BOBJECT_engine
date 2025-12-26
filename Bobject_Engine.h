@@ -264,6 +264,8 @@ private:
 	Engine() = default;
 	~Engine() = default;
 
+	uint32_t imageCount = 0;
+
 	VkInstance instance = nullptr;
 	VkDebugUtilsMessengerEXT debugMessenger = nullptr;
 	VkSurfaceKHR surface = nullptr;

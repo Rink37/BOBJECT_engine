@@ -159,11 +159,8 @@ void Engine::pickPhysicalDevice() {
 	for (const auto& device : devices) {
 		uint32_t quality = getDeviceSuitability(device);
 		maxQuality = (quality > maxQuality) ? quality : maxQuality;
-		std::cout << quality << std::endl;
 		suitabilities.push_back(quality);
 	}
-
-	std::cout << maxQuality << std::endl;
 
 	for (int i = 0; i != deviceCount; i++) {
 		if (suitabilities[i] == maxQuality) {
@@ -234,7 +231,7 @@ void Engine::createSwapChain() {
 	VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
 	VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
-	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+	imageCount = swapChainSupport.capabilities.minImageCount + 1;
 
 	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
 		imageCount = swapChainSupport.capabilities.maxImageCount;
@@ -841,7 +838,7 @@ void Engine::createCommandBuffers() {
 
 void Engine::createSyncObjects() {
 	imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	renderFinishedSemaphores.resize(imageCount);
 	inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
 	VkSemaphoreCreateInfo semaphoreInfo{};
@@ -853,9 +850,14 @@ void Engine::createSyncObjects() {
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
 			vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
 			throw runtime_error("failed to create synchronization objects for a frame!");
+		}
+	}
+
+	for (size_t i = 0; i < imageCount; i++) {
+		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
+			throw runtime_error("failed to create image synchronization objects");
 		}
 	}
 }
@@ -908,8 +910,10 @@ void Engine::cleanup() {
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
 		vkDestroyFence(device, inFlightFences[i], nullptr);
+	}
+	for (size_t i = 0; i < imageCount; i++) {
+		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
 	}
 
 	vkDestroyCommandPool(device, commandPool, nullptr);
@@ -1164,8 +1168,8 @@ uint32_t Engine::getDeviceSuitability(VkPhysicalDevice device) {
 		}
 	}
 
-	std::cout << GPUQuality << std::endl;
-	std::cout << heapSize << std::endl;
+	//std::cout << GPUQuality << std::endl;
+	//std::cout << heapSize << std::endl;
 
 	//if (GPUQuality == 2) {
 	//	heapSize = heapSize*heapSize;
@@ -1478,7 +1482,7 @@ VkResult Engine::submitAndPresentFrame(uint32_t imageIndex) {
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
 
-	VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+	VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[imageIndex] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 

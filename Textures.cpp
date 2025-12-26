@@ -126,7 +126,7 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	else
 	{
 		// This command does not support rescaling
-		std::cout << "Copying image with no rescaling" << std::endl;
+		//std::cout << "Copying image with no rescaling" << std::endl;
 
 		VkImageCopy imageCopyRegion{};
 		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
