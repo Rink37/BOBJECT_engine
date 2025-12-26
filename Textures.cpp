@@ -674,7 +674,7 @@ void webcamTexture::createWebcamTextureImageView() {
 }
 
 void webcamTexture::updateWebcam() {
-	if (webCam == nullptr) {
+	if (webCam == nullptr || webCam->shouldUpdate == false) {
 		return;
 	}
 	webCam->getFrame();
@@ -683,7 +683,6 @@ void webcamTexture::updateWebcam() {
 	memcpy(tBuffer, webCam->webcamFrame.ptr(), (size_t)imageSize);
 
 	updateWebcamImage();
-
 } 
 
 void webcamTexture::updateWebcamImage() {

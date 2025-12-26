@@ -330,7 +330,7 @@ private:
 		return VK_FALSE;
 	}
 
-	bool isDeviceSuitable(VkPhysicalDevice);
+	uint32_t getDeviceSuitability(VkPhysicalDevice);
 
 	bool checkDeviceExtensionSupport(VkPhysicalDevice);
 

@@ -16,7 +16,6 @@ Webcam::Webcam() {
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
-	frameIntCount = frameInterval;
 	getFrame();
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
@@ -36,7 +35,6 @@ Webcam::Webcam(uint8_t idx) {
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
-	frameIntCount = frameInterval;
 	getFrame();
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
@@ -71,14 +69,8 @@ void Webcam::getFrame() {
 			isValid = false;
 		}
 		cap >> webcamFrame;
-		if (frameIntCount >= frameInterval) {
-			updateCorners();
-			warp = getPerspectiveTransform(cropCorners, targetCorners);
-			frameIntCount = 0;
-		}
-		else {
-			frameIntCount++;
-		}
+		updateCorners();
+		warp = getPerspectiveTransform(cropCorners, targetCorners);
 		warpPerspective(webcamFrame, webcamFrame, warp, Size(targetWidth, targetHeight));
 		if (!shouldUpdate) {
 			isUpdating = false;

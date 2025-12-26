@@ -149,12 +149,25 @@ void Engine::pickPhysicalDevice() {
 	if (deviceCount == 0) {
 		throw runtime_error("failed to find GPUs with Vulkan support!");
 	}
+
+	std::cout << "Device count = " << deviceCount << std::endl;
 	vector<VkPhysicalDevice> devices(deviceCount);
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
+	std::vector<uint32_t> suitabilities = {};
+	uint32_t maxQuality = 0;
 	for (const auto& device : devices) {
-		if (isDeviceSuitable(device)) {
-			physicalDevice = device;
+		uint32_t quality = getDeviceSuitability(device);
+		maxQuality = (quality > maxQuality) ? quality : maxQuality;
+		std::cout << quality << std::endl;
+		suitabilities.push_back(quality);
+	}
+
+	std::cout << maxQuality << std::endl;
+
+	for (int i = 0; i != deviceCount; i++) {
+		if (suitabilities[i] == maxQuality) {
+			physicalDevice = devices[i];
 			msaaSamples = getMaxUseableSampleCount();
 			break;
 		}
@@ -1109,7 +1122,7 @@ void Engine::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT
 	createInfo.pfnUserCallback = debugCallback;
 }
 
-bool Engine::isDeviceSuitable(VkPhysicalDevice device) {
+uint32_t Engine::getDeviceSuitability(VkPhysicalDevice device) {
 	QueueFamilyIndices indices = findQueueFamilies(device);
 
 	bool extensionsSupported = checkDeviceExtensionSupport(device);
@@ -1123,7 +1136,43 @@ bool Engine::isDeviceSuitable(VkPhysicalDevice device) {
 	VkPhysicalDeviceFeatures supportedFeatures;
 	vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
-	return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+	if (!(indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy)) {
+		return static_cast<uint32_t>(0);
+	}
+
+	auto props = VkPhysicalDeviceProperties{};
+	vkGetPhysicalDeviceProperties(device, &props);
+
+	uint32_t GPUQuality = 0;
+	if (props.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+		GPUQuality = 2; // Assume discrete GPUs are better than integrated ones
+	}
+	else if (props.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+		GPUQuality = 1; // Assume integrated GPUs are worse than discrete ones, but better than nothing
+	}
+
+	auto memoryProps = VkPhysicalDeviceMemoryProperties{};
+	vkGetPhysicalDeviceMemoryProperties(device, &memoryProps);
+
+	auto heapsPointer = memoryProps.memoryHeaps;
+	auto heaps = std::vector<VkMemoryHeap>(heapsPointer, heapsPointer + memoryProps.memoryHeapCount);
+
+	uint32_t heapSize = 0;
+	for (const auto& heap : heaps) {
+		if (heap.flags & VkMemoryHeapFlagBits::VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
+			heapSize += static_cast<uint32_t>(heap.size);
+		}
+	}
+
+	std::cout << GPUQuality << std::endl;
+	std::cout << heapSize << std::endl;
+
+	//if (GPUQuality == 2) {
+	//	heapSize = heapSize*heapSize;
+	//	heapSize /= 2;
+	//}
+
+	return GPUQuality;
 }
 
 bool Engine::checkDeviceExtensionSupport(VkPhysicalDevice device) {
