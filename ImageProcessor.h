@@ -115,6 +115,8 @@ public:
 
 	void filterImage();
 
+	void filterImage(VkCommandBuffer);
+
 	void cleanup() {
 		for (Texture* tex : source) {
 			if (!tex->cleaned) {

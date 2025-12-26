@@ -289,6 +289,7 @@ public:
 		updateColourScheme();
 		updateLightAzimuth(0.0f);
 		updateLightPolar(0.0f);
+		updateDrawVariables();
 		mainLoop();
 		cleanup();
 		surfaceConstructor::destruct();
@@ -317,8 +318,8 @@ private:
 
 	vector<Widget*> widgets;
 
-	double mouseX = 0.0;
-	double mouseY = 0.0;
+	//double mouseX = 0.0;
+	//double mouseY = 0.0;
 
 	bool mouseDown = false;
 	bool tomogActive = false;
@@ -343,6 +344,11 @@ private:
 	float polarAngle = 0.0f;
 	float azimuthAngle = 0.0f;
 	float lightRadius = 10.0f;
+
+	Material* drawMat = nullptr;
+	std::string renderPipelineName = "";
+	uint32_t graphicsPipelineIndex = 0;
+	VkPipelineLayout pipelineLayout = nullptr;
 	
 	// colours in sRGB format (for krita users these colours match the sRGB-elle-V2-g10.icc profile)
 	glm::vec3 primaryColour = glm::vec3(0.42f, 0.06f, 0.11f);
@@ -610,6 +616,7 @@ private:
 			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 
 			tomogActive = true;
+			updateDrawVariables();
 		}
 	}
 
@@ -658,6 +665,7 @@ private:
 		}
 		
 		tomogUI.hide();
+		updateDrawVariables();
 
 	}
 
@@ -688,7 +696,6 @@ private:
 			glfwPollEvents();
 			keyBinds.pollRepeatEvents();
 			mouseManager.checkPositionEvents();
-			glfwGetCursorPos(engine->window, &mouseX, &mouseY);
 			webcamTexture::get()->updateWebcam();
 			drawFrame();
 		}
@@ -739,6 +746,7 @@ private:
 		else if (viewIndex == 2) {
 			engine->pipelineindex = 3;
 		}
+		updateDrawVariables();
 	}
 
 	void loadStaticObject() {
@@ -845,6 +853,13 @@ private:
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
 
+	void updateDrawVariables() {
+		drawMat = &((!tomogActive) ? sConst->surfaceMat : tomogUI.scannedMaterial);
+		renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
+		graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
+		pipelineLayout = (viewIndex == 1 && lit) ? drawMat->pipelineLayout : engine->diffusePipelineLayout;
+	}
+
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		uint32_t currentFrame = engine->currentFrame;
 
@@ -872,10 +887,12 @@ private:
 			widgets[i]->drawImages(commandBuffer, currentFrame);
 		}
 
-		Material* drawMat = &((!tomogActive) ? sConst->surfaceMat : tomogUI.scannedMaterial);
-		std::string renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
-		uint32_t graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
-		VkPipelineLayout pipelineLayout = (viewIndex == 1 && lit) ? drawMat->pipelineLayout : engine->diffusePipelineLayout;
+		//updateDrawVariables();
+
+		//Material* drawMat = &((!tomogActive) ? sConst->surfaceMat : tomogUI.scannedMaterial);
+		//std::string renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
+		//uint32_t graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
+		//VkPipelineLayout pipelineLayout = (viewIndex == 1 && lit) ? drawMat->pipelineLayout : engine->diffusePipelineLayout;
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[graphicsPipelineIndex]);
 

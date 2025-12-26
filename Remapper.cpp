@@ -37,14 +37,20 @@ void RemapBackend::createBaseMaps() {
 		return;
 	}
 
+	//VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+
+	vkQueueWaitIdle(Engine::get()->computeQueue);
+
 	filter Kuwahara(std::vector<Texture*>{baseDiffuse}, new KUWAHARASHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	Kuwahara.filterImage();
 
-	//Kuwahara.filterTarget[0]->getCVMat();
-	//cv::imwrite("KuwaharaMap.jpg", Kuwahara.filterTarget[0]->texMat);
-
 	filter SobelCombined(std::vector<Texture*>{Kuwahara.filterTarget[0]}, new SOBELCOMBINEDSHADER, VK_FORMAT_R16G16_SFLOAT);
 	SobelCombined.filterImage();
+
+	//Engine::get()->endSingleTimeComputeCommand(commandBuffer);
+
+	//Kuwahara.filterTarget[0]->transitionImageLayout(Kuwahara.filterTarget[0]->textureImage, Kuwahara.filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_GENERAL, Kuwahara.filterTarget[0]->textureLayout, Kuwahara.filterTarget[0]->mipLevels);
+	//SobelCombined.filterTarget[0]->transitionImageLayout(SobelCombined.filterTarget[0]->textureImage, SobelCombined.filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_GENERAL, SobelCombined.filterTarget[0]->textureLayout, SobelCombined.filterTarget[0]->mipLevels);
 
 	if (gradients != nullptr) {
 		gradients->cleanup();

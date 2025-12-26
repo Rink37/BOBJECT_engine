@@ -35,6 +35,7 @@ public:
 	void saveFilter();
 
 	bool shouldUpdate = true;
+	bool isUpdating = true;
 
 	bool isValid = true;
 private:
@@ -52,8 +53,6 @@ private:
 	uint32_t targetHeight = 0;
 
 	uint8_t camIndex = 0;
-
-	bool isUpdating = true;
 
 };
 

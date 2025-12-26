@@ -650,27 +650,23 @@ void webcamTexture::createWebcamImage() {
 		return;
 	}
 	webCam->getFrame();
-	uchar* camData = new uchar[webCam->webcamFrame.total() * 4];
-	cv::Mat continuousRGBA(webCam->webcamFrame.size(), CV_8UC4, camData);
-	cv::cvtColor(webCam->webcamFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
+	cv::cvtColor(webCam->webcamFrame, webCam->webcamFrame, cv::COLOR_BGR2RGBA, 4);
 
-	texWidth = continuousRGBA.size().width;
-	texHeight = continuousRGBA.size().height;
-	texChannels = continuousRGBA.channels();
+	texWidth = webCam->webcamFrame.size().width;
+	texHeight = webCam->webcamFrame.size().height;
+	texChannels = webCam->webcamFrame.channels();
 	mipLevels = 1;
 
-	VkDeviceSize imageSize = continuousRGBA.total() * continuousRGBA.elemSize();
+	imageSize = webCam->webcamFrame.total() * webCam->webcamFrame.elemSize();
 
 	Engine::get()->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, textureBuffer, textureBufferMemory);
 
 	vkMapMemory(Engine::get()->device, textureBufferMemory, 0, imageSize, 0, &tBuffer);
-	memcpy(tBuffer, continuousRGBA.ptr(), static_cast<size_t>(imageSize));
+	memcpy(tBuffer, webCam->webcamFrame.ptr(), static_cast<size_t>(imageSize));
 
 	createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-	copyBufferToImage(textureBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	generateMipmaps();
+	updateWebcamImage();
 }
 
 void webcamTexture::createWebcamTextureImageView() {
@@ -682,15 +678,10 @@ void webcamTexture::updateWebcam() {
 		return;
 	}
 	webCam->getFrame();
-	uchar* camData = new uchar[webCam->webcamFrame.total() * 4];
-	cv::Mat continuousRGBA(webCam->webcamFrame.size(), CV_8UC4, camData);
-	cv::cvtColor(webCam->webcamFrame, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
+	cv::cvtColor(webCam->webcamFrame, webCam->webcamFrame, cv::COLOR_BGR2RGBA, 4);
 
-	VkDeviceSize imageSize = continuousRGBA.total() * continuousRGBA.elemSize();
+	memcpy(tBuffer, webCam->webcamFrame.ptr(), (size_t)imageSize);
 
-	memcpy(tBuffer, continuousRGBA.ptr(), (size_t)imageSize);
-
-	delete[] camData;
 	updateWebcamImage();
 
 } 
@@ -699,6 +690,6 @@ void webcamTexture::updateWebcamImage() {
 
 	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 	copyBufferToImage(textureBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	generateMipmaps();
+	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureLayout, mipLevels);
 
 }

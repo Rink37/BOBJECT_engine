@@ -75,13 +75,10 @@ void Webcam::getFrame() {
 			updateCorners();
 			warp = getPerspectiveTransform(cropCorners, targetCorners);
 			frameIntCount = 0;
-			//std::cout << "Updating" << std::endl;
 		}
 		else {
 			frameIntCount++;
 		}
-		//updateCorners();
-		//warp = getPerspectiveTransform(cropCorners, targetCorners);
 		warpPerspective(webcamFrame, webcamFrame, warp, Size(targetWidth, targetHeight));
 		if (!shouldUpdate) {
 			isUpdating = false;
