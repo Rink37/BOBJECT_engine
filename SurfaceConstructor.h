@@ -84,6 +84,12 @@ public:
 	uint8_t normalIdx = 0;
 	uint8_t normalType = 0;
 
+	std::function<void()> updateCallback = nullptr;
+
+	void setCallbacK(std::function<void()> funct) {
+		updateCallback = funct;
+	}
+
 	void clearSurface() {
 		loadList->deleteTexture("DiffuseTex");
 		loadList->deleteTexture("OSNormalTex");
@@ -208,6 +214,9 @@ public:
 		else {
 			renderPipeline = "BFShading";
 			surfaceMat.init(d);
+		}
+		if (updateCallback != nullptr) {
+			updateCallback();
 		}
 	}
 

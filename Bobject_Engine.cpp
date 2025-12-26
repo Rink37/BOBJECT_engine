@@ -1327,7 +1327,7 @@ void Engine::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 	submitInfo.pCommandBuffers = &commandBuffer;
 
 	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(graphicsQueue);
+	vkDeviceWaitIdle(device);
 
 	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }

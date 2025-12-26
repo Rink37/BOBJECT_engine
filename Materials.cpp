@@ -67,35 +67,6 @@ void Material::createDescriptorSets() {
 		throw runtime_error("failed to allocate descriptor sets!");
 	}
 
-	//if (textures.size() == 1) {
-	//	vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, Engine::get()->diffuseDescriptorSetLayout);
-
-	//	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	//	allocInfo.descriptorPool = descriptorPool;
-	//	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-	//	allocInfo.pSetLayouts = layouts.data();
-
-	//	descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-
-	//	if (vkAllocateDescriptorSets(Engine::get()->device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
-	//		throw runtime_error("failed to allocate descriptor sets!");
-	//	}
-	//}
-	//else {
-	//	vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, Engine::get()->diffNormDescriptorSetLayout);
-
-	//	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	//	allocInfo.descriptorPool = descriptorPool;
-	//	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-	//	allocInfo.pSetLayouts = layouts.data();
-
-	//	descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-
-	//	if (vkAllocateDescriptorSets(Engine::get()->device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
-	//		throw runtime_error("failed to allocate descriptor sets!");
-	//	}
-	//}
-
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		VkDescriptorBufferInfo bufferInfo{};
 		if (isUIMat) {

@@ -35,13 +35,13 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	
 	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProps);
 	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
-		std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
+		//std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
 		supportsBlit = false;
 	}
 
 	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProps);
 	if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
-		std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
+		//std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit to copy this image!" << std::endl;
 		supportsBlit = false;
 	}
 
@@ -52,6 +52,17 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	copy->textureUsage = usage;
 	copy->mipLevels = mipLevels;
 	copy->textureLayout = layout;
+
+	if (!supportsBlit && (width != texWidth || height != texHeight)) {
+		// Not ideal - a GPU implementation of changing image size without blit functionality would be better
+		//std::cout << "Performing rescaling through cv Mat conversion" << std::endl;
+		getCVMat();
+		cv::resize(texMat, copy->texMat, Size(width, height));
+		copy->transitionMatToImg();
+		copy->destroyCVMat();
+		destroyCVMat();
+		return copy;
+	}
 
 	copy->createImage(VK_SAMPLE_COUNT_1_BIT, memFlags);
 
@@ -114,6 +125,9 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	}
 	else
 	{
+		// This command does not support rescaling
+		std::cout << "Copying image with no rescaling" << std::endl;
+
 		VkImageCopy imageCopyRegion{};
 		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		imageCopyRegion.srcSubresource.layerCount = 1;
@@ -550,13 +564,13 @@ void Texture::getCVMat() {
 
 	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProps);
 	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
-		std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
+		//std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
 		supportsBlit = false;
 	}
 
 	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProps);
 	if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
-		std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
+		//std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit when fetching CV Mat!" << std::endl;
 		supportsBlit = false;
 	}
 
@@ -633,7 +647,7 @@ void Texture::transitionMatToImg() {
 
 	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-
+	
 	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);
 	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
 

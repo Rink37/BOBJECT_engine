@@ -280,6 +280,8 @@ public:
 		std::function<void()> tomogFunct = bind(&Application::toggleTomogMenu, this);
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
+		std::function<void()> drawUpdate = bind(&Application::updateDrawVariables, this);
+		sConst->setCallbacK(drawUpdate);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
@@ -824,6 +826,8 @@ private:
 
 	void updateUniformBuffer(uint32_t currentImage) {
 
+		// We probably don't need to do this for every frame
+
 		camera.updateCamera(engine->window);
 
 		UniformBufferObject ubo{};
@@ -886,13 +890,6 @@ private:
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->drawImages(commandBuffer, currentFrame);
 		}
-
-		//updateDrawVariables();
-
-		//Material* drawMat = &((!tomogActive) ? sConst->surfaceMat : tomogUI.scannedMaterial);
-		//std::string renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
-		//uint32_t graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
-		//VkPipelineLayout pipelineLayout = (viewIndex == 1 && lit) ? drawMat->pipelineLayout : engine->diffusePipelineLayout;
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[graphicsPipelineIndex]);
 
