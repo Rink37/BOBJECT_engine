@@ -930,7 +930,9 @@ private:
 
 		vkCmdEndRenderPass(commandBuffer);
 
-		normalizer.filterImage(commandBuffer, imageIndex);
+		// Post-processing can be put here
+
+		// normalizer.filterImage(commandBuffer, imageIndex);
 
 		Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex); // This doesn't work for multiple reasons
 

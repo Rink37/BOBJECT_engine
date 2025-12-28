@@ -1589,8 +1589,6 @@ VkResult Engine::submitAndPresentFrame(uint32_t imageIndex) {
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
-	transitionImageLayout(swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
 	VkSwapchainKHR swapChains[] = { swapChain };
 
 	VkPresentInfoKHR presentInfo{};
@@ -1604,6 +1602,85 @@ VkResult Engine::submitAndPresentFrame(uint32_t imageIndex) {
 	VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
 	return result;
+}
+
+void Engine::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout) {
+
+	//VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+	VkImageMemoryBarrier barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = oldLayout;
+	barrier.newLayout = newLayout;
+
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+	barrier.image = image;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.levelCount = 1;
+
+	VkPipelineStageFlags sourceStage;
+	VkPipelineStageFlags destinationStage;
+
+	if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_GENERAL) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+		barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+		barrier.dstAccessMask = 0;
+
+		sourceStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	} else if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = 0;
+
+		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = 0;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	}
+	else {
+		throw invalid_argument("unsupported layout transition!");
+	}
+
+	vkCmdPipelineBarrier(
+		commandBuffer,
+		sourceStage, destinationStage,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &barrier
+	);
+
+	//endSingleTimeCommands(commandBuffer);
 }
 
 void Engine::transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout) {
@@ -1648,7 +1725,8 @@ void Engine::transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkIm
 
 		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-	} else if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
 		barrier.srcAccessMask = 0;
 		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
@@ -1739,19 +1817,7 @@ void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, drawImage* imag
 
 	VkFormatProperties formatProps;
 
-	//vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, image->imageFormat, &formatProps);
-	//if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
-	//	std::cerr << "Device does not support blitting from the rendered image" << std::endl;
-	//	supportsBlit = false;
-	//}
-
-	//vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, swapChainImageFormat, &formatProps);
-	//if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
-	//	std::cerr << "Device does not support blitting to the swachain image" << std::endl;
-	//	supportsBlit = false;
-	//}
-
-	transitionImageLayout(swapChainImages[imageIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	transitionImageLayout(commandBuffer, swapChainImages[imageIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	if (supportsBlit)
 	{
@@ -1783,6 +1849,8 @@ void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, drawImage* imag
 	{
 		throw runtime_error("Blitting cannot be performed");
 	}
+
+	transitionImageLayout(commandBuffer, swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	//if (vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
 	//	throw runtime_error("Failed to end command buffer");

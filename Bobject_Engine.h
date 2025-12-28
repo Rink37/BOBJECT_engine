@@ -354,6 +354,7 @@ private:
 
 	static void framebufferResizeCallback(GLFWwindow*, int, int);
 
+	void transitionImageLayout(VkCommandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 	bool checkValidationLayerSupport();
