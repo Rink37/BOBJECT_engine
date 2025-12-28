@@ -119,6 +119,44 @@ struct Vertex {
 	}
 };
 
+struct drawImage {
+	std::vector<VkImage> images = {};
+	std::vector<VkDeviceMemory> imageMemory = {};
+	std::vector<VkImageView> imageViews = {};
+	std::vector<VkFramebuffer> imageFrameBuffers = {};
+	
+	VkImage colourImage;
+	VkImageView colourImageView;
+	VkDeviceMemory colourImageMemory;
+	
+	VkExtent2D imageExtent;
+	VkFormat imageFormat;
+	VkImageUsageFlags imageUsage;
+
+	void cleanup(VkDevice device) {
+
+		vkDestroyImageView(device, colourImageView, nullptr);
+		vkDestroyImage(device, colourImage, nullptr);
+		vkFreeMemory(device, colourImageMemory, nullptr);
+
+		for (auto framebuffer : imageFrameBuffers) {
+			vkDestroyFramebuffer(device, framebuffer, nullptr);
+		}
+
+		for (auto image : images) {
+			vkDestroyImage(device, image, nullptr);
+		}
+
+		for (auto mem : imageMemory) {
+			vkFreeMemory(device, mem, nullptr);
+		}
+
+		for (auto imageView : imageViews) {
+			vkDestroyImageView(device, imageView, nullptr);
+		}
+	}
+};
+
 namespace std {
 	template<> struct hash<Vertex> {
 		size_t operator()(Vertex const& vertex) const {
@@ -244,6 +282,8 @@ public:
 	VkCommandBuffer beginSingleTimeComputeCommand();
 	void endSingleTimeComputeCommand(VkCommandBuffer);
 
+	drawImage createDrawImage(uint32_t, int32_t, VkFormat, VkImageUsageFlags, VkRenderPass);
+
 	VkShaderModule createShaderModule(const std::vector<unsigned char>&);
 
 	const char* appName = "BOBJECT_engine app";
@@ -259,6 +299,8 @@ public:
 	std::vector<VkImage> swapChainImages = {};
 	std::vector<VkImageView> swapChainImageViews = {};
 	VkFormat swapChainImageFormat = {};
+
+	void createRenderPass(VkRenderPass&, VkFormat);
 
 private:
 	static Engine* enginstance;
@@ -294,7 +336,6 @@ private:
 	void createLogicalDevice();
 	void createSwapChain();
 	void createImageViews();
-	void createRenderPass();
 	void createDescriptorSetLayout();
 	void createGraphicsPipelines();
 	void createCommandPool();

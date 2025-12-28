@@ -288,10 +288,10 @@ void Engine::createImageViews() {
 	}
 }
 
-void Engine::createRenderPass() {
-	
+void Engine::createRenderPass(VkRenderPass& newRenderPass, VkFormat imageFormat) {
+
 	VkAttachmentDescription colorAttachment{};
-	colorAttachment.format = swapChainImageFormat;
+	colorAttachment.format = imageFormat;
 	colorAttachment.samples = msaaSamples;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -313,7 +313,7 @@ void Engine::createRenderPass() {
 	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentDescription colourAttachmentResolve{};
-	colourAttachmentResolve.format = swapChainImageFormat;
+	colourAttachmentResolve.format = imageFormat;
 	colourAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
 	colourAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colourAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -360,7 +360,7 @@ void Engine::createRenderPass() {
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-	if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+	if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &newRenderPass) != VK_SUCCESS) {
 		throw runtime_error("failed to create render pass!");
 	}
 }
@@ -870,7 +870,7 @@ void Engine::initVulkan() {
 	createLogicalDevice();
 	createSwapChain();
 	createImageViews();
-	createRenderPass();
+	createRenderPass(renderPass, swapChainImageFormat);
 	createDescriptorSetLayout();
 	createGraphicsPipelines();
 	createCommandPool();
@@ -1503,4 +1503,51 @@ VkResult Engine::submitAndPresentFrame(uint32_t imageIndex) {
 	VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
 	return result;
+}
+
+drawImage Engine::createDrawImage(uint32_t width, int32_t height, VkFormat format, VkImageUsageFlags flags, VkRenderPass boundRenderPass) {
+	drawImage newDrawImage;
+	newDrawImage.imageExtent = VkExtent2D(width, height);
+	newDrawImage.imageFormat = format;
+	newDrawImage.imageUsage = flags;
+
+	newDrawImage.images.resize(imageCount);
+	newDrawImage.imageMemory.resize(imageCount);
+
+	for (size_t i = 0; i != imageCount; i++) {
+		createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, newDrawImage.images[i], newDrawImage.imageMemory[i]);
+	}
+
+	newDrawImage.imageViews.resize(newDrawImage.images.size());
+
+	for (uint32_t i = 0; i < newDrawImage.images.size(); i++) {
+		newDrawImage.imageViews[i] = createImageView(newDrawImage.images[i], format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	}
+
+	createImage(width, height, 1, msaaSamples, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, newDrawImage.colourImage, newDrawImage.colourImageMemory);
+	newDrawImage.colourImageView = createImageView(newDrawImage.colourImage, format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+
+	newDrawImage.imageFrameBuffers.resize(newDrawImage.imageViews.size());
+	for (size_t i = 0; i < newDrawImage.imageViews.size(); i++) {
+		array<VkImageView, 3> attachments = {
+			newDrawImage.colourImageView,
+			depthImageView,
+			newDrawImage.imageViews[i]
+		};
+
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = boundRenderPass;
+		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		framebufferInfo.pAttachments = attachments.data();
+		framebufferInfo.width = width;
+		framebufferInfo.height = height;
+		framebufferInfo.layers = 1;
+
+		if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &newDrawImage.imageFrameBuffers[i]) != VK_SUCCESS) {
+			throw runtime_error("failed to create framebuffer!");
+		}
+	}
+
+	return newDrawImage;
 }
