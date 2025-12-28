@@ -186,6 +186,8 @@ public:
 	void setup(shaderData*, drawImage*);
 	void filterImage(VkCommandBuffer, uint32_t);
 
+	void cleanup();
+
 private:
 
 	drawImage* target = nullptr;

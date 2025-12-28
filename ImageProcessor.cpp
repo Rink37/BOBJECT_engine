@@ -587,7 +587,7 @@ void inplaceFilter::filterImage(VkCommandBuffer commandBuffer, uint32_t imageInd
 
 void inplaceFilter::createDescriptorSetLayout() {
 
-	array<VkDescriptorPoolSize, 2> poolSizes{};
+	array<VkDescriptorPoolSize, 1> poolSizes{};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 	poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
@@ -744,4 +744,14 @@ void inplaceFilter::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage
 		1, &barrier
 	);
 
+}
+
+void inplaceFilter::cleanup() {
+	VkDevice device = Engine::get()->device;
+
+	vkDestroyPipeline(device, filterPipeline, nullptr);
+	vkDestroyPipelineLayout(device, filterPipelineLayout, nullptr);
+
+	vkDestroyDescriptorSetLayout(device, filterDescriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(device, descPool, nullptr);
 }
