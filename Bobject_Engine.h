@@ -257,6 +257,7 @@ public:
 	VkFormat findDepthFormat();
 
 	std::vector<VkImage> swapChainImages = {};
+	std::vector<VkImageView> swapChainImageViews = {};
 	VkFormat swapChainImageFormat = {};
 
 private:
@@ -271,8 +272,6 @@ private:
 	VkSurfaceKHR surface = nullptr;
 
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-
-	std::vector<VkImageView> swapChainImageViews = {};
 
 	std::vector<VkDeviceMemory> uniformBuffersMemory = {};
 	VkDeviceMemory colourBufferMemory = nullptr;

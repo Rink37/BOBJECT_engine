@@ -92,6 +92,10 @@ public:
 			break;
 		}
 		for (Texture* src : srcs) {
+			//VkImageView view = src->createImageView(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
+			//imageViews.push_back(view);
+			//originalFormats.push_back(src->textureFormat);
+			//src->transitionImageLayout(src->textureImage, src->textureFormat, src->textureLayout, VK_IMAGE_LAYOUT_GENERAL, src->mipLevels);
 			source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 		}
 
@@ -139,6 +143,8 @@ public:
 
 	std::vector<Texture*> source;
 	std::vector<Texture*> filterTarget;
+	std::vector<VkImageView> imageViews;
+	std::vector<VkFormat> originalFormats;
 
 private:
 	uint32_t filtertype = OIOO;
@@ -167,6 +173,40 @@ private:
 	void createFilterPipeline();
 
 	void createFilterTarget();
+};
+
+class inplaceFilter {
+// This class is intended to perform compute shaders on swapchain images so that compute operations can be performed for each rendered frame (e.g. colour grading or resolving multiple passes)
+// The current setup defines only compute shaders which depend on the value of a single pixel - if we need to read multiple (e.g. to calculate image gradients) then we would need to create a separate image to write to so that we do not read from a value that has already been written
+public:
+	inplaceFilter() = default;
+
+	inplaceFilter(shaderData* sd); // This class should be created before any rendering is performed
+
+	void setup(shaderData* sd);
+	void filterImage(VkCommandBuffer, uint32_t);
+
+private:
+
+	VkPipelineLayout filterPipelineLayout = nullptr;
+	VkPipeline filterPipeline = nullptr;
+
+	VkFormat targetFormat = VK_FORMAT_R8G8B8A8_UNORM;
+
+	VkDescriptorPool descPool = nullptr;
+	VkDescriptorSetLayout filterDescriptorSetLayout = nullptr;
+	std::vector<VkDescriptorSet> filterDescriptorSets = {};
+
+	VkShaderModule filterShaderModule = nullptr; // Destroyed by default
+
+	void createDescriptorSetLayout();
+	void createDescriptorSets();
+
+	void createFilterPipelineLayout();
+	void createFilterPipeline();
+
+	void transitionImageLayout(VkCommandBuffer, VkImage&, VkImageLayout, VkImageLayout); // Swapchain images are not described by my texture classes so a separate layout transition function is required
+
 };
 
 #endif

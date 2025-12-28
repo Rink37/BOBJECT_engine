@@ -558,3 +558,190 @@ void filter::filterImage(VkCommandBuffer commandBuffer) {
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipelineLayout, 0, 1, &filterDescriptorSet, 0, 0);
 	vkCmdDispatch(commandBuffer, source[0]->texWidth / 16, source[0]->texHeight / 16, 1);
 }
+
+inplaceFilter::inplaceFilter(shaderData* sd) {
+	filterShaderModule = Engine::get()->createShaderModule(sd->vertData);
+	createDescriptorSetLayout();
+	createDescriptorSets();
+	createFilterPipelineLayout();
+	createFilterPipeline();
+}
+
+void inplaceFilter::setup(shaderData* sd) {
+	filterShaderModule = Engine::get()->createShaderModule(sd->vertData);
+	createDescriptorSetLayout();
+	createDescriptorSets();
+	createFilterPipelineLayout();
+	createFilterPipeline();
+}
+
+void inplaceFilter::filterImage(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+	VkImage& image = Engine::get()->swapChainImages[imageIndex];
+	transitionImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipeline);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipelineLayout, 0, 1, &filterDescriptorSets[imageIndex], 0, 0);
+	vkCmdDispatch(commandBuffer, Engine::get()->swapChainExtent.width / 16, Engine::get()->swapChainExtent.height / 16, 1);
+	transitionImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+}
+
+void inplaceFilter::createDescriptorSetLayout() {
+	
+	VkDescriptorPoolSize descPoolSize = {
+		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+		1
+	};
+
+	VkDescriptorPoolCreateInfo poolInfo = {};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = static_cast<uint32_t>(1);
+	poolInfo.pPoolSizes = &descPoolSize;
+	poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT;
+
+	if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descPool) != VK_SUCCESS) {
+		throw runtime_error("failed to create descriptor pool!");
+	}
+
+	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
+	descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+
+	VkDescriptorSetLayoutBinding bindings[1] = {};
+
+	bindings[0].binding = 0;
+	bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	bindings[0].descriptorCount = 1;
+	bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+	descriptorSetLayoutCreateInfo.pBindings = bindings;
+	descriptorSetLayoutCreateInfo.bindingCount = 1;
+
+	if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
+		throw runtime_error("Failed to create inplace filter descriptor set layout");
+	}
+}
+
+void inplaceFilter::createDescriptorSets() {
+	
+	vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, filterDescriptorSetLayout);
+
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descPool;
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	allocInfo.pSetLayouts = layouts.data();
+
+	filterDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+	if (vkAllocateDescriptorSets(Engine::get()->device, &allocInfo, filterDescriptorSets.data()) != VK_SUCCESS) {
+		throw runtime_error("failed to allocate descriptor sets!");
+	}
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		VkDescriptorImageInfo sourceInfo = {};
+		sourceInfo.imageView = Engine::get()->swapChainImageViews[i];
+		sourceInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkWriteDescriptorSet descWrite[1] = {};
+
+		descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descWrite[0].dstSet = filterDescriptorSets[i];
+		descWrite[0].dstBinding = 0;
+		descWrite[0].descriptorCount = 1;
+		descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		descWrite[0].pImageInfo = &sourceInfo;
+
+		vkUpdateDescriptorSets(Engine::get()->device, 1, descWrite, 0, nullptr);
+	}
+}
+
+void inplaceFilter::createFilterPipelineLayout() {
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &filterDescriptorSetLayout;
+
+	if (vkCreatePipelineLayout(Engine::get()->device, &pipelineLayoutInfo, nullptr, &filterPipelineLayout) != VK_SUCCESS) {
+		throw runtime_error("Failed to create filter pipeline layout");
+	}
+}
+
+void inplaceFilter::createFilterPipeline() {
+	VkPipelineShaderStageCreateInfo filterStage = {
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		nullptr,
+		0,
+		VK_SHADER_STAGE_COMPUTE_BIT,
+		filterShaderModule,
+		"main",
+		nullptr
+	};
+
+	VkComputePipelineCreateInfo pipelineInfo = {};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+	pipelineInfo.stage = filterStage;
+	pipelineInfo.layout = filterPipelineLayout;
+
+	if (vkCreateComputePipelines(Engine::get()->device, nullptr, 1, &pipelineInfo, nullptr, &filterPipeline) != VK_SUCCESS) {
+		throw runtime_error("Failed to create filter pipeline");
+	}
+
+	vkDestroyShaderModule(Engine::get()->device, filterShaderModule, nullptr);
+}
+
+bool hasStencilComponent(VkFormat format) {
+	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+}
+
+void inplaceFilter::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout) {
+
+	VkImageMemoryBarrier barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = oldLayout;
+	barrier.newLayout = newLayout;
+
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+	barrier.image = image;
+	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+		if (hasStencilComponent(Engine::get()->swapChainImageFormat)) {
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+	}
+	else {
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+	barrier.subresourceRange.baseMipLevel = 0;
+	//subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+	VkPipelineStageFlags sourceStage;
+	VkPipelineStageFlags destinationStage;
+
+	if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_GENERAL) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR){
+		barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+		barrier.dstAccessMask = 0;
+		
+		sourceStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	} else {
+		throw invalid_argument("unsupported layout transition!");
+	}
+
+	vkCmdPipelineBarrier(
+		commandBuffer,
+		sourceStage, destinationStage,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &barrier
+	);
+
+}

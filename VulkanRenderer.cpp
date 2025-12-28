@@ -13,6 +13,8 @@
 #include"LoadLists.h"
 #include"Remapper.h"
 
+#include"inPlaceTest.h"
+
 #include<chrono>
 
 #include"include/BakedImages.h"
@@ -288,6 +290,10 @@ public:
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
+
+		shaderData* testShader = new INPLACETESTSHADER;
+		normalizer.setup(testShader);
+
 		updateColourScheme();
 		updateLightAzimuth(0.0f);
 		updateLightPolar(0.0f);
@@ -319,6 +325,8 @@ private:
 	UIItem* UITestImage = nullptr;
 
 	vector<Widget*> widgets;
+
+	inplaceFilter normalizer;
 
 	//double mouseX = 0.0;
 	//double mouseY = 0.0;
