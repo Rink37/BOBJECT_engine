@@ -181,12 +181,14 @@ class inplaceFilter {
 public:
 	inplaceFilter() = default;
 
-	inplaceFilter(shaderData* sd); // This class should be created before any rendering is performed
+	inplaceFilter(shaderData*); // This class should be created before any rendering is performed
 
-	void setup(shaderData* sd);
+	void setup(shaderData*, drawImage*);
 	void filterImage(VkCommandBuffer, uint32_t);
 
 private:
+
+	drawImage* target = nullptr;
 
 	VkPipelineLayout filterPipelineLayout = nullptr;
 	VkPipeline filterPipeline = nullptr;

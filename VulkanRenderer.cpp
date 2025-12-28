@@ -294,8 +294,8 @@ public:
 		VkRenderPass testRP;
 		Engine::get()->createRenderPass(testRP, VK_FORMAT_R8G8B8A8_UNORM);
 		drawImage test = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT, testRP);
-		//shaderData* testShader = new INPLACETESTSHADER;
-		//normalizer.setup(testShader);
+		shaderData* testShader = new INPLACETESTSHADER;
+		normalizer.setup(testShader, &test);
 		test.cleanup(Engine::get()->device);
 		vkDestroyRenderPass(Engine::get()->device, testRP, nullptr);
 

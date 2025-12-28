@@ -567,8 +567,9 @@ inplaceFilter::inplaceFilter(shaderData* sd) {
 	createFilterPipeline();
 }
 
-void inplaceFilter::setup(shaderData* sd) {
+void inplaceFilter::setup(shaderData* sd, drawImage* target) {
 	filterShaderModule = Engine::get()->createShaderModule(sd->vertData);
+	this->target = target;
 	createDescriptorSetLayout();
 	createDescriptorSets();
 	createFilterPipelineLayout();
@@ -576,26 +577,25 @@ void inplaceFilter::setup(shaderData* sd) {
 }
 
 void inplaceFilter::filterImage(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-	VkImage& image = Engine::get()->swapChainImages[imageIndex];
+	VkImage& image = target->images[imageIndex];
 	transitionImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipelineLayout, 0, 1, &filterDescriptorSets[imageIndex], 0, 0);
-	vkCmdDispatch(commandBuffer, Engine::get()->swapChainExtent.width / 16, Engine::get()->swapChainExtent.height / 16, 1);
+	vkCmdDispatch(commandBuffer, target->imageExtent.width / 16, target->imageExtent.height / 16, 1);
 	transitionImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 }
 
 void inplaceFilter::createDescriptorSetLayout() {
-	
-	VkDescriptorPoolSize descPoolSize = {
-		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-		1
-	};
+
+	array<VkDescriptorPoolSize, 2> poolSizes{};
+	poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
 	VkDescriptorPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolInfo.poolSizeCount = static_cast<uint32_t>(1);
-	poolInfo.pPoolSizes = &descPoolSize;
-	poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT;
+	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+	poolInfo.pPoolSizes = poolSizes.data();
+	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
 	if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descPool) != VK_SUCCESS) {
 		throw runtime_error("failed to create descriptor pool!");
@@ -637,7 +637,7 @@ void inplaceFilter::createDescriptorSets() {
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		VkDescriptorImageInfo sourceInfo = {};
-		sourceInfo.imageView = Engine::get()->swapChainImageViews[i];
+		sourceInfo.imageView = target->imageViews[i];
 		sourceInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 		VkWriteDescriptorSet descWrite[1] = {};
