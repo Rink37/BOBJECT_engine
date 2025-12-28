@@ -60,7 +60,7 @@ struct UIImage {
 			return commandBuffer;
 		}
 
-		Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->diffusePipelineLayout, mat[matidx]->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
+		Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->defaultPass.diffusePipelineLayout, mat[matidx]->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
 
 		return commandBuffer;
 	}

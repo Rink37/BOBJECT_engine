@@ -47,11 +47,13 @@ void Material::createDescriptorSets() {
 
 	if (textures.size() == 1) {
 		descriptorSetLayout = Engine::get()->diffuseDescriptorSetLayout;
-		pipelineLayout = Engine::get()->diffusePipelineLayout;
+		pipelineLayout = Engine::get()->defaultPass.diffusePipelineLayout;
+		pipelineLayoutIndex = 0;
 	}
 	else {
 		descriptorSetLayout = Engine::get()->diffNormDescriptorSetLayout;
-		pipelineLayout = Engine::get()->diffNormPipelineLayout;
+		pipelineLayout = Engine::get()->defaultPass.diffNormPipelineLayout;
+		pipelineLayoutIndex = 1;
 	}
 
 	vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);

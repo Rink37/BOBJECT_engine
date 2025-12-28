@@ -157,6 +157,23 @@ struct drawImage {
 	}
 };
 
+struct GraphicsPass {
+	VkRenderPass renderPass;
+	VkPipelineLayout diffusePipelineLayout = nullptr;
+	VkPipelineLayout diffNormPipelineLayout = nullptr;
+	std::vector<VkPipeline*> GraphicsPipelines = {};
+
+	void cleanup(VkDevice device) {
+		for (VkPipeline* pipeline : GraphicsPipelines) {
+			vkDestroyPipeline(device, *pipeline, nullptr);
+		}
+
+		vkDestroyPipelineLayout(device, diffusePipelineLayout, nullptr);
+		vkDestroyPipelineLayout(device, diffNormPipelineLayout, nullptr);
+		vkDestroyRenderPass(device, renderPass, nullptr);
+	}
+};
+
 namespace std {
 	template<> struct hash<Vertex> {
 		size_t operator()(Vertex const& vertex) const {
@@ -229,7 +246,9 @@ public:
 	VkQueue presentQueue = nullptr;
 	VkQueue computeQueue = nullptr;
 
-	VkRenderPass renderPass = nullptr;
+	GraphicsPass defaultPass;
+
+	//VkRenderPass renderPass = nullptr;
 
 	std::vector<VkFence> inFlightFences = {};
 	VkSwapchainKHR swapChain = nullptr;
@@ -250,14 +269,14 @@ public:
 	std::vector<void*> uniformBuffersMapped = {};
 	void* colourBufferMapped = nullptr;
 
-	VkPipelineLayout diffusePipelineLayout = nullptr;
-	VkPipelineLayout diffNormPipelineLayout = nullptr;
+	//VkPipelineLayout diffusePipelineLayout = nullptr;
+	//VkPipelineLayout diffNormPipelineLayout = nullptr;
 
 	std::vector<VkBuffer> uniformBuffers = {};
 	VkBuffer colourBuffer = nullptr;
 
 	std::map<std::string, int> PipelineMap = {};
-	std::vector<VkPipeline*> GraphicsPipelines = {};
+	//std::vector<VkPipeline*> GraphicsPipelines = {};
 
 	bool framebufferResized = false;
 
@@ -268,6 +287,7 @@ public:
 
 	void recreateSwapChain();
 	std::uint32_t getRenderTarget();
+	void beginRenderPass(VkCommandBuffer, GraphicsPass*, drawImage*, uint32_t, glm::vec3);
 	void beginRenderPass(VkCommandBuffer, uint32_t, glm::vec3);
 	void drawObject(VkCommandBuffer, VkBuffer, VkBuffer, VkPipelineLayout, VkDescriptorSet, std::uint32_t);
 	VkResult submitAndPresentFrame(std::uint32_t);
@@ -300,7 +320,10 @@ public:
 	std::vector<VkImageView> swapChainImageViews = {};
 	VkFormat swapChainImageFormat = {};
 
-	void createRenderPass(VkRenderPass&, VkFormat);
+	void createRenderPass(VkRenderPass&, VkFormat, VkImageLayout);
+	void createGraphicsPipelines(GraphicsPass&);
+
+	void copyImageToSwapchain(VkCommandBuffer, drawImage*, uint32_t);
 
 private:
 	static Engine* enginstance;
@@ -327,6 +350,8 @@ private:
 	VkImageView colourImageView = nullptr;
 
 	static void framebufferResizeCallback(GLFWwindow*, int, int);
+
+	void transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 	bool checkValidationLayerSupport();
 	void createInstance();

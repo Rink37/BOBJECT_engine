@@ -743,7 +743,6 @@ void inplaceFilter::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage
 		0, nullptr,
 		1, &barrier
 	);
-
 }
 
 void inplaceFilter::cleanup() {

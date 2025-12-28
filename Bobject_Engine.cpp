@@ -245,7 +245,7 @@ void Engine::createSwapChain() {
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -278,6 +278,10 @@ void Engine::createSwapChain() {
 
 	swapChainImageFormat = surfaceFormat.format;
 	swapChainExtent = extent;
+
+	for (auto image : swapChainImages) {
+		transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+	}
 }
 
 void Engine::createImageViews() {
@@ -288,7 +292,7 @@ void Engine::createImageViews() {
 	}
 }
 
-void Engine::createRenderPass(VkRenderPass& newRenderPass, VkFormat imageFormat) {
+void Engine::createRenderPass(VkRenderPass& newRenderPass, VkFormat imageFormat, VkImageLayout finalLayout) {
 
 	VkAttachmentDescription colorAttachment{};
 	colorAttachment.format = imageFormat;
@@ -320,7 +324,7 @@ void Engine::createRenderPass(VkRenderPass& newRenderPass, VkFormat imageFormat)
 	colourAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colourAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colourAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colourAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	colourAttachmentResolve.finalLayout = finalLayout;
 
 	VkAttachmentReference colorAttachmentRef{};
 	colorAttachmentRef.attachment = 0;
@@ -425,6 +429,18 @@ VkShaderModule Engine::createShaderModule(const vector<unsigned char>& code) {
 }
 
 void Engine::createGraphicsPipelines() {
+	PipelineMap.insert({ string("FlatShading"), 0 });
+	PipelineMap.insert({ string("BFShading"), 1 });
+	PipelineMap.insert({ string("UIShading"), 2 });
+	PipelineMap.insert({ string("Wireframe"), 3 });
+	PipelineMap.insert({ string("UVWireframe"), 4 });
+	PipelineMap.insert({ string("UIGrayShading"), 5 });
+	PipelineMap.insert({ string("OSNormBF"), 6 });
+	PipelineMap.insert({ string("TSNormBF"), 7 });
+	createGraphicsPipelines(defaultPass);
+}
+
+void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	// This function is very long - it would be nice if I were able to simplify it somewhat. 
 
 	bool isWireframe = false;
@@ -444,13 +460,6 @@ void Engine::createGraphicsPipelines() {
 	shaderDatas.push_back(&wShader);
 	shaderDatas.push_back(&uvShader);
 	shaderDatas.push_back(&uiShaderGray);
-
-	PipelineMap.insert({ string("FlatShading"), 0 });
-	PipelineMap.insert({ string("BFShading"), 1 });
-	PipelineMap.insert({ string("UIShading"), 2 });
-	PipelineMap.insert({ string("Wireframe"), 3 });
-	PipelineMap.insert({ string("UVWireframe"), 4 });
-	PipelineMap.insert({ string("UIGrayShading"), 5 });
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -518,13 +527,13 @@ void Engine::createGraphicsPipelines() {
 	pipelineLayoutInfo.setLayoutCount = 1;
 	pipelineLayoutInfo.pSetLayouts = &diffuseDescriptorSetLayout;
 
-	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &diffusePipelineLayout) != VK_SUCCESS) {
+	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPass.diffusePipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
 	pipelineLayoutInfo.pSetLayouts = &diffNormDescriptorSetLayout;
 
-	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &diffNormPipelineLayout) != VK_SUCCESS) {
+	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPass.diffNormPipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
@@ -577,8 +586,8 @@ void Engine::createGraphicsPipelines() {
 		pipelineInfo.pMultisampleState = &multisampling;
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.layout = diffusePipelineLayout;
-		pipelineInfo.renderPass = renderPass;
+		pipelineInfo.layout = graphicsPass.diffusePipelineLayout;
+		pipelineInfo.renderPass = graphicsPass.renderPass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.pDepthStencilState = &depthStencil;
@@ -587,7 +596,7 @@ void Engine::createGraphicsPipelines() {
 			throw runtime_error("failed to create graphics pipeline!");
 		}
 
-		GraphicsPipelines.push_back(CurrentPipeline);
+		graphicsPass.GraphicsPipelines.push_back(CurrentPipeline);
 
 		vkDestroyShaderModule(device, FragShaderModule, nullptr);
 		vkDestroyShaderModule(device, VertShaderModule, nullptr);
@@ -642,8 +651,8 @@ void Engine::createGraphicsPipelines() {
 	pipelineInfo.pMultisampleState = &multisampling;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
-	pipelineInfo.layout = diffNormPipelineLayout;
-	pipelineInfo.renderPass = renderPass;
+	pipelineInfo.layout = graphicsPass.diffNormPipelineLayout;
+	pipelineInfo.renderPass = graphicsPass.renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 	pipelineInfo.pDepthStencilState = &depthStencil;
@@ -652,8 +661,7 @@ void Engine::createGraphicsPipelines() {
 		throw runtime_error("failed to create graphics pipeline!");
 	}
 
-	GraphicsPipelines.push_back(CurrentPipeline);
-	PipelineMap.insert({ string("OSNormBF"), 6 });
+	graphicsPass.GraphicsPipelines.push_back(CurrentPipeline);
 
 	shaderData TS_BF = TS_BFSHADER;
 	VkPipeline* TangentPipeline = new VkPipeline;
@@ -699,8 +707,8 @@ void Engine::createGraphicsPipelines() {
 	tangentpipelineInfo.pMultisampleState = &multisampling;
 	tangentpipelineInfo.pColorBlendState = &colorBlending;
 	tangentpipelineInfo.pDynamicState = &dynamicState;
-	tangentpipelineInfo.layout = diffNormPipelineLayout;
-	tangentpipelineInfo.renderPass = renderPass;
+	tangentpipelineInfo.layout = graphicsPass.diffNormPipelineLayout;
+	tangentpipelineInfo.renderPass = graphicsPass.renderPass;
 	tangentpipelineInfo.subpass = 0;
 	tangentpipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 	tangentpipelineInfo.pDepthStencilState = &depthStencil;
@@ -709,8 +717,7 @@ void Engine::createGraphicsPipelines() {
 		throw runtime_error("failed to create graphics pipeline!");
 	}
 
-	GraphicsPipelines.push_back(TangentPipeline);
-	PipelineMap.insert({ string("TSNormBF"), 7 });
+	graphicsPass.GraphicsPipelines.push_back(TangentPipeline);
 
 	vkDestroyShaderModule(device, FragShaderModule, nullptr);
 	vkDestroyShaderModule(device, VertShaderModule, nullptr);
@@ -755,7 +762,7 @@ void Engine::createFramebuffers() {
 
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = renderPass;
+		framebufferInfo.renderPass = defaultPass.renderPass;
 		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = swapChainExtent.width;
@@ -868,19 +875,19 @@ void Engine::initVulkan() {
 	createSurface();
 	pickPhysicalDevice();
 	createLogicalDevice();
+	createCommandPool();
+	createCommandBuffers();
 	createSwapChain();
 	createImageViews();
-	createRenderPass(renderPass, swapChainImageFormat);
+	createRenderPass(defaultPass.renderPass, swapChainImageFormat, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 	createDescriptorSetLayout();
 	createGraphicsPipelines();
-	createCommandPool();
 	createColourResources();
 	createDepthResources();
 	createFramebuffers();
 	createTextureSampler();
 	createUniformBuffers();
 	createColourBuffer();
-	createCommandBuffers();
 	createSyncObjects();
 }
 
@@ -889,13 +896,13 @@ void Engine::cleanup() {
 
 	vkDestroySampler(device, textureSampler, nullptr);
 
-	for (VkPipeline* pipeline : GraphicsPipelines) {
+	for (VkPipeline* pipeline : defaultPass.GraphicsPipelines) {
 		vkDestroyPipeline(device, *pipeline, nullptr);
 	}
 
-	vkDestroyPipelineLayout(device, diffusePipelineLayout, nullptr);
-	vkDestroyPipelineLayout(device, diffNormPipelineLayout, nullptr);
-	vkDestroyRenderPass(device, renderPass, nullptr);
+	vkDestroyPipelineLayout(device, defaultPass.diffusePipelineLayout, nullptr);
+	vkDestroyPipelineLayout(device, defaultPass.diffNormPipelineLayout, nullptr);
+	vkDestroyRenderPass(device, defaultPass.renderPass, nullptr);
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroyBuffer(device, uniformBuffers[i], nullptr);
@@ -1426,7 +1433,7 @@ void Engine::beginRenderPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = renderPass;
+	renderPassInfo.renderPass = defaultPass.renderPass;
 	renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
 
 	renderPassInfo.renderArea.offset = { 0,0 };
@@ -1453,6 +1460,48 @@ void Engine::beginRenderPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
 	VkRect2D scissor{};
 	scissor.offset = { 0,0 };
 	scissor.extent = swapChainExtent;
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+}
+
+void Engine::beginRenderPass(VkCommandBuffer commandBuffer, GraphicsPass* graphicsPass, drawImage* target, uint32_t imageIndex, glm::vec3 backgroundColour) {
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	beginInfo.pInheritanceInfo = nullptr;
+
+	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+		throw runtime_error("failed to begin recording command buffer!");
+	}
+
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = graphicsPass->renderPass;
+	renderPassInfo.framebuffer = target->imageFrameBuffers[imageIndex];
+
+	renderPassInfo.renderArea.offset = { 0,0 };
+	renderPassInfo.renderArea.extent = target->imageExtent;
+
+	array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = { {backgroundColour.r, backgroundColour.g, backgroundColour.b, 1.0f} };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.pClearValues = clearValues.data();
+
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(target->imageExtent.width);
+	viewport.height = static_cast<float>(target->imageExtent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+	VkRect2D scissor{};
+	scissor.offset = { 0,0 };
+	scissor.extent = target->imageExtent;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
@@ -1490,6 +1539,8 @@ VkResult Engine::submitAndPresentFrame(uint32_t imageIndex) {
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
+	transitionImageLayout(swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
 	VkSwapchainKHR swapChains[] = { swapChain };
 
 	VkPresentInfoKHR presentInfo{};
@@ -1505,6 +1556,85 @@ VkResult Engine::submitAndPresentFrame(uint32_t imageIndex) {
 	return result;
 }
 
+void Engine::transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout) {
+
+	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+	VkImageMemoryBarrier barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = oldLayout;
+	barrier.newLayout = newLayout;
+
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+	barrier.image = image;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.levelCount = 1;
+
+	VkPipelineStageFlags sourceStage;
+	VkPipelineStageFlags destinationStage;
+
+	if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_GENERAL) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+		barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+		barrier.dstAccessMask = 0;
+
+		sourceStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	} else if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = 0;
+
+		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = 0;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	}
+	else {
+		throw invalid_argument("unsupported layout transition!");
+	}
+
+	vkCmdPipelineBarrier(
+		commandBuffer,
+		sourceStage, destinationStage,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &barrier
+	);
+
+	endSingleTimeCommands(commandBuffer);
+}
+
 drawImage Engine::createDrawImage(uint32_t width, int32_t height, VkFormat format, VkImageUsageFlags flags, VkRenderPass boundRenderPass) {
 	drawImage newDrawImage;
 	newDrawImage.imageExtent = VkExtent2D(width, height);
@@ -1516,6 +1646,7 @@ drawImage Engine::createDrawImage(uint32_t width, int32_t height, VkFormat forma
 
 	for (size_t i = 0; i != imageCount; i++) {
 		createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, newDrawImage.images[i], newDrawImage.imageMemory[i]);
+		transitionImageLayout(newDrawImage.images[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL); // This causes no problems - all draw images should be in the expected layout
 	}
 
 	newDrawImage.imageViews.resize(newDrawImage.images.size());
@@ -1550,4 +1681,87 @@ drawImage Engine::createDrawImage(uint32_t width, int32_t height, VkFormat forma
 	}
 
 	return newDrawImage;
+}
+
+void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, drawImage* image, uint32_t imageIndex) {
+	bool supportsBlit = true;
+
+	VkFormatProperties formatProps;
+
+	//vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, image->imageFormat, &formatProps);
+	//if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
+	//	std::cerr << "Device does not support blitting from the rendered image" << std::endl;
+	//	supportsBlit = false;
+	//}
+
+	//vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, swapChainImageFormat, &formatProps);
+	//if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
+	//	std::cerr << "Device does not support blitting to the swachain image" << std::endl;
+	//	supportsBlit = false;
+	//}
+
+	transitionImageLayout(swapChainImages[imageIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	if (supportsBlit)
+	{
+		VkOffset3D srcBlitSize;
+		srcBlitSize.x = image->imageExtent.width;
+		srcBlitSize.y = image->imageExtent.height;
+		srcBlitSize.z = 1;
+		VkOffset3D dstBlitSize;
+		dstBlitSize.x = swapChainExtent.width;
+		dstBlitSize.y = swapChainExtent.height;
+		dstBlitSize.z = 1;
+		VkImageBlit imageBlitRegion{};
+		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.srcSubresource.layerCount = 1;
+		imageBlitRegion.srcOffsets[1] = srcBlitSize;
+		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.dstSubresource.layerCount = 1;
+		imageBlitRegion.dstOffsets[1] = dstBlitSize;
+
+		vkCmdBlitImage(
+			commandBuffer,
+			image->images[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageBlitRegion,
+			VK_FILTER_NEAREST);
+	}
+	else
+	{
+		throw runtime_error("Blitting cannot be performed");
+	}
+
+	//if (vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
+	//	throw runtime_error("Failed to end command buffer");
+	//}
+
+	//VkSubmitInfo submitInfo = {};
+	//submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	//submitInfo.commandBufferCount = 1;
+	//submitInfo.pCommandBuffers = &copyCmd;
+
+	//VkFence copyFence;
+	//VkFenceCreateInfo fenceInfo = {};
+	//fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+	//vkCreateFence(Engine::get()->device, &fenceInfo, nullptr, &copyFence);
+
+	//vkQueueSubmit(Engine::get()->graphicsQueue, 1, &submitInfo, copyFence);
+
+	//if (vkWaitForFences(Engine::get()->device, 1, &copyFence, VK_TRUE, UINT64_MAX) == VK_TIMEOUT) {
+	//	throw runtime_error("Fence timeout");
+	//};
+
+	//vkFreeCommandBuffers(Engine::get()->device, Engine::get()->commandPool, 1, &copyCmd);
+
+	//vkDestroyFence(Engine::get()->device, copyFence, nullptr);
+
+	//if (mipLevels == 1) {
+	//	transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, mipLevels);
+	//}
+	//transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, this->mipLevels);
+
+	//return copy;
 }

@@ -291,14 +291,14 @@ public:
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
 
-		VkRenderPass testRP;
-		Engine::get()->createRenderPass(testRP, VK_FORMAT_R8G8B8A8_UNORM);
-		drawImage test = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT, testRP);
+		Engine::get()->createRenderPass(testGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		test = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, testGP.renderPass);
+		Engine::get()->createGraphicsPipelines(testGP);
 		shaderData* testShader = new INPLACETESTSHADER;
 		normalizer.setup(testShader, &test);
-		normalizer.cleanup();
-		test.cleanup(Engine::get()->device);
-		vkDestroyRenderPass(Engine::get()->device, testRP, nullptr);
+
+		std::cout << testGP.GraphicsPipelines.size() << std::endl;
+		currentPass = &testGP;// &Engine::get()->defaultPass;
 
 		updateColourScheme();
 		updateLightAzimuth(0.0f);
@@ -333,6 +333,10 @@ private:
 	vector<Widget*> widgets;
 
 	inplaceFilter normalizer;
+	drawImage test;
+	//VkRenderPass testRP;
+	GraphicsPass testGP;
+	GraphicsPass* currentPass = nullptr;
 
 	//double mouseX = 0.0;
 	//double mouseY = 0.0;
@@ -806,6 +810,11 @@ private:
 			widgets[i]->cleanup();
 		}
 
+		normalizer.cleanup();
+		test.cleanup(Engine::get()->device);
+		testGP.cleanup(Engine::get()->device);
+		//vkDestroyRenderPass(Engine::get()->device, testRP, nullptr);
+
 		sConst->cleanup();
 		engine->cleanup();
 	}
@@ -815,7 +824,7 @@ private:
 		uint32_t currentFrame = engine->currentFrame;
 		
 		updateUniformBuffer(currentFrame);
-		recordCommandBuffer(engine->commandBuffers[currentFrame], imageIndex);
+		recordCommandBuffer(engine->commandBuffers[currentFrame], currentPass, imageIndex);
 
 		VkResult result = engine->submitAndPresentFrame(imageIndex);
 
@@ -875,37 +884,39 @@ private:
 		drawMat = &((!tomogActive) ? sConst->surfaceMat : tomogUI.scannedMaterial);
 		renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
 		graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
-		pipelineLayout = (viewIndex == 1 && lit) ? drawMat->pipelineLayout : engine->diffusePipelineLayout;
+		VkPipelineLayout pipelineLayoutSet[2] = { currentPass->diffusePipelineLayout, currentPass->diffNormPipelineLayout };
+		pipelineLayout = (viewIndex == 1 && lit) ? pipelineLayoutSet[drawMat->pipelineLayoutIndex] : currentPass->diffusePipelineLayout;
 	}
 
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, GraphicsPass* currentPass, uint32_t imageIndex) {
 		uint32_t currentFrame = engine->currentFrame;
 
-		engine->beginRenderPass(commandBuffer, imageIndex, backgroundColour);
+		//engine->beginRenderPass(commandBuffer, testRP, &test, imageIndex, backgroundColour);
+		engine->beginRenderPass(commandBuffer, currentPass, &test, imageIndex, backgroundColour);
 
 		if (showWireframe) {
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UVWireframe")]);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UVWireframe")]);
 
 			for (uint32_t i : visibleObjects) {
 				if (staticObjects[i].isWireframeVisible) {
-					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, engine->diffusePipelineLayout, sConst->webcamPtr->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, currentPass->diffusePipelineLayout, sConst->webcamPtr->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 				}
 			}
 		}
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UIGrayShading")]);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UIGrayShading")]);
 
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->drawUI(commandBuffer, currentFrame);
 		}
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[engine->PipelineMap.at("UIShading")]);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UIShading")]);
 
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->drawImages(commandBuffer, currentFrame);
 		}
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *engine->GraphicsPipelines[graphicsPipelineIndex]);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[graphicsPipelineIndex]);
 
 		for (uint32_t i : visibleObjects) {
 			engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, pipelineLayout, drawMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
@@ -916,6 +927,8 @@ private:
 		}
 
 		vkCmdEndRenderPass(commandBuffer);
+
+		Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex); // This doesn't work for multiple reasons
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw runtime_error("failed to record command buffer!");
