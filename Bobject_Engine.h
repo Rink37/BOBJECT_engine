@@ -133,6 +133,8 @@ struct drawImage {
 	VkFormat imageFormat;
 	VkImageUsageFlags imageUsage;
 
+	VkRenderPass* boundRenderPass = nullptr;
+
 	void cleanup(VkDevice device) {
 
 		vkDestroyImageView(device, colourImageView, nullptr);
@@ -303,6 +305,7 @@ public:
 	void endSingleTimeComputeCommand(VkCommandBuffer);
 
 	drawImage createDrawImage(uint32_t, int32_t, VkFormat, VkImageUsageFlags, VkRenderPass);
+	void recreateDrawImage(drawImage*);
 
 	VkShaderModule createShaderModule(const std::vector<unsigned char>&);
 

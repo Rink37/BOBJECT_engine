@@ -1284,6 +1284,56 @@ void Engine::recreateSwapChain() {
 	createFramebuffers();
 }
 
+void Engine::recreateDrawImage(drawImage* image) {
+	int width = 0, height = 0;
+	while (width == 0 || height == 0) {
+		glfwGetFramebufferSize(window, &width, &height);
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(device);
+
+	image->cleanup(device);
+
+	image->imageExtent = VkExtent2D(width, height);
+
+	for (size_t i = 0; i != imageCount; i++) {
+		createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, image->imageFormat, VK_IMAGE_TILING_OPTIMAL, image->imageUsage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image->images[i], image->imageMemory[i]);
+		transitionImageLayout(image->images[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL); // This causes no problems - all draw images should be in the expected layout
+	}
+
+	image->imageViews.resize(image->images.size());
+
+	for (uint32_t i = 0; i < image->images.size(); i++) {
+		image->imageViews[i] = createImageView(image->images[i], image->imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	}
+
+	createImage(width, height, 1, msaaSamples, image->imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image->colourImage, image->colourImageMemory);
+	image->colourImageView = createImageView(image->colourImage, image->imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+
+	image->imageFrameBuffers.resize(image->imageViews.size());
+	for (size_t i = 0; i < image->imageViews.size(); i++) {
+		array<VkImageView, 3> attachments = {
+			image->colourImageView,
+			depthImageView,
+			image->imageViews[i]
+		};
+
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = *image->boundRenderPass;
+		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		framebufferInfo.pAttachments = attachments.data();
+		framebufferInfo.width = width;
+		framebufferInfo.height = height;
+		framebufferInfo.layers = 1;
+
+		if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &image->imageFrameBuffers[i]) != VK_SUCCESS) {
+			throw runtime_error("failed to create framebuffer!");
+		}
+	}
+}
+
 void Engine::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1640,6 +1690,7 @@ drawImage Engine::createDrawImage(uint32_t width, int32_t height, VkFormat forma
 	newDrawImage.imageExtent = VkExtent2D(width, height);
 	newDrawImage.imageFormat = format;
 	newDrawImage.imageUsage = flags;
+	newDrawImage.boundRenderPass = &boundRenderPass;
 
 	newDrawImage.images.resize(imageCount);
 	newDrawImage.imageMemory.resize(imageCount);

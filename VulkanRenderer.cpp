@@ -838,6 +838,7 @@ private:
 			}	
 
 			engine->recreateSwapChain();
+			engine->recreateDrawImage(&test);
 			return;
 		}
 		else if (result != VK_SUCCESS) {
