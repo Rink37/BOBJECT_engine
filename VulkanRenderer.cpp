@@ -839,6 +839,7 @@ private:
 
 			engine->recreateSwapChain();
 			engine->recreateDrawImage(&test);
+			normalizer.recreateDescriptorSets();
 			return;
 		}
 		else if (result != VK_SUCCESS) {
@@ -928,6 +929,8 @@ private:
 		}
 
 		vkCmdEndRenderPass(commandBuffer);
+
+		normalizer.filterImage(commandBuffer, imageIndex);
 
 		Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex); // This doesn't work for multiple reasons
 

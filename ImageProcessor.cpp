@@ -578,24 +578,26 @@ void inplaceFilter::setup(shaderData* sd, drawImage* target) {
 
 void inplaceFilter::filterImage(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 	VkImage& image = target->images[imageIndex];
-	transitionImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL);
+	transitionImageLayout(commandBuffer, target->images[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipelineLayout, 0, 1, &filterDescriptorSets[imageIndex], 0, 0);
 	vkCmdDispatch(commandBuffer, target->imageExtent.width / 16, target->imageExtent.height / 16, 1);
-	transitionImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+	transitionImageLayout(commandBuffer, target->images[imageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 }
 
 void inplaceFilter::createDescriptorSetLayout() {
 
+	uint32_t imageCount = target->images.size();
+
 	array<VkDescriptorPoolSize, 1> poolSizes{};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	poolSizes[0].descriptorCount = static_cast<uint32_t>(imageCount);
 
 	VkDescriptorPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	poolInfo.maxSets = static_cast<uint32_t>(imageCount);
 
 	if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descPool) != VK_SUCCESS) {
 		throw runtime_error("failed to create descriptor pool!");
@@ -620,22 +622,46 @@ void inplaceFilter::createDescriptorSetLayout() {
 }
 
 void inplaceFilter::createDescriptorSets() {
+
+	uint32_t imageCount = target->images.size();
 	
-	vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, filterDescriptorSetLayout);
+	vector<VkDescriptorSetLayout> layouts(imageCount, filterDescriptorSetLayout);
 
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = descPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
 	allocInfo.pSetLayouts = layouts.data();
 
-	filterDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+	filterDescriptorSets.resize(imageCount);
 
 	if (vkAllocateDescriptorSets(Engine::get()->device, &allocInfo, filterDescriptorSets.data()) != VK_SUCCESS) {
 		throw runtime_error("failed to allocate descriptor sets!");
 	}
 
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+	for (size_t i = 0; i < imageCount; i++) {
+		VkDescriptorImageInfo sourceInfo = {};
+		sourceInfo.imageView = target->imageViews[i];
+		sourceInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkWriteDescriptorSet descWrite[1] = {};
+
+		descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descWrite[0].dstSet = filterDescriptorSets[i];
+		descWrite[0].dstBinding = 0;
+		descWrite[0].descriptorCount = 1;
+		descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		descWrite[0].pImageInfo = &sourceInfo;
+
+		vkUpdateDescriptorSets(Engine::get()->device, 1, descWrite, 0, nullptr);
+	}
+}
+
+void inplaceFilter::recreateDescriptorSets() {
+
+	uint32_t imageCount = target->images.size();
+
+	for (size_t i = 0; i < imageCount; i++) {
 		VkDescriptorImageInfo sourceInfo = {};
 		sourceInfo.imageView = target->imageViews[i];
 		sourceInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -702,35 +728,28 @@ void inplaceFilter::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
 	barrier.image = image;
-	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-		if (hasStencilComponent(Engine::get()->swapChainImageFormat)) {
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
-		}
-	}
-	else {
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	}
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	barrier.subresourceRange.baseMipLevel = 0;
-	//subresourceRange.levelCount = 1;
+	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
 	barrier.subresourceRange.layerCount = 1;
 
 	VkPipelineStageFlags sourceStage;
 	VkPipelineStageFlags destinationStage;
 
-	if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_GENERAL) {
-		barrier.srcAccessMask = 0;
-		barrier.dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+	if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_GENERAL) {
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 
-		sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		destinationStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 	}
-	else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR){
+	else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL){
 		barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
-		barrier.dstAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		
 		sourceStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	} else {
 		throw invalid_argument("unsupported layout transition!");
 	}

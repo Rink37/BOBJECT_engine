@@ -188,6 +188,8 @@ public:
 
 	void cleanup();
 
+	void recreateDescriptorSets();
+
 private:
 
 	drawImage* target = nullptr;
