@@ -7,26 +7,28 @@ C:/VulkanSDK/1.4.328.1/Bin/glslc.exe OSToTSConverter.frag -o OSToTSConverterFrag
 C:/VulkanSDK/1.4.328.1/Bin/glslc.exe TSToOSConverter.vert -o TSToOSConverterVert.spv
 C:/VulkanSDK/1.4.328.1/Bin/glslc.exe TSToOSConverter.frag -o TSToOSConverterFrag.spv
 
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe FilterDefault.comp -o FilterDefaultVert.spv
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalGenerator.frag -o FilterDefaultFrag.spv
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe FilterDefault.comp -o FilterDefaultComp.spv
 
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe Kuwahara.comp -o KuwaharaVert.spv
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalGenerator.frag -o KuwaharaFrag.spv
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe Kuwahara.comp -o KuwaharaComp.spv
 
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe ReferenceKuwahara.comp -o ReferenceKuwaharaVert.spv
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalGenerator.frag -o ReferenceKuwaharaFrag.spv
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe ReferenceKuwahara.comp -o ReferenceKuwaharaComp.spv
 
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe Averager.comp -o AveragerVert.spv
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalGenerator.frag -o AveragerFrag.spv
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe Averager.comp -o AveragerComp.spv
 
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe GradRemap.comp -o GradRemapVert.spv
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalGenerator.frag -o GradRemapFrag.spv
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe GradRemap.comp -o GradRemapComp.spv
 
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe SobelX.comp -o SobelXVert.spv
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalGenerator.frag -o SobelXFrag.spv
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe SobelX.comp -o SobelXComp.spv
 
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe SobelY.comp -o SobelYVert.spv
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalGenerator.frag -o SobelYFrag.spv
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe SobelY.comp -o SobelYComp.spv
 
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe inPlaceTest.comp -o inPlaceTestVert.spv
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe NormalGenerator.frag -o inPlaceTestFrag.spv
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe SobelCombined.comp -o SobelCombinedComp.spv
+
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe GaussBlurX.comp -o GaussBlurXComp.spv
+
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe GaussBlurY.comp -o GaussBlurYComp.spv
+
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe OS_EdgeFill.comp -o OS_EdgeFillComp.spv
+
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe inPlaceTest.comp -o inPlaceTestComp.spv
+
+C:/VulkanSDK/1.4.328.1/Bin/glslc.exe BoxAverager.comp -o BoxAveragerComp.spv

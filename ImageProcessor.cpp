@@ -560,7 +560,7 @@ void filter::filterImage(VkCommandBuffer commandBuffer) {
 }
 
 inplaceFilter::inplaceFilter(shaderData* sd) {
-	filterShaderModule = Engine::get()->createShaderModule(sd->vertData);
+	filterShaderModule = Engine::get()->createShaderModule(sd->compData);
 	createDescriptorSetLayout();
 	createDescriptorSets();
 	createFilterPipelineLayout();
@@ -568,7 +568,7 @@ inplaceFilter::inplaceFilter(shaderData* sd) {
 }
 
 void inplaceFilter::setup(shaderData* sd, drawImage* target) {
-	filterShaderModule = Engine::get()->createShaderModule(sd->vertData);
+	filterShaderModule = Engine::get()->createShaderModule(sd->compData);
 	this->target = target;
 	createDescriptorSetLayout();
 	createDescriptorSets();

@@ -1851,36 +1851,4 @@ void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, drawImage* imag
 	}
 
 	transitionImageLayout(commandBuffer, swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-	//if (vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
-	//	throw runtime_error("Failed to end command buffer");
-	//}
-
-	//VkSubmitInfo submitInfo = {};
-	//submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	//submitInfo.commandBufferCount = 1;
-	//submitInfo.pCommandBuffers = &copyCmd;
-
-	//VkFence copyFence;
-	//VkFenceCreateInfo fenceInfo = {};
-	//fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-
-	//vkCreateFence(Engine::get()->device, &fenceInfo, nullptr, &copyFence);
-
-	//vkQueueSubmit(Engine::get()->graphicsQueue, 1, &submitInfo, copyFence);
-
-	//if (vkWaitForFences(Engine::get()->device, 1, &copyFence, VK_TRUE, UINT64_MAX) == VK_TIMEOUT) {
-	//	throw runtime_error("Fence timeout");
-	//};
-
-	//vkFreeCommandBuffers(Engine::get()->device, Engine::get()->commandPool, 1, &copyCmd);
-
-	//vkDestroyFence(Engine::get()->device, copyFence, nullptr);
-
-	//if (mipLevels == 1) {
-	//	transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, mipLevels);
-	//}
-	//transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, this->mipLevels);
-
-	//return copy;
 }
