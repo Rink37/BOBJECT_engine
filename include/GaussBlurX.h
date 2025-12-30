@@ -12,5 +12,5 @@ const std::vector<bool> GaussBlurXBindingDirections{true, false};
 #endif
 
 #ifndef GAUSSBLURXSHADER
-#define GAUSSBLURXSHADER shaderData( GaussBlurXcompData, GaussBlurXWireframe )
+#define GAUSSBLURXSHADER shaderData( GaussBlurXcompData, GaussBlurXWireframe, GaussBlurXBindingMap, GaussBlurXBindingDirections )
 #endif

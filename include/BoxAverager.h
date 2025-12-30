@@ -12,5 +12,5 @@ const std::vector<bool> BoxAveragerBindingDirections{true, true, false, true};
 #endif
 
 #ifndef BOXAVERAGERSHADER
-#define BOXAVERAGERSHADER shaderData( BoxAveragercompData, BoxAveragerWireframe )
+#define BOXAVERAGERSHADER shaderData( BoxAveragercompData, BoxAveragerWireframe, BoxAveragerBindingMap, BoxAveragerBindingDirections )
 #endif

@@ -12,5 +12,5 @@ const std::vector<bool> inPlaceTestBindingDirections{true};
 #endif
 
 #ifndef INPLACETESTSHADER
-#define INPLACETESTSHADER shaderData( inPlaceTestcompData, inPlaceTestWireframe )
+#define INPLACETESTSHADER shaderData( inPlaceTestcompData, inPlaceTestWireframe, inPlaceTestBindingMap, inPlaceTestBindingDirections )
 #endif

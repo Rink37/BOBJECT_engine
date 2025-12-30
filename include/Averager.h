@@ -12,5 +12,5 @@ const std::vector<bool> AveragerBindingDirections{true, true, false, true};
 #endif
 
 #ifndef AVERAGERSHADER
-#define AVERAGERSHADER shaderData( AveragercompData, AveragerWireframe )
+#define AVERAGERSHADER shaderData( AveragercompData, AveragerWireframe, AveragerBindingMap, AveragerBindingDirections )
 #endif

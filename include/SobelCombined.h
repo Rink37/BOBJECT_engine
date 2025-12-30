@@ -12,5 +12,5 @@ const std::vector<bool> SobelCombinedBindingDirections{true, false};
 #endif
 
 #ifndef SOBELCOMBINEDSHADER
-#define SOBELCOMBINEDSHADER shaderData( SobelCombinedcompData, SobelCombinedWireframe )
+#define SOBELCOMBINEDSHADER shaderData( SobelCombinedcompData, SobelCombinedWireframe, SobelCombinedBindingMap, SobelCombinedBindingDirections )
 #endif

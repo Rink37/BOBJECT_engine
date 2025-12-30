@@ -12,5 +12,5 @@ const std::vector<bool> KuwaharaBindingDirections{true, false};
 #endif
 
 #ifndef KUWAHARASHADER
-#define KUWAHARASHADER shaderData( KuwaharacompData, KuwaharaWireframe )
+#define KUWAHARASHADER shaderData( KuwaharacompData, KuwaharaWireframe, KuwaharaBindingMap, KuwaharaBindingDirections )
 #endif

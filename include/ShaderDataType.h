@@ -20,12 +20,23 @@ struct shaderData{
         type = 1;
     }
 
+    shaderData(std::vector<unsigned char> c, bool w, std::map<std::string, int> bindings, std::vector<bool> directions) {
+        compData = c;
+        isWireframe = w;
+        type = 1;
+        bindingMap = bindings;
+        bindingDirections = directions;
+    }
+
     std::vector<unsigned char> fragData;
     std::vector<unsigned char> vertData;
     std::vector<unsigned char> compData;
 
     bool isWireframe = false;
     uint8_t type = 0;
+
+    std::map<std::string, int> bindingMap;
+    std::vector<bool> bindingDirections;
 };
 
 #endif

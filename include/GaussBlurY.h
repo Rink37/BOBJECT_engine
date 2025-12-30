@@ -12,5 +12,5 @@ const std::vector<bool> GaussBlurYBindingDirections{true, false};
 #endif
 
 #ifndef GAUSSBLURYSHADER
-#define GAUSSBLURYSHADER shaderData( GaussBlurYcompData, GaussBlurYWireframe )
+#define GAUSSBLURYSHADER shaderData( GaussBlurYcompData, GaussBlurYWireframe, GaussBlurYBindingMap, GaussBlurYBindingDirections )
 #endif

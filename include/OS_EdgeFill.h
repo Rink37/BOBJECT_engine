@@ -12,5 +12,5 @@ const std::vector<bool> OS_EdgeFillBindingDirections{true, false};
 #endif
 
 #ifndef OS_EDGEFILLSHADER
-#define OS_EDGEFILLSHADER shaderData( OS_EdgeFillcompData, OS_EdgeFillWireframe )
+#define OS_EDGEFILLSHADER shaderData( OS_EdgeFillcompData, OS_EdgeFillWireframe, OS_EdgeFillBindingMap, OS_EdgeFillBindingDirections )
 #endif

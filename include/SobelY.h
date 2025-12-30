@@ -12,5 +12,5 @@ const std::vector<bool> SobelYBindingDirections{true, false};
 #endif
 
 #ifndef SOBELYSHADER
-#define SOBELYSHADER shaderData( SobelYcompData, SobelYWireframe )
+#define SOBELYSHADER shaderData( SobelYcompData, SobelYWireframe, SobelYBindingMap, SobelYBindingDirections )
 #endif

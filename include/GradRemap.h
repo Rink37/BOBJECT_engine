@@ -12,5 +12,5 @@ const std::vector<bool> GradRemapBindingDirections{true, true, false, true};
 #endif
 
 #ifndef GRADREMAPSHADER
-#define GRADREMAPSHADER shaderData( GradRemapcompData, GradRemapWireframe )
+#define GRADREMAPSHADER shaderData( GradRemapcompData, GradRemapWireframe, GradRemapBindingMap, GradRemapBindingDirections )
 #endif

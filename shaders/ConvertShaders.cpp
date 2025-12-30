@@ -26,7 +26,7 @@ static std::vector<char> readFile(const std::string& filename) {
 }
 
 std::string readHelperFile(const std::string& filename, const std::string& shadername){
-	std::cout << filename << std::endl;
+	//std::cout << filename << std::endl;
 	std::ifstream file(filename);
 	if(!file.is_open()){
 		throw std::runtime_error("failed to open file");
@@ -87,7 +87,7 @@ std::string readHelperFile(const std::string& filename, const std::string& shade
 	bindingDirCode += std::string("};\n");
 
 	std::string helperCode = bindingMapCode + bindingDirCode;
-	std::cout << helperCode << std::endl;
+	//std::cout << helperCode << std::endl;
 	return helperCode;
 }
 
@@ -156,8 +156,10 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 		out << string("const bool ")+shadername+string("Wireframe = false;\n\n");
 	}
 
+	bool isHelperAvailable = false;
 	try{
 		out << readHelperFile(helperPath, shadername) + std::string("\n");
+		isHelperAvailable = true;
 	} catch(std::runtime_error){
 		std::cout << "No helper file found" << std::endl;
 	}
@@ -168,7 +170,11 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 	if (compData.size() == 0){
 		out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("fragData, ")+shadername+string("vertData, ")+shadername+string("Wireframe )\n");
 	} else {
-		out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("compData, ")+shadername+string("Wireframe )\n");
+		if (isHelperAvailable){
+			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("compData, ")+shadername+string("Wireframe, ") + shadername + string("BindingMap, ") + shadername + string("BindingDirections )\n");
+		} else {
+			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("compData, ")+shadername+string("Wireframe )\n");
+		}
 	}
 	
 	out << string("#endif\n");

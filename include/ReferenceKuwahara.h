@@ -12,5 +12,5 @@ const std::vector<bool> ReferenceKuwaharaBindingDirections{true, true, false};
 #endif
 
 #ifndef REFERENCEKUWAHARASHADER
-#define REFERENCEKUWAHARASHADER shaderData( ReferenceKuwaharacompData, ReferenceKuwaharaWireframe )
+#define REFERENCEKUWAHARASHADER shaderData( ReferenceKuwaharacompData, ReferenceKuwaharaWireframe, ReferenceKuwaharaBindingMap, ReferenceKuwaharaBindingDirections )
 #endif
