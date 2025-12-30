@@ -572,6 +572,9 @@ int countInputs(std::vector<bool> directions) {
 postProcessFilter::postProcessFilter(shaderData* sd) {
 	filterShaderModule = Engine::get()->createShaderModule(sd->compData);
 	int inputCount = countInputs(sd->bindingDirections);
+	if (inputCount > 1) {
+		throw runtime_error("Post-process shaders with multiple inputs are not currently supported, the specified shader is invalid");
+	}
 	hasOutput = (inputCount != sd->bindingDirections.size());
 	if (hasOutput){
 		std::cout << "A post-process filter has detected that it has an output" << std::endl;
@@ -590,6 +593,9 @@ void postProcessFilter::setup(shaderData* sd, drawImage* target) {
 	filterShaderModule = Engine::get()->createShaderModule(sd->compData);
 	this->target = target;
 	int inputCount = countInputs(sd->bindingDirections);
+	if (inputCount > 1) {
+		throw runtime_error("Post-process shaders with multiple inputs are not currently supported, the specified shader is invalid");
+	}
 	hasOutput = (inputCount != sd->bindingDirections.size());
 	if (hasOutput) {
 		std::cout << "A post-process filter has detected that it has an output" << std::endl;
