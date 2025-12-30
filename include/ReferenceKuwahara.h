@@ -6,6 +6,9 @@ const std::vector<unsigned char> ReferenceKuwaharacompData = { 0x03, 0x02, 0x23,
 
 const bool ReferenceKuwaharaWireframe = false;
 
+const std::map<std::string, int> ReferenceKuwaharaBindingMap{{"referenceImage", 0}, {"inputImage", 0}, {"resultImage", 0}};
+const std::vector<bool> ReferenceKuwaharaBindingDirections{true, true, false};
+
 #endif
 
 #ifndef REFERENCEKUWAHARASHADER

@@ -6,6 +6,9 @@ const std::vector<unsigned char> GaussBlurXcompData = { 0x03, 0x02, 0x23, 0x07, 
 
 const bool GaussBlurXWireframe = false;
 
+const std::map<std::string, int> GaussBlurXBindingMap{{"inputImage", 0}, {"resultImage", 0}};
+const std::vector<bool> GaussBlurXBindingDirections{true, false};
+
 #endif
 
 #ifndef GAUSSBLURXSHADER

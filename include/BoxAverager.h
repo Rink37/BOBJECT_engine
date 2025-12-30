@@ -6,6 +6,9 @@ const std::vector<unsigned char> BoxAveragercompData = { 0x03, 0x02, 0x23, 0x07,
 
 const bool BoxAveragerWireframe = false;
 
+const std::map<std::string, int> BoxAveragerBindingMap{{"normalImage", 0}, {"gradients", 0}, {"resultImage", 0}, {"RemapParamObject", 1}};
+const std::vector<bool> BoxAveragerBindingDirections{true, true, false, true};
+
 #endif
 
 #ifndef BOXAVERAGERSHADER

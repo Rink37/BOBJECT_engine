@@ -6,6 +6,9 @@ const std::vector<unsigned char> SobelXcompData = { 0x03, 0x02, 0x23, 0x07, 0x00
 
 const bool SobelXWireframe = false;
 
+const std::map<std::string, int> SobelXBindingMap{{"inputImage", 0}, {"resultImage", 0}};
+const std::vector<bool> SobelXBindingDirections{true, false};
+
 #endif
 
 #ifndef SOBELXSHADER

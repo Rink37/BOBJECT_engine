@@ -6,6 +6,9 @@ const std::vector<unsigned char> OS_EdgeFillcompData = { 0x03, 0x02, 0x23, 0x07,
 
 const bool OS_EdgeFillWireframe = false;
 
+const std::map<std::string, int> OS_EdgeFillBindingMap{{"normalImage", 0}, {"resultImage", 0}};
+const std::vector<bool> OS_EdgeFillBindingDirections{true, false};
+
 #endif
 
 #ifndef OS_EDGEFILLSHADER

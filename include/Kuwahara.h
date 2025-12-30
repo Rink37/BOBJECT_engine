@@ -6,6 +6,9 @@ const std::vector<unsigned char> KuwaharacompData = { 0x03, 0x02, 0x23, 0x07, 0x
 
 const bool KuwaharaWireframe = false;
 
+const std::map<std::string, int> KuwaharaBindingMap{{"inputImage", 0}, {"resultImage", 0}};
+const std::vector<bool> KuwaharaBindingDirections{true, false};
+
 #endif
 
 #ifndef KUWAHARASHADER

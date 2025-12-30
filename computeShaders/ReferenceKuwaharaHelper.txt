@@ -1,0 +1,3 @@
+IN 0 "referenceImage"
+IN 0 "inputImage"
+OUT 0 "resultImage"

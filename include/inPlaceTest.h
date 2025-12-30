@@ -6,6 +6,9 @@ const std::vector<unsigned char> inPlaceTestcompData = { 0x03, 0x02, 0x23, 0x07,
 
 const bool inPlaceTestWireframe = false;
 
+const std::map<std::string, int> inPlaceTestBindingMap{{"image", 0}};
+const std::vector<bool> inPlaceTestBindingDirections{true};
+
 #endif
 
 #ifndef INPLACETESTSHADER

@@ -6,6 +6,9 @@ const std::vector<unsigned char> GradRemapcompData = { 0x03, 0x02, 0x23, 0x07, 0
 
 const bool GradRemapWireframe = false;
 
+const std::map<std::string, int> GradRemapBindingMap{{"normalImage", 0}, {"gradients", 0}, {"resultImage", 0}, {"RemapParamObject", 1}};
+const std::vector<bool> GradRemapBindingDirections{true, true, false, true};
+
 #endif
 
 #ifndef GRADREMAPSHADER

@@ -6,6 +6,9 @@ const std::vector<unsigned char> SobelYcompData = { 0x03, 0x02, 0x23, 0x07, 0x00
 
 const bool SobelYWireframe = false;
 
+const std::map<std::string, int> SobelYBindingMap{{"inputImage", 0}, {"resultImage", 0}};
+const std::vector<bool> SobelYBindingDirections{true, false};
+
 #endif
 
 #ifndef SOBELYSHADER
