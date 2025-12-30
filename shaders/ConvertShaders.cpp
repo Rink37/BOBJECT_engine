@@ -3,7 +3,8 @@
 #include<fstream>
 #include<string>
 #include<vector>
-#include <iomanip>
+#include<map>
+#include<iomanip>
 #include<Windows.h>
 #include <bits/stdc++.h> // No idea why this is claimed to be an error - it works fine
 
@@ -24,10 +25,77 @@ static std::vector<char> readFile(const std::string& filename) {
 	return buffer;
 }
 
+std::string readHelperFile(const std::string& filename, const std::string& shadername){
+	std::cout << filename << std::endl;
+	std::ifstream file(filename);
+	if(!file.is_open()){
+		throw std::runtime_error("failed to open file");
+	}
+	std::string line;
+	int inputCount = 0;
+	int outputCount = 0;
+	std::map<std::string, int> inputs;
+	std::map<std::string, int> outputs;
+
+	std::string bindingMapCode = std::string("const std::map<std::string, int> ") + shadername + ("BindingMap{");
+	std::string bindingDirCode = std::string("const std::vector<bool> ") + shadername + ("BindingDirections{");
+	bool commaNeeded = false;
+	while(getline(file, line)){
+		bool in = false;
+		regex del(" ");
+		sregex_token_iterator it(line.begin(), line.end(), del, -1);
+		sregex_token_iterator end;
+
+		//std::cout << *it << std::endl;
+		if (*it == "IN"){
+			inputCount++;
+			in = true;
+		} else {
+			outputCount++;
+			in = false;
+		}
+		++it;
+		if (in){
+			int type = stoi(*it);
+			++it;
+			std::string inputName = *it;
+			if (commaNeeded){
+				bindingMapCode += std::string(", ");
+				bindingDirCode += std::string(", ");
+			}
+			bindingMapCode += std::string("{") + inputName + std::string(", ") + std::to_string(type) + std::string("}");
+			bindingDirCode += std::string("true");
+			commaNeeded = true;
+			inputs.insert({*it, type});
+		} else {
+			int type = stoi(*it);
+			//std::cout << type << std::endl;
+			++it;
+			std::string inputName = *it;
+			if (commaNeeded){
+				bindingMapCode += std::string(", ");
+				bindingDirCode += std::string(", ");
+			}
+			bindingMapCode += std::string("{") + inputName + std::string(", ") + std::to_string(type) + std::string("}");
+			bindingDirCode += std::string("false");
+			commaNeeded = true;
+			outputs.insert({*it, type});
+		}
+	}
+	file.close();
+	bindingMapCode += std::string("};\n");
+	bindingDirCode += std::string("};\n");
+
+	std::string helperCode = bindingMapCode + bindingDirCode;
+	std::cout << helperCode << std::endl;
+	return helperCode;
+}
+
 void loadAndWriteShaders(string basepath, string shadername, bool wireframe, string outRoot){
     string compPath = basepath + shadername + string("Comp.spv");
 	string vertPath = basepath + shadername + string("Vert.spv");
 	string fragPath = basepath + shadername + string("Frag.spv");
+	string helperPath = basepath + shadername + string("Helper.txt");
 	vector<char> vertData;
 	vector<char> fragData;
 	vector<char> compData;
@@ -86,6 +154,12 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 		out << string("const bool ")+shadername+string("Wireframe = true;\n\n");
 	} else {
 		out << string("const bool ")+shadername+string("Wireframe = false;\n\n");
+	}
+
+	try{
+		out << readHelperFile(helperPath, shadername) + std::string("\n");
+	} catch(std::runtime_error){
+		std::cout << "No helper file found" << std::endl;
 	}
 
 	out << string("#endif\n\n");

@@ -1,0 +1,4 @@
+IN 0 "normalImage"
+IN 0 "gradients"
+OUT 0 "resultImage"
+IN 1 "RemapParamObject"
