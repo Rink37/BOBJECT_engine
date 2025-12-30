@@ -175,13 +175,13 @@ private:
 	void createFilterTarget();
 };
 
-class inplaceFilter {
+class postProcessFilter {
 // This class is intended to perform compute shaders on swapchain images so that compute operations can be performed for each rendered frame (e.g. colour grading or resolving multiple passes)
 // The current setup defines only compute shaders which depend on the value of a single pixel - if we need to read multiple (e.g. to calculate image gradients) then we would need to create a separate image to write to so that we do not read from a value that has already been written
 public:
-	inplaceFilter() = default;
+	postProcessFilter() = default;
 
-	inplaceFilter(shaderData*); // This class should be created before any rendering is performed
+	postProcessFilter(shaderData*); // This class should be created before any rendering is performed
 
 	void setup(shaderData*, drawImage*);
 	void filterImage(VkCommandBuffer, uint32_t);
@@ -204,6 +204,14 @@ private:
 	std::vector<VkDescriptorSet> filterDescriptorSets = {};
 
 	VkShaderModule filterShaderModule = nullptr; // Destroyed by default
+
+	bool hasOutput = false;
+
+	std::vector<VkImage> outputImages;
+	std::vector<VkImageView> outputImageViews;
+	std::vector<VkDeviceMemory> outputImageMemories;
+
+	void createOutputImages();
 
 	void createDescriptorSetLayout();
 	void createDescriptorSets();

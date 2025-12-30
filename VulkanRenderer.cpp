@@ -332,7 +332,7 @@ private:
 
 	vector<Widget*> widgets;
 
-	inplaceFilter normalizer;
+	postProcessFilter normalizer;
 	drawImage test;
 	//VkRenderPass testRP;
 	GraphicsPass testGP;

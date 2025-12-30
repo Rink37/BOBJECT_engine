@@ -559,24 +559,52 @@ void filter::filterImage(VkCommandBuffer commandBuffer) {
 	vkCmdDispatch(commandBuffer, source[0]->texWidth / 16, source[0]->texHeight / 16, 1);
 }
 
-inplaceFilter::inplaceFilter(shaderData* sd) {
+int countInputs(std::vector<bool> directions) {
+	int count = 0;
+	for (bool dir : directions) {
+		if (dir) {
+			count++;
+		}
+	}
+	return count;
+}
+
+postProcessFilter::postProcessFilter(shaderData* sd) {
 	filterShaderModule = Engine::get()->createShaderModule(sd->compData);
+	int inputCount = countInputs(sd->bindingDirections);
+	hasOutput = (inputCount != sd->bindingDirections.size());
+	if (hasOutput){
+		std::cout << "A post-process filter has detected that it has an output" << std::endl;
+		if (sd->bindingDirections.size() - inputCount > 1) {
+			throw runtime_error("Post-process shaders with multiple outputs are not currently supported, the specified shader is invalid");
+		}
+		createOutputImages();
+	}
 	createDescriptorSetLayout();
 	createDescriptorSets();
 	createFilterPipelineLayout();
 	createFilterPipeline();
 }
 
-void inplaceFilter::setup(shaderData* sd, drawImage* target) {
+void postProcessFilter::setup(shaderData* sd, drawImage* target) {
 	filterShaderModule = Engine::get()->createShaderModule(sd->compData);
 	this->target = target;
+	int inputCount = countInputs(sd->bindingDirections);
+	hasOutput = (inputCount != sd->bindingDirections.size());
+	if (hasOutput) {
+		std::cout << "A post-process filter has detected that it has an output" << std::endl;
+		if (sd->bindingDirections.size() - inputCount > 1) {
+			throw runtime_error("Post-process shaders with multiple outputs are not currently supported, the specified shader is invalid");
+		}
+		createOutputImages();
+	}
 	createDescriptorSetLayout();
 	createDescriptorSets();
 	createFilterPipelineLayout();
 	createFilterPipeline();
 }
 
-void inplaceFilter::filterImage(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+void postProcessFilter::filterImage(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 	VkImage& image = target->images[imageIndex];
 	transitionImageLayout(commandBuffer, target->images[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipeline);
@@ -585,7 +613,7 @@ void inplaceFilter::filterImage(VkCommandBuffer commandBuffer, uint32_t imageInd
 	transitionImageLayout(commandBuffer, target->images[imageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 }
 
-void inplaceFilter::createDescriptorSetLayout() {
+void postProcessFilter::createDescriptorSetLayout() {
 
 	uint32_t imageCount = target->images.size();
 
@@ -621,7 +649,7 @@ void inplaceFilter::createDescriptorSetLayout() {
 	}
 }
 
-void inplaceFilter::createDescriptorSets() {
+void postProcessFilter::createDescriptorSets() {
 
 	uint32_t imageCount = target->images.size();
 	
@@ -657,7 +685,7 @@ void inplaceFilter::createDescriptorSets() {
 	}
 }
 
-void inplaceFilter::recreateDescriptorSets() {
+void postProcessFilter::recreateDescriptorSets() {
 
 	uint32_t imageCount = target->images.size();
 
@@ -679,7 +707,7 @@ void inplaceFilter::recreateDescriptorSets() {
 	}
 }
 
-void inplaceFilter::createFilterPipelineLayout() {
+void postProcessFilter::createFilterPipelineLayout() {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 1;
@@ -690,7 +718,7 @@ void inplaceFilter::createFilterPipelineLayout() {
 	}
 }
 
-void inplaceFilter::createFilterPipeline() {
+void postProcessFilter::createFilterPipeline() {
 	VkPipelineShaderStageCreateInfo filterStage = {
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		nullptr,
@@ -717,7 +745,7 @@ bool hasStencilComponent(VkFormat format) {
 	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void inplaceFilter::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout) {
+void postProcessFilter::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout) {
 
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -764,7 +792,7 @@ void inplaceFilter::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage
 	);
 }
 
-void inplaceFilter::cleanup() {
+void postProcessFilter::cleanup() {
 	VkDevice device = Engine::get()->device;
 
 	vkDestroyPipeline(device, filterPipeline, nullptr);
@@ -772,4 +800,37 @@ void inplaceFilter::cleanup() {
 
 	vkDestroyDescriptorSetLayout(device, filterDescriptorSetLayout, nullptr);
 	vkDestroyDescriptorPool(device, descPool, nullptr);
+
+	for (size_t i = 0; i != outputImages.size(); i++) {
+		vkDestroyImage(device, outputImages[i], nullptr);
+		vkDestroyImageView(device, outputImageViews[i], nullptr);
+		vkFreeMemory(device, outputImageMemories[i], nullptr);
+	}
+}
+
+void postProcessFilter::createOutputImages() {
+	VkDevice device = Engine::get()->device;
+
+	uint32_t imageCount = target->images.size();
+
+	outputImages.resize(imageCount);
+	outputImageMemories.resize(imageCount);
+
+	uint32_t width = 0;
+	uint32_t height = 0;
+
+	width = target->imageExtent.width;
+	height = target->imageExtent.height;
+
+	for (size_t i = 0; i != imageCount; i++) {
+		Engine::get()->createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, target->imageFormat, VK_IMAGE_TILING_OPTIMAL, target->imageUsage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, outputImages[i], outputImageMemories[i]);
+		Engine::get()->transitionImageLayout(outputImages[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL); // This causes no problems - all draw images should be in the expected layout
+	}
+
+	outputImageViews.resize(outputImages.size());
+
+	for (uint32_t i = 0; i < outputImages.size(); i++) {
+		outputImageViews[i] = Engine::get()->createImageView(outputImages[i], target->imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	}
+
 }

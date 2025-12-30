@@ -328,6 +328,12 @@ public:
 
 	void copyImageToSwapchain(VkCommandBuffer, drawImage*, uint32_t);
 
+	void createImage(uint32_t, uint32_t, uint32_t, VkSampleCountFlagBits, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
+	VkImageView createImageView(VkImage, VkFormat, VkImageAspectFlags, uint32_t);
+
+	void transitionImageLayout(VkCommandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
+	void transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
+
 private:
 	static Engine* enginstance;
 	Engine() = default;
@@ -353,9 +359,6 @@ private:
 	VkImageView colourImageView = nullptr;
 
 	static void framebufferResizeCallback(GLFWwindow*, int, int);
-
-	void transitionImageLayout(VkCommandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
-	void transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 	bool checkValidationLayerSupport();
 	void createInstance();
@@ -385,9 +388,6 @@ private:
 	void DestroyDebugUtilsMessengerEXT(VkInstance, VkDebugUtilsMessengerEXT, const VkAllocationCallbacks*);
 
 	VkFormat findSupportedFormat(const std::vector<VkFormat>&, VkImageTiling, VkFormatFeatureFlags);
-
-	void createImage(uint32_t, uint32_t, uint32_t, VkSampleCountFlagBits, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
-	VkImageView createImageView(VkImage, VkFormat, VkImageAspectFlags, uint32_t);
 
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT&);
 
