@@ -27,8 +27,8 @@ public:
 		for (int i = 0; i != outputImageCount; i++) {
 			createFilterTarget();
 		}
-		autoCreateDescriptorSetLayout();
-		autoCreateDescriptorSet();
+		createDescriptorSetLayout();
+		createDescriptorSet();
 		createFilterPipelineLayout();
 		createFilterPipeline();
 	};
@@ -50,8 +50,8 @@ public:
 		for (int i = 0; i != outputImageCount; i++) {
 			createFilterTarget();
 		}
-		autoCreateDescriptorSetLayout();
-		autoCreateDescriptorSet();
+		createDescriptorSetLayout();
+		createDescriptorSet();
 		createFilterPipelineLayout();
 		createFilterPipeline();
 	};
@@ -77,8 +77,8 @@ public:
 		for (int i = 0; i != outputImageCount; i++) {
 			createFilterTarget();
 		}
-		autoCreateDescriptorSetLayout();
-		autoCreateDescriptorSet();
+		createDescriptorSetLayout();
+		createDescriptorSet();
 		createFilterPipelineLayout();
 		createFilterPipeline();
 	};
@@ -141,8 +141,8 @@ private:
 
 	std::vector<shaderIOValue> IObindings;
 
-	void autoCreateDescriptorSetLayout();
-	void autoCreateDescriptorSet();
+	//void autoCreateDescriptorSetLayout();
+	//void autoCreateDescriptorSet();
 
 	void createDescriptorSetLayout();
 	void createDescriptorSet();

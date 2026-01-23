@@ -112,6 +112,12 @@ private:
 	Texture* gradients = nullptr;
 
 	uint32_t baseHeight = 0, baseWidth = 0;
+
+	filter* Kuwahara = nullptr;
+	filter* SobelCombined = nullptr;
+	filter* Averager = nullptr;
+	filter* gradRemap = nullptr;
+	filter* referenceKuwahara = nullptr;
 };
 
 class RemapUI : public Widget {
