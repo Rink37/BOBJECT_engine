@@ -5,8 +5,6 @@ using namespace std;
 // https://github.com/ttddee/ShaderDev/blob/master/src/vulkanrenderer.cpp
 
 void filter::getFilterLayout(shaderData* sD) {
-	//bindingMap = sD->bindingMap;
-	//bindingDirections = sD->bindingDirections;
 	
 	IObindings = sD->IO;
 	
@@ -47,15 +45,30 @@ void filter::getFilterLayout(shaderData* sD) {
 void filter::autoCreateDescriptorSetLayout() {
 	int descriptorElementCount = IObindings.size();
 
-	VkDescriptorPoolSize descPoolSize = {
-		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 
-		descriptorElementCount
-	};
+	unsigned int descriptorImageCount = 0;
+	unsigned int descriptorBufferCount = 0;
+
+	for (size_t i = 0; i != IObindings.size(); i++) {
+		if (IObindings[i].type == 0) {
+			descriptorImageCount++;
+		}
+		else if (IObindings[i].type == 1) {
+			descriptorBufferCount++;
+		}
+	}
+
+	std::vector<VkDescriptorPoolSize> descPoolSizes{};
+	if (descriptorImageCount > 0) {
+		descPoolSizes.push_back(VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, descriptorImageCount});
+	}
+	if (descriptorBufferCount > 0) {
+		descPoolSizes.push_back(VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorBufferCount });
+	}
 
 	VkDescriptorPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolInfo.poolSizeCount = static_cast<uint32_t>(1);
-	poolInfo.pPoolSizes = &descPoolSize;
+	poolInfo.poolSizeCount = static_cast<uint32_t>(descPoolSizes.size());
+	poolInfo.pPoolSizes = descPoolSizes.data();
 	poolInfo.maxSets = static_cast<uint32_t>(1);
 
 	if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descPool) != VK_SUCCESS) {
@@ -72,11 +85,11 @@ void filter::autoCreateDescriptorSetLayout() {
 		bindingElement.binding = index;
 		if (IObindings[i].type == 0) {
 			bindingElement.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			std::cout << "Image: " << IObindings[i].name << std::endl;
+			//std::cout << "Image: " << IObindings[i].name << std::endl;
 		}
 		else if (IObindings[i].type == 1) {
 			bindingElement.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			std::cout << "Buffer: " << IObindings[i].name << std::endl;
+			//std::cout << "Buffer: " << IObindings[i].name << std::endl;
 		}
 		bindingElement.descriptorCount = 1;
 		bindingElement.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;

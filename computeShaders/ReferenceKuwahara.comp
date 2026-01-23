@@ -4,7 +4,6 @@ layout (local_size_x = 16, local_size_y = 16) in;
 layout(binding = 0, rgba8) uniform readonly image2D referenceImage;
 layout(binding = 1, rgba8) uniform readonly image2D inputImage;
 layout(binding = 2, rgba8) uniform image2D resultImage;
-
 layout(binding = 3) uniform RemapParamObject {
 	int kuwaharaKernelRadius;
 	int averagerKernelRadius;
