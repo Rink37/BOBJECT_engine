@@ -64,6 +64,7 @@ public:
 
 	bool normalAvailable = false;
 
+	Material unlitSurfaceMat;
 	Material surfaceMat;
 	std::string renderPipeline = "BFShading";
 
@@ -104,6 +105,7 @@ public:
 		TSmatching = false;
 		Diffuse = { webcamPtr, webcamPtr };
 		Normal = { webcamPtr, webcamPtr, webcamPtr };
+		unlitSurfaceMat.init(webTex);
 		surfaceMat.init(webTex);
 		diffuseIdx = 0;
 		normalIdx = 0;
@@ -209,10 +211,12 @@ public:
 				n = webTex;
 				break;
 			}
+			unlitSurfaceMat.init(d);
 			surfaceMat.init(d, n);
 		}
 		else {
 			renderPipeline = "BFShading";
+			unlitSurfaceMat.init(d);
 			surfaceMat.init(d);
 		}
 		if (updateCallback != nullptr) {
@@ -237,6 +241,7 @@ public:
 				mat->cleanupDescriptor();
 			}
 		}
+		unlitSurfaceMat.cleanupDescriptor();
 		surfaceMat.cleanupDescriptor();
 
 		webcamTexture::get()->cleanup();

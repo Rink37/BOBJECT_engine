@@ -883,7 +883,8 @@ private:
 	} 
 
 	void updateDrawVariables() {
-		drawMat = &((!tomogActive) ? sConst->surfaceMat : tomogUI.scannedMaterial);
+		Material* activeSurfaceMat = &((lit) ? sConst->surfaceMat : sConst->unlitSurfaceMat);
+		drawMat = ((!tomogActive) ? activeSurfaceMat : &tomogUI.scannedMaterial);
 		renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
 		graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
 		VkPipelineLayout pipelineLayoutSet[2] = { currentPass->diffusePipelineLayout, currentPass->diffNormPipelineLayout };
