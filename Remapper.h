@@ -91,9 +91,9 @@ public:
 
 	void createReferenceMaps(Texture*, Texture*);
 
-	void createBaseMaps();
-	void performRemap();
-	void smootheResult();
+	void createBaseMaps(VkCommandBuffer);
+	void performRemap(VkCommandBuffer);
+	void smootheResult(VkCommandBuffer);
 
 	void cleanup();
 
@@ -108,8 +108,6 @@ private:
 	VkBuffer paramBuffer = nullptr;
 	VkDeviceMemory paramBufferMemory = nullptr;
 	void* paramBufferMapped = nullptr;
-
-	Texture* gradients = nullptr;
 
 	uint32_t baseHeight = 0, baseWidth = 0;
 

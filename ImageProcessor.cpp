@@ -223,9 +223,9 @@ void filter::createFilterTarget() {
 }
 
 void filter::filterImage() {
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
-
 	vkQueueWaitIdle(Engine::get()->computeQueue);
+
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 
 	filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->mipLevels);
 
