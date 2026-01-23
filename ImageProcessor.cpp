@@ -4,6 +4,88 @@ using namespace std;
 
 // https://github.com/ttddee/ShaderDev/blob/master/src/vulkanrenderer.cpp
 
+void filter::getFilterLayout(shaderData* sD) {
+	bindingMap = sD->bindingMap;
+	bindingDirections = sD->bindingDirections;
+	if (bindingMap.size() == 0 || bindingDirections.size() == 0) {
+		return;
+	}
+
+	int inputCount = 0;
+	int outputCount = 0;
+	int inputImageCount = 0;
+	int outputImageCount = 0;
+	
+	int index = 0;
+	for (std::map<std::string, int>::iterator i = bindingMap.begin();i != bindingMap.end(); i++) {
+		if (bindingDirections.at(index)) {
+			inputCount++;
+			if (i->second == 0) {
+				inputImageCount++;
+			}
+		}
+		else {
+			outputCount++;
+			if (i->second == 0) {
+				outputImageCount++;
+			}
+		}
+		index++;
+	}
+
+	std::cout << "Input count = " << inputCount << std::endl;
+	std::cout << "Output count = " << outputCount << std::endl;
+
+	std::cout << "Input image count = " << inputImageCount << std::endl;
+	std::cout << "Output image count = " << outputImageCount << std::endl;
+}
+
+void filter::autoCreateDescriptorSetLayout() {
+	int descriptorElementCount = bindingDirections.size();
+
+	VkDescriptorPoolSize descPoolSize = {
+		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 
+		descriptorElementCount
+	};
+
+	VkDescriptorPoolCreateInfo poolInfo = {};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = static_cast<uint32_t>(1);
+	poolInfo.pPoolSizes = &descPoolSize;
+	poolInfo.maxSets = static_cast<uint32_t>(1);
+
+	if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descPool) != VK_SUCCESS) {
+		throw runtime_error("Failed to create descriptor pool!");
+	}
+
+	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
+	descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+
+	std::vector<VkDescriptorSetLayoutBinding> bindings;
+	int index = 0;
+	for (std::map<std::string, int>::iterator it = bindingMap.begin(); it != bindingMap.end(); it++) {
+		VkDescriptorSetLayoutBinding bindingElement;
+		bindingElement.binding = index;
+		if (it->second == 0) {
+			bindingElement.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		}
+		else if (it->second == 1) {
+			bindingElement.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		}
+		bindingElement.descriptorCount = 1;
+		bindingElement.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		bindings.push_back(bindingElement);
+		index++;
+	}
+
+	descriptorSetLayoutCreateInfo.pBindings = bindings.data();
+	descriptorSetLayoutCreateInfo.bindingCount = index;
+
+	if (vkCreateDescriptorSetLayout(Engine::get()->device, &descriptorSetLayoutCreateInfo, nullptr, &filterDescriptorSetLayout) != VK_SUCCESS) {
+		throw runtime_error("Failed to create filter descriptor set layout!");
+	}
+}
+
 void filter::createDescriptorSetLayout() {
 
 	if (filtertype == OIOO) {
@@ -230,6 +312,83 @@ void filter::createDescriptorSetLayout() {
 			}
 		}
 
+	}
+}
+
+void filter::autoCreateDescriptorSet() {
+	int descriptorElementCount = bindingDirections.size();
+
+	VkDescriptorSetAllocateInfo descSetAllocInfo = {
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		nullptr,
+		descPool,
+		1,
+		&filterDescriptorSetLayout
+	};
+
+	if (vkAllocateDescriptorSets(Engine::get()->device, &descSetAllocInfo, &filterDescriptorSet) != VK_SUCCESS) {
+		throw runtime_error("Failed to allocate filter descriptor");
+	}
+
+	std::vector<VkWriteDescriptorSet> descWrite = {};
+	std::vector<VkDescriptorImageInfo*> imageInfos = {};
+	std::vector<VkDescriptorBufferInfo*> bufferInfos = {};
+	int index = 0;
+	int inputImageIndex = 0;
+	int outputImageIndex = 0;
+	for (std::map<std::string, int>::iterator it = bindingMap.begin(); it != bindingMap.end(); it++) {
+		VkWriteDescriptorSet writeElement = {};
+		writeElement.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeElement.dstSet = filterDescriptorSet;
+		writeElement.dstBinding = index;
+		writeElement.descriptorCount = 1;
+		if (it->second == 0) {
+			VkDescriptorImageInfo* imageInfo = new VkDescriptorImageInfo;
+			if (bindingDirections[index]) {
+				imageInfo->imageView = source.at(inputImageIndex)->textureImageView;
+				inputImageIndex++;
+			}
+			else {
+				imageInfo->imageView = filterTarget.at(outputImageIndex)->textureImageView;
+				outputImageIndex++;
+			}
+			imageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+			imageInfos.push_back(imageInfo);
+
+			writeElement.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			writeElement.pImageInfo = imageInfos[imageInfos.size() - 1];
+		}
+		else if (it->second == 1) {
+			if (!bindingDirections[index]) {
+				throw runtime_error("IO map claims uniform buffer as output, which is an invalid specification.");
+			}
+
+			VkDescriptorBufferInfo* bufferInfo = new VkDescriptorBufferInfo;
+			bufferInfo->buffer = bufferRef;
+			bufferInfo->offset = 0;
+			bufferInfo->range = bufferSize;
+
+			bufferInfos.push_back(bufferInfo);
+
+			writeElement.dstArrayElement = 0;
+			writeElement.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			writeElement.pBufferInfo = bufferInfos[bufferInfos.size() - 1];
+		}
+		else {
+			throw runtime_error("Invalid binding type");
+		}
+		descWrite.push_back(writeElement);
+		index++;
+	}
+	vkUpdateDescriptorSets(Engine::get()->device, descriptorElementCount, descWrite.data(), 0, nullptr);
+
+	for (size_t i = 0; i != imageInfos.size(); i++) {
+		delete imageInfos[i];
+	}
+
+	for (size_t i = 0; i != bufferInfos.size(); i++) {
+		delete bufferInfos[i];
 	}
 }
 
