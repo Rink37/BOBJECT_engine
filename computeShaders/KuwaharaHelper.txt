@@ -1,2 +1,3 @@
 IN 0 "inputImage"
 OUT 0 "resultImage"
+IN 1 "RemapParamObject"

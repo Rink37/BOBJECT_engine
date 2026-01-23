@@ -7,10 +7,9 @@ const std::vector<unsigned char> AveragerCompData = { 0x03, 0x02, 0x23, 0x07, 0x
 const uint8_t AveragerType = COMP_SHADER;
 const bool AveragerWireframe = false;
 
-const std::map<std::string, int> AveragerBindingMap{{"normalImage", 0}, {"gradients", 0}, {"resultImage", 0}, {"RemapParamObject", 1}};
-const std::vector<bool> AveragerBindingDirections{true, true, false, true};
+const std::vector<shaderIOValue> AveragerIO = {shaderIOValue("normalImage", 0, true), shaderIOValue("gradients", 0, true), shaderIOValue("resultImage", 0, false), shaderIOValue("RemapParamObject", 1, true)};
 #endif
 
 #ifndef AVERAGERSHADER
-#define AVERAGERSHADER shaderData( AveragerCompData, AveragerWireframe, AveragerBindingMap, AveragerBindingDirections )
+#define AVERAGERSHADER shaderData( AveragerCompData, AveragerWireframe, AveragerIO )
 #endif

@@ -13,21 +13,6 @@
 class filter {
 public:
 	filter(std::vector<Texture*> srcs, shaderData* sd) {
-		
-		switch (srcs.size()) {
-		case(1):
-			filtertype = OIOO;
-			break;
-		case(2):
-			filtertype = TIOO;
-			break;
-		case(3):
-			filtertype = THIOO;
-			break;
-		default:
-			filtertype = OIOO;
-			break;
-		}
 		for (Texture* src : srcs) {
 			source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 		}
@@ -39,7 +24,9 @@ public:
 
 		filterShaderModule = Engine::get()->createShaderModule(sd->compData);
 
-		createFilterTarget();
+		for (int i = 0; i != outputImageCount; i++) {
+			createFilterTarget();
+		}
 		autoCreateDescriptorSetLayout();
 		autoCreateDescriptorSet();
 		createFilterPipelineLayout();
@@ -47,21 +34,6 @@ public:
 	};
 
 	filter(std::vector<Texture*> srcs, shaderData* sd, VkFormat outFormat) {
-		
-		switch (srcs.size()) {
-		case (1):
-			filtertype = OIOO;
-			break;
-		case(2):
-			filtertype = TIOO;
-			break;
-		case(3):
-			filtertype = THIOO;
-			break;
-		default:
-			filtertype = OIOO;
-			break;
-		}
 		for (Texture* src : srcs) {
 			source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 		}
@@ -75,7 +47,9 @@ public:
 
 		targetFormat = outFormat;
 
-		createFilterTarget();
+		for (int i = 0; i != outputImageCount; i++) {
+			createFilterTarget();
+		}
 		autoCreateDescriptorSetLayout();
 		autoCreateDescriptorSet();
 		createFilterPipelineLayout();
@@ -83,21 +57,6 @@ public:
 	};
 
 	filter(std::vector<Texture*> srcs, shaderData* sd, VkFormat outFormat, VkBuffer buffer, uint32_t bufferSize) {
-
-		switch (srcs.size()) {
-		case (1):
-			filtertype = OIOO;
-			break;
-		case(2):
-			filtertype = TIOO;
-			break;
-		case(3):
-			filtertype = THIOO;
-			break;
-		default:
-			filtertype = OIOO;
-			break;
-		}
 		for (Texture* src : srcs) {
 			source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 		}
@@ -115,7 +74,9 @@ public:
 
 		targetFormat = outFormat;
 
-		createFilterTarget();
+		for (int i = 0; i != outputImageCount; i++) {
+			createFilterTarget();
+		}
 		autoCreateDescriptorSetLayout();
 		autoCreateDescriptorSet();
 		createFilterPipelineLayout();
@@ -154,6 +115,8 @@ public:
 	std::vector<VkFormat> originalFormats;
 
 private:
+	uint32_t outputImageCount = 0;
+
 	uint32_t filtertype = OIOO;
 	uint32_t texWidth = 0;
 	uint32_t texHeight = 0;
@@ -173,8 +136,10 @@ private:
 	uint32_t bufferSize = 0;
 	VkBuffer bufferRef = nullptr;
 
-	std::vector<bool> bindingDirections;
-	std::map<std::string, int> bindingMap;
+	//std::vector<bool> bindingDirections;
+	//std::map<std::string, int> bindingMap;
+
+	std::vector<shaderIOValue> IObindings;
 
 	void autoCreateDescriptorSetLayout();
 	void autoCreateDescriptorSet();

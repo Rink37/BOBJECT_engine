@@ -7,10 +7,9 @@ const std::vector<unsigned char> SobelCombinedCompData = { 0x03, 0x02, 0x23, 0x0
 const uint8_t SobelCombinedType = COMP_SHADER;
 const bool SobelCombinedWireframe = false;
 
-const std::map<std::string, int> SobelCombinedBindingMap{{"inputImage", 0}, {"resultImage", 0}};
-const std::vector<bool> SobelCombinedBindingDirections{true, false};
+const std::vector<shaderIOValue> SobelCombinedIO = {shaderIOValue("inputImage", 0, true), shaderIOValue("resultImage", 0, false)};
 #endif
 
 #ifndef SOBELCOMBINEDSHADER
-#define SOBELCOMBINEDSHADER shaderData( SobelCombinedCompData, SobelCombinedWireframe, SobelCombinedBindingMap, SobelCombinedBindingDirections )
+#define SOBELCOMBINEDSHADER shaderData( SobelCombinedCompData, SobelCombinedWireframe, SobelCombinedIO )
 #endif

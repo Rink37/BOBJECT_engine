@@ -26,7 +26,7 @@ static std::vector<char> readFile(const std::string& filename) {
 }
 
 std::string readHelperFile(const std::string& filename, const std::string& shadername){
-	//std::cout << filename << std::endl;
+	std::cout << filename << std::endl;
 	std::ifstream file(filename);
 	if(!file.is_open()){
 		throw std::runtime_error("failed to open file");
@@ -36,6 +36,8 @@ std::string readHelperFile(const std::string& filename, const std::string& shade
 	int outputCount = 0;
 	std::map<std::string, int> inputs;
 	std::map<std::string, int> outputs;
+
+	std::string IOstructVec = std::string("const std::vector<shaderIOValue> ")+shadername+std::string("IO = {");
 
 	std::string bindingMapCode = std::string("const std::map<std::string, int> ") + shadername+("BindingMap{");
 	std::string bindingDirCode = std::string("const std::vector<bool> ") + shadername+("BindingDirections{");
@@ -62,11 +64,13 @@ std::string readHelperFile(const std::string& filename, const std::string& shade
 			if (commaNeeded){
 				bindingMapCode += std::string(", ");
 				bindingDirCode += std::string(", ");
+				IOstructVec += std::string(", ");
 			}
 			bindingMapCode += std::string("{") + inputName + std::string(", ") + std::to_string(type) + std::string("}");
 			bindingDirCode += std::string("true");
 			commaNeeded = true;
 			inputs.insert({*it, type});
+			IOstructVec += std::string("shaderIOValue(")+inputName+std::string(", ")+std::to_string(type)+std::string(", true)");
 		} else {
 			int type = stoi(*it);
 			//std::cout << type << std::endl;
@@ -75,18 +79,22 @@ std::string readHelperFile(const std::string& filename, const std::string& shade
 			if (commaNeeded){
 				bindingMapCode += std::string(", ");
 				bindingDirCode += std::string(", ");
+				IOstructVec += std::string(", ");
 			}
 			bindingMapCode += std::string("{") + inputName + std::string(", ") + std::to_string(type) + std::string("}");
 			bindingDirCode += std::string("false");
 			commaNeeded = true;
 			outputs.insert({*it, type});
+			IOstructVec += std::string("shaderIOValue(")+inputName+std::string(", ")+std::to_string(type)+std::string(", false)");
 		}
 	}
 	file.close();
 	bindingMapCode += std::string("};\n");
 	bindingDirCode += std::string("};\n");
 
-	std::string helperCode = bindingMapCode + bindingDirCode;
+	IOstructVec += std::string("};\n");
+
+	std::string helperCode = IOstructVec;//bindingMapCode + bindingDirCode;
 	//std::cout << helperCode << std::endl;
 	return helperCode;
 }
@@ -188,7 +196,7 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 		out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("FragData, ")+shadername+string("VertData, ")+shadername+string("Wireframe )\n");
 	} else {
 		if (isHelperAvailable){
-			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("CompData, ")+shadername+string("Wireframe, ") + shadername + string("BindingMap, ") + shadername + string("BindingDirections )\n");
+			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("CompData, ")+shadername+string("Wireframe, ") + shadername + string("IO )\n");
 		} else {
 			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("CompData, ")+shadername+string("Wireframe )\n");
 		}

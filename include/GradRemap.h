@@ -7,10 +7,9 @@ const std::vector<unsigned char> GradRemapCompData = { 0x03, 0x02, 0x23, 0x07, 0
 const uint8_t GradRemapType = COMP_SHADER;
 const bool GradRemapWireframe = false;
 
-const std::map<std::string, int> GradRemapBindingMap{{"normalImage", 0}, {"gradients", 0}, {"resultImage", 0}, {"RemapParamObject", 1}};
-const std::vector<bool> GradRemapBindingDirections{true, true, false, true};
+const std::vector<shaderIOValue> GradRemapIO = {shaderIOValue("normalImage", 0, true), shaderIOValue("gradients", 0, true), shaderIOValue("resultImage", 0, false), shaderIOValue("RemapParamObject", 1, true)};
 #endif
 
 #ifndef GRADREMAPSHADER
-#define GRADREMAPSHADER shaderData( GradRemapCompData, GradRemapWireframe, GradRemapBindingMap, GradRemapBindingDirections )
+#define GRADREMAPSHADER shaderData( GradRemapCompData, GradRemapWireframe, GradRemapIO )
 #endif

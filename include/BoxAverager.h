@@ -7,10 +7,9 @@ const std::vector<unsigned char> BoxAveragerCompData = { 0x03, 0x02, 0x23, 0x07,
 const uint8_t BoxAveragerType = COMP_SHADER;
 const bool BoxAveragerWireframe = false;
 
-const std::map<std::string, int> BoxAveragerBindingMap{{"normalImage", 0}, {"gradients", 0}, {"resultImage", 0}, {"RemapParamObject", 1}};
-const std::vector<bool> BoxAveragerBindingDirections{true, true, false, true};
+const std::vector<shaderIOValue> BoxAveragerIO = {shaderIOValue("normalImage", 0, true), shaderIOValue("gradients", 0, true), shaderIOValue("resultImage", 0, false), shaderIOValue("RemapParamObject", 1, true)};
 #endif
 
 #ifndef BOXAVERAGERSHADER
-#define BOXAVERAGERSHADER shaderData( BoxAveragerCompData, BoxAveragerWireframe, BoxAveragerBindingMap, BoxAveragerBindingDirections )
+#define BOXAVERAGERSHADER shaderData( BoxAveragerCompData, BoxAveragerWireframe, BoxAveragerIO )
 #endif

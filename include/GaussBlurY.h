@@ -7,10 +7,9 @@ const std::vector<unsigned char> GaussBlurYCompData = { 0x03, 0x02, 0x23, 0x07, 
 const uint8_t GaussBlurYType = COMP_SHADER;
 const bool GaussBlurYWireframe = false;
 
-const std::map<std::string, int> GaussBlurYBindingMap{{"inputImage", 0}, {"resultImage", 0}};
-const std::vector<bool> GaussBlurYBindingDirections{true, false};
+const std::vector<shaderIOValue> GaussBlurYIO = {shaderIOValue("inputImage", 0, true), shaderIOValue("resultImage", 0, false)};
 #endif
 
 #ifndef GAUSSBLURYSHADER
-#define GAUSSBLURYSHADER shaderData( GaussBlurYCompData, GaussBlurYWireframe, GaussBlurYBindingMap, GaussBlurYBindingDirections )
+#define GAUSSBLURYSHADER shaderData( GaussBlurYCompData, GaussBlurYWireframe, GaussBlurYIO )
 #endif

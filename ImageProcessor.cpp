@@ -5,43 +5,47 @@ using namespace std;
 // https://github.com/ttddee/ShaderDev/blob/master/src/vulkanrenderer.cpp
 
 void filter::getFilterLayout(shaderData* sD) {
-	bindingMap = sD->bindingMap;
-	bindingDirections = sD->bindingDirections;
-	if (bindingMap.size() == 0 || bindingDirections.size() == 0) {
-		return;
+	//bindingMap = sD->bindingMap;
+	//bindingDirections = sD->bindingDirections;
+	
+	IObindings = sD->IO;
+	
+	if (IObindings.size() == 0) {
+		throw runtime_error("The specified filter shader does not contain I/O information, so we cannot construct descriptor sets");
 	}
 
 	int inputCount = 0;
 	int outputCount = 0;
 	int inputImageCount = 0;
-	int outputImageCount = 0;
 	
-	int index = 0;
-	for (std::map<std::string, int>::iterator i = bindingMap.begin();i != bindingMap.end(); i++) {
-		if (bindingDirections.at(index)) {
+	for (size_t i = 0; i != IObindings.size(); i++) {
+		if (IObindings[i].direction) {
 			inputCount++;
-			if (i->second == 0) {
+			if (IObindings[i].type == 0) {
 				inputImageCount++;
 			}
 		}
 		else {
 			outputCount++;
-			if (i->second == 0) {
+			if (IObindings[i].type == 0) {
 				outputImageCount++;
 			}
 		}
-		index++;
 	}
 
-	std::cout << "Input count = " << inputCount << std::endl;
-	std::cout << "Output count = " << outputCount << std::endl;
+	//std::cout << "Input count = " << inputCount << std::endl;
+	//std::cout << "Output count = " << outputCount << std::endl;
 
-	std::cout << "Input image count = " << inputImageCount << std::endl;
-	std::cout << "Output image count = " << outputImageCount << std::endl;
+	//std::cout << "Input image count = " << inputImageCount << std::endl;
+	//std::cout << "Output image count = " << outputImageCount << std::endl;
+
+	if (source.size() < inputImageCount) {
+		throw runtime_error("The filter has not been given enough input images to perform filtering");
+	}
 }
 
 void filter::autoCreateDescriptorSetLayout() {
-	int descriptorElementCount = bindingDirections.size();
+	int descriptorElementCount = IObindings.size();
 
 	VkDescriptorPoolSize descPoolSize = {
 		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 
@@ -63,14 +67,16 @@ void filter::autoCreateDescriptorSetLayout() {
 
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
 	int index = 0;
-	for (std::map<std::string, int>::iterator it = bindingMap.begin(); it != bindingMap.end(); it++) {
-		VkDescriptorSetLayoutBinding bindingElement;
+	for (size_t i = 0; i != IObindings.size(); i++) {
+		VkDescriptorSetLayoutBinding bindingElement{};
 		bindingElement.binding = index;
-		if (it->second == 0) {
+		if (IObindings[i].type == 0) {
 			bindingElement.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			std::cout << "Image: " << IObindings[i].name << std::endl;
 		}
-		else if (it->second == 1) {
+		else if (IObindings[i].type == 1) {
 			bindingElement.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			std::cout << "Buffer: " << IObindings[i].name << std::endl;
 		}
 		bindingElement.descriptorCount = 1;
 		bindingElement.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -316,7 +322,7 @@ void filter::createDescriptorSetLayout() {
 }
 
 void filter::autoCreateDescriptorSet() {
-	int descriptorElementCount = bindingDirections.size();
+	int descriptorElementCount = IObindings.size();
 
 	VkDescriptorSetAllocateInfo descSetAllocInfo = {
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -336,15 +342,15 @@ void filter::autoCreateDescriptorSet() {
 	int index = 0;
 	int inputImageIndex = 0;
 	int outputImageIndex = 0;
-	for (std::map<std::string, int>::iterator it = bindingMap.begin(); it != bindingMap.end(); it++) {
+	for (size_t i = 0; i != IObindings.size(); i++) {
 		VkWriteDescriptorSet writeElement = {};
 		writeElement.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writeElement.dstSet = filterDescriptorSet;
 		writeElement.dstBinding = index;
 		writeElement.descriptorCount = 1;
-		if (it->second == 0) {
+		if (IObindings[i].type == 0) {
 			VkDescriptorImageInfo* imageInfo = new VkDescriptorImageInfo;
-			if (bindingDirections[index]) {
+			if (IObindings[i].direction) {
 				imageInfo->imageView = source.at(inputImageIndex)->textureImageView;
 				inputImageIndex++;
 			}
@@ -359,8 +365,8 @@ void filter::autoCreateDescriptorSet() {
 			writeElement.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 			writeElement.pImageInfo = imageInfos[imageInfos.size() - 1];
 		}
-		else if (it->second == 1) {
-			if (!bindingDirections[index]) {
+		else if (IObindings[i].type == 1) {
+			if (!IObindings[i].direction) {
 				throw runtime_error("IO map claims uniform buffer as output, which is an invalid specification.");
 			}
 
@@ -685,14 +691,14 @@ void filter::createFilterPipeline() {
 
 void filter::createFilterTarget() {
 	filterTarget.push_back(new Texture);
-	filterTarget[0]->textureFormat = targetFormat;
-	filterTarget[0]->textureUsage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Transfer dst might cause issues? I'm not sure yet
-	filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	filterTarget[0]->texWidth = texWidth;
-	filterTarget[0]->texHeight = texHeight;
-	filterTarget[0]->mipLevels = 1;
-	filterTarget[0]->setup();
-	//filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->mipLevels);
+	uint32_t index = filterTarget.size() - 1;
+	filterTarget[index]->textureFormat = targetFormat;
+	filterTarget[index]->textureUsage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Transfer dst might cause issues? I'm not sure yet
+	filterTarget[index]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	filterTarget[index]->texWidth = texWidth;
+	filterTarget[index]->texHeight = texHeight;
+	filterTarget[index]->mipLevels = 1;
+	filterTarget[index]->setup();
 }
 
 void filter::filterImage() {
@@ -718,10 +724,10 @@ void filter::filterImage(VkCommandBuffer commandBuffer) {
 	vkCmdDispatch(commandBuffer, source[0]->texWidth / 16, source[0]->texHeight / 16, 1);
 }
 
-int countInputs(std::vector<bool> directions) {
+int countInputs(std::vector<shaderIOValue> IOValues) {
 	int count = 0;
-	for (bool dir : directions) {
-		if (dir) {
+	for (size_t i = 0; i != IOValues.size(); i++) {
+		if (IOValues[i].direction) {
 			count++;
 		}
 	}
@@ -730,14 +736,14 @@ int countInputs(std::vector<bool> directions) {
 
 postProcessFilter::postProcessFilter(shaderData* sd) {
 	filterShaderModule = Engine::get()->createShaderModule(sd->compData);
-	int inputCount = countInputs(sd->bindingDirections);
+	int inputCount = countInputs(sd->IO);
 	if (inputCount > 1) {
 		throw runtime_error("Post-process shaders with multiple inputs are not currently supported, the specified shader is invalid");
 	}
-	hasOutput = (inputCount != sd->bindingDirections.size());
+	hasOutput = (inputCount != sd->IO.size());
 	if (hasOutput){
 		std::cout << "A post-process filter has detected that it has an output" << std::endl;
-		if (sd->bindingDirections.size() - inputCount > 1) {
+		if (sd->IO.size() - inputCount > 1) {
 			throw runtime_error("Post-process shaders with multiple outputs are not currently supported, the specified shader is invalid");
 		}
 		createOutputImages();
@@ -751,14 +757,14 @@ postProcessFilter::postProcessFilter(shaderData* sd) {
 void postProcessFilter::setup(shaderData* sd, drawImage* target) {
 	filterShaderModule = Engine::get()->createShaderModule(sd->compData);
 	this->target = target;
-	int inputCount = countInputs(sd->bindingDirections);
+	int inputCount = countInputs(sd->IO);
 	if (inputCount > 1) {
 		throw runtime_error("Post-process shaders with multiple inputs are not currently supported, the specified shader is invalid");
 	}
-	hasOutput = (inputCount != sd->bindingDirections.size());
+	hasOutput = (inputCount != sd->IO.size());
 	if (hasOutput) {
 		std::cout << "A post-process filter has detected that it has an output" << std::endl;
-		if (sd->bindingDirections.size() - inputCount > 1) {
+		if (sd->IO.size() - inputCount > 1) {
 			throw runtime_error("Post-process shaders with multiple outputs are not currently supported, the specified shader is invalid");
 		}
 		createOutputImages();

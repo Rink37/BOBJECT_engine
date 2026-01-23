@@ -7,10 +7,9 @@ const std::vector<unsigned char> inPlaceTestCompData = { 0x03, 0x02, 0x23, 0x07,
 const uint8_t inPlaceTestType = COMP_SHADER;
 const bool inPlaceTestWireframe = false;
 
-const std::map<std::string, int> inPlaceTestBindingMap{{"image", 0}};
-const std::vector<bool> inPlaceTestBindingDirections{true};
+const std::vector<shaderIOValue> inPlaceTestIO = {shaderIOValue("image", 0, true)};
 #endif
 
 #ifndef INPLACETESTSHADER
-#define INPLACETESTSHADER shaderData( inPlaceTestCompData, inPlaceTestWireframe, inPlaceTestBindingMap, inPlaceTestBindingDirections )
+#define INPLACETESTSHADER shaderData( inPlaceTestCompData, inPlaceTestWireframe, inPlaceTestIO )
 #endif

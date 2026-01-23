@@ -7,10 +7,9 @@ const std::vector<unsigned char> SobelYCompData = { 0x03, 0x02, 0x23, 0x07, 0x00
 const uint8_t SobelYType = COMP_SHADER;
 const bool SobelYWireframe = false;
 
-const std::map<std::string, int> SobelYBindingMap{{"inputImage", 0}, {"resultImage", 0}};
-const std::vector<bool> SobelYBindingDirections{true, false};
+const std::vector<shaderIOValue> SobelYIO = {shaderIOValue("inputImage", 0, true), shaderIOValue("resultImage", 0, false)};
 #endif
 
 #ifndef SOBELYSHADER
-#define SOBELYSHADER shaderData( SobelYCompData, SobelYWireframe, SobelYBindingMap, SobelYBindingDirections )
+#define SOBELYSHADER shaderData( SobelYCompData, SobelYWireframe, SobelYIO )
 #endif

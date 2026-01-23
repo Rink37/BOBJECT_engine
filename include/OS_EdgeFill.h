@@ -7,10 +7,9 @@ const std::vector<unsigned char> OS_EdgeFillCompData = { 0x03, 0x02, 0x23, 0x07,
 const uint8_t OS_EdgeFillType = COMP_SHADER;
 const bool OS_EdgeFillWireframe = false;
 
-const std::map<std::string, int> OS_EdgeFillBindingMap{{"normalImage", 0}, {"resultImage", 0}};
-const std::vector<bool> OS_EdgeFillBindingDirections{true, false};
+const std::vector<shaderIOValue> OS_EdgeFillIO = {shaderIOValue("normalImage", 0, true), shaderIOValue("resultImage", 0, false)};
 #endif
 
 #ifndef OS_EDGEFILLSHADER
-#define OS_EDGEFILLSHADER shaderData( OS_EdgeFillCompData, OS_EdgeFillWireframe, OS_EdgeFillBindingMap, OS_EdgeFillBindingDirections )
+#define OS_EDGEFILLSHADER shaderData( OS_EdgeFillCompData, OS_EdgeFillWireframe, OS_EdgeFillIO )
 #endif

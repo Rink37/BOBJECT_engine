@@ -7,10 +7,9 @@ const std::vector<unsigned char> GaussBlurXCompData = { 0x03, 0x02, 0x23, 0x07, 
 const uint8_t GaussBlurXType = COMP_SHADER;
 const bool GaussBlurXWireframe = false;
 
-const std::map<std::string, int> GaussBlurXBindingMap{{"inputImage", 0}, {"resultImage", 0}};
-const std::vector<bool> GaussBlurXBindingDirections{true, false};
+const std::vector<shaderIOValue> GaussBlurXIO = {shaderIOValue("inputImage", 0, true), shaderIOValue("resultImage", 0, false)};
 #endif
 
 #ifndef GAUSSBLURXSHADER
-#define GAUSSBLURXSHADER shaderData( GaussBlurXCompData, GaussBlurXWireframe, GaussBlurXBindingMap, GaussBlurXBindingDirections )
+#define GAUSSBLURXSHADER shaderData( GaussBlurXCompData, GaussBlurXWireframe, GaussBlurXIO )
 #endif
