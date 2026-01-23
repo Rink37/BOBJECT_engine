@@ -37,8 +37,8 @@ std::string readHelperFile(const std::string& filename, const std::string& shade
 	std::map<std::string, int> inputs;
 	std::map<std::string, int> outputs;
 
-	std::string bindingMapCode = std::string("const std::map<std::string, int> ") + shadername + ("BindingMap{");
-	std::string bindingDirCode = std::string("const std::vector<bool> ") + shadername + ("BindingDirections{");
+	std::string bindingMapCode = std::string("const std::map<std::string, int> ") + shadername+("BindingMap{");
+	std::string bindingDirCode = std::string("const std::vector<bool> ") + shadername+("BindingDirections{");
 	bool commaNeeded = false;
 	while(getline(file, line)){
 		bool in = false;
@@ -104,13 +104,11 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 		fragData = readFile(fragPath);
 		std:: cout << "Vert and frag found" << std::endl;
 	} catch(std::runtime_error){
-		//std::cout << "vert and frag not found" << std::endl;
 	} 
 	try{
 		compData = readFile(compPath);
 		std::cout << "Comp found" << std::endl;
 	} catch(std::runtime_error){
-		//std::cout << "comp not found" << std::endl;
 	}
 
 	string capShaderName = shadername;
@@ -120,8 +118,11 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 	out << string("#define ")+capShaderName+string("DATA\n");
 
 	out << string("#include \"ShaderDataType.h\"\n\n");
+	
+	int type = 0;
+
 	if (vertData.size() > 0){
-		out << string("const std::vector<unsigned char> ")+shadername+string("vertData = { ");
+		out << string("const std::vector<unsigned char> ")+shadername+string("VertData = { ");
 		for (size_t i = 0; i!= vertData.size(); i++){
 			out << "0x" << hex << setw(2) << setfill('0') << (int)(unsigned char) vertData[i];
 			if (i < vertData.size()-1){
@@ -131,7 +132,7 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 		out << string(" };\n\n");
 	}
 	if (fragData.size() > 0){
-		out << string("const std::vector<unsigned char> ")+shadername+string("fragData = { ");
+		out << string("const std::vector<unsigned char> ")+shadername+string("FragData = { ");
 		for (size_t i = 0; i!= fragData.size(); i++){
 			out << "0x" << hex << setw(2) << setfill('0') << (int)(unsigned char) fragData[i];
 			if (i < fragData.size()-1){
@@ -139,9 +140,11 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 			}
 		}
 		out << string(" };\n\n");
+		type = 0;
+		out << string("const uint8_t ")+shadername+string("Type = MESH_SHADER;\n");
 	} 
 	if (compData.size() > 0){
-		out << string("const std::vector<unsigned char> ")+shadername+string("compData = { ");
+		out << string("const std::vector<unsigned char> ")+shadername+string("CompData = { ");
 		for (size_t i = 0; i!= compData.size(); i++){
 			out << "0x" << hex << setw(2) << setfill('0') << (int)(unsigned char) compData[i];
 			if (i < compData.size()-1){
@@ -149,7 +152,21 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 			}
 		}
 		out << string(" };\n\n");
+		//out << string("const uint8_t ")+shadername+string("type = COMP_SHADER;\n\n");
+		type = 1;
+		out << string("const uint8_t ")+shadername+string("Type = COMP_SHADER;\n");
 	}
+	
+	//out << string("class ")+shadername+string("Shader : public shaderData{\n");
+	//out << string("public:\n");
+	//if (type == 0){
+	//	out << string("\tstd::vector<unsigned char> &vertData = &")+shadername+string("vertData;\n");
+	//	out << string("\tstd::vector<unsigned char> &fragData = &")+shadername+string("fragData;\n");
+	//	out << string("\tuint8_t type = MESH_SHADER;\n\n");
+	//} else {
+	//	out << string("\tstd::vector<unsigned char> &compData = &")+shadername+string("compData;\n");
+	//	out << string("\tuint8_t type = COMP_SHADER;\n\n");
+	//}
 	if (wireframe){
 		out << string("const bool ")+shadername+string("Wireframe = true;\n\n");
 	} else {
@@ -158,24 +175,26 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 
 	bool isHelperAvailable = false;
 	try{
-		out << readHelperFile(helperPath, shadername) + std::string("\n");
+		out << readHelperFile(helperPath, shadername);
 		isHelperAvailable = true;
 	} catch(std::runtime_error){
 		std::cout << "No helper file found" << std::endl;
 	}
-
+	//out << string("};\n\n");
 	out << string("#endif\n\n");
 
 	out << string("#ifndef ") + capShaderName + string("SHADER\n");
 	if (compData.size() == 0){
-		out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("fragData, ")+shadername+string("vertData, ")+shadername+string("Wireframe )\n");
+		out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("FragData, ")+shadername+string("VertData, ")+shadername+string("Wireframe )\n");
 	} else {
 		if (isHelperAvailable){
-			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("compData, ")+shadername+string("Wireframe, ") + shadername + string("BindingMap, ") + shadername + string("BindingDirections )\n");
+			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("CompData, ")+shadername+string("Wireframe, ") + shadername + string("BindingMap, ") + shadername + string("BindingDirections )\n");
 		} else {
-			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("compData, ")+shadername+string("Wireframe )\n");
+			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("CompData, ")+shadername+string("Wireframe )\n");
 		}
 	}
+
+	//out << string("#define ")+capShaderName+string("SHADER ")+shadername+string("Shader()\n");
 	
 	out << string("#endif\n");
 	out.close();
@@ -204,12 +223,16 @@ int main(){
 	loadAndWriteShaders(basepath, string("TSToOSConverter"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("OS_EdgeFill"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("inPlaceTest"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("NormalGenerator"), 0, outRoot);
 	basepath = rootPath+string("/shaders/");
 	loadAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("OS_BF"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("BF"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("UIGray"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("UI"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("UV"), 1, outRoot);
+	loadAndWriteShaders(basepath, string("W"), 1, outRoot);
+	loadAndWriteShaders(basepath, string("Flat"), 0, outRoot);
 	cout << "Done" << endl;
 	return 0;
 }

@@ -444,6 +444,7 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	// This function is very long - it would be nice if I were able to simplify it somewhat. 
 
 	bool isWireframe = false;
+	int index = 0;
 
 	shaderData flatShader = FLATSHADER;
 	shaderData bfShader = BFSHADER;
@@ -540,8 +541,11 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	for (auto sd : shaderDatas) {
 		VkPipeline* CurrentPipeline = new VkPipeline;
 
-		auto VertShaderCode = sd->vertData;
-		auto FragShaderCode = sd->fragData;
+		std::vector<unsigned char> VertShaderCode = sd->vertData;
+		std::vector<unsigned char> FragShaderCode = sd->fragData;
+
+		//std::cout << index << ": " << VertShaderCode.size() << std::endl;
+		//index++;
 
 		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
 		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode); 
@@ -605,8 +609,8 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	shaderData OS_BF = OS_BFSHADER;
 	VkPipeline* CurrentPipeline = new VkPipeline;
 
-	auto VertShaderCode = OS_BF.vertData;
-	auto FragShaderCode = OS_BF.fragData;
+	std::vector<unsigned char> VertShaderCode = OS_BF.vertData;
+	std::vector<unsigned char> FragShaderCode = OS_BF.fragData;
 
 	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
 	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);

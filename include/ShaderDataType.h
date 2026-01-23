@@ -11,19 +11,19 @@ struct shaderData{
         fragData = f;
         vertData = v;
         isWireframe = w;
-        type = 0;
+        type = MESH_SHADER;
     }
 
     shaderData(std::vector<unsigned char> c, bool w) {
         compData = c;
         isWireframe = w;
-        type = 1;
+        type = COMP_SHADER;
     }
 
     shaderData(std::vector<unsigned char> c, bool w, std::map<std::string, int> bindings, std::vector<bool> directions) {
         compData = c;
         isWireframe = w;
-        type = 1;
+        type = COMP_SHADER;
         bindingMap = bindings;
         bindingDirections = directions;
     }
@@ -33,7 +33,7 @@ struct shaderData{
     std::vector<unsigned char> compData;
 
     bool isWireframe = false;
-    uint8_t type = 0;
+    uint8_t type = MESH_SHADER;
 
     std::map<std::string, int> bindingMap;
     std::vector<bool> bindingDirections;
