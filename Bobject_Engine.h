@@ -123,6 +123,7 @@ struct drawImage {
 	std::vector<VkImage> images = {};
 	std::vector<VkDeviceMemory> imageMemory = {};
 	std::vector<VkImageView> imageViews = {};
+	
 	std::vector<VkFramebuffer> imageFrameBuffers = {};
 	
 	VkImage colourImage;
@@ -327,6 +328,7 @@ public:
 	void createGraphicsPipelines(GraphicsPass&);
 
 	void copyImageToSwapchain(VkCommandBuffer, drawImage*, uint32_t);
+	void copyImageToSwapchain(VkCommandBuffer, VkImage, VkExtent2D, uint32_t);
 
 	void createImage(uint32_t, uint32_t, uint32_t, VkSampleCountFlagBits, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
 	VkImageView createImageView(VkImage, VkFormat, VkImageAspectFlags, uint32_t);

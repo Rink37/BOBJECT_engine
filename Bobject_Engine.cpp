@@ -1303,7 +1303,7 @@ void Engine::recreateDrawImage(drawImage* image) {
 
 	for (size_t i = 0; i != imageCount; i++) {
 		createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, image->imageFormat, VK_IMAGE_TILING_OPTIMAL, image->imageUsage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image->images[i], image->imageMemory[i]);
-		transitionImageLayout(image->images[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL); // This causes no problems - all draw images should be in the expected layout
+		transitionImageLayout(image->images[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	}
 
 	image->imageViews.resize(image->images.size());
@@ -1844,6 +1844,47 @@ void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, drawImage* imag
 		vkCmdBlitImage(
 			commandBuffer,
 			image->images[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageBlitRegion,
+			VK_FILTER_NEAREST);
+	}
+	else
+	{
+		throw runtime_error("Blitting cannot be performed");
+	}
+
+	transitionImageLayout(commandBuffer, swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+}
+
+void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, VkImage image, VkExtent2D extent, uint32_t imageIndex) {
+	bool supportsBlit = true;
+
+	VkFormatProperties formatProps;
+
+	transitionImageLayout(commandBuffer, swapChainImages[imageIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	if (supportsBlit)
+	{
+		VkOffset3D srcBlitSize;
+		srcBlitSize.x = extent.width;
+		srcBlitSize.y = extent.height;
+		srcBlitSize.z = 1;
+		VkOffset3D dstBlitSize;
+		dstBlitSize.x = swapChainExtent.width;
+		dstBlitSize.y = swapChainExtent.height;
+		dstBlitSize.z = 1;
+		VkImageBlit imageBlitRegion{};
+		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.srcSubresource.layerCount = 1;
+		imageBlitRegion.srcOffsets[1] = srcBlitSize;
+		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.dstSubresource.layerCount = 1;
+		imageBlitRegion.dstOffsets[1] = dstBlitSize;
+
+		vkCmdBlitImage(
+			commandBuffer,
+			image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			1,
 			&imageBlitRegion,

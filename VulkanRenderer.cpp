@@ -294,7 +294,7 @@ public:
 		Engine::get()->createRenderPass(testGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		test = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, testGP.renderPass);
 		Engine::get()->createGraphicsPipelines(testGP);
-		shaderData* testShader = new INPLACETESTSHADER;
+		shaderData* testShader = new GAUSSBLURXSHADER;
 		normalizer.setup(testShader, &test);
 
 		std::cout << testGP.GraphicsPipelines.size() << std::endl;
@@ -933,9 +933,13 @@ private:
 
 		// Post-processing can be put here
 
-		// normalizer.filterImage(commandBuffer, imageIndex);
+		//normalizer.filterImage(commandBuffer, imageIndex);
 
-		Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex); // This doesn't work for multiple reasons
+		//VkImage resultImage = normalizer.getFilterResult(commandBuffer, imageIndex);
+
+		Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex);
+
+		//Engine::get()->copyImageToSwapchain(commandBuffer, resultImage, test.imageExtent, imageIndex);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw runtime_error("failed to record command buffer!");

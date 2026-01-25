@@ -14,7 +14,6 @@ class filter {
 public:
 	filter(std::vector<Texture*> srcs, shaderData* sd) {
 		for (Texture* src : srcs) {
-			//source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 			source.push_back(src);
 		}
 
@@ -36,7 +35,6 @@ public:
 
 	filter(std::vector<Texture*> srcs, shaderData* sd, VkFormat outFormat) {
 		for (Texture* src : srcs) {
-			//source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 			source.push_back(src);
 		}
 
@@ -60,7 +58,6 @@ public:
 
 	filter(std::vector<Texture*> srcs, shaderData* sd, VkFormat outFormat, VkBuffer buffer, uint32_t bufferSize) {
 		for (Texture* src : srcs) {
-			//source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
 			source.push_back(src);
 		}
 
@@ -117,6 +114,8 @@ public:
 	std::vector<VkImageView> imageViews;
 	std::vector<VkFormat> originalFormats;
 
+	void updateDescriptorSet();
+
 private:
 	uint32_t outputImageCount = 0;
 
@@ -143,7 +142,6 @@ private:
 
 	void createDescriptorSetLayout();
 	void createDescriptorSet();
-	void updateDescriptorSet();
 
 	void createFilterPipelineLayout();
 	void createFilterPipeline();
@@ -164,9 +162,13 @@ public:
 
 	void cleanup();
 
+	VkImage getFilterResult(VkCommandBuffer, uint32_t);
+
 	void recreateDescriptorSets();
 
 private:
+	std::vector<filter> filters{};
+	std::vector<Texture*> constructedTextures{};
 
 	drawImage* target = nullptr;
 
