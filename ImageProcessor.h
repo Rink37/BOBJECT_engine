@@ -155,8 +155,6 @@ class postProcessFilter {
 public:
 	postProcessFilter() = default;
 
-	postProcessFilter(shaderData*); // This class should be created before any rendering is performed
-
 	void setup(shaderData*, drawImage*);
 	void filterImage(VkCommandBuffer, uint32_t);
 
@@ -171,34 +169,6 @@ private:
 	std::vector<Texture*> constructedTextures{};
 
 	drawImage* target = nullptr;
-
-	VkPipelineLayout filterPipelineLayout = nullptr;
-	VkPipeline filterPipeline = nullptr;
-
-	VkFormat targetFormat = VK_FORMAT_R8G8B8A8_UNORM;
-
-	VkDescriptorPool descPool = nullptr;
-	VkDescriptorSetLayout filterDescriptorSetLayout = nullptr;
-	std::vector<VkDescriptorSet> filterDescriptorSets = {};
-
-	VkShaderModule filterShaderModule = nullptr; // Destroyed by default
-
-	bool hasOutput = false;
-
-	std::vector<VkImage> outputImages;
-	std::vector<VkImageView> outputImageViews;
-	std::vector<VkDeviceMemory> outputImageMemories;
-
-	void createOutputImages();
-
-	void createDescriptorSetLayout();
-	void createDescriptorSets();
-
-	void createFilterPipelineLayout();
-	void createFilterPipeline();
-
-	void transitionImageLayout(VkCommandBuffer, VkImage&, VkImageLayout, VkImageLayout); // Swapchain images are not described by my texture classes so a separate layout transition function is required
-
 };
 
 #endif
