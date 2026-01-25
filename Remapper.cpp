@@ -72,28 +72,20 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 	referenceKuwahara->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
 }
 
-void RemapBackend::createBaseMaps() {
-	if (baseDiffuse == nullptr) {
-		return;
-	}
-
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+void RemapBackend::createBaseMaps(VkCommandBuffer commandBuffer) {
+	//VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	Kuwahara->filterImage(commandBuffer);
 	SobelCombined->filterImage(commandBuffer);
-	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
+	//Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 }
 
-void RemapBackend::performRemap() {
-	if (baseOSNormal == nullptr) {
-		return;
-	}
-
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
+	//VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	Averager->filterImage(commandBuffer);
 	gradRemap->filterImage(commandBuffer);
-	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 
 	if (!smoothePass) {
+		Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 		vkDeviceWaitIdle(Engine::get()->device);
 
 		if (filteredOSNormal != nullptr) {
@@ -112,12 +104,10 @@ void RemapBackend::performRemap() {
 	
 }
 
-void RemapBackend::smootheResult() {
-	if (baseDiffuse == nullptr) {
-		return;
-	}
+void RemapBackend::smootheResult(VkCommandBuffer commandBuffer) {
+	referenceKuwahara->filterImage(commandBuffer);
 
-	referenceKuwahara->filterImage();
+	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 
 	if (filteredOSNormal != nullptr) {
 		filteredOSNormal->cleanup();
@@ -162,10 +152,11 @@ void RemapUI::fullRemap(Texture*diffTex, Texture*OSNormTex) {
 void RemapUI::kuwaharaCallback(int kern) {
 	remapper->setKuwaharaKernel(kern);
 
-	remapper->createBaseMaps();
-	remapper->performRemap();
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+	remapper->createBaseMaps(commandBuffer);
+	remapper->performRemap(commandBuffer);
 	if (remapper->smoothePass) {
-		remapper->smootheResult();
+		remapper->smootheResult(commandBuffer);
 	}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
@@ -175,10 +166,11 @@ void RemapUI::kuwaharaCallback(int kern) {
 void RemapUI::zeroCrossCallback(float zeroCross) {
 	remapper->setZeroCross(zeroCross);
 	
-	remapper->createBaseMaps();
-	remapper->performRemap();
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+	remapper->createBaseMaps(commandBuffer);
+	remapper->performRemap(commandBuffer);
 	if (remapper->smoothePass) {
-		remapper->smootheResult();
+		remapper->smootheResult(commandBuffer);
 	}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
@@ -187,10 +179,12 @@ void RemapUI::zeroCrossCallback(float zeroCross) {
 
 void RemapUI::sharpnessCallback(float sharpness) {
 	remapper->setKuwaharaSharpness(sharpness);
-	remapper->createBaseMaps();
-	remapper->performRemap();
+	
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+	remapper->createBaseMaps(commandBuffer);
+	remapper->performRemap(commandBuffer);
 	if (remapper->smoothePass) {
-		remapper->smootheResult();
+		remapper->smootheResult(commandBuffer);
 	}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
@@ -198,10 +192,12 @@ void RemapUI::sharpnessCallback(float sharpness) {
 }
 void RemapUI::hardnessCallback(float hardness) {
 	remapper->setKuwaharaHardness(hardness);
-	remapper->createBaseMaps();
-	remapper->performRemap();
+	
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+	remapper->createBaseMaps(commandBuffer);
+	remapper->performRemap(commandBuffer);
 	if (remapper->smoothePass) {
-		remapper->smootheResult();
+		remapper->smootheResult(commandBuffer);
 	}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
@@ -210,9 +206,11 @@ void RemapUI::hardnessCallback(float hardness) {
 
 void RemapUI::averagerCallback(int kern) {
 	remapper->setAveragerKernel(kern);
-	remapper->performRemap();
+	
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+	remapper->performRemap(commandBuffer);
 	if (remapper->smoothePass) {
-		remapper->smootheResult();
+		remapper->smootheResult(commandBuffer);
 	}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
@@ -221,9 +219,11 @@ void RemapUI::averagerCallback(int kern) {
 
 void RemapUI::gradientCallback(float thresh) {
 	remapper->setGradientThreshold(thresh);
-	remapper->performRemap();
+	
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+	remapper->performRemap(commandBuffer);
 	if (remapper->smoothePass) {
-		remapper->smootheResult();
+		remapper->smootheResult(commandBuffer);
 	}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
