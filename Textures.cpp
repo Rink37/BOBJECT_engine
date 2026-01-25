@@ -196,6 +196,15 @@ Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsag
 	return copy;
 }
 
+Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t mipLevels, uint32_t width, uint32_t height) {
+	Texture* copy = copyImage(format, layout, usage, tiling, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mipLevels, width, height);
+	if (copy->mipLevels != 1) {
+		copy->generateMipmaps();
+	}
+	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	return copy;
+}
+
 void imageTexture::createTextureImage(imageData* imgData) {
 
 	texWidth = imgData->Width;
@@ -302,12 +311,35 @@ void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlag
 	cleaned = false;
 }
 
+void Texture::transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout) {
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+	transitionImageLayout(commandBuffer, oldLayout, newLayout);
+	Engine::get()->endSingleTimeCommands(commandBuffer);
+}
+
+void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) {
+	transitionImageLayout(commandBuffer, this->textureFormat, oldLayout, newLayout, this->mipLevels);
+}
+
+void Texture::transitionImageLayout(VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
+	// Used to simplify layout transitions which are performed internally
+	transitionImageLayout(this->textureImage, format, oldLayout, newLayout, mipLevels);
+}
+
+void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
+	transitionImageLayout(commandBuffer, this->textureImage, format, oldLayout, newLayout, mipLevels);
+}
+
 void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+	transitionImageLayout(commandBuffer, image, format, oldLayout, newLayout, mipLevels);
+	Engine::get()->endSingleTimeCommands(commandBuffer);
+}
+
+void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
 	if (oldLayout == newLayout) {
 		return;
 	}
-
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -337,6 +369,13 @@ void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayou
 	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
 		barrier.srcAccessMask = 0;
 		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	} 
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_GENERAL){
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 
 		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
@@ -432,7 +471,9 @@ void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayou
 		1, &barrier
 	);
 
-	Engine::get()->endSingleTimeCommands(commandBuffer);
+	//this->textureLayout = newLayout;
+
+	//Engine::get()->endSingleTimeCommands(commandBuffer);
 }
 
 void Texture::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {

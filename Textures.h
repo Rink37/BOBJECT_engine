@@ -28,7 +28,14 @@ struct Texture {
 
 	bool hasStencilComponent(VkFormat);
 	void createImage(VkSampleCountFlagBits, VkMemoryPropertyFlags);
-	void transitionImageLayout(VkImage, VkFormat, VkImageLayout, VkImageLayout, uint32_t); // We need to be able to explicitly pass an image for image copying functions
+	
+	void transitionImageLayout(VkCommandBuffer, VkImage, VkFormat, VkImageLayout, VkImageLayout, uint32_t);
+	void transitionImageLayout(VkImage, VkFormat, VkImageLayout, VkImageLayout, uint32_t);
+	void transitionImageLayout(VkCommandBuffer, VkFormat, VkImageLayout, VkImageLayout, uint32_t);
+	void transitionImageLayout(VkFormat, VkImageLayout, VkImageLayout, uint32_t);
+	void transitionImageLayout(VkCommandBuffer, VkImageLayout, VkImageLayout);
+	void transitionImageLayout(VkImageLayout, VkImageLayout);
+	
 	void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
 	void generateMipmaps();
 	VkImageView createImageView(VkImageAspectFlags);
@@ -43,6 +50,7 @@ struct Texture {
 	Texture* copyImage(uint32_t, uint32_t);
 	Texture* copyTexture();
 	Texture* copyTexture(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, uint32_t);
+	Texture* copyTexture(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, uint32_t, uint32_t, uint32_t);
 
 	virtual void setup() {
 		if (texWidth == 0) {

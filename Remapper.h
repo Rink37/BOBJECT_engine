@@ -91,9 +91,9 @@ public:
 
 	void createReferenceMaps(Texture*, Texture*);
 
-	void createBaseMaps(VkCommandBuffer);
-	void performRemap(VkCommandBuffer);
-	void smootheResult(VkCommandBuffer);
+	void createBaseMaps();
+	void performRemap();
+	void smootheResult();
 
 	void cleanup();
 

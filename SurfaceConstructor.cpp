@@ -24,8 +24,11 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 	commandBuffer = generator.drawOSMap(commandBuffer, inputMesh);
 	Engine::get()->endSingleTimeCommands(commandBuffer);
 
-	filter OS_EdgeFill(std::vector<Texture*>({ generator.objectSpaceMap.colour }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+	Texture* EdgeFillImg = generator.objectSpaceMap.colour->copyTexture(generator.objectSpaceMap.colour->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+	filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	OS_EdgeFill.filterImage();
+	OS_EdgeFill.filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	OS_EdgeFill.filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	
 	OSNormTex = loadList->replacePtr(OS_EdgeFill.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -37,6 +40,7 @@ void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
 	Normal[1] = loadList->replacePtr(new Material(OSNormTex), "OSNormMat");
 
 	generator.cleanupGenOS();
+	EdgeFillImg->cleanup();
 	OS_EdgeFill.cleanup();
 }
 

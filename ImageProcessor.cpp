@@ -174,6 +174,71 @@ void filter::createDescriptorSet() {
 	}
 }
 
+void filter::updateDescriptorSet() {
+	int descriptorElementCount = IObindings.size();
+	
+	std::vector<VkWriteDescriptorSet> descWrite = {};
+	std::vector<VkDescriptorImageInfo*> imageInfos = {};
+	std::vector<VkDescriptorBufferInfo*> bufferInfos = {};
+	int index = 0;
+	int inputImageIndex = 0;
+	int outputImageIndex = 0;
+	for (size_t i = 0; i != IObindings.size(); i++) {
+		VkWriteDescriptorSet writeElement = {};
+		writeElement.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeElement.dstSet = filterDescriptorSet;
+		writeElement.dstBinding = index;
+		writeElement.descriptorCount = 1;
+		if (IObindings[i].type == 0) {
+			VkDescriptorImageInfo* imageInfo = new VkDescriptorImageInfo;
+			if (IObindings[i].direction) {
+				imageInfo->imageView = source.at(inputImageIndex)->textureImageView;
+				inputImageIndex++;
+			}
+			else {
+				imageInfo->imageView = filterTarget.at(outputImageIndex)->textureImageView;
+				outputImageIndex++;
+			}
+			imageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+			imageInfos.push_back(imageInfo);
+
+			writeElement.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			writeElement.pImageInfo = imageInfos[imageInfos.size() - 1];
+		}
+		else if (IObindings[i].type == 1) {
+			if (!IObindings[i].direction) {
+				throw runtime_error("IO map claims uniform buffer as output, which is an invalid specification.");
+			}
+
+			VkDescriptorBufferInfo* bufferInfo = new VkDescriptorBufferInfo;
+			bufferInfo->buffer = bufferRef;
+			bufferInfo->offset = 0;
+			bufferInfo->range = bufferSize;
+
+			bufferInfos.push_back(bufferInfo);
+
+			writeElement.dstArrayElement = 0;
+			writeElement.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			writeElement.pBufferInfo = bufferInfos[bufferInfos.size() - 1];
+		}
+		else {
+			throw runtime_error("Invalid binding type");
+		}
+		descWrite.push_back(writeElement);
+		index++;
+	}
+	vkUpdateDescriptorSets(Engine::get()->device, descriptorElementCount, descWrite.data(), 0, nullptr);
+
+	for (size_t i = 0; i != imageInfos.size(); i++) {
+		delete imageInfos[i];
+	}
+
+	for (size_t i = 0; i != bufferInfos.size(); i++) {
+		delete bufferInfos[i];
+	}
+}
+
 void filter::createFilterPipelineLayout() {
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
@@ -215,19 +280,23 @@ void filter::createFilterTarget() {
 	uint32_t index = filterTarget.size() - 1;
 	filterTarget[index]->textureFormat = targetFormat;
 	filterTarget[index]->textureUsage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Transfer dst might cause issues? I'm not sure yet
-	filterTarget[index]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	filterTarget[index]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
 	filterTarget[index]->texWidth = texWidth;
 	filterTarget[index]->texHeight = texHeight;
 	filterTarget[index]->mipLevels = 1;
 	filterTarget[index]->setup();
+
+	filterTarget[index]->transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 }
 
 void filter::filterImage() {
 	vkQueueWaitIdle(Engine::get()->computeQueue);
 
+	//updateDescriptorSet();
+
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 
-	filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->mipLevels);
+	//filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->mipLevels);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipelineLayout, 0, 1, &filterDescriptorSet, 0, 0);
@@ -235,14 +304,51 @@ void filter::filterImage() {
 
 	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 
-	filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->textureLayout, filterTarget[0]->mipLevels);
-
+	//filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->textureLayout, filterTarget[0]->mipLevels);
 }
 
 void filter::filterImage(VkCommandBuffer commandBuffer) {
+	//filterTarget[0]->transitionImageLayout(filterTarget[0]->textureImage, filterTarget[0]->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->mipLevels);
+	
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipelineLayout, 0, 1, &filterDescriptorSet, 0, 0);
 	vkCmdDispatch(commandBuffer, source[0]->texWidth / 16, source[0]->texHeight / 16, 1);
+	
+	VkImageMemoryBarrier barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+	barrier.image = filterTarget[0]->textureImage;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = filterTarget[0]->mipLevels;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+	VkPipelineStageFlags sourceStage;
+	VkPipelineStageFlags destinationStage;
+
+	barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+	sourceStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+	destinationStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+	vkCmdPipelineBarrier(
+		commandBuffer,
+		sourceStage, destinationStage,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &barrier
+	);
+
+
+	//filterTarget[0]->transitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_GENERAL, filterTarget[0]->textureLayout);
 }
 
 int countInputs(std::vector<shaderIOValue> IOValues) {

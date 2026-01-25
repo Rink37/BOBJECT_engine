@@ -14,7 +14,8 @@ class filter {
 public:
 	filter(std::vector<Texture*> srcs, shaderData* sd) {
 		for (Texture* src : srcs) {
-			source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+			//source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+			source.push_back(src);
 		}
 
 		getFilterLayout(sd);
@@ -35,7 +36,8 @@ public:
 
 	filter(std::vector<Texture*> srcs, shaderData* sd, VkFormat outFormat) {
 		for (Texture* src : srcs) {
-			source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+			//source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+			source.push_back(src);
 		}
 
 		getFilterLayout(sd);
@@ -58,13 +60,14 @@ public:
 
 	filter(std::vector<Texture*> srcs, shaderData* sd, VkFormat outFormat, VkBuffer buffer, uint32_t bufferSize) {
 		for (Texture* src : srcs) {
-			source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+			//source.push_back(src->copyTexture(src->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+			source.push_back(src);
 		}
 
 		getFilterLayout(sd);
 
 		hasUniformBuffer = true;
-		bufferRef = buffer;
+		this->bufferRef = buffer;
 		this->bufferSize = bufferSize;
 
 		texWidth = source[0]->texWidth;
@@ -136,16 +139,11 @@ private:
 	uint32_t bufferSize = 0;
 	VkBuffer bufferRef = nullptr;
 
-	//std::vector<bool> bindingDirections;
-	//std::map<std::string, int> bindingMap;
-
 	std::vector<shaderIOValue> IObindings;
-
-	//void autoCreateDescriptorSetLayout();
-	//void autoCreateDescriptorSet();
 
 	void createDescriptorSetLayout();
 	void createDescriptorSet();
+	void updateDescriptorSet();
 
 	void createFilterPipelineLayout();
 	void createFilterPipeline();
