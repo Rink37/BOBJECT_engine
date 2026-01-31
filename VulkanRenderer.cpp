@@ -294,7 +294,8 @@ public:
 		Engine::get()->createRenderPass(testGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		test = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, testGP.renderPass);
 		Engine::get()->createGraphicsPipelines(testGP);
-		normalizer.setup(testShader, &test);
+		blurX.setup(xBlur, &test);
+		blurY.setup(yBlur, blurX.getRenderTargets());
 
 		std::cout << testGP.GraphicsPipelines.size() << std::endl;
 		currentPass = &testGP;// &Engine::get()->defaultPass;
@@ -327,13 +328,15 @@ private:
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	RemapUI remapMenu = RemapUI(&UIElements, sConst);
 
-	shaderData* testShader = new GAUSSBLURXSHADER;
+	shaderData* xBlur = new GAUSSBLURXSHADER;
+	shaderData* yBlur = new GAUSSBLURYSHADER;
 
 	UIItem* UITestImage = nullptr;
 
 	vector<Widget*> widgets;
 
-	postProcessFilter normalizer;
+	postProcessFilter blurX;
+	postProcessFilter blurY;
 	drawImage test;
 	//VkRenderPass testRP;
 	GraphicsPass testGP;
@@ -811,7 +814,8 @@ private:
 			widgets[i]->cleanup();
 		}
 
-		normalizer.cleanup();
+		blurX.cleanup();
+		blurY.cleanup();
 		test.cleanup(Engine::get()->device);
 		testGP.cleanup(Engine::get()->device);
 		//vkDestroyRenderPass(Engine::get()->device, testRP, nullptr);
@@ -840,8 +844,11 @@ private:
 
 			engine->recreateSwapChain();
 			engine->recreateDrawImage(&test);
-			normalizer.cleanup();
-			normalizer.setup(testShader, &test);
+			blurX.cleanup();
+			blurY.cleanup();
+			blurX.setup(xBlur, &test);
+			blurY.setup(yBlur, blurX.getRenderTargets());
+			//normalizer.setup(testShader, &test);
 			//normalizer.recreateDescriptorSets();
 			return;
 		}
@@ -936,9 +943,10 @@ private:
 
 		// Post-processing can be put here
 
-		normalizer.filterImage(commandBuffer, imageIndex);
+		blurX.filterImage(commandBuffer, imageIndex);
+		blurY.filterImage(commandBuffer, imageIndex);
 
-		VkImage resultImage = normalizer.getFilterResult(commandBuffer, imageIndex);
+		VkImage resultImage = blurY.getFilterResult(commandBuffer, imageIndex);
 
 		//Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex);
 

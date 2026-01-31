@@ -157,6 +157,7 @@ public:
 
 	void setup(shaderData*, drawImage*);
 	void setup(shaderData*, std::vector<drawImage*>);
+	void setup(shaderData*, std::vector<Texture*>);
 	
 	void filterImage(VkCommandBuffer, uint32_t);
 
@@ -165,6 +166,8 @@ public:
 	VkImage getFilterResult(VkCommandBuffer, uint32_t);
 
 	void recreateDescriptorSets();
+
+	std::vector<Texture*> getRenderTargets();
 
 private:
 	std::vector<filter> filters{};
