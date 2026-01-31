@@ -156,6 +156,8 @@ public:
 	postProcessFilter() = default;
 
 	void setup(shaderData*, drawImage*);
+	void setup(shaderData*, std::vector<drawImage*>);
+	
 	void filterImage(VkCommandBuffer, uint32_t);
 
 	void cleanup();
@@ -168,7 +170,8 @@ private:
 	std::vector<filter> filters{};
 	std::vector<Texture*> constructedTextures{};
 
-	drawImage* target = nullptr;
+	//drawImage* target = nullptr;
+	std::vector<drawImage*> targets{};
 };
 
 #endif

@@ -294,7 +294,6 @@ public:
 		Engine::get()->createRenderPass(testGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		test = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, testGP.renderPass);
 		Engine::get()->createGraphicsPipelines(testGP);
-		shaderData* testShader = new GAUSSBLURXSHADER;
 		normalizer.setup(testShader, &test);
 
 		std::cout << testGP.GraphicsPipelines.size() << std::endl;
@@ -327,6 +326,8 @@ private:
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	RemapUI remapMenu = RemapUI(&UIElements, sConst);
+
+	shaderData* testShader = new GAUSSBLURXSHADER;
 
 	UIItem* UITestImage = nullptr;
 
@@ -839,7 +840,9 @@ private:
 
 			engine->recreateSwapChain();
 			engine->recreateDrawImage(&test);
-			normalizer.recreateDescriptorSets();
+			normalizer.cleanup();
+			normalizer.setup(testShader, &test);
+			//normalizer.recreateDescriptorSets();
 			return;
 		}
 		else if (result != VK_SUCCESS) {
@@ -933,13 +936,13 @@ private:
 
 		// Post-processing can be put here
 
-		//normalizer.filterImage(commandBuffer, imageIndex);
+		normalizer.filterImage(commandBuffer, imageIndex);
 
-		//VkImage resultImage = normalizer.getFilterResult(commandBuffer, imageIndex);
+		VkImage resultImage = normalizer.getFilterResult(commandBuffer, imageIndex);
 
-		Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex);
+		//Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex);
 
-		//Engine::get()->copyImageToSwapchain(commandBuffer, resultImage, test.imageExtent, imageIndex);
+		Engine::get()->copyImageToSwapchain(commandBuffer, resultImage, test.imageExtent, imageIndex);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw runtime_error("failed to record command buffer!");

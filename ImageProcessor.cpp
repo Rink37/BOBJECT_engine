@@ -364,18 +364,30 @@ int countInputs(std::vector<shaderIOValue> IOValues) {
 }
 
 void postProcessFilter::setup(shaderData* sd, drawImage* target) {
-	this->target = target;
-	uint32_t imageCount = target->images.size();
+	std::vector<drawImage*> drawImgs{};
+	drawImgs.push_back(target);
+	setup(sd, drawImgs);
+}
+
+void postProcessFilter::setup(shaderData* sd, std::vector<drawImage*> drawImgs) {
+	for (size_t i = 0; i != drawImgs.size(); i++) {
+		targets.push_back(drawImgs[i]);
+	}
+	uint32_t imageCount = targets[0]->images.size();
 	for (uint32_t i = 0; i != imageCount; i++) {
-		Texture* testTex = new Texture;
-		testTex->textureImage = target->images[i];
-		testTex->textureImageMemory = target->imageMemory[i];
-		testTex->textureImageView = target->imageViews[i];
-		testTex->mipLevels = 1;
-		testTex->texWidth = target->imageExtent.width;
-		testTex->texHeight = target->imageExtent.height;
-		constructedTextures.push_back(testTex);
-		filters.push_back(filter(std::vector<Texture*>{constructedTextures[i]}, sd));
+		std::vector<Texture*> srcs{};
+		for (size_t j = 0; j != targets.size(); j++) {
+			Texture* testTex = new Texture;
+			testTex->textureImage = targets[j]->images[i];
+			testTex->textureImageMemory = targets[j]->imageMemory[i];
+			testTex->textureImageView = targets[j]->imageViews[i];
+			testTex->mipLevels = 1;
+			testTex->texWidth = targets[j]->imageExtent.width;
+			testTex->texHeight = targets[j]->imageExtent.height;
+			constructedTextures.push_back(testTex);
+			srcs.push_back(testTex);
+		}
+		filters.push_back(filter(srcs, sd));
 		filters[i].filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	}
 }
@@ -394,7 +406,7 @@ VkImage postProcessFilter::getFilterResult(VkCommandBuffer commandBuffer, uint32
 
 void postProcessFilter::recreateDescriptorSets() {
 
-	uint32_t imageCount = target->images.size();
+	uint32_t imageCount = filters.size();
 
 	for (size_t i = 0; i < imageCount; i++) {
 		filters[i].updateDescriptorSet();
@@ -405,4 +417,7 @@ void postProcessFilter::cleanup() {
 	for (size_t i = 0; i != filters.size(); i++) {
 		filters[i].cleanup();
 	}
+	filters.clear();
+	constructedTextures.clear();
+	targets.clear();
 }
