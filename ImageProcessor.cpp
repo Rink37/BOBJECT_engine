@@ -400,6 +400,43 @@ void postProcessFilter::setup(shaderData* sd, std::vector<Texture*> textures){
 	}
 }
 
+void postProcessFilter::setup(shaderData* sd, drawImage* target, VkBuffer uniformBuffer, uint32_t bufferSize) {
+	std::vector<drawImage*> drawImgs{};
+	drawImgs.push_back(target);
+	setup(sd, drawImgs, uniformBuffer, bufferSize);
+}
+
+void postProcessFilter::setup(shaderData* sd, std::vector<drawImage*> drawImgs, VkBuffer uniformBuffer, uint32_t bufferSize) {
+	for (size_t i = 0; i != drawImgs.size(); i++) {
+		targets.push_back(drawImgs[i]);
+	}
+	uint32_t imageCount = targets[0]->images.size();
+	for (uint32_t i = 0; i != imageCount; i++) {
+		std::vector<Texture*> srcs{};
+		for (size_t j = 0; j != targets.size(); j++) {
+			Texture* testTex = new Texture;
+			testTex->textureImage = targets[j]->images[i];
+			testTex->textureImageMemory = targets[j]->imageMemory[i];
+			testTex->textureImageView = targets[j]->imageViews[i];
+			testTex->mipLevels = 1;
+			testTex->texWidth = targets[j]->imageExtent.width;
+			testTex->texHeight = targets[j]->imageExtent.height;
+			constructedTextures.push_back(testTex);
+			srcs.push_back(testTex);
+		}
+		filters.push_back(filter(srcs, sd, uniformBuffer, bufferSize));
+		filters[i].filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	}
+}
+
+void postProcessFilter::setup(shaderData* sd, std::vector<Texture*> textures, VkBuffer uniformBuffer, uint32_t bufferSize) {
+	uint32_t imageCount = textures.size();
+	for (uint32_t i = 0; i != imageCount; i++) {
+		filters.push_back(filter(std::vector<Texture*>{textures[i]}, sd, uniformBuffer, bufferSize));
+		filters[i].filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	}
+}
+
 void postProcessFilter::filterImage(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 	filters[imageIndex].source[0]->transitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 	filters[imageIndex].filterTarget[0] ->transitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);

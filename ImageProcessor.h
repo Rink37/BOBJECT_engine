@@ -56,6 +56,31 @@ public:
 		createFilterPipeline();
 	};
 
+	filter(std::vector<Texture*> srcs, shaderData* sd, VkBuffer buffer, uint32_t bufferSize) {
+		for (Texture* src : srcs) {
+			source.push_back(src);
+		}
+
+		getFilterLayout(sd);
+
+		hasUniformBuffer = true;
+		this->bufferRef = buffer;
+		this->bufferSize = bufferSize;
+
+		texWidth = source[0]->texWidth;
+		texHeight = source[0]->texHeight;
+
+		filterShaderModule = Engine::get()->createShaderModule(sd->compData);
+
+		for (int i = 0; i != outputImageCount; i++) {
+			createFilterTarget();
+		}
+		createDescriptorSetLayout();
+		createDescriptorSet();
+		createFilterPipelineLayout();
+		createFilterPipeline();
+	}
+
 	filter(std::vector<Texture*> srcs, shaderData* sd, VkFormat outFormat, VkBuffer buffer, uint32_t bufferSize) {
 		for (Texture* src : srcs) {
 			source.push_back(src);
@@ -158,6 +183,10 @@ public:
 	void setup(shaderData*, drawImage*);
 	void setup(shaderData*, std::vector<drawImage*>);
 	void setup(shaderData*, std::vector<Texture*>);
+
+	void setup(shaderData*, drawImage*, VkBuffer, uint32_t);
+	void setup(shaderData*, std::vector<drawImage*>, VkBuffer, uint32_t);
+	void setup(shaderData*, std::vector<Texture*>, VkBuffer, uint32_t);
 	
 	void filterImage(VkCommandBuffer, uint32_t);
 
@@ -172,8 +201,6 @@ public:
 private:
 	std::vector<filter> filters{};
 	std::vector<Texture*> constructedTextures{};
-
-	//drawImage* target = nullptr;
 	std::vector<drawImage*> targets{};
 };
 

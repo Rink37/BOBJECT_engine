@@ -13,8 +13,6 @@
 #include"LoadLists.h"
 #include"Remapper.h"
 
-#include"inPlaceTest.h"
-
 #include<chrono>
 
 #include"include/BakedImages.h"
@@ -283,7 +281,7 @@ public:
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
 		std::function<void()> drawUpdate = bind(&Application::updateDrawVariables, this);
-		sConst->setCallbacK(drawUpdate);
+		sConst->setCallback(drawUpdate);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
@@ -297,7 +295,6 @@ public:
 		blurX.setup(xBlur, &test);
 		blurY.setup(yBlur, blurX.getRenderTargets());
 
-		std::cout << testGP.GraphicsPipelines.size() << std::endl;
 		currentPass = &testGP;// &Engine::get()->defaultPass;
 
 		updateColourScheme();
@@ -338,12 +335,8 @@ private:
 	postProcessFilter blurX;
 	postProcessFilter blurY;
 	drawImage test;
-	//VkRenderPass testRP;
 	GraphicsPass testGP;
 	GraphicsPass* currentPass = nullptr;
-
-	//double mouseX = 0.0;
-	//double mouseY = 0.0;
 
 	bool mouseDown = false;
 	bool tomogActive = false;
@@ -943,14 +936,14 @@ private:
 
 		// Post-processing can be put here
 
-		blurX.filterImage(commandBuffer, imageIndex);
-		blurY.filterImage(commandBuffer, imageIndex);
+		//blurX.filterImage(commandBuffer, imageIndex);
+		//blurY.filterImage(commandBuffer, imageIndex);
 
-		VkImage resultImage = blurY.getFilterResult(commandBuffer, imageIndex);
+		//VkImage resultImage = blurY.getFilterResult(commandBuffer, imageIndex);
 
-		//Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex);
+		Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex);
 
-		Engine::get()->copyImageToSwapchain(commandBuffer, resultImage, test.imageExtent, imageIndex);
+		//Engine::get()->copyImageToSwapchain(commandBuffer, resultImage, test.imageExtent, imageIndex);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw runtime_error("failed to record command buffer!");

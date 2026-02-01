@@ -87,7 +87,7 @@ public:
 
 	std::function<void()> updateCallback = nullptr;
 
-	void setCallbacK(std::function<void()> funct) {
+	void setCallback(std::function<void()> funct) {
 		updateCallback = funct;
 	}
 

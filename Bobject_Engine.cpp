@@ -1610,8 +1610,6 @@ VkResult Engine::submitAndPresentFrame(uint32_t imageIndex) {
 
 void Engine::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout) {
 
-	//VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	barrier.oldLayout = oldLayout;
