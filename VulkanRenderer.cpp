@@ -26,6 +26,36 @@ KeyManager keyBinds;
 std::vector<MouseManager*> MouseManager::_instances;
 MouseManager mouseManager;
 
+class WebcamSettings : public Widget {
+public:
+	WebcamSettings(LoadList* assets) {
+		loadList = assets;
+	}
+
+	void setup(std::function<void(UIItem*)> finishCallback) {
+		if (isSetup) {
+			return;
+		}
+		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.6f, 0.6f, 0.01f);
+
+		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+		endButtons->addItem(getPtr(new spacer));
+
+		imageData finishBtnImage = FINISHBUTTON;
+		Material* finishmat = newMaterial(&finishBtnImage, "FinishBtn");
+		endButtons->addItem(getPtr(new Button(finishmat, finishCallback)));
+
+		mainArrangement->addItem(getPtr(endButtons));
+		mainArrangement->arrangeItems();
+
+		canvas.push_back(getPtr(mainArrangement));
+
+		isSetup = true;
+	}
+
+	size_t clickIndex = 0;
+};
+
 class SaveMenu : public Widget {
 public:
 	SaveMenu(LoadList* assets) {
@@ -212,7 +242,7 @@ public:
 		loadList = assets;
 	}
 
-	void setup(std::function<void(UIItem*)> lightingFunction) {
+	void setup(std::function<void(UIItem*)> lightingFunction, std::function<void(UIItem*)> openSettings) {
 		if (isSetup) {
 			return;
 		}
@@ -241,7 +271,7 @@ public:
 
 		Videobuttons->addItem(getPtr(new Button(webcamMat)));
 		Videobuttons->addItem(getPtr(new Checkbox(playMat, pauseMat, toggleWebcamFunct)));
-		Videobuttons->addItem(getPtr(new Button(settingsMat, configureWebcamFunct)));
+		Videobuttons->addItem(getPtr(new Button(settingsMat, openSettings))); // configureWebcamFunct)));
 		Videobuttons->addItem(getPtr(new Checkbox(renderedMat, unrenderedMat, lightingFunction)));
 
 		Videobuttons->arrangeItems();
@@ -324,6 +354,8 @@ private:
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	RemapUI remapMenu = RemapUI(&UIElements, sConst);
+	WebcamSettings webSets = WebcamSettings(&UIElements);
+
 
 	shaderData* xBlur = new GAUSSBLURXSHADER;
 	shaderData* yBlur = new GAUSSBLURYSHADER;
@@ -408,6 +440,30 @@ private:
 		}
 		std::cout << "FrameRate is ~" << frameCount << " FPS" << std::endl;
 		isTrackingFPS = false;
+	}
+
+	void createWebSettings(UIItem* owner) {
+		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishWebSettings, this, std::placeholders::_1);
+
+		webSets.setup(finishSelf);
+		if (!webSets.isSetup) {
+			return;
+		}
+		webSets.clickIndex = mouseManager.addClickListener(webSets.getClickCallback());
+
+		widgets.push_back(&webSets);
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	}
+
+	void finishWebSettings(UIItem* owner) {
+		webSets.cleanup();
+
+		mouseManager.removeClickListener(webSets.clickIndex);
+
+		widgets.erase(find(widgets.begin(), widgets.end(), &webSets));
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 
 	void createRemapper(UIItem* owner) {
@@ -569,6 +625,8 @@ private:
 		std::function<void(UIItem*)> newSessionFunc = std::bind(&Application::newSession, this, placeholders::_1);
 		std::function<void(UIItem*)> remapCallback = std::bind(&Application::createRemapper, this, placeholders::_1);
 
+		std::function<void(UIItem*)> webcamSettings = std::bind(&Application::createWebSettings, this, placeholders::_1);
+
 		std::function<void(float)> polarFunc = std::bind(&Application::updateLightPolar, this, placeholders::_1);
 		std::function<void(float)> azimuthFunc = std::bind(&Application::updateLightAzimuth, this, placeholders::_1);
 
@@ -580,7 +638,7 @@ private:
 		mouseManager.addClickListener(saveMenu.getClickCallback());
 		widgets.push_back(&saveMenu);
 
-		webcamMenu.setup(lightingFunction);
+		webcamMenu.setup(lightingFunction, webcamSettings);
 		mouseManager.addClickListener(webcamMenu.getClickCallback());
 		widgets.push_back(&webcamMenu);
 
