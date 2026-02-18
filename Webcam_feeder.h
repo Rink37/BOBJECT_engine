@@ -36,11 +36,17 @@ public:
 
 	void saveFilter();
 
+	void findWebcams();
+
+	void switchWebcam(int);
+
 	bool shouldUpdate = true;
 	bool isUpdating = true;
 
 	bool isValid = true;
 private:
+	std::vector<uint8_t> webcamIds{};
+
 	cv::Mat warp;
 
 	cv::VideoCapture cap;

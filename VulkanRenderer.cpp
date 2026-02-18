@@ -40,6 +40,7 @@ public:
 		reload = reloadCallback;
 
 		std::function<void(UIItem*)> webcamCalib = bind(&WebcamSettings::calibrateWebcam, this, placeholders::_1);
+		std::function<void(UIItem*)> switchWebcam = bind(&WebcamSettings::switchWebcam, this, placeholders::_1);
 		
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f, ARRANGE_START);
 
@@ -54,6 +55,7 @@ public:
 		Material* settingsMat = newMaterial(&sb, "SettingsBtn");
 		
 		endButtons->addItem(getPtr(new Button(settingsMat, webcamCalib)));
+		endButtons->addItem(getPtr(new Button(settingsMat, switchWebcam)));
 		endButtons->addItem(getPtr(new spacer));
 		endButtons->addItem(getPtr(new Button(finishmat, finishCallback)));
 
@@ -93,6 +95,8 @@ public:
 		}
 	}
 
+	int webcamIndex = 0;
+
 private:
 
 	ImagePanel* webcamView = nullptr;
@@ -101,6 +105,16 @@ private:
 		if (webcamTexture::get()->webCam != nullptr) {
 			webcamTexture::get()->webCam->calibrateCornerFilter();
 		}
+	}
+
+	void switchWebcam(UIItem* owner) {
+		webcamIndex++;
+		webcamTexture::get()->webCam->switchWebcam(webcamIndex);
+		webcamTexture::get()->recreateWebcamImage();
+		webcamView->image->mat[0]->cleanupDescriptor();
+		webcamView->image->mat[0] = new Material(webcamTexture::get());
+		reload();
+		update();
 	}
 
 	void updateAspectRatio(float newRatio) {

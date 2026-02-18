@@ -8,6 +8,7 @@ using namespace std;
 using namespace cv;
 
 Webcam::Webcam() {
+	findWebcams();
 	cap.open(camIndex, CAP_DSHOW);
 	if (!cap.isOpened()) {
 		isValid = false;
@@ -26,6 +27,7 @@ Webcam::Webcam() {
 } 
 
 Webcam::Webcam(uint8_t idx) {
+	findWebcams();
 	camIndex = idx;
 	cap.open(camIndex, CAP_DSHOW);
 	if (!cap.isOpened()) {
@@ -42,6 +44,44 @@ Webcam::Webcam(uint8_t idx) {
 	targetCorners[1] = Point2f(0, targetHeight);
 	targetCorners[2] = Point2f(targetWidth, 0);
 	targetCorners[3] = Point2f(targetWidth, targetHeight);
+}
+
+void Webcam::switchWebcam(int index) {
+	index %= webcamIds.size();
+	cap.release();
+	cap.open(webcamIds[index]);
+	if (!cap.isOpened()) {
+		isValid = false;
+		return;
+	}
+	std::cout << "Switched to " << index << std::endl;
+	for (int i = 0; i != 4; i++) {
+		cropCorners[i] = Point2f(0, 0);
+	}
+	getFrame();
+	targetHeight = webcamFrame.size().height;
+	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	targetCorners[0] = Point2f(0, 0);
+	targetCorners[1] = Point2f(0, targetHeight);
+	targetCorners[2] = Point2f(targetWidth, 0);
+	targetCorners[3] = Point2f(targetWidth, targetHeight);
+}
+
+void Webcam::findWebcams() {
+	for (uint8_t i = 0; i != 5; i++) {
+		VideoCapture testWebcam;
+		testWebcam.open(i);
+		if (testWebcam.isOpened()) {
+			webcamIds.push_back(i);
+		}
+		testWebcam.release();
+	}
+	std::cout << "Number of webcams found = " << webcamIds.size() << std::endl;
+	std::cout << "Webcam IDs = ";
+	for (size_t i = 0; i != webcamIds.size(); i++) {
+		std::cout << static_cast<int>(webcamIds[i]) << " ";
+	}
+	std::cout << std::endl;
 }
 
 void Webcam::loadFilter() {
@@ -61,6 +101,10 @@ void Webcam::updateAspectRatio(float ratio) {
 	sizeRatio = ratio;
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	targetCorners[0] = Point2f(0, 0);
+	targetCorners[1] = Point2f(0, targetHeight);
+	targetCorners[2] = Point2f(targetWidth, 0);
+	targetCorners[3] = Point2f(targetWidth, targetHeight);
 }
 
 void Webcam::updateFrames() {
@@ -326,7 +370,7 @@ void Webcam::updateCorners() {
 					cX = m.m10 / m.m00 * 4;
 					cY = m.m01 / m.m00 * 4;
 					// Here 24 is substituted for (1/smoothness - 1) since hard-coding is much more efficient than division
-					cropCorners[i] = Point2f(((cropCorners[i].x)*(24) + l*4 + cX) * smoothness, ((cropCorners[i].y)*(24) + t*4 + cY) * smoothness);
+					cropCorners[i] = Point2f(((cropCorners[i].x)*(24.0f) + l*4.0f + cX) * smoothness, ((cropCorners[i].y)*(24.0f) + t*4.0f + cY) * smoothness);
 				}
 			}
 		}
