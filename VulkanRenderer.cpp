@@ -43,7 +43,7 @@ public:
 		
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f, ARRANGE_START);
 
-		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.1f, 0.01f);
+		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.05f, 0.01f);
 
 		webcamView = new ImagePanel(new Material(webcamTexture::get()), true);
 		
@@ -64,7 +64,7 @@ public:
 		ratioSlider->setFloatCallback(bind(&WebcamSettings::updateAspectRatio, this, placeholders::_1), true);
 		ratioSlider->setSlideValues(0.5f, 2.0f, 1.41f);
 
-		mainArrangement->addItem(getPtr(webcamView));
+		mainArrangement->addItem(webcamView);
 		//mainArrangement->addItem(getPtr(new spacer));
 		mainArrangement->addItem(getPtr(ratioSlider));
 		mainArrangement->addItem(getPtr(endButtons));
@@ -84,6 +84,14 @@ public:
 	size_t clickIndex = 0;
 	size_t posIndex = 0;
 	int priorityLayer = 100;
+
+	void cleanupSubClasses() {
+		if (webcamView != nullptr) {
+			webcamView->cleanup();
+			webcamView->image->mat[0]->cleanupDescriptor();
+			webcamView = nullptr;
+		}
+	}
 
 private:
 
@@ -516,6 +524,7 @@ private:
 	}
 
 	void finishWebSettings(UIItem* owner) {
+		vkDeviceWaitIdle(Engine::get()->device);
 		webSets.cleanup();
 
 		mouseManager.removeClickListener(webSets.clickIndex);
@@ -545,6 +554,8 @@ private:
 	}
 
 	void destroyRemapper(UIItem* owner) {
+		vkDeviceWaitIdle(Engine::get()->device);
+
 		sConst->normalType = 0;
 		sConst->loadNormal(remapMenu.remapper->baseOSNormal->copyTexture());
 		surfaceMenu.setNormal(sConst->currentNormal());
