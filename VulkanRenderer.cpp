@@ -36,24 +36,47 @@ public:
 		if (isSetup) {
 			return;
 		}
-		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.6f, 0.6f, 0.01f);
+
+		std::function<void(UIItem*)> webcamCalib = bind(&WebcamSettings::calibrateWebcam, this, placeholders::_1);
+		
+		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.5f, 0.5f, 0.01f);
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
-		endButtons->addItem(getPtr(new spacer));
 
+		ImagePanel* webcamView = new ImagePanel(new Material(webcamTexture::get()), true);
+		
 		imageData finishBtnImage = FINISHBUTTON;
 		Material* finishmat = newMaterial(&finishBtnImage, "FinishBtn");
+
+		imageData sb = SETTINGSBUTTON;
+		Material* settingsMat = newMaterial(&sb, "SettingsBtn");
+		
+		endButtons->addItem(getPtr(new Button(settingsMat, webcamCalib)));
+		endButtons->addItem(getPtr(new spacer));
 		endButtons->addItem(getPtr(new Button(finishmat, finishCallback)));
 
+		mainArrangement->addItem(getPtr(webcamView));
 		mainArrangement->addItem(getPtr(endButtons));
 		mainArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(mainArrangement));
 
+		if (webcamTexture::get()->webCam != nullptr) {
+			webcamTexture::get()->webCam->shouldUpdate = true;
+		}
+
 		isSetup = true;
 	}
 
 	size_t clickIndex = 0;
+	int priorityLayer = 1000;
+
+private:
+	void calibrateWebcam(UIItem* owner) {
+		if (webcamTexture::get()->webCam != nullptr) {
+			webcamTexture::get()->webCam->calibrateCornerFilter();
+		}
+	}
 };
 
 class SaveMenu : public Widget {
