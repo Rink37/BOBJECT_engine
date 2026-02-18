@@ -1274,6 +1274,7 @@ struct Widget {
 			Rotators[i]->cleanup();
 		}
 		Rotators.clear();
+		isSetup = false;
 	}
 
 	void hide() {

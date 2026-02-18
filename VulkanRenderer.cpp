@@ -104,7 +104,7 @@ private:
 	}
 
 	void updateAspectRatio(float newRatio) {
-		std::cout << newRatio << std::endl;
+		//std::cout << newRatio << std::endl;
 		webcamTexture::get()->webCam->updateAspectRatio(newRatio);
 		webcamTexture::get()->recreateWebcamImage();
 		webcamView->image->mat[0]->cleanupDescriptor();
