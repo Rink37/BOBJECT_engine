@@ -41,7 +41,7 @@ public:
 
 		std::function<void(UIItem*)> webcamCalib = bind(&WebcamSettings::calibrateWebcam, this, placeholders::_1);
 		
-		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.5f, 0.5f, 0.01f);
+		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f, ARRANGE_START);
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.1f, 0.01f);
 
@@ -65,7 +65,7 @@ public:
 		ratioSlider->setSlideValues(0.5f, 2.0f, 1.41f);
 
 		mainArrangement->addItem(getPtr(webcamView));
-		mainArrangement->addItem(getPtr(new spacer));
+		//mainArrangement->addItem(getPtr(new spacer));
 		mainArrangement->addItem(getPtr(ratioSlider));
 		mainArrangement->addItem(getPtr(endButtons));
 		mainArrangement->arrangeItems();

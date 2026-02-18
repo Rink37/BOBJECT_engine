@@ -77,6 +77,8 @@ struct UIItem {
 	float extentx, extenty = 1.0f;
 	float anchorx, anchory = 0.0f;
 
+	float baseExtentx, baseExtenty, baseSqAxisRatio = 1.0f;
+
 	float windowPositions[4] = { 0.0f };
 
 	float sqAxisRatio = 0.0f; // The ratio between axes if the window was perfectly square
@@ -220,6 +222,10 @@ public:
 
 		this->extenty = this->extentx * this->sqAxisRatio;
 
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
+
 		this->isWebcam = iW;
 	}
 	
@@ -242,9 +248,31 @@ public:
 	void updateDisplay() {
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
-		this->calculateScreenPosition();
-		if (image != nullptr) {
-			image->UpdateVertices(posx, posy, extentx, extenty);
+
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+
+		this->extenty = this->extentx * this->sqAxisRatio;
+
+		//baseExtentx = extentx;
+		baseExtenty = baseExtentx * sqAxisRatio;
+		baseSqAxisRatio = sqAxisRatio;
+
+		if (this->extenty > this->extentx) {
+			float sf = this->extentx / this->extenty;
+			this->extenty = this->extentx;
+			baseExtenty = baseExtentx;
+			baseSqAxisRatio = 1.0f;
+			this->sqAxisRatio = 1.0f;
+			this->calculateScreenPosition();
+			if (image != nullptr) {
+				image->UpdateVertices(posx, posy, extentx*sf, extenty);
+			}
+		}
+		else {
+			this->calculateScreenPosition();
+			if (image != nullptr) {
+				image->UpdateVertices(posx, posy, extentx, extenty);
+			}
 		}
 	}
 
@@ -273,6 +301,10 @@ public:
 		clickFunction = func;
 
 		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
 	}
 
 	Button(Material* mat, std::function<void(UIItem*)> func, int code) {
@@ -291,6 +323,10 @@ public:
 		clickType = code;
 
 		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
 	}
 
 	Button(Material* mat) {
@@ -306,6 +342,10 @@ public:
 		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
 
 		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
 	}
 
 	void setClickFunction(std::function<void(UIItem*)> func) {
@@ -354,6 +394,10 @@ public:
 		update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
 
 		clickFunction = func;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
 	}
 
 	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func, int code) {
@@ -375,6 +419,10 @@ public:
 
 		clickFunction = func;
 		clickType = code;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
 	}
 
 	void setClickFunction(std::function<void(UIItem*)> func) {
@@ -538,6 +586,10 @@ private:
 		this->spacing = spc;
 
 		this->sqAxisRatio = ey / ex;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
 	}
 
 	void getItemProperties(float&, int&, float&, std::vector<float>&);
@@ -634,6 +686,10 @@ private:
 		this->spacing = spc;
 
 		this->sqAxisRatio = ey / ex;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
 	}
 
 	int numArrangements = 2;
@@ -667,6 +723,10 @@ public:
 
 		backgroundImage->texWidth = backgroundImage->mat[0]->textures[0]->texWidth;
 		backgroundImage->texHeight = backgroundImage->mat[0]->textures[0]->texHeight;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
 	}
 
 	Slider(int orient, Material* mat, float xp, float yp, float xs, float ys) {
@@ -689,6 +749,10 @@ public:
 		backgroundImage->texHeight = backgroundImage->mat[0]->textures[0]->texHeight;
 
 		this->orientation = orient;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
 	}
 
 	void setSlideValues(int min, int max, int position) {
@@ -896,6 +960,10 @@ public:
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
 	}
 
 	void setSlideValues(int min, int max, int position) {
