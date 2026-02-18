@@ -239,6 +239,15 @@ public:
 		this->isWebcam = iW;
 	}
 
+	void updateDisplay() {
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+		this->calculateScreenPosition();
+		if (image != nullptr) {
+			image->UpdateVertices(posx, posy, extentx, extenty);
+		}
+	}
+
 	ImagePanel() = default;
 };
 

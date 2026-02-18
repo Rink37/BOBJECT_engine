@@ -32,18 +32,20 @@ public:
 		loadList = assets;
 	}
 
-	void setup(std::function<void(UIItem*)> finishCallback) {
+	void setup(std::function<void(UIItem*)> finishCallback, std::function<void()> reloadCallback) {
 		if (isSetup) {
 			return;
 		}
+
+		reload = reloadCallback;
 
 		std::function<void(UIItem*)> webcamCalib = bind(&WebcamSettings::calibrateWebcam, this, placeholders::_1);
 		
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.5f, 0.5f, 0.01f);
 
-		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.1f, 0.01f);
 
-		ImagePanel* webcamView = new ImagePanel(new Material(webcamTexture::get()), true);
+		webcamView = new ImagePanel(new Material(webcamTexture::get()), true);
 		
 		imageData finishBtnImage = FINISHBUTTON;
 		Material* finishmat = newMaterial(&finishBtnImage, "FinishBtn");
@@ -55,7 +57,16 @@ public:
 		endButtons->addItem(getPtr(new spacer));
 		endButtons->addItem(getPtr(new Button(finishmat, finishCallback)));
 
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+
+		Slider* ratioSlider = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 1.0f, 0.1f);
+		ratioSlider->setFloatCallback(bind(&WebcamSettings::updateAspectRatio, this, placeholders::_1), true);
+		ratioSlider->setSlideValues(0.5f, 2.0f, 1.41f);
+
 		mainArrangement->addItem(getPtr(webcamView));
+		mainArrangement->addItem(getPtr(new spacer));
+		mainArrangement->addItem(getPtr(ratioSlider));
 		mainArrangement->addItem(getPtr(endButtons));
 		mainArrangement->arrangeItems();
 
@@ -68,14 +79,30 @@ public:
 		isSetup = true;
 	}
 
+	std::function<void()> reload = nullptr;
+
 	size_t clickIndex = 0;
-	int priorityLayer = 1000;
+	size_t posIndex = 0;
+	int priorityLayer = 100;
 
 private:
+
+	ImagePanel* webcamView = nullptr;
+
 	void calibrateWebcam(UIItem* owner) {
 		if (webcamTexture::get()->webCam != nullptr) {
 			webcamTexture::get()->webCam->calibrateCornerFilter();
 		}
+	}
+
+	void updateAspectRatio(float newRatio) {
+		std::cout << newRatio << std::endl;
+		webcamTexture::get()->webCam->updateAspectRatio(newRatio);
+		webcamTexture::get()->recreateWebcamImage();
+		webcamView->image->mat[0]->cleanupDescriptor();
+		webcamView->image->mat[0] = new Material(webcamTexture::get());
+		reload();
+		update();
 	}
 };
 
@@ -428,6 +455,13 @@ private:
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
 
+	void reloadWebcamTex() {
+		sConst->reloadWebcamMat();
+		surfaceMenu.setDiffuse(sConst->currentDiffuse());
+		surfaceMenu.setNormal(sConst->currentNormal());
+		surfaceMenu.update();
+	}
+
 	void colourChangeTest() {
 		primaryColour = glm::vec3(0.0f, 0.13f, 0.27f); 
 		secondaryColour = glm::vec3(0.0f, 0.55f, 0.32f);
@@ -467,12 +501,14 @@ private:
 
 	void createWebSettings(UIItem* owner) {
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishWebSettings, this, std::placeholders::_1);
+		std::function<void()> updateWebTex = std::bind(&Application::reloadWebcamTex, this);
 
-		webSets.setup(finishSelf);
+		webSets.setup(finishSelf, updateWebTex);
 		if (!webSets.isSetup) {
 			return;
 		}
 		webSets.clickIndex = mouseManager.addClickListener(webSets.getClickCallback());
+		webSets.posIndex = mouseManager.addPositionListener(webSets.getPosCallback());
 
 		widgets.push_back(&webSets);
 
@@ -483,6 +519,7 @@ private:
 		webSets.cleanup();
 
 		mouseManager.removeClickListener(webSets.clickIndex);
+		mouseManager.removePositionListener(webSets.posIndex);
 
 		widgets.erase(find(widgets.begin(), widgets.end(), &webSets));
 

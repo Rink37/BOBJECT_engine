@@ -16,6 +16,8 @@ public:
 		}
 		webcamFrame.release();
 	}
+
+	void updateAspectRatio(float);
 	
 	void getFrame();
 

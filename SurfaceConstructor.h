@@ -112,6 +112,28 @@ public:
 		normalType = 0;
 		updateSurfaceMat();
 	};
+
+	void reloadWebcamMat() {
+		webcamPtr->cleanupDescriptor();
+		webTex = webcamTexture::get();
+		webcamPtr = new Material(webTex);
+		Diffuse[0] = webcamPtr;
+		if (diffTex == nullptr) {
+			Diffuse[1] = webcamPtr;
+			unlitSurfaceMat.init(webTex);
+		}
+		Normal[0] = webcamPtr;
+		if (OSNormTex == nullptr && TSNormTex == nullptr) {
+			surfaceMat.init(webTex);
+		}
+		if (OSNormTex == nullptr) {
+			Normal[1] = webcamPtr;
+		}
+		if (TSNormTex == nullptr) {
+			Normal[2] = webcamPtr;
+		}
+		updateSurfaceMat();
+	}
 	
 	Material* currentDiffuse() {
 		return Diffuse[diffuseIdx];
@@ -271,7 +293,9 @@ public:
 	}
 
 	void setNormal(Material* img) {
-		normalView->image->mat[0] = img;
+		if (hasNormal) {
+			normalView->image->mat[0] = img;
+		}
 	}
 
 	void resetNormalTog(bool state) {

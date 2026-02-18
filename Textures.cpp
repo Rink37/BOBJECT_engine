@@ -738,6 +738,13 @@ void webcamTexture::createWebcamImage() {
 	updateWebcamImage();
 }
 
+void webcamTexture::recreateWebcamImage() {
+	vkDeviceWaitIdle(Engine::get()->device);
+	cleanupImage();
+	createWebcamImage();
+	createWebcamTextureImageView();
+}
+
 void webcamTexture::createWebcamTextureImageView() {
 	textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 }

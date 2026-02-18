@@ -57,6 +57,12 @@ void Webcam::saveFilter() {
 	}
 }
 
+void Webcam::updateAspectRatio(float ratio) {
+	sizeRatio = ratio;
+	targetHeight = webcamFrame.size().height;
+	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+}
+
 void Webcam::updateFrames() {
 	while (1) {
 		getFrame();

@@ -222,10 +222,9 @@ public:
 		createWebcamTextureImageView();
 	}
 
-	void cleanup() {
-		if (cleaned || webCam == nullptr) {
-			return;
-		}
+	void recreateWebcamImage();
+
+	void cleanupImage() {
 		if (textureImage != nullptr) {
 			vkDestroyImage(Engine::get()->device, textureImage, nullptr);
 			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
@@ -234,6 +233,13 @@ public:
 			vkFreeMemory(Engine::get()->device, textureBufferMemory, nullptr);
 		}
 		textureImage = nullptr;
+	}
+
+	void cleanup() {
+		if (cleaned || webCam == nullptr) {
+			return;
+		}
+		cleanupImage();
 		webCam->cleanup();
 		delete webCam;
 		webCam = nullptr;
