@@ -17,7 +17,7 @@ Webcam::Webcam() {
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
-	getFrame();
+	cap >> webcamFrame;
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
 	targetCorners[0] = Point2f(0, 0);
@@ -37,7 +37,7 @@ Webcam::Webcam(uint8_t idx) {
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
-	getFrame();
+	cap >> webcamFrame;
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
 	targetCorners[0] = Point2f(0, 0);
@@ -49,6 +49,7 @@ Webcam::Webcam(uint8_t idx) {
 void Webcam::switchWebcam(int index) {
 	index %= webcamIds.size();
 	cap.release();
+	webcamFrame.release();
 	cap.open(webcamIds[index]);
 	if (!cap.isOpened()) {
 		isValid = false;
@@ -58,13 +59,14 @@ void Webcam::switchWebcam(int index) {
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
-	getFrame();
+	cap >> webcamFrame;
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
 	targetCorners[0] = Point2f(0, 0);
 	targetCorners[1] = Point2f(0, targetHeight);
 	targetCorners[2] = Point2f(targetWidth, 0);
 	targetCorners[3] = Point2f(targetWidth, targetHeight);
+	shouldCrop = false;
 }
 
 void Webcam::findWebcams() {
@@ -119,9 +121,14 @@ void Webcam::getFrame() {
 			isValid = false;
 		}
 		cap >> webcamFrame;
-		updateCorners();
-		warp = getPerspectiveTransform(cropCorners, targetCorners);
-		warpPerspective(webcamFrame, webcamFrame, warp, Size(targetWidth, targetHeight));
+		if (shouldCrop) {
+			updateCorners();
+			warp = getPerspectiveTransform(cropCorners, targetCorners);
+			warpPerspective(webcamFrame, webcamFrame, warp, Size(targetWidth, targetHeight));
+		}
+		else {
+			resize(webcamFrame, webcamFrame, Size(targetWidth, targetHeight));
+		}
 		if (!shouldUpdate) {
 			isUpdating = false;
 		}
@@ -323,6 +330,8 @@ void Webcam::getCorners(bool show) {
 	cropCorners[1] = corners[1];
 	cropCorners[2] = corners[2];
 	cropCorners[3] = corners[3];
+
+	shouldCrop = true;
 }
 
 void Webcam::updateCorners() {

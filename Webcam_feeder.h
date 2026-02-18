@@ -44,6 +44,8 @@ public:
 	bool isUpdating = true;
 
 	bool isValid = true;
+
+	bool shouldCrop = false;
 private:
 	std::vector<uint8_t> webcamIds{};
 
