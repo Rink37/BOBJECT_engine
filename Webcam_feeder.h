@@ -65,6 +65,8 @@ private:
 
 	uint8_t rotationState = 0;
 
+	uint32_t baseWidth, baseHeight = 0;
+
 	uint32_t targetWidth = 0;
 	uint32_t targetHeight = 0;
 	uint32_t targetDim = 0;

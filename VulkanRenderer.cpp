@@ -149,6 +149,7 @@ private:
 		webcamTexture::get()->recreateWebcamImage();
 		webcamView->image->mat[0]->cleanupDescriptor();
 		webcamView->image->mat[0] = new Material(webcamTexture::get());
+		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
 		reload();
 		update();
 	}
@@ -159,6 +160,7 @@ private:
 		webcamTexture::get()->recreateWebcamImage();
 		webcamView->image->mat[0]->cleanupDescriptor();
 		webcamView->image->mat[0] = new Material(webcamTexture::get());
+		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
 		reload();
 		update();
 	}
