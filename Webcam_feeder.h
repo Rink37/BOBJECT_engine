@@ -18,6 +18,10 @@ public:
 	}
 
 	void updateAspectRatio(float);
+
+	void setRotation(bool);
+
+	void fetchFromCamera();
 	
 	void getFrame();
 
@@ -46,6 +50,8 @@ public:
 	bool isValid = true;
 
 	bool shouldCrop = false;
+
+	float sizeRatio = 1.41f;
 private:
 	std::vector<uint8_t> webcamIds{};
 
@@ -54,13 +60,17 @@ private:
 	cv::VideoCapture cap;
 
 	uint8_t filter[6] = { 0, 0, 0, 255, 255, 255 };
-	float sizeRatio = 1.41f;
+
+	uint8_t rotationState = 0;
 
 	uint32_t targetWidth = 0;
 	uint32_t targetHeight = 0;
+	uint32_t targetDim = 0;
+	cv::Point topCorner = cv::Point(0, 0);
 
 	uint8_t camIndex = 0;
-
+	
+	cv::Mat RotationMatrix;
 };
 
 #endif

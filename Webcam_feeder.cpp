@@ -55,10 +55,11 @@ void Webcam::switchWebcam(int index) {
 		isValid = false;
 		return;
 	}
-	std::cout << "Switched to " << index << std::endl;
+	std::cout << "Switched to camera" << index << std::endl;
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
+	RotationMatrix.empty();
 	cap >> webcamFrame;
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
@@ -67,6 +68,89 @@ void Webcam::switchWebcam(int index) {
 	targetCorners[2] = Point2f(targetWidth, 0);
 	targetCorners[3] = Point2f(targetWidth, targetHeight);
 	shouldCrop = false;
+}
+
+void Webcam::fetchFromCamera() {
+	if (RotationMatrix.empty()) {
+		cap >> webcamFrame;
+	}
+	else {
+		Mat frame;
+		cap >> frame;
+		warpAffine(frame, frame, RotationMatrix, Size(targetDim, targetDim));
+		Mat ROI(frame, Rect(topCorner.x, topCorner.y, targetWidth, targetHeight));
+		webcamFrame.release();
+		ROI.copyTo(webcamFrame);
+		frame.release();
+	}
+}
+
+void Webcam::setRotation(bool direction) {
+	if (direction) {
+		rotationState++;
+		rotationState %= 3;
+	}
+	else {
+		if (rotationState > 0) {
+			rotationState--;
+		}
+		else {
+			rotationState = 3;
+		}
+	}
+	float angle = 0.0f;
+	targetDim = (targetWidth > targetHeight) ? targetWidth : targetHeight;
+	uint32_t smallDimension = (targetWidth < targetHeight) ? targetWidth : targetHeight;
+	switch (rotationState) {
+	case 0:
+		angle = 0.0f;
+		topCorner = Point(0, 0);
+		break;
+	case 1:
+		angle = 90.0f;
+		topCorner = Point(0, 0);
+		break;
+	case 2:
+		angle = 180.0f;
+		topCorner = Point(0, targetDim - smallDimension);
+		break;
+	case 3:
+		angle = 270.0f;
+		topCorner = Point(targetDim - smallDimension, 0);
+		break;
+	default:
+		angle = 0.0f;
+		topCorner = Point(0, 0);
+		break;
+	}
+
+	if (angle == 0.0f) {
+		RotationMatrix.release();
+		return;
+	}
+
+	RotationMatrix = getRotationMatrix2D(Point2f(targetDim/2, targetDim/2), angle, 1.0f);
+	webcamFrame.release();
+	for (int i = 0; i != 4; i++) {
+		cropCorners[i] = Point2f(0, 0);
+	}
+	Mat frame;
+	cap >> frame;
+	warpAffine(frame, frame, RotationMatrix, Size(targetDim, targetDim));
+	Mat ROI(frame, Rect(topCorner.x, topCorner.y, targetHeight, targetWidth));
+	ROI.copyTo(webcamFrame);
+	frame.release();
+
+	sizeRatio = 1.0f / sizeRatio;
+
+	targetHeight = webcamFrame.size().height;
+	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	targetCorners[0] = Point2f(0, 0);
+	targetCorners[1] = Point2f(0, targetHeight);
+	targetCorners[2] = Point2f(targetWidth, 0);
+	targetCorners[3] = Point2f(targetWidth, targetHeight);
+	shouldCrop = false;
+
 }
 
 void Webcam::findWebcams() {
@@ -103,6 +187,7 @@ void Webcam::updateAspectRatio(float ratio) {
 	sizeRatio = ratio;
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	targetDim = (targetWidth > targetHeight) ? targetWidth : targetHeight;
 	targetCorners[0] = Point2f(0, 0);
 	targetCorners[1] = Point2f(0, targetHeight);
 	targetCorners[2] = Point2f(targetWidth, 0);
@@ -120,7 +205,8 @@ void Webcam::getFrame() {
 		if (!cap.isOpened()) {
 			isValid = false;
 		}
-		cap >> webcamFrame;
+		//cap >> webcamFrame;
+		fetchFromCamera();
 		if (shouldCrop) {
 			updateCorners();
 			warp = getPerspectiveTransform(cropCorners, targetCorners);
@@ -218,12 +304,12 @@ static float dist(Point2f A, Point2f B) {
 }
 
 void Webcam::getCorners(bool show) {
-	Mat frame;
+	//Mat frame;
 	Mat mask;
 	vector<vector<Point>> contours;
 	vector<Vec4i> hierarchy;
-	cap >> frame;
-	Point2f corners[4] = {Point2f(0, 0), Point2f(0, frame.size[0]), Point2f(frame.size[1], 0), Point2f(frame.size[1], frame.size[0])};
+	fetchFromCamera();
+	Point2f corners[4] = {Point2f(0, 0), Point2f(0, webcamFrame.size[0]), Point2f(webcamFrame.size[1], 0), Point2f(webcamFrame.size[1], webcamFrame.size[0])};
 
 	string windowName = "Live webcam view";
 
@@ -244,11 +330,12 @@ void Webcam::getCorners(bool show) {
 	bool cropped = false;
 
 	while (true) {
-		cap >> frame;
-		if (frame.empty()) {
+		//cap >> frame;
+		fetchFromCamera();
+		if (webcamFrame.empty()) {
 			break;
 		}
-		blur(frame, mask, Size(5, 5));
+		blur(webcamFrame, mask, Size(5, 5));
 		inRange(mask, Scalar(filter[0], filter[1], filter[2]), Scalar(filter[3], filter[4], filter[5]), mask);
 		resize(mask, mask, Size(), 0.25, 0.25);
 		findContours(mask, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
@@ -291,22 +378,23 @@ void Webcam::getCorners(bool show) {
 	if (show) {
 		while (true) {
 			updateCorners();
-			cap >> frame;
+			fetchFromCamera();
+			//cap >> frame;
 			if (cropped) {
 				warp = getPerspectiveTransform(cropCorners, targetCorners);
-				warpPerspective(frame, frame, warp, Size(targetWidth, targetHeight));
+				warpPerspective(webcamFrame, webcamFrame, warp, Size(targetWidth, targetHeight));
 			}
 			if (masked) {
-				blur(frame, frame, Size(5, 5));
-				inRange(frame, Scalar(filter[0], filter[1], filter[2]), Scalar(filter[3], filter[4], filter[5]), frame);
-				cvtColor(frame, frame, COLOR_GRAY2RGB);
+				blur(webcamFrame, webcamFrame, Size(5, 5));
+				inRange(webcamFrame, Scalar(filter[0], filter[1], filter[2]), Scalar(filter[3], filter[4], filter[5]), webcamFrame);
+				cvtColor(webcamFrame, webcamFrame, COLOR_GRAY2RGB);
 			}
 			if (circle) {
 				for (int i = 0; i < 4; i++) {
-					cv::circle(frame, corners[i], 10, Scalar(255, 0, 0), 8, 0);
+					cv::circle(webcamFrame, corners[i], 10, Scalar(255, 0, 0), 8, 0);
 				}
 			}
-			imshow(windowName, frame);
+			imshow(windowName, webcamFrame);
 			char c = (char)waitKey(5);
 			if (c == 27) { // ASCII code for Esc
 				cv::destroyWindow(windowName);

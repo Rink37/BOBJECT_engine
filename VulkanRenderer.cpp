@@ -40,7 +40,7 @@ public:
 		reload = reloadCallback;
 
 		std::function<void(UIItem*)> webcamCalib = bind(&WebcamSettings::calibrateWebcam, this, placeholders::_1);
-		std::function<void(UIItem*)> switchWebcam = bind(&WebcamSettings::switchWebcam, this, placeholders::_1);
+		std::function<void(UIItem*)> switchWebcam = bind(&WebcamSettings::changeRotation, this, placeholders::_1);
 		
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f, ARRANGE_START);
 
@@ -62,7 +62,7 @@ public:
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
 
-		Slider* ratioSlider = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 1.0f, 0.1f);
+		ratioSlider = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 1.0f, 0.1f);
 		ratioSlider->setFloatCallback(bind(&WebcamSettings::updateAspectRatio, this, placeholders::_1), true);
 		ratioSlider->setSlideValues(0.5f, 2.0f, 1.41f);
 
@@ -100,11 +100,22 @@ public:
 private:
 
 	ImagePanel* webcamView = nullptr;
+	Slider* ratioSlider = nullptr;
 
 	void calibrateWebcam(UIItem* owner) {
 		if (webcamTexture::get()->webCam != nullptr) {
 			webcamTexture::get()->webCam->calibrateCornerFilter();
 		}
+	}
+
+	void changeRotation(UIItem* owner) {
+		webcamTexture::get()->webCam->setRotation(true);
+		webcamTexture::get()->recreateWebcamImage();
+		webcamView->image->mat[0]->cleanupDescriptor();
+		webcamView->image->mat[0] = new Material(webcamTexture::get());
+		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
+		reload();
+		update();
 	}
 
 	void switchWebcam(UIItem* owner) {
@@ -118,7 +129,6 @@ private:
 	}
 
 	void updateAspectRatio(float newRatio) {
-		//std::cout << newRatio << std::endl;
 		webcamTexture::get()->webCam->updateAspectRatio(newRatio);
 		webcamTexture::get()->recreateWebcamImage();
 		webcamView->image->mat[0]->cleanupDescriptor();
