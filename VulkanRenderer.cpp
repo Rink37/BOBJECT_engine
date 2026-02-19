@@ -131,6 +131,9 @@ private:
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
 		reload();
 		update();
+
+		reload();
+		update();
 	}
 
 	void subtractRotation(UIItem* owner) {
@@ -139,6 +142,9 @@ private:
 		webcamView->image->mat[0]->cleanupDescriptor();
 		webcamView->image->mat[0] = new Material(webcamTexture::get());
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
+		reload();
+		update();
+
 		reload();
 		update();
 	}
@@ -152,6 +158,9 @@ private:
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
 		reload();
 		update();
+
+		reload();
+		update();
 	}
 
 	void indexDown(UIItem* owner) {
@@ -163,6 +172,9 @@ private:
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
 		reload();
 		update();
+
+		reload();
+		update();
 	}
 
 	void updateAspectRatio(float newRatio) {
@@ -170,6 +182,9 @@ private:
 		webcamTexture::get()->recreateWebcamImage();
 		webcamView->image->mat[0]->cleanupDescriptor();
 		webcamView->image->mat[0] = new Material(webcamTexture::get());
+		reload();
+		update();
+
 		reload();
 		update();
 	}
