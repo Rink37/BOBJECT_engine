@@ -40,11 +40,18 @@ public:
 		reload = reloadCallback;
 
 		std::function<void(UIItem*)> webcamCalib = bind(&WebcamSettings::calibrateWebcam, this, placeholders::_1);
-		std::function<void(UIItem*)> switchWebcam = bind(&WebcamSettings::changeRotation, this, placeholders::_1);
+		
+		std::function<void(UIItem*)> addRot = bind(&WebcamSettings::addRotation, this, placeholders::_1);
+		std::function<void(UIItem*)> subtractRot = bind(&WebcamSettings::subtractRotation, this, placeholders::_1);
+
+		std::function<void(UIItem*)> idUp = bind(&WebcamSettings::indexUp, this, placeholders::_1);
+		std::function<void(UIItem*)> idDown = bind(&WebcamSettings::indexDown, this, placeholders::_1);
 		
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f, ARRANGE_START);
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.05f, 0.01f);
+		Arrangement* idButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.05f, 0.01f);
+		Arrangement* rotationButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.05f, 0.01f);
 
 		webcamView = new ImagePanel(new Material(webcamTexture::get()), true);
 		
@@ -53,9 +60,16 @@ public:
 
 		imageData sb = SETTINGSBUTTON;
 		Material* settingsMat = newMaterial(&sb, "SettingsBtn");
+
+		idButtons->addItem(getPtr(new Button(settingsMat, idDown)));
+		idButtons->addItem(getPtr(new spacer));
+		idButtons->addItem(getPtr(new Button(settingsMat, idUp)));
 		
+		rotationButtons->addItem(getPtr(new Button(settingsMat, subtractRot)));
+		rotationButtons->addItem(getPtr(new spacer));
+		rotationButtons->addItem(getPtr(new Button(settingsMat, addRot)));
+
 		endButtons->addItem(getPtr(new Button(settingsMat, webcamCalib)));
-		endButtons->addItem(getPtr(new Button(settingsMat, switchWebcam)));
 		endButtons->addItem(getPtr(new spacer));
 		endButtons->addItem(getPtr(new Button(finishmat, finishCallback)));
 
@@ -67,8 +81,9 @@ public:
 		ratioSlider->setSlideValues(0.5f, 2.0f, 1.41f);
 
 		mainArrangement->addItem(webcamView);
-		//mainArrangement->addItem(getPtr(new spacer));
 		mainArrangement->addItem(getPtr(ratioSlider));
+		mainArrangement->addItem(getPtr(idButtons));
+		mainArrangement->addItem(getPtr(rotationButtons));
 		mainArrangement->addItem(getPtr(endButtons));
 		mainArrangement->arrangeItems();
 
@@ -108,7 +123,7 @@ private:
 		}
 	}
 
-	void changeRotation(UIItem* owner) {
+	void addRotation(UIItem* owner) {
 		webcamTexture::get()->webCam->setRotation(true);
 		webcamTexture::get()->recreateWebcamImage();
 		webcamView->image->mat[0]->cleanupDescriptor();
@@ -118,9 +133,29 @@ private:
 		update();
 	}
 
-	void switchWebcam(UIItem* owner) {
+	void subtractRotation(UIItem* owner) {
+		webcamTexture::get()->webCam->setRotation(false);
+		webcamTexture::get()->recreateWebcamImage();
+		webcamView->image->mat[0]->cleanupDescriptor();
+		webcamView->image->mat[0] = new Material(webcamTexture::get());
+		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
+		reload();
+		update();
+	}
+
+	void indexUp(UIItem* owner) {
 		webcamIndex++;
-		webcamTexture::get()->webCam->switchWebcam(webcamIndex);
+		webcamTexture::get()->webCam->switchWebcam(true);
+		webcamTexture::get()->recreateWebcamImage();
+		webcamView->image->mat[0]->cleanupDescriptor();
+		webcamView->image->mat[0] = new Material(webcamTexture::get());
+		reload();
+		update();
+	}
+
+	void indexDown(UIItem* owner) {
+		webcamIndex++;
+		webcamTexture::get()->webCam->switchWebcam(false);
 		webcamTexture::get()->recreateWebcamImage();
 		webcamView->image->mat[0]->cleanupDescriptor();
 		webcamView->image->mat[0] = new Material(webcamTexture::get());

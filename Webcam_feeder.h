@@ -20,6 +20,7 @@ public:
 	void updateAspectRatio(float);
 
 	void setRotation(bool);
+	void setRotation(uint8_t);
 
 	void fetchFromCamera();
 	
@@ -42,6 +43,7 @@ public:
 
 	void findWebcams();
 
+	void switchWebcam(bool);
 	void switchWebcam(int);
 
 	bool shouldUpdate = true;

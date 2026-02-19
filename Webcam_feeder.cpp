@@ -46,6 +46,22 @@ Webcam::Webcam(uint8_t idx) {
 	targetCorners[3] = Point2f(targetWidth, targetHeight);
 }
 
+void Webcam::switchWebcam(bool direction) {
+	if (direction) {
+		camIndex++;
+		camIndex %= webcamIds.size();
+	}
+	else {
+		if (camIndex > 0) {
+			camIndex--;
+		}
+		else {
+			camIndex = webcamIds.size();
+		}
+	}
+	switchWebcam(camIndex);
+}
+
 void Webcam::switchWebcam(int index) {
 	index %= webcamIds.size();
 	cap.release();
@@ -85,19 +101,9 @@ void Webcam::fetchFromCamera() {
 	}
 }
 
-void Webcam::setRotation(bool direction) {
-	if (direction) {
-		rotationState++;
-		rotationState %= 3;
-	}
-	else {
-		if (rotationState > 0) {
-			rotationState--;
-		}
-		else {
-			rotationState = 3;
-		}
-	}
+void Webcam::setRotation(uint8_t state) {
+	rotationState = state;
+
 	float angle = 0.0f;
 	targetDim = (targetWidth > targetHeight) ? targetWidth : targetHeight;
 	uint32_t smallDimension = (targetWidth < targetHeight) ? targetWidth : targetHeight;
@@ -129,7 +135,7 @@ void Webcam::setRotation(bool direction) {
 		return;
 	}
 
-	RotationMatrix = getRotationMatrix2D(Point2f(targetDim/2, targetDim/2), angle, 1.0f);
+	RotationMatrix = getRotationMatrix2D(Point2f(targetDim / 2, targetDim / 2), angle, 1.0f);
 	webcamFrame.release();
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
@@ -150,7 +156,22 @@ void Webcam::setRotation(bool direction) {
 	targetCorners[2] = Point2f(targetWidth, 0);
 	targetCorners[3] = Point2f(targetWidth, targetHeight);
 	shouldCrop = false;
+}
 
+void Webcam::setRotation(bool direction) {
+	if (direction) {
+		rotationState++;
+		rotationState %= 3;
+	}
+	else {
+		if (rotationState > 0) {
+			rotationState--;
+		}
+		else {
+			rotationState = 3;
+		}
+	}
+	setRotation(rotationState);
 }
 
 void Webcam::findWebcams() {
