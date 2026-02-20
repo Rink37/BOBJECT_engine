@@ -75,6 +75,8 @@ void Webcam::switchWebcam(int index) {
 	index %= webcamIds.size();
 	cap.release();
 	webcamFrame.release();
+
+	camIndex = index;
 	
 	cap.open(webcamIds[index]);
 	if (!cap.isOpened()) {
@@ -167,12 +169,8 @@ void Webcam::setRotation(uint8_t state) {
 		Mat frame;
 		cap >> frame;
 		warpAffine(frame, frame, RotationMatrix, Size(targetDim, targetDim));
-		//imshow("Frame_square", frame);
-		//waitKey(0);
 		Mat ROI(frame, Rect(topCorner.x, topCorner.y, baseHeight, baseWidth));
 		ROI.copyTo(webcamFrame);
-		//imshow("Frame_cropped", webcamFrame);
-		//waitKey(0);
 		frame.release();
 	}
 	

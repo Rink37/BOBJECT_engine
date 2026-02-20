@@ -8,6 +8,9 @@ void session::saveStudio(string name) {
 	for (int k = 0; k != 6; k++) {
 		out.write((char*)&currentStudio.calibrationSettings[k], sizeof(uint8_t));
 	}
+
+	out.write((char*)&currentStudio.webcamSettings, sizeof(uint8_t));
+	out.write((char*)&currentStudio.webcamAspectRatio, sizeof(float));
 	
 	uint32_t modelPathSize = currentStudio.defaultModelPath.size();
 	out.write((char*)&modelPathSize, sizeof(uint32_t));
@@ -74,6 +77,9 @@ void session::loadStudio(string name) {
 		for (int k = 0; k != 6; k++) {
 			in.read((char*)&currentStudio.calibrationSettings[k], sizeof(uint8_t));
 		}
+
+		in.read((char*)&currentStudio.webcamSettings, sizeof(uint8_t));
+		in.read((char*)&currentStudio.webcamAspectRatio, sizeof(float));
 
 		uint32_t modelPathSize = 0;
 		in.read((char*)&modelPathSize, sizeof(uint32_t));

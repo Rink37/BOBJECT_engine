@@ -17,6 +17,22 @@ struct studioData {
 	std::string TSPath = "None";
 
 	std::vector<std::string> modelPaths;
+
+	uint8_t webcamSettings = 0;
+	float webcamAspectRatio = 0.0f;
+
+	void packWebcamSettings(uint8_t rotationState, uint8_t webcamIndex){
+		// rotation State has a max. value of 3, so only needs two bits
+		// This leaves 6 bits in the packed settings for the webcam index, meaning we can have a max. webcam index of 64
+		webcamSettings = rotationState & 3;
+		uint8_t shiftedWebIdx = (webcamIndex & 63) << 2;
+		webcamSettings = webcamSettings | shiftedWebIdx;
+	}
+
+	void unpackWebcamSettings(uint8_t& rotationState, uint8_t& webcamIndex) {
+		rotationState = webcamSettings & 3;
+		webcamIndex = webcamSettings >> 2;
+	}
 };
 
 class session {
@@ -54,6 +70,9 @@ public:
 		currentStudio.TSPath = "None";
 
 		currentStudio.modelPaths.clear();
+
+		currentStudio.webcamSettings = 0;
+		currentStudio.webcamAspectRatio = 0.0f;
 	}
 private:
 	static session* sessionInstance;

@@ -78,7 +78,7 @@ public:
 
 		ratioSlider = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 1.0f, 0.1f);
 		ratioSlider->setFloatCallback(bind(&WebcamSettings::updateAspectRatio, this, placeholders::_1), true);
-		ratioSlider->setSlideValues(0.5f, 2.0f, 1.41f);
+		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
 
 		mainArrangement->addItem(webcamView);
 		mainArrangement->addItem(getPtr(ratioSlider));
@@ -109,8 +109,6 @@ public:
 			webcamView = nullptr;
 		}
 	}
-
-	int webcamIndex = 0;
 
 private:
 
@@ -150,7 +148,6 @@ private:
 	}
 
 	void indexUp(UIItem* owner) {
-		webcamIndex++;
 		webcamTexture::get()->webCam->switchWebcam(true);
 		webcamTexture::get()->recreateWebcamImage();
 		webcamView->image->mat[0]->cleanupDescriptor();
@@ -164,7 +161,6 @@ private:
 	}
 
 	void indexDown(UIItem* owner) {
-		webcamIndex++;
 		webcamTexture::get()->webCam->switchWebcam(false);
 		webcamTexture::get()->recreateWebcamImage();
 		webcamView->image->mat[0]->cleanupDescriptor();
@@ -230,6 +226,8 @@ private:
 		if (saveLocation == "fail") {
 			return;
 		}
+		session::get()->currentStudio.packWebcamSettings(webcamTexture::get()->webCam->rotationState, webcamTexture::get()->webCam->camIndex);
+		session::get()->currentStudio.webcamAspectRatio = webcamTexture::get()->webCam->sizeRatio;
 		session::get()->saveStudio(saveLocation);
 	}
 };
@@ -714,6 +712,25 @@ private:
 		}
 		newSession(owner);
 		session::get()->loadStudio(saveLocation);
+
+		uint8_t webcamRot = 0;
+		uint8_t webcamIndex = 0;
+
+		session::get()->currentStudio.unpackWebcamSettings(webcamRot, webcamIndex);
+
+		webcamTexture::get()->webCam->switchWebcam(webcamIndex);
+		webcamTexture::get()->webCam->setRotation(webcamRot);
+		webcamTexture::get()->webCam->updateAspectRatio(session::get()->currentStudio.webcamAspectRatio);
+		webcamTexture::get()->recreateWebcamImage();
+		
+		reloadWebcamTex();
+
+		reloadWebcamTex();
+
+		std::cout << webcamTexture::get()->webCam->sizeRatio << std::endl;
+		std::cout << static_cast<int>(webcamTexture::get()->webCam->camIndex) << std::endl;
+		std::cout << static_cast<int>(webcamTexture::get()->webCam->rotationState) << std::endl;
+
 		for (string path : session::get()->currentStudio.modelPaths) {
 			StaticObject newObject(path);
 			newObject.mat = &sConst->surfaceMat;
