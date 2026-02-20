@@ -750,7 +750,7 @@ void webcamTexture::createWebcamTextureImageView() {
 }
 
 void webcamTexture::updateWebcam() {
-	if (webCam == nullptr || webCam->shouldUpdate == false) {
+	if (webCam == nullptr || webCam->shouldUpdate == false || webCam->isValid == false) {
 		return;
 	}
 	webCam->getFrame();

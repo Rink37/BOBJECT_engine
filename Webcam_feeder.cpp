@@ -9,7 +9,11 @@ using namespace cv;
 
 Webcam::Webcam() {
 	findWebcams();
-	cap.open(camIndex, CAP_DSHOW);
+	if (webcamIds.size() == 0) {
+		isValid = false;
+		return;
+	}
+	cap.open(webcamIds[camIndex], CAP_DSHOW);
 	if (!cap.isOpened()) {
 		isValid = false;
 		return;
@@ -32,8 +36,12 @@ Webcam::Webcam() {
 
 Webcam::Webcam(uint8_t idx) {
 	findWebcams();
+	if (webcamIds.size() == 0) {
+		isValid = false;
+		return;
+	}
 	camIndex = idx;
-	cap.open(camIndex, CAP_DSHOW);
+	cap.open(webcamIds[camIndex], CAP_DSHOW);
 	if (!cap.isOpened()) {
 		isValid = false;
 		return;
@@ -56,6 +64,9 @@ Webcam::Webcam(uint8_t idx) {
 }
 
 void Webcam::switchWebcam(bool direction) {
+	if (webcamIds.size() == 0) {
+		return;
+	}
 	if (direction) {
 		camIndex++;
 		camIndex %= webcamIds.size();
@@ -72,6 +83,9 @@ void Webcam::switchWebcam(bool direction) {
 }
 
 void Webcam::switchWebcam(int index) {
+	if (webcamIds.size() == 0) {
+		return;
+	}
 	index %= webcamIds.size();
 	cap.release();
 	webcamFrame.release();

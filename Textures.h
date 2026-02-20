@@ -117,7 +117,6 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		//cleaned = false;
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t ml) {
@@ -131,7 +130,6 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		//cleaned = false;
 	}
 
 	imageTexture(std::string filename, VkFormat format) {
@@ -141,7 +139,6 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		//cleaned = false;
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format) {
@@ -151,14 +148,12 @@ public:
 		transitionMatToImg();
 		createTextureImageView();
 		destroyCVMat();
-		//cleaned = false;
 	}
 
 	imageTexture(imageData* imageBytes) {
 		// Built-in image texture
 		createTextureImage(imageBytes);
 		createTextureImageView();
-		//cleaned = false;
 	};
 
 	imageTexture(imageData* imageBytes, VkFormat imageFormat) {
@@ -166,7 +161,6 @@ public:
 		textureFormat = imageFormat;
 		createTextureImage(imageBytes);
 		createTextureImageView();
-		//cleaned = false;
 	};
 
 	void setup() {
@@ -202,24 +196,17 @@ public:
 	void setup() {
 		webCam = new Webcam(0);
 		if (!webCam->isValid) {
-			std::cout << "New image created" << std::endl;
-			delete webCam;
-			webCam = nullptr;
-			cv::Mat camNotFoundImg(128, 128, CV_8UC3);
-			camNotFoundImg = cv::Scalar(255, 0, 255);
-			Texture* ptr = new imageTexture(camNotFoundImg);
-			texChannels = ptr->texChannels;
-			texHeight = ptr->texHeight;
-			texWidth = ptr->texWidth;
-			textureImage = ptr->textureImage;
-			textureImageMemory = ptr->textureImageMemory;
-			textureImageView = ptr->textureImageView;
-			delete ptr;
-			camNotFoundImg.release();
+			std::cout << "No valid webcams found" << std::endl;
+			texMat = cv::Mat(96, 128, CV_8UC3);
+			texMat = cv::Scalar(255, 0, 255);
+			transitionMatToImg();
+			textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 			return;
 		}
-		createWebcamImage();
-		createWebcamTextureImageView();
+		else {
+			createWebcamImage();
+			createWebcamTextureImageView();
+		}
 	}
 
 	void recreateWebcamImage();
