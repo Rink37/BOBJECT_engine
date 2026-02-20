@@ -102,7 +102,7 @@ void Webcam::switchWebcam(int index) {
 		return;
 	}
 	
-	std::cout << "Switched to camera " << index << std::endl;
+	// std::cout << "Switched to camera " << index << std::endl;
 	
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
@@ -149,7 +149,7 @@ void Webcam::fetchFromCamera() {
 void Webcam::setRotation(uint8_t state) {
 	rotationState = state;
 
-	std::cout << "Rotating to state " << static_cast<int>(rotationState) << std::endl;
+	// std::cout << "Rotating to state " << static_cast<int>(rotationState) << std::endl;
 
 	float angle = 0.0f;
 	targetDim = (baseWidth > baseHeight) ? baseWidth : baseHeight;
@@ -236,12 +236,12 @@ void Webcam::findWebcams() {
 		}
 		testWebcam.release();
 	}
-	std::cout << "Number of webcams found = " << webcamIds.size() << std::endl;
-	std::cout << "Webcam IDs = ";
-	for (size_t i = 0; i != webcamIds.size(); i++) {
-		std::cout << static_cast<int>(webcamIds[i]) << " ";
-	}
-	std::cout << std::endl;
+	//std::cout << "Number of webcams found = " << webcamIds.size() << std::endl;
+	//std::cout << "Webcam IDs = ";
+	//for (size_t i = 0; i != webcamIds.size(); i++) {
+	//	std::cout << static_cast<int>(webcamIds[i]) << " ";
+	//}
+	//std::cout << std::endl;
 }
 
 void Webcam::loadFilter() {

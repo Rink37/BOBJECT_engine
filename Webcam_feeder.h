@@ -25,13 +25,10 @@ public:
 	void fetchFromCamera();
 	
 	void getFrame();
-	void asyncFrameFetch();
 
 	void calibrateCornerFilter();
 	void getCorners(bool);
 	void updateCorners();
-
-	//void updateFrames();
 
 	cv::Mat webcamFrame;
 

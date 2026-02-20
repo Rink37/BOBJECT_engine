@@ -747,9 +747,9 @@ private:
 
 		reloadWebcamTex();
 
-		std::cout << webcamTexture::get()->webCam->sizeRatio << std::endl;
-		std::cout << static_cast<int>(webcamTexture::get()->webCam->camIndex) << std::endl;
-		std::cout << static_cast<int>(webcamTexture::get()->webCam->rotationState) << std::endl;
+		//std::cout << webcamTexture::get()->webCam->sizeRatio << std::endl;
+		//std::cout << static_cast<int>(webcamTexture::get()->webCam->camIndex) << std::endl;
+		//std::cout << static_cast<int>(webcamTexture::get()->webCam->rotationState) << std::endl;
 
 		for (string path : session::get()->currentStudio.modelPaths) {
 			StaticObject newObject(path);
