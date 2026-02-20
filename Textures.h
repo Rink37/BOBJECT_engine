@@ -248,6 +248,8 @@ public:
 		textureFormat = newFormat;
 	}
 
+	std::future<void> frameUpdate = std::async(std::launch::async, []() {return; });
+
 private:
 	static webcamTexture* winstance;
 	webcamTexture() = default;
@@ -256,8 +258,6 @@ private:
 	void updateWebcamImage();
 	void createWebcamImage();
 	void createWebcamTextureImageView();
-
-	std::future<void> frameUpdate = std::async(std::launch::async, []() {return;});
 
 	VkDeviceSize imageSize = 0;
 };

@@ -774,6 +774,7 @@ void webcamTexture::updateWebcam() {
 	if (webCam == nullptr || webCam->shouldUpdate == false || webCam->isValid == false) {
 		return;
 	}
+	//frameUpdate.get();
 	webCam->getFrame();
 	
 	cv::cvtColor(webCam->webcamFrame, webCam->webcamFrame, cv::COLOR_BGR2RGBA, 4);
@@ -781,6 +782,8 @@ void webcamTexture::updateWebcam() {
 	memcpy(tBuffer, webCam->webcamFrame.ptr(), (size_t)imageSize);
 
 	updateWebcamImage();
+
+	//frameUpdate = std::async(std::launch::async, &webcamTexture::fetchFrame, this);
 } 
 
 void webcamTexture::updateWebcamImage() {

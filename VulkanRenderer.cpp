@@ -61,9 +61,15 @@ public:
 		imageData sb = SETTINGSBUTTON;
 		Material* settingsMat = newMaterial(&sb, "SettingsBtn");
 
-		idButtons->addItem(getPtr(new Button(settingsMat, idDown)));
+		imageData pb = PLAYBUTTON;
+		Material* forwardMat = newMaterial(&pb, "PlayBtn");
+
+		imageData bb = BACKBUTTON;
+		Material* backMat = newMaterial(&bb, "BackBtn");
+
+		idButtons->addItem(getPtr(new Button(backMat, idDown)));
 		idButtons->addItem(getPtr(new spacer));
-		idButtons->addItem(getPtr(new Button(settingsMat, idUp)));
+		idButtons->addItem(getPtr(new Button(forwardMat, idUp)));
 		
 		rotationButtons->addItem(getPtr(new Button(settingsMat, subtractRot)));
 		rotationButtons->addItem(getPtr(new spacer));
@@ -507,6 +513,8 @@ private:
 
 	bool showWireframe = true;
 
+	bool inWebSettings = false;
+
 	vector<StaticObject> staticObjects = {};
 	PlaneObject* tomographyPlane = nullptr;
 	vector<uint32_t> visibleObjects = {};
@@ -595,6 +603,8 @@ private:
 		widgets.push_back(&webSets);
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+
+		inWebSettings = true;
 	}
 
 	void finishWebSettings(UIItem* owner) {
@@ -607,6 +617,8 @@ private:
 		widgets.erase(find(widgets.begin(), widgets.end(), &webSets));
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		
+		inWebSettings = false;
 	}
 
 	void createRemapper(UIItem* owner) {
@@ -935,7 +947,12 @@ private:
 			glfwPollEvents();
 			keyBinds.pollRepeatEvents();
 			mouseManager.checkPositionEvents();
-			webcamTexture::get()->asyncUpdate();
+			if (!inWebSettings) {
+				webcamTexture::get()->asyncUpdate();
+			}
+			else {
+				webcamTexture::get()->updateWebcam();
+			}
 			drawFrame();
 		}
 		vkDeviceWaitIdle(engine->device);

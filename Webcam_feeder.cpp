@@ -269,12 +269,6 @@ void Webcam::updateAspectRatio(float ratio) {
 	targetCorners[3] = Point2f(targetWidth, targetHeight);
 }
 
-//void Webcam::updateFrames() {
-//	while (1) {
-//		getFrame();
-//	}
-//}
-
 void Webcam::getFrame() {
 	if (isUpdating) {
 		if (!cap.isOpened()) {

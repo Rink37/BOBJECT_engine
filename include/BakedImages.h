@@ -23,6 +23,13 @@ extern unsigned char PauseButtonBytes[];
 
 #define PAUSEBUTTON imageData(PauseButtonWidth, PauseButtonHeight, PauseButtonChannels, PauseButtonBytes )
 
+extern const int BackButtonWidth;
+extern const int BackButtonHeight;
+extern const int BackButtonChannels;
+extern unsigned char BackButtonBytes[];
+
+#define BACKBUTTON imageData(BackButtonWidth, BackButtonHeight, BackButtonChannels, BackButtonBytes )
+
 extern const int PlayButtonWidth;
 extern const int PlayButtonHeight;
 extern const int PlayButtonChannels;
