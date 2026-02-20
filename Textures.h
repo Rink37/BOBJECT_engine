@@ -5,6 +5,8 @@
 #include"Webcam_feeder.h"
 #include"include/ImageDataType.h"
 #include<opencv2/opencv.hpp>
+#include<future>
+#include<thread>
 
 struct Texture {
 	// Structure describing an arbitrary image in the application
@@ -191,7 +193,10 @@ public:
 	VkBuffer textureBuffer = nullptr;
 	VkDeviceMemory textureBufferMemory = nullptr;
 	void* tBuffer = nullptr;
+	
 	void updateWebcam();
+	void asyncUpdate();
+	void fetchFrame();
 
 	void setup() {
 		webCam = new Webcam(0);
@@ -207,6 +212,8 @@ public:
 			createWebcamImage();
 			createWebcamTextureImageView();
 		}
+		frameUpdate.get();
+		frameUpdate = std::async(std::launch::async, &webcamTexture::fetchFrame, this);
 	}
 
 	void recreateWebcamImage();
@@ -249,6 +256,8 @@ private:
 	void updateWebcamImage();
 	void createWebcamImage();
 	void createWebcamTextureImageView();
+
+	std::future<void> frameUpdate = std::async(std::launch::async, []() {return;});
 
 	VkDeviceSize imageSize = 0;
 };

@@ -749,11 +749,33 @@ void webcamTexture::createWebcamTextureImageView() {
 	textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
+void webcamTexture::asyncUpdate() {
+	if (webCam == nullptr || webCam->shouldUpdate == false || webCam->isValid == false) {
+		return;
+	}
+	if (frameUpdate.wait_for(0s) != future_status::timeout) {
+		frameUpdate.get();
+			
+		cv::cvtColor(webCam->webcamFrame, webCam->webcamFrame, cv::COLOR_BGR2RGBA, 4);
+
+		memcpy(tBuffer, webCam->webcamFrame.ptr(), (size_t)imageSize);
+
+		updateWebcamImage();
+
+		frameUpdate = std::async(std::launch::async, &webcamTexture::fetchFrame, this);
+	}
+}
+
+void webcamTexture::fetchFrame() {
+	webCam->getFrame();
+}
+
 void webcamTexture::updateWebcam() {
 	if (webCam == nullptr || webCam->shouldUpdate == false || webCam->isValid == false) {
 		return;
 	}
 	webCam->getFrame();
+	
 	cv::cvtColor(webCam->webcamFrame, webCam->webcamFrame, cv::COLOR_BGR2RGBA, 4);
 
 	memcpy(tBuffer, webCam->webcamFrame.ptr(), (size_t)imageSize);

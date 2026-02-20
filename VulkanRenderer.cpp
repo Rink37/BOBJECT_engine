@@ -935,7 +935,7 @@ private:
 			glfwPollEvents();
 			keyBinds.pollRepeatEvents();
 			mouseManager.checkPositionEvents();
-			webcamTexture::get()->updateWebcam();
+			webcamTexture::get()->asyncUpdate();
 			drawFrame();
 		}
 		vkDeviceWaitIdle(engine->device);

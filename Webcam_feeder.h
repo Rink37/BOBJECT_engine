@@ -25,12 +25,13 @@ public:
 	void fetchFromCamera();
 	
 	void getFrame();
+	void asyncFrameFetch();
 
 	void calibrateCornerFilter();
 	void getCorners(bool);
 	void updateCorners();
 
-	void updateFrames();
+	//void updateFrames();
 
 	cv::Mat webcamFrame;
 
@@ -58,6 +59,7 @@ public:
 	uint8_t rotationState = 0;
 	uint8_t camIndex = 0;
 private:
+
 	std::vector<uint8_t> webcamIds{};
 
 	cv::Mat warp;
