@@ -22,8 +22,10 @@ Webcam::Webcam() {
 		cropCorners[i] = Point2f(0, 0);
 	}
 	cap >> webcamFrame;
+	
 	targetHeight = webcamFrame.size().height;
-	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	targetWidth = webcamFrame.size().width; // static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	sizeRatio = static_cast<float>(targetWidth) / static_cast<float>(targetHeight);
 
 	baseWidth = webcamFrame.size().width;
 	baseHeight = webcamFrame.size().height;
@@ -50,8 +52,10 @@ Webcam::Webcam(uint8_t idx) {
 		cropCorners[i] = Point2f(0, 0);
 	}
 	cap >> webcamFrame;
+
 	targetHeight = webcamFrame.size().height;
-	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	targetWidth = webcamFrame.size().width; // static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	sizeRatio = static_cast<float>(targetWidth) / static_cast<float>(targetHeight);
 
 	baseWidth = webcamFrame.size().width;
 	baseHeight = webcamFrame.size().height;
@@ -111,8 +115,10 @@ void Webcam::switchWebcam(int index) {
 	topCorner = Point(0, 0);
 	
 	cap >> webcamFrame;
+	
 	targetHeight = webcamFrame.size().height;
-	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	targetWidth = webcamFrame.size().width; // static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
+	sizeRatio = static_cast<float>(targetWidth) / static_cast<float>(targetHeight);
 	
 	baseWidth = webcamFrame.size().width;
 	baseHeight = webcamFrame.size().height;
