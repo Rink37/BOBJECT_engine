@@ -122,7 +122,7 @@ void Webcam::switchWebcam(int index) {
 	targetCorners[1] = Point2f(0, targetHeight);
 	targetCorners[2] = Point2f(targetWidth, 0);
 	targetCorners[3] = Point2f(targetWidth, targetHeight);
-	shouldCrop = false;
+	cropMethod = 0;
 }
 
 void Webcam::fetchFromCamera() {
@@ -202,7 +202,7 @@ void Webcam::setRotation(uint8_t state) {
 	targetCorners[1] = Point2f(0, targetHeight);
 	targetCorners[2] = Point2f(targetWidth, 0);
 	targetCorners[3] = Point2f(targetWidth, targetHeight);
-	shouldCrop = false;
+	cropMethod = 0;
 }
 
 void Webcam::setRotation(bool direction) {
@@ -247,7 +247,9 @@ void Webcam::loadFilter() {
 			isNotDefault = (filter[k] == defaultCalibSettings[k]);
 		}
 	}
+	cropMethod = 0;
 	if (!isNotDefault) {
+		cropMethod = 1;
 		getCorners(false);
 	}
 }
@@ -275,13 +277,18 @@ void Webcam::getFrame() {
 			isValid = false;
 		}
 		fetchFromCamera();
-		if (shouldCrop) {
+		switch (cropMethod) {
+		case (0):
+			resize(webcamFrame, webcamFrame, Size(targetWidth, targetHeight));
+			break;
+		case (1):
 			updateCorners();
 			warp = getPerspectiveTransform(cropCorners, targetCorners);
 			warpPerspective(webcamFrame, webcamFrame, warp, Size(targetWidth, targetHeight));
-		}
-		else {
+			break;
+		default:
 			resize(webcamFrame, webcamFrame, Size(targetWidth, targetHeight));
+			break;
 		}
 		if (!shouldUpdate) {
 			isUpdating = false;
@@ -487,7 +494,7 @@ void Webcam::getCorners(bool show) {
 	cropCorners[2] = corners[2];
 	cropCorners[3] = corners[3];
 
-	shouldCrop = true;
+	cropMethod = 1;
 }
 
 void Webcam::updateCorners() {

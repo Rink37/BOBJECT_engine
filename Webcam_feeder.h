@@ -52,12 +52,12 @@ public:
 
 	bool isValid = true;
 
-	bool shouldCrop = false;
-
 	float sizeRatio = 1.41f;
 
 	uint8_t rotationState = 0;
 	uint8_t camIndex = 0;
+	uint8_t cropMethod = 0; 
+
 private:
 
 	std::vector<uint8_t> webcamIds{};
@@ -65,6 +65,7 @@ private:
 	cv::Mat warp;
 
 	cv::VideoCapture cap;
+	uint8_t methodCount = 2;
 
 	uint8_t filter[6] = { 0, 0, 0, 255, 255, 255 };
 
