@@ -67,13 +67,19 @@ public:
 		imageData bb = BACKBUTTON;
 		Material* backMat = newMaterial(&bb, "BackBtn");
 
+		imageData rf = ROTATEFORWARD;
+		Material* rotForward = newMaterial(&rf, "RotateFWBtn");
+
+		imageData rb = ROTATEBACKWARD;
+		Material* rotBackward = newMaterial(&rb, "RotateBWBtn");
+
 		idButtons->addItem(getPtr(new Button(backMat, idDown)));
 		idButtons->addItem(getPtr(new spacer));
 		idButtons->addItem(getPtr(new Button(forwardMat, idUp)));
 		
-		rotationButtons->addItem(getPtr(new Button(settingsMat, subtractRot)));
+		rotationButtons->addItem(getPtr(new Button(rotBackward, subtractRot)));
 		rotationButtons->addItem(getPtr(new spacer));
-		rotationButtons->addItem(getPtr(new Button(settingsMat, addRot)));
+		rotationButtons->addItem(getPtr(new Button(rotForward, addRot)));
 
 		endButtons->addItem(getPtr(new Button(settingsMat, webcamCalib)));
 		endButtons->addItem(getPtr(new spacer));

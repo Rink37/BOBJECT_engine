@@ -136,6 +136,10 @@ int main(int argc, char* argv[]){
         //loadAndWriteFile(string("C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\")+fname);
         fname = string("BackButton.png");
         fnames.push_back(fname);
+        fname = string("RotateForward.png");
+        fnames.push_back(fname);
+        fname = string("RotateBackward.png");
+        fnames.push_back(fname);
         fname = string("PlayButton.png");
         fnames.push_back(fname);
         //loadAndWriteFile(string("C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\")+fname);

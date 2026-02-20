@@ -30,6 +30,20 @@ extern unsigned char BackButtonBytes[];
 
 #define BACKBUTTON imageData(BackButtonWidth, BackButtonHeight, BackButtonChannels, BackButtonBytes )
 
+extern const int RotateForwardWidth;
+extern const int RotateForwardHeight;
+extern const int RotateForwardChannels;
+extern unsigned char RotateForwardBytes[];
+
+#define ROTATEFORWARD imageData(RotateForwardWidth, RotateForwardHeight, RotateForwardChannels, RotateForwardBytes )
+
+extern const int RotateBackwardWidth;
+extern const int RotateBackwardHeight;
+extern const int RotateBackwardChannels;
+extern unsigned char RotateBackwardBytes[];
+
+#define ROTATEBACKWARD imageData(RotateBackwardWidth, RotateBackwardHeight, RotateBackwardChannels, RotateBackwardBytes )
+
 extern const int PlayButtonWidth;
 extern const int PlayButtonHeight;
 extern const int PlayButtonChannels;
