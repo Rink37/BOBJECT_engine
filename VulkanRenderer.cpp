@@ -409,7 +409,7 @@ public:
 		Material* webcamMat = newMaterial(&webcamOn, "WebcamOnBtn");
 
 		std::function<void(UIItem*)> toggleWebcamFunct = bind(&WebcamMenu::toggleWebcam, this, placeholders::_1);
-		std::function<void(UIItem*)> configureWebcamFunct = bind(&WebcamMenu::calibrateWebcam, this, placeholders::_1);
+		//std::function<void(UIItem*)> configureWebcamFunct = bind(&WebcamMenu::calibrateWebcam, this, placeholders::_1);
 
 		Arrangement* Videobuttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 1.0f, 0.2f, 0.05f, 0.01f, ARRANGE_CENTER);
 
@@ -431,11 +431,11 @@ private:
 		}
 	}
 
-	void calibrateWebcam(UIItem* owner) {
-		if (webcamTexture::get()->webCam != nullptr) {
-			webcamTexture::get()->webCam->calibrateCornerFilter();
-		}
-	}
+	//void calibrateWebcam(UIItem* owner) {
+	//	if (webcamTexture::get()->webCam != nullptr) {
+	//		webcamTexture::get()->webCam->calibrateCornerFilter();
+	//	}
+	//}
 };
 
 class Application {
@@ -611,6 +611,8 @@ private:
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 
 		inWebSettings = true;
+		webcamMenu.canvas[0]->Items[1]->image->matidx = 0;
+		webcamMenu.canvas[0]->Items[1]->activestate = true;
 	}
 
 	void finishWebSettings(UIItem* owner) {
