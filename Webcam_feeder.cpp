@@ -83,7 +83,9 @@ void Webcam::switchWebcam(int index) {
 		isValid = false;
 		return;
 	}
+	
 	std::cout << "Switched to camera " << index << std::endl;
+	
 	for (int i = 0; i != 4; i++) {
 		cropCorners[i] = Point2f(0, 0);
 	}
@@ -223,10 +225,17 @@ void Webcam::findWebcams() {
 }
 
 void Webcam::loadFilter() {
+	uint8_t defaultCalibSettings[6] = { 0, 0, 0, 255, 255, 255 };
+	bool isNotDefault = true; // If the loaded settings are default then we don't want to perform corner cropping
 	for (int k = 0; k != 6; k++) {
 		filter[k] = session::get()->currentStudio.calibrationSettings[k];
+		if (isNotDefault) {
+			isNotDefault = (filter[k] == defaultCalibSettings[k]);
+		}
 	}
-	getCorners(false);
+	if (!isNotDefault) {
+		getCorners(false);
+	}
 }
 
 void Webcam::saveFilter() {
@@ -257,7 +266,6 @@ void Webcam::getFrame() {
 		if (!cap.isOpened()) {
 			isValid = false;
 		}
-		//cap >> webcamFrame;
 		fetchFromCamera();
 		if (shouldCrop) {
 			updateCorners();
