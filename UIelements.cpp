@@ -241,7 +241,6 @@ void Arrangement::arrangeItems() {
 
 		calculateVPositions(buffer, spacerSize, scaleFactor, extents, remainingHeight, W / H);
 	}
-
 }
 
 void Arrangement::calculateVSpacing(float& scaleFactor, int numSpacers, float& spacerSize, float& totalHeight, float& ybuffer) {

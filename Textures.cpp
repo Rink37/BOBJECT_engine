@@ -743,6 +743,9 @@ void webcamTexture::recreateWebcamImage() {
 	cleanupImage();
 	createWebcamImage();
 	createWebcamTextureImageView();
+	frameUpdate.get();
+	frameUpdate = std::async(std::launch::async, &webcamTexture::fetchFrame, this);
+	std::cout << "New frame update started " << std::endl;
 }
 
 void webcamTexture::createWebcamTextureImageView() {
@@ -755,8 +758,6 @@ void webcamTexture::asyncUpdate() {
 	}
 	if (frameUpdate.wait_for(0s) != future_status::timeout) {
 		frameUpdate.get();
-			
-		cv::cvtColor(webCam->webcamFrame, webCam->webcamFrame, cv::COLOR_BGR2RGBA, 4);
 
 		memcpy(tBuffer, webCam->webcamFrame.ptr(), (size_t)imageSize);
 
@@ -768,6 +769,8 @@ void webcamTexture::asyncUpdate() {
 
 void webcamTexture::fetchFrame() {
 	webCam->getFrame();
+
+	cv::cvtColor(webCam->webcamFrame, webCam->webcamFrame, cv::COLOR_BGR2RGBA, 4);
 }
 
 void webcamTexture::updateWebcam() {

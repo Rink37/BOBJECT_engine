@@ -46,12 +46,15 @@ public:
 
 		std::function<void(UIItem*)> idUp = bind(&WebcamSettings::indexUp, this, placeholders::_1);
 		std::function<void(UIItem*)> idDown = bind(&WebcamSettings::indexDown, this, placeholders::_1);
+
+		std::function<void(UIItem*)> revertAR = bind(&WebcamSettings::revertAspectRatio, this, placeholders::_1);
 		
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f, ARRANGE_START);
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.05f, 0.01f);
 		Arrangement* idButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.05f, 0.01f);
 		Arrangement* rotationButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.05f, 0.01f);
+		Arrangement* ARSettings = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.1f, 0.05f);
 
 		webcamView = new ImagePanel(new Material(webcamTexture::get()), true);
 		
@@ -92,8 +95,13 @@ public:
 		ratioSlider->setFloatCallback(bind(&WebcamSettings::updateAspectRatio, this, placeholders::_1), true);
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
 
+		ARSettings->addItem(getPtr(ratioSlider));
+		ARSettings->addItem(getPtr(new Button(rotBackward, revertAR)));
+
+		ARSettings->arrangeItems();
+
 		mainArrangement->addItem(webcamView);
-		mainArrangement->addItem(getPtr(ratioSlider));
+		mainArrangement->addItem(getPtr(ARSettings));
 		mainArrangement->addItem(getPtr(idButtons));
 		mainArrangement->addItem(getPtr(rotationButtons));
 		mainArrangement->addItem(getPtr(endButtons));
@@ -183,6 +191,10 @@ private:
 
 		reload();
 		update();
+	}
+
+	void revertAspectRatio(UIItem* owner) {
+		std::cout << "Revert aspect ratio function called" << std::endl;
 	}
 
 	void updateAspectRatio(float newRatio) {
@@ -738,15 +750,6 @@ private:
 
 		session::get()->currentStudio.unpackWebcamSettings(webcamRot, webcamIndex);
 
-		webcamTexture::get()->webCam->switchWebcam(webcamIndex);
-		webcamTexture::get()->webCam->setRotation(webcamRot);
-		webcamTexture::get()->webCam->updateAspectRatio(session::get()->currentStudio.webcamAspectRatio);
-		webcamTexture::get()->recreateWebcamImage();
-		
-		reloadWebcamTex();
-
-		reloadWebcamTex();
-
 		//std::cout << webcamTexture::get()->webCam->sizeRatio << std::endl;
 		//std::cout << static_cast<int>(webcamTexture::get()->webCam->camIndex) << std::endl;
 		//std::cout << static_cast<int>(webcamTexture::get()->webCam->rotationState) << std::endl;
@@ -795,8 +798,22 @@ private:
 			surfaceMenu.resetNormalTog(true);
 			surfaceMenu.toggleNormalState(false);
 		}
-		sConst->updateSurfaceMat();
+		if (webcamIndex != webcamTexture::get()->webCam->camIndex) {
+			webcamTexture::get()->webCam->switchWebcam(webcamIndex);
+		}
+		webcamTexture::get()->webCam->setRotation(webcamRot);
+		webcamTexture::get()->webCam->updateAspectRatio(session::get()->currentStudio.webcamAspectRatio);
+		webcamTexture::get()->recreateWebcamImage();
+		webcamTexture::get()->interruptFrameUpdate();
 		webcamTexture::get()->webCam->loadFilter();
+		webcamTexture::get()->startFrameUpdate();
+
+		reloadWebcamTex();
+
+		reloadWebcamTex();
+
+		sConst->updateSurfaceMat();
+
 		updateVisibleObjects();
 	}
 	
@@ -1010,6 +1027,7 @@ private:
 		else if (viewIndex == 2) {
 			engine->pipelineindex = 3;
 		}
+		std::cout << engine->pipelineindex << std::endl;
 		updateDrawVariables();
 	}
 
@@ -1112,8 +1130,8 @@ private:
 		ubo.proj[1][1] *= -1;
 
 		if (surfaceMenu.isVisible) {
-			ubo.UVdistort[0] = 2 * surfaceMenu.diffuseView->extentx;
-			ubo.UVdistort[1] = (surfaceMenu.diffuseView->posx) - surfaceMenu.diffuseView->extentx;
+			ubo.UVdistort[0] = 2 * surfaceMenu.diffuseView->UVextentx;
+			ubo.UVdistort[1] = (surfaceMenu.diffuseView->posx) - surfaceMenu.diffuseView->UVextentx;
 			ubo.UVdistort[2] = 2 * surfaceMenu.diffuseView->extenty;
 			ubo.UVdistort[3] = (surfaceMenu.diffuseView->posy) - surfaceMenu.diffuseView->extenty;
 		}
@@ -1135,10 +1153,12 @@ private:
 	void updateDrawVariables() {
 		Material* activeSurfaceMat = &((lit) ? sConst->surfaceMat : sConst->unlitSurfaceMat);
 		drawMat = ((!tomogActive) ? activeSurfaceMat : &tomogUI.scannedMaterial);
+		std::cout << drawMat->descriptorSets.size() << std::endl;
 		renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
 		graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
 		VkPipelineLayout pipelineLayoutSet[2] = { currentPass->diffusePipelineLayout, currentPass->diffNormPipelineLayout };
 		pipelineLayout = (viewIndex == 1 && lit) ? pipelineLayoutSet[drawMat->pipelineLayoutIndex] : currentPass->diffusePipelineLayout;
+		std::cout << "Draw variables updated " << std::endl;
 	}
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, GraphicsPass* currentPass, uint32_t imageIndex) {

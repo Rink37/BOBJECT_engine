@@ -216,6 +216,14 @@ public:
 		frameUpdate = std::async(std::launch::async, &webcamTexture::fetchFrame, this);
 	}
 
+	void interruptFrameUpdate() {
+		frameUpdate.get();
+	}
+
+	void startFrameUpdate() {
+		frameUpdate = std::async(std::launch::async, &webcamTexture::fetchFrame, this);
+	}
+
 	void recreateWebcamImage();
 
 	void cleanupImage() {

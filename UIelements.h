@@ -254,6 +254,7 @@ public:
 		this->extenty = this->extentx * this->sqAxisRatio;
 
 		//baseExtentx = extentx;
+		UVextentx = extentx;
 		baseExtenty = baseExtentx * sqAxisRatio;
 		baseSqAxisRatio = sqAxisRatio;
 
@@ -264,6 +265,7 @@ public:
 			baseSqAxisRatio = 1.0f;
 			this->sqAxisRatio = 1.0f;
 			this->calculateScreenPosition();
+			UVextentx = extentx * sf;
 			if (image != nullptr) {
 				image->UpdateVertices(posx, posy, extentx*sf, extenty);
 			}
@@ -277,6 +279,8 @@ public:
 	}
 
 	ImagePanel() = default;
+
+	float UVextentx = 0.0f;
 };
 
 class Button : public UIItem // Here a button is just a rectangle area in screen space which can be queried with coordinates to check if it has been pressed

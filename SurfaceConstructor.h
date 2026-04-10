@@ -188,6 +188,7 @@ public:
 		webcamPtr = new Material(webTex);
 		Diffuse = { webcamPtr, webcamPtr };
 		Normal = { webcamPtr, webcamPtr, webcamPtr };
+		unlitSurfaceMat.init(webTex);
 		surfaceMat.init(webTex);
 	}
 	

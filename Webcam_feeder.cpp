@@ -385,12 +385,22 @@ static float dist(Point2f A, Point2f B) {
 }
 
 void Webcam::getCorners(bool show) {
-	//Mat frame;
+	Mat frame;
 	Mat mask;
 	vector<vector<Point>> contours;
-	vector<Vec4i> hierarchy;
-	fetchFromCamera();
-	Point2f corners[4] = {Point2f(0, 0), Point2f(0, webcamFrame.size[0]), Point2f(webcamFrame.size[1], 0), Point2f(webcamFrame.size[1], webcamFrame.size[0])};
+	vector<Vec4i> hierarchy;;
+	if (RotationMatrix.empty()) {
+		cap >> frame;
+	}
+	else {
+		Mat tframe;
+		cap >> tframe;
+		warpAffine(tframe, tframe, RotationMatrix, Size(targetDim, targetDim));
+		Mat ROI(tframe, Rect(topCorner.x, topCorner.y, baseWidth, baseHeight));
+		ROI.copyTo(frame);
+		tframe.release();
+	}
+	Point2f corners[4] = {Point2f(0, 0), Point2f(0, frame.size[0]), Point2f(frame.size[1], 0), Point2f(frame.size[1], frame.size[0])};
 
 	string windowName = "Live webcam view";
 
@@ -411,12 +421,21 @@ void Webcam::getCorners(bool show) {
 	bool cropped = false;
 
 	while (true) {
-		//cap >> frame;
-		fetchFromCamera();
-		if (webcamFrame.empty()) {
+		if (RotationMatrix.empty()) {
+			cap >> frame;
+		}
+		else {
+			Mat tframe;
+			cap >> tframe;
+			warpAffine(tframe, tframe, RotationMatrix, Size(targetDim, targetDim));
+			Mat ROI(tframe, Rect(topCorner.x, topCorner.y, baseWidth, baseHeight));
+			ROI.copyTo(frame);
+			tframe.release();
+		}
+		if (frame.empty()) {
 			break;
 		}
-		blur(webcamFrame, mask, Size(5, 5));
+		blur(frame, mask, Size(5, 5));
 		inRange(mask, Scalar(filter[0], filter[1], filter[2]), Scalar(filter[3], filter[4], filter[5]), mask);
 		resize(mask, mask, Size(), 0.25, 0.25);
 		findContours(mask, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
@@ -458,9 +477,21 @@ void Webcam::getCorners(bool show) {
 	
 	if (show) {
 		while (true) {
+			if (RotationMatrix.empty()) {
+				cap >> frame;
+			}
+			else {
+				Mat tframe;
+				cap >> tframe;
+				warpAffine(tframe, tframe, RotationMatrix, Size(targetDim, targetDim));
+				Mat ROI(tframe, Rect(topCorner.x, topCorner.y, baseWidth, baseHeight));
+				ROI.copyTo(frame);
+				tframe.release();
+			}
+			if (frame.empty()) {
+				break;
+			}
 			updateCorners();
-			fetchFromCamera();
-			//cap >> frame;
 			if (cropped) {
 				warp = getPerspectiveTransform(cropCorners, targetCorners);
 				warpPerspective(webcamFrame, webcamFrame, warp, Size(targetWidth, targetHeight));

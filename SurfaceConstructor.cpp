@@ -288,7 +288,7 @@ void SurfaceMenu::loadDiffuseImage(UIItem* owner) {
 
 void SurfaceMenu::saveDiffuseImage(UIItem* owner) {
 	Mat saveDiffuse;
-	if (sConst->diffuseIdx == 0) {
+	if (sConst->diffuseIdx == 0 || sConst->diffTex == nullptr) {
 		saveDiffuse = webcamTexture::get()->webCam->webcamFrame;
 	}
 	else {
