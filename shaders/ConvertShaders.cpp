@@ -225,6 +225,7 @@ int main(){
 	loadAndWriteShaders(basepath, string("SobelCombined"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("ReferenceKuwahara"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("Averager"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("IterativeAverager"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("BoxAverager"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("GradRemap"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("OSToTSConverter"), 0, outRoot);

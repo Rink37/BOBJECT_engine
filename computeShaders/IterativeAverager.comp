@@ -1,0 +1,44 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout(binding = 0, rgba8) uniform image2D normalImage;
+layout(binding = 1, rg16f) uniform readonly image2D gradients;
+//layout(binding = 2, rgba8) uniform image2D resultImage;
+
+void main(){
+	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+
+	vec4 sumColour = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	vec2 grad = imageLoad(gradients, pixelCoords).rg;
+	vec3 normPix = imageLoad(normalImage, pixelCoords).rgb;
+
+	const float estStd = 0.05;
+	const int kernSize = 5;
+
+	if (normPix != vec3(0.0, 0.0, 0.0)){
+		sumColour.w = 0.0;
+		for (int x = pixelCoords.x - kernSize; x <= pixelCoords.x + kernSize;x++){
+			for (int y = pixelCoords.y - kernSize; y <= pixelCoords.y + kernSize; y++){
+				vec2 vz = abs((imageLoad(gradients, ivec2(x,y)).rg - grad) / estStd);
+				float z = (vz.x + vz.y) / 2.0;
+				if (z == 0.0){
+					sumColour.rgb += imageLoad(normalImage, ivec2(x, y)).rgb;
+					sumColour.w += 1.0;
+				} else {
+					vec3 pix = imageLoad(normalImage, ivec2(x,y)).rgb;
+					if (pix != vec3(0.0, 0.0, 0.0)){
+						sumColour.rgb += imageLoad(normalImage, ivec2(x,y)).rgb * 1/(z*z);
+						sumColour.w += 1/(z*z);
+					}
+				}
+			}
+		}
+	}
+
+	vec4 pixel = vec4((sumColour.rgb/sumColour.w), 1.0);
+
+	pixel.rgb = (normPix != vec3(0.0, 0.0, 0.0))?normalize(pixel.rgb * 2.0 - 1.0) * 0.5 + 0.5:vec3(0.0, 0.0, 0.0);
+
+	imageStore(normalImage, pixelCoords, pixel);
+}

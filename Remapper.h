@@ -12,6 +12,7 @@
 #include"include/SobelCombined.h"
 #include"include/ReferenceKuwahara.h"
 #include"include/Averager.h"
+#include"include/IterativeAverager.h"
 #include"include/GradRemap.h"
 #include"GaussBlurX.h"
 #include"GaussBlurY.h"

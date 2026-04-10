@@ -23,10 +23,10 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 	uint32_t height = baseHeight;
 	uint32_t width = baseWidth;
 
-	if (height > 1024) {
-		height = 1024;
-		width = static_cast<uint32_t>(static_cast<float>(baseWidth) / static_cast<float>(baseHeight) * 1024.0f);
-	}
+	//if (height > 1024) {
+	//	height = 1024;
+	//	width = static_cast<uint32_t>(static_cast<float>(baseWidth) / static_cast<float>(baseHeight) * 1024.0f);
+	//}
 
 	baseDiffuse = diffTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
 	baseOSNormal = OSNormTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
@@ -49,14 +49,16 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 	SobelCombined->filterImage();
 
 	if (Averager == nullptr) {
-		Averager = new filter(std::vector<Texture*>{baseOSNormal, SobelCombined->filterTarget[0]}, new AVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+		Averager = new filter(std::vector<Texture*>{baseOSNormal, SobelCombined->filterTarget[0]}, new ITERATIVEAVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 	}
-	Averager->filterImage();
+	for (int i = 0; i != 500; i++) {
+		Averager->filterImage();
+	}
 
-	if (gradRemap == nullptr) {
-		gradRemap = new filter(std::vector<Texture*>{Averager->filterTarget[0], SobelCombined->filterTarget[0]}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
-	}
-	gradRemap->filterImage();
+	//if (gradRemap == nullptr) {
+	//	gradRemap = new filter(std::vector<Texture*>{baseOSNormal, SobelCombined->filterTarget[0]}, new GRADREMAPSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
+	//}
+	//gradRemap->filterImage();
 
 	if (useKuwahara) {
 		if (referenceKuwahara == nullptr) {
@@ -71,14 +73,14 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 	}
 
 	if (!useKuwahara) {
-		gradRemap->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		gradRemap->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		baseOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		baseOSNormal->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-		filteredOSNormal = gradRemap->filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, baseWidth, baseHeight);
+		filteredOSNormal = baseOSNormal->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, baseWidth, baseHeight);
 		filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-		gradRemap->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-		gradRemap->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
+		baseOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+		baseOSNormal->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
 	}
 	else {
 		referenceKuwahara->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
