@@ -8,6 +8,7 @@
 
 #include"ImageProcessor.h"
 #include"include/Kuwahara.h"
+#include"include/RGB_2_YCbCr.h"
 #include"include/SobelCombined.h"
 #include"include/ReferenceKuwahara.h"
 #include"include/Averager.h"
@@ -101,7 +102,8 @@ public:
 	Texture* baseDiffuse = nullptr;
 	Texture* baseOSNormal = nullptr;
 
-	bool smoothePass = true;
+	bool useKuwahara = false;
+	bool smoothePass = false;
 private:
 	RemapParamObject params{};
 
@@ -112,6 +114,7 @@ private:
 	uint32_t baseHeight = 0, baseWidth = 0;
 
 	filter* Kuwahara = nullptr;
+	filter* colourConverter = nullptr;
 	filter* SobelCombined = nullptr;
 	filter* Averager = nullptr;
 	filter* gradRemap = nullptr;

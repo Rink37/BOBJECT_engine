@@ -1,0 +1,18 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout(binding = 0, rgba8) uniform readonly image2D inputImage;
+layout(binding = 1, rg16f) uniform image2D resultImage;
+
+void main(){
+	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+
+	vec3 pixelColour = imageLoad(inputImage, pixelCoords).rgb;
+	float Y = 0.299*pixelColour.r + 0.587*pixelColour.g + 0.114 * pixelColour.b;
+	float Pb = - 0.168736 * pixelColour.r - 0.331264 * pixelColour.g + 0.5 * pixelColour.b + 0.5;
+	float Pr = 0.5 * pixelColour.r - 0.418688 * pixelColour.g - 0.081312 * pixelColour.b + 0.5;
+
+	vec4 pixel = vec4(Y, Pr, Pb, 1.0);
+
+	imageStore(resultImage, pixelCoords, pixel);
+}

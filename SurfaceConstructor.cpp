@@ -408,7 +408,6 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	std::function<void(UIItem*)> toggleType = bind(&SurfaceMenu::toggleNormalType, this, placeholders::_1);
 	std::function<void(UIItem*)> saveNorm = bind(&SurfaceMenu::saveNormalImage, this, placeholders::_1);
 	std::function<void(UIItem*)> loadNorm = bind(&SurfaceMenu::loadNormalImage, this, placeholders::_1);
-	//std::function<void(UIItem*)> convertImg = bind(&SurfaceMenu::contextConvertMap, this, placeholders::_1);
 
 	sConst->normalType = 0;
 

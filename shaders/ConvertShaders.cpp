@@ -232,6 +232,8 @@ int main(){
 	loadAndWriteShaders(basepath, string("OS_EdgeFill"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("inPlaceTest"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("NormalGenerator"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("RGB_2_YCbCr"), 0, outRoot);
+
 	basepath = rootPath+string("/shaders/");
 	loadAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("OS_BF"), 0, outRoot);

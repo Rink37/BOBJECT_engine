@@ -23,11 +23,11 @@ void main(){
 	ySobelValue += vec4(imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y+1.0f)).rgb * 2.0f, 2.0f);
 	ySobelValue += vec4(imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x+1.0f, gl_GlobalInvocationID.y+1.0f)).rgb * 1.0f, 1.0f);
 
-	float maxX = max(max(xSobelValue.x, xSobelValue.y), xSobelValue.z);
-	float minX = min(min(xSobelValue.x, xSobelValue.y), xSobelValue.z);
+	float maxX = max(xSobelValue.y, xSobelValue.z);
+	float minX = min(xSobelValue.y, xSobelValue.z);
 
-	float maxY = max(max(ySobelValue.x, ySobelValue.y), ySobelValue.z);
-	float minY = min(min(ySobelValue.x, ySobelValue.y), ySobelValue.z);
+	float maxY = max(ySobelValue.y, ySobelValue.z);
+	float minY = min(ySobelValue.y, ySobelValue.z);
 
 	float xGrad = (abs(minX) > maxX)?minX:maxX;
 	float yGrad = (abs(minY) > maxY)?minY:maxY;
