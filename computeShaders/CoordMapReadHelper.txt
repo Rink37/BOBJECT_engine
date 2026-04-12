@@ -1,0 +1,3 @@
+IN 0 "baseImage"
+IN 0 "coordMap"
+OUT 0 "resultImage"

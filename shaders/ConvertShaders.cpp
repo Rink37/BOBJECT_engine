@@ -226,6 +226,7 @@ int main(){
 	loadAndWriteShaders(basepath, string("ReferenceKuwahara"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("Averager"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("IterativeAverager"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("CoordIterativeAverager"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("BoxAverager"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("GradRemap"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("OSToTSConverter"), 0, outRoot);
@@ -234,6 +235,8 @@ int main(){
 	loadAndWriteShaders(basepath, string("inPlaceTest"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("NormalGenerator"), 0, outRoot);
 	loadAndWriteShaders(basepath, string("RGB_2_YCbCr"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("CreateCoordMap"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("CoordMapRead"), 0, outRoot);
 
 	basepath = rootPath+string("/shaders/");
 	loadAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);

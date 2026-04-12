@@ -1,0 +1,18 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout(binding = 0, rgba8) uniform readonly image2D baseImage;
+layout(binding = 1, rg16f) uniform readonly image2D coordMap;
+layout(binding = 2, rgba8) uniform image2D resultImage;
+
+void main(){
+	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 readMapCoords = ivec2(imageLoad(coordMap, pixelCoords).xy*imageSize(coordMap));
+
+	vec4 pixel = imageLoad(baseImage, readMapCoords);
+	if (pixel.rgb == vec3(0.0, 0.0, 0.0)){
+		pixel = imageLoad(baseImage, pixelCoords);
+	}
+
+	imageStore(resultImage, pixelCoords, pixel);
+}

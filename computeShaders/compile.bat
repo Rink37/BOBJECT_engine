@@ -34,3 +34,9 @@ C:/VulkanSDK/1.3.296.0/Bin/glslc.exe OS_EdgeFill.comp -o OS_EdgeFillComp.spv
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe RGB_2_YCbCr.comp -o RGB_2_YCbCrComp.spv
 
 C:/VulkanSDK/1.3.296.0/Bin/glslc.exe IterativeAverager.comp -o IterativeAveragerComp.spv
+
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe CoordIterativeAverager.comp -o CoordIterativeAveragerComp.spv
+
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe CreateCoordMap.comp -o CreateCoordMapComp.spv
+
+C:/VulkanSDK/1.3.296.0/Bin/glslc.exe CoordMapRead.comp -o CoordMapReadComp.spv

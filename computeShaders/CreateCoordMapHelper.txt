@@ -1,0 +1,2 @@
+IN 0 "baseImage"
+OUT 0 "resultImage"
