@@ -223,14 +223,12 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 		referenceKuwahara->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
 		break;
 	case (ITERATIVE):
-		SobelCombined->filterImage();
 		filteredOSNormal = baseOSNormal->copyTexture();
 		for (int i = 0; i != 50; i++) {
 			Averager->filterImage();
 		}
 		break;
 	case (ITERATIVE_COORDMAP):
-		SobelCombined->filterImage();
 		coordMapCreator->filterImage();
 		for (int i = 0; i != 100; i++) {
 			coordAverager->filterImage();
@@ -252,7 +250,6 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 		coordReader->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
 		break;
 	default:
-		SobelCombined->filterImage();
 		filteredOSNormal = baseOSNormal->copyTexture();
 		for (int i = 0; i != 50; i++) {
 			Averager->filterImage();
@@ -293,14 +290,22 @@ void RemapBackend::cleanup() {
 		filteredOSNormal = nullptr;
 	}
 
-	Kuwahara -> cleanup();
+	switch (method) {
+	case (KUWAHARA):
+		Kuwahara->cleanup();
+		gradRemap->cleanup();
+		referenceKuwahara->cleanup();
+		break;
+	case (ITERATIVE_COORDMAP):
+		coordMapCreator->cleanup();
+		coordAverager->cleanup();
+		coordReader->cleanup();
+	default:
+		break;
+	}
 	SobelCombined -> cleanup();
 	Averager -> cleanup();
-	gradRemap -> cleanup();
-	referenceKuwahara -> cleanup();
-	coordMapCreator->cleanup();
-	coordAverager->cleanup();
-	coordReader->cleanup();
+	
 	vkDestroyBuffer(Engine::get()->device, paramBuffer, nullptr);
 	vkFreeMemory(Engine::get()->device, paramBufferMemory, nullptr);
 }
@@ -313,11 +318,7 @@ void RemapUI::kuwaharaCallback(int kern) {
 	remapper->setKuwaharaKernel(kern);
 
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
-	//remapper->createBaseMaps(commandBuffer);
 	remapper->performRemap(commandBuffer);
-	//if (remapper->smoothePass) {
-	//	remapper->smootheResult(commandBuffer);
-	//}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
@@ -327,11 +328,7 @@ void RemapUI::zeroCrossCallback(float zeroCross) {
 	remapper->setZeroCross(zeroCross);
 	
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
-	//remapper->createBaseMaps(commandBuffer);
 	remapper->performRemap(commandBuffer);
-	//if (remapper->smoothePass) {
-	//	remapper->smootheResult(commandBuffer);
-	//}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
@@ -341,11 +338,7 @@ void RemapUI::sharpnessCallback(float sharpness) {
 	remapper->setKuwaharaSharpness(sharpness);
 	
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
-	//remapper->createBaseMaps(commandBuffer);
 	remapper->performRemap(commandBuffer);
-	//if (remapper->smoothePass) {
-	//	remapper->smootheResult(commandBuffer);
-	//}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
@@ -354,11 +347,7 @@ void RemapUI::hardnessCallback(float hardness) {
 	remapper->setKuwaharaHardness(hardness);
 	
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
-	//remapper->createBaseMaps(commandBuffer);
 	remapper->performRemap(commandBuffer);
-	//if (remapper->smoothePass) {
-	//	remapper->smootheResult(commandBuffer);
-	//}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
@@ -369,9 +358,6 @@ void RemapUI::averagerCallback(int kern) {
 	
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	remapper->performRemap(commandBuffer);
-	//if (remapper->smoothePass) {
-	//	remapper->smootheResult(commandBuffer);
-	//}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
@@ -382,9 +368,6 @@ void RemapUI::gradientCallback(float thresh) {
 	
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	remapper->performRemap(commandBuffer);
-	//if (remapper->smoothePass) {
-	//	remapper->smootheResult(commandBuffer);
-	//}
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());

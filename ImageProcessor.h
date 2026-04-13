@@ -116,11 +116,17 @@ public:
 
 	void cleanup() {
 		for (Texture* tex : source) {
+			if (tex == nullptr) {
+				continue;
+			}
 			if (!tex->cleaned) {
 				tex->cleanup();
 			}
 		}
 		for (Texture* tex : filterTarget) {
+			if (tex == nullptr) {
+				continue;
+			}
 			if (!tex->cleaned) {
 				tex->cleanup();
 			}
