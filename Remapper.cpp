@@ -78,7 +78,7 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 		break;
 	case (ITERATIVE):
 		baseDiffuse = diffTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
-		baseOSNormal = OSNormTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+		baseOSNormal = OSNormTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
 		if (colourConverter == nullptr) {
 			colourConverter = new filter(std::vector<Texture*>{baseDiffuse}, new RGB_2_YCBCRSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 		}
@@ -96,6 +96,9 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 		for (int i = 0; i != 50; i++) {
 			Averager->filterImage();
 		}
+
+		filteredOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		filteredOSNormal->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		break;
 	case (ITERATIVE_COORDMAP):
 		baseDiffuse = diffTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
@@ -117,7 +120,7 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 		coordMapCreator->filterImage();
 
 		if (coordAverager == nullptr) {
-			coordAverager = new filter(std::vector<Texture*>{coordMapCreator->filterTarget[0], SobelCombined->filterTarget[0]}, new COORDITERATIVEAVERAGERSHADER, VK_FORMAT_R16G16_SFLOAT);
+			coordAverager = new filter(std::vector<Texture*>{coordMapCreator->filterTarget[0], SobelCombined->filterTarget[0]}, new COORDITERATIVEAVERAGERSHADER, VK_FORMAT_R16G16_SFLOAT, paramBuffer, sizeof(RemapParamObject));
 		}
 		for (int i = 0; i != 100; i++) {
 			coordAverager->filterImage();
@@ -145,7 +148,7 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 		break;
 	default:
 		baseDiffuse = diffTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
-		baseOSNormal = OSNormTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+		baseOSNormal = OSNormTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
 		if (colourConverter == nullptr) {
 			colourConverter = new filter(std::vector<Texture*>{baseDiffuse}, new RGB_2_YCBCRSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 		}
@@ -163,50 +166,25 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 		for (int i = 0; i != 50; i++) {
 			Averager->filterImage();
 		}
+
+		filteredOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		filteredOSNormal->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		break;
 	}
 }
 
-//void RemapBackend::createBaseMaps(VkCommandBuffer commandBuffer) {
-//	switch (method) {
-//	case (KUWAHARA):
-//		Kuwahara->filterImage(commandBuffer);
-//		SobelCombined->filterImage(commandBuffer);
-//		break;
-//	default:
-//		break;
-//	}
-//}
-
-void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
-	//Averager->filterImage(commandBuffer);
-	//gradRemap->filterImage(commandBuffer);
-
-	//if (!smoothePass) {
-	//	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
-	//	vkDeviceWaitIdle(Engine::get()->device);
-
-	//	if (filteredOSNormal != nullptr) {
-	//		filteredOSNormal->cleanup();
-	//	}
-
-	//	gradRemap->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	//	gradRemap->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-	//	filteredOSNormal = gradRemap->filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1);
-	//	filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-
-	//	gradRemap->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-	//	gradRemap->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
-	//}
+void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {	
+	VkImageCopy imageCopyRegion{};
 	
 	switch (method) {
 	case (KUWAHARA):
-		Kuwahara->filterImage();
-		SobelCombined->filterImage();
-		Averager->filterImage();
-		gradRemap->filterImage();
-		referenceKuwahara->filterImage();
+		Kuwahara->filterImage(commandBuffer);
+		SobelCombined->filterImage(commandBuffer);
+		Averager->filterImage(commandBuffer);
+		gradRemap->filterImage(commandBuffer);
+		referenceKuwahara->filterImage(commandBuffer);
+
+		Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 
 		if (filteredOSNormal != nullptr) {
 			filteredOSNormal->cleanup();
@@ -223,12 +201,29 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 		referenceKuwahara->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
 		break;
 	case (ITERATIVE):
-		filteredOSNormal = baseOSNormal->copyTexture();
+		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.srcSubresource.layerCount = 1;
+		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.dstSubresource.layerCount = 1;
+		imageCopyRegion.extent.width = baseOSNormal->texWidth;
+		imageCopyRegion.extent.height = baseOSNormal->texHeight;
+		imageCopyRegion.extent.depth = 1;
+
+		filteredOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+		filteredOSNormal->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		vkCmdCopyImage(commandBuffer, baseOSNormal->textureImage, baseOSNormal->textureLayout, filteredOSNormal->textureImage, filteredOSNormal->textureLayout, 1, &imageCopyRegion);
+		Engine::get()->endSingleTimeComputeCommand(commandBuffer);
+
 		for (int i = 0; i != 50; i++) {
 			Averager->filterImage();
 		}
+
+		filteredOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		filteredOSNormal->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		break;
 	case (ITERATIVE_COORDMAP):
+		Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 		coordMapCreator->filterImage();
 		for (int i = 0; i != 100; i++) {
 			coordAverager->filterImage();
@@ -250,10 +245,25 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 		coordReader->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
 		break;
 	default:
-		filteredOSNormal = baseOSNormal->copyTexture();
+		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.srcSubresource.layerCount = 1;
+		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.dstSubresource.layerCount = 1;
+		imageCopyRegion.extent.width = baseOSNormal->texWidth;
+		imageCopyRegion.extent.height = baseOSNormal->texHeight;
+		imageCopyRegion.extent.depth = 1;
+
+		filteredOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+		filteredOSNormal->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		vkCmdCopyImage(commandBuffer, baseOSNormal->textureImage, baseOSNormal->textureLayout, filteredOSNormal->textureImage, filteredOSNormal->textureLayout, 1, &imageCopyRegion);
+		Engine::get()->endSingleTimeComputeCommand(commandBuffer);
+
 		for (int i = 0; i != 50; i++) {
 			Averager->filterImage();
 		}
+		filteredOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		filteredOSNormal->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		break;
 	}
 }
@@ -300,11 +310,12 @@ void RemapBackend::cleanup() {
 		coordMapCreator->cleanup();
 		coordAverager->cleanup();
 		coordReader->cleanup();
+		break;
 	default:
 		break;
 	}
-	SobelCombined -> cleanup();
-	Averager -> cleanup();
+	SobelCombined->cleanup();
+	Averager->cleanup();
 	
 	vkDestroyBuffer(Engine::get()->device, paramBuffer, nullptr);
 	vkFreeMemory(Engine::get()->device, paramBufferMemory, nullptr);

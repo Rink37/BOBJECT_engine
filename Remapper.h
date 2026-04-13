@@ -45,8 +45,18 @@ public:
 
 	void setup() {
 		params.kuwaharaKernelRadius = 15;
-		params.averagerKernelRadius = 15;
-		params.gradientThreshold = 0.06f;
+		switch (method) {
+		case (KUWAHARA):
+			params.averagerKernelRadius = 15;
+			params.gradientThreshold = 0.06f;
+			break;
+		default:
+			params.averagerKernelRadius = 5;
+			params.gradientThreshold = 0.05f;
+			minAveragerKernel = 1;
+			maxAveragerKernel = 25;
+			break;
+		}
 		params.zeroCross = 0.58f;
 		params.hardness = 8.0f; // modifying this appears to have minimal effect when we are already flattening
 		params.sharpness = 8.0f;
@@ -91,8 +101,8 @@ public:
 	int minAveragerKernel = 2;
 	int maxAveragerKernel = 128;
 
-	float minGradientThreshold = 0.02f;
-	float maxGradientThreshold = 0.2f;
+	float minGradientThreshold = 0.01f;
+	float maxGradientThreshold = 0.25f;
 
 	void updateParamBuffer();
 	
@@ -123,6 +133,8 @@ private:
 	void* paramBufferMapped = nullptr;
 
 	uint32_t baseHeight = 0, baseWidth = 0;
+
+	int numIterations = 5;
 
 	filter* Kuwahara = nullptr;
 	filter* colourConverter = nullptr;
