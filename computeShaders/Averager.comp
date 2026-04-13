@@ -11,6 +11,7 @@ layout(binding = 3) uniform RemapParamObject {
 	float zeroCross;
 	float hardness;
 	float sharpness;
+	bool shouldNormalize;
 } rpo;
 
 void main(){
@@ -136,6 +137,10 @@ void main(){
 	sumColour = (sumColour != vec4(0,0,0,0))?sumColour:vec4(imageLoad(normalImage, pixelCoords).rgb, 1.0);
 
 	vec4 pixel = vec4((sumColour.rgb/sumColour.w), 1.0);
+
+	if (sumColour.rgb != vec3(0.0, 0.0, 0.0) && rpo.shouldNormalize){
+		pixel.rgb = normalize(pixel.rgb * 2.0 - 1.0) * 0.5 + 0.5;
+	}
 
 	imageStore(resultImage, pixelCoords, pixel);
 }

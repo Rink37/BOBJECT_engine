@@ -37,6 +37,8 @@ struct RemapParamObject {
 	alignas(4) float zeroCross;
 	alignas(4) float hardness;
 	alignas(4) float sharpness;
+
+	alignas(1) bool shouldNormalize;
 };
 
 class RemapBackend {
@@ -60,6 +62,8 @@ public:
 		params.zeroCross = 0.58f;
 		params.hardness = 8.0f; // modifying this appears to have minimal effect when we are already flattening
 		params.sharpness = 8.0f;
+
+		params.shouldNormalize = true;
 
 		createParamBuffer();
 		updateParamBuffer();
@@ -125,7 +129,7 @@ public:
 	Texture* baseDiffuse = nullptr;
 	Texture* baseOSNormal = nullptr;
 
-	uint32_t method = ITERATIVE_COORDMAP;
+	uint32_t method = KUWAHARA;
 
 private:
 	RemapParamObject params{};

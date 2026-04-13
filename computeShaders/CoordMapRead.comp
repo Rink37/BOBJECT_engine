@@ -12,9 +12,9 @@ void main(){
 	vec4 pixel = imageLoad(baseImage, readMapCoords);
 	if (pixel.rgb == vec3(0.0, 0.0, 0.0)){
 		pixel = imageLoad(baseImage, pixelCoords);
-	} else {
-		pixel.rgb = normalize(pixel.rgb * 2.0 - 1.0) * 0.5 + 0.5;
-	}
+	} //else {
+		//pixel.rgb = normalize(pixel.rgb * 2.0 - 1.0) * 0.5 + 0.5;
+	//}
 
 	imageStore(resultImage, pixelCoords, pixel);
 }
