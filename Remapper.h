@@ -125,7 +125,7 @@ public:
 	Texture* baseDiffuse = nullptr;
 	Texture* baseOSNormal = nullptr;
 
-	uint32_t method = KUWAHARA;
+	uint32_t method = ITERATIVE_COORDMAP;
 
 private:
 	RemapParamObject params{};

@@ -305,17 +305,22 @@ void RemapBackend::cleanup() {
 		Kuwahara->cleanup();
 		gradRemap->cleanup();
 		referenceKuwahara->cleanup();
+		Averager->cleanup();
 		break;
 	case (ITERATIVE_COORDMAP):
 		coordMapCreator->cleanup();
 		coordAverager->cleanup();
 		coordReader->cleanup();
 		break;
+	case (ITERATIVE):
+		Averager->cleanup();
+		break;
 	default:
 		break;
 	}
+	colourConverter->cleanup();
 	SobelCombined->cleanup();
-	Averager->cleanup();
+	
 	
 	vkDestroyBuffer(Engine::get()->device, paramBuffer, nullptr);
 	vkFreeMemory(Engine::get()->device, paramBufferMemory, nullptr);

@@ -25,14 +25,23 @@ void main(){
 
 	for (int x = pixelCoords.x - kernSize; x <= pixelCoords.x + kernSize;x++){
 		for (int y = pixelCoords.y - kernSize; y <= pixelCoords.y + kernSize; y++){
+			if (x < 0 || x >= imageSize(gradients).x){
+				continue;
+			}
+			if (y < 0 || y >= imageSize(gradients).y){
+				continue;
+			}
 			vec2 vz = abs((imageLoad(gradients, ivec2(x,y)).rg - grad) / estStd);
 			float z = (vz.x + vz.y) / 2.0;
 			if (z == 0.0){
 				sumColour.rg += imageLoad(coordsImage, ivec2(x, y)).rg;
 				sumColour.w += 1.0;
 			} else {
-				sumColour.rg += imageLoad(coordsImage, ivec2(x,y)).rg * 1/(z*z);
-				sumColour.w += 1/(z*z);
+				vec2 pix = imageLoad(coordsImage, ivec2(x,y)).rg;
+				if (pix != vec2(0.0, 0.0)){
+					sumColour.rg += pix * 1/(z*z);
+					sumColour.w += 1/(z*z);
+				}
 			}
 		}
 	}
