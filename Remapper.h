@@ -21,6 +21,10 @@
 #include"GaussBlurY.h"
 #include"include/BakedImages.h"
 
+#define KUWAHARA 0
+#define ITERATIVE 1
+#define ITERATIVE_COORDMAP 2
+
 struct RemapParamObject {
 	// Kuwahara params
 	alignas(4) int kuwaharaKernelRadius;
@@ -96,9 +100,9 @@ public:
 
 	void createReferenceMaps(Texture*, Texture*);
 
-	void createBaseMaps(VkCommandBuffer);
+	//void createBaseMaps(VkCommandBuffer);
 	void performRemap(VkCommandBuffer);
-	void smootheResult(VkCommandBuffer);
+	//void smootheResult(VkCommandBuffer);
 
 	void cleanup();
 
@@ -108,8 +112,11 @@ public:
 
 	bool useKuwahara = false;
 	bool smoothePass = false;
+
 private:
 	RemapParamObject params{};
+
+	uint32_t method = ITERATIVE;
 
 	VkBuffer paramBuffer = nullptr;
 	VkDeviceMemory paramBufferMemory = nullptr;
@@ -123,6 +130,9 @@ private:
 	filter* Averager = nullptr;
 	filter* gradRemap = nullptr;
 	filter* referenceKuwahara = nullptr;
+	filter* coordMapCreator = nullptr;
+	filter* coordAverager = nullptr;
+	filter* coordReader = nullptr;
 };
 
 class RemapUI : public Widget {
