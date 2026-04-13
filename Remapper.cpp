@@ -59,9 +59,9 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 	colourMapCreator.filterImage();
 
 	filter coordAverager(std::vector<Texture*>{colourMapCreator.filterTarget[0], SobelCombined->filterTarget[0]}, new COORDITERATIVEAVERAGERSHADER, VK_FORMAT_R16G16_SFLOAT);
-	for (int i = 0; i != 50; i++) {
-		coordAverager.filterImage();
-	}
+	//for (int i = 0; i != 5; i++) {
+	//	coordAverager.filterImage();
+	//}
 
 	filter coordReader(std::vector<Texture*>{baseOSNormal, colourMapCreator.filterTarget[0]}, new COORDMAPREADSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	coordReader.filterImage();

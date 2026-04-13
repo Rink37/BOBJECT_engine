@@ -26,10 +26,10 @@ void main(){
 
 	vec4 ambient = vec4(tex.rgb*ambientLighting*ambientScale, tex.a); 
 
-	vec4 convertedNormal = modelMat * vec4(texture(normalSampler, fragTexCoord).rgb * 2.0 - 1.0, 1.0);
+	vec4 convertedNormal = modelMat * vec4(normalize(texture(normalSampler, fragTexCoord).rgb * 2.0 - 1.0), 1.0);
 	vec3 normal = normalize(convertedNormal.rgb);
 
-	vec3 lightDir = normalize(lightPos-vertPos);
+	vec3 lightDir = normalize(lightPos - vertPos);
 	float distance = distance(lightPos, vertPos);
 
 	float lambertian = max(dot(lightDir, normal), 0.0);

@@ -26,7 +26,7 @@ void main(){
 
 	vec4 ambient = vec4(tex.rgb*ambientLighting*ambientScale, tex.a); 
 
-	vec3 normal = normalize(normalInterp); // Normal does not seem to be affected by view position
+	vec3 normal = normalize(normalInterp);
 	
 	vec3 lightDir = normalize(lightPos - vertPos);
 	float distance = distance(lightPos, vertPos);
