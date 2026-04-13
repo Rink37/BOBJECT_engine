@@ -93,7 +93,7 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 		if (Averager == nullptr) {
 			Averager = new filter(std::vector<Texture*>{filteredOSNormal, SobelCombined->filterTarget[0]}, new ITERATIVEAVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 		}
-		for (int i = 0; i != 50; i++) {
+		for (int i = 0; i != numIterations; i++) {
 			Averager->filterImage();
 		}
 
@@ -122,7 +122,7 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 		if (coordAverager == nullptr) {
 			coordAverager = new filter(std::vector<Texture*>{coordMapCreator->filterTarget[0], SobelCombined->filterTarget[0]}, new COORDITERATIVEAVERAGERSHADER, VK_FORMAT_R16G16_SFLOAT, paramBuffer, sizeof(RemapParamObject));
 		}
-		for (int i = 0; i != 100; i++) {
+		for (int i = 0; i != numIterations; i++) {
 			coordAverager->filterImage();
 		}
 
@@ -163,7 +163,7 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 		if (Averager == nullptr) {
 			Averager = new filter(std::vector<Texture*>{filteredOSNormal, SobelCombined->filterTarget[0]}, new ITERATIVEAVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 		}
-		for (int i = 0; i != 50; i++) {
+		for (int i = 0; i != numIterations; i++) {
 			Averager->filterImage();
 		}
 
@@ -215,7 +215,7 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 		vkCmdCopyImage(commandBuffer, baseOSNormal->textureImage, baseOSNormal->textureLayout, filteredOSNormal->textureImage, filteredOSNormal->textureLayout, 1, &imageCopyRegion);
 		Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 
-		for (int i = 0; i != 50; i++) {
+		for (int i = 0; i != numIterations; i++) {
 			Averager->filterImage();
 		}
 
@@ -225,7 +225,7 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 	case (ITERATIVE_COORDMAP):
 		Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 		coordMapCreator->filterImage();
-		for (int i = 0; i != 100; i++) {
+		for (int i = 0; i != numIterations; i++) {
 			coordAverager->filterImage();
 		}
 		coordReader->filterImage();
@@ -259,7 +259,7 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 		vkCmdCopyImage(commandBuffer, baseOSNormal->textureImage, baseOSNormal->textureLayout, filteredOSNormal->textureImage, filteredOSNormal->textureLayout, 1, &imageCopyRegion);
 		Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 
-		for (int i = 0; i != 50; i++) {
+		for (int i = 0; i != numIterations; i++) {
 			Averager->filterImage();
 		}
 		filteredOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -383,3 +383,13 @@ void RemapUI::gradientCallback(float thresh) {
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 }
+
+void RemapUI::iterationCallback(int count) {
+	remapper->setIterationCount(count);
+
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+	remapper->performRemap(commandBuffer);
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
+	sConst->normalType = 0;
+	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
+};
