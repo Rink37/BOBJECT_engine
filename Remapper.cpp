@@ -398,3 +398,64 @@ void RemapUI::iterationCallback(int count) {
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 };
+
+void RemapUI::toggleNormalization(UIItem* owner) {
+	remapper->toggleNormalization();
+
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+	remapper->performRemap(commandBuffer);
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
+	sConst->normalType = 0;
+	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
+};
+
+void RemapUI::incrementMethod(UIItem*) {
+	uint32_t newMethod = remapper->method + 1;
+	newMethod %= METHODCOUNT;
+	sConst->normalType = 0;
+	sConst->loadNormal(remapper->baseOSNormal->copyTexture());
+	remapper->cleanup();
+	delete remapper;
+	remapper = nullptr;
+	remapper = new RemapBackend();
+	remapper->method = newMethod;
+	remapper->setup();
+	fullRemap(sConst->diffTex, sConst->OSNormTex);
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
+	sConst->normalType = 0;
+	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
+	std::cout << "Should switch to method " << newMethod << std::endl;
+	UIItem* endButtons = canvas[0]->Items[canvas[0]->Items.size() - 1];
+	for (int i = 2; i != canvas[0]->Items.size()-1; i++) {
+		canvas[0]->Items[i]->cleanup();
+	}
+	canvas[0]->Items.erase(canvas[0]->Items.begin()+2, canvas[0]->Items.end());
+	createUI();
+	canvas[0]->addItem(endButtons);
+	canvas[0]->updateDisplay();
+};
+
+void RemapUI::reduceMethod(UIItem*) {
+	uint32_t newMethod = (remapper->method >= 1)?remapper->method - 1 : METHODCOUNT - 1;
+	sConst->normalType = 0;
+	sConst->loadNormal(remapper->baseOSNormal->copyTexture());
+	remapper->cleanup();
+	delete remapper;
+	remapper = nullptr;
+	remapper = new RemapBackend();
+	remapper->method = newMethod;
+	remapper->setup();
+	fullRemap(sConst->diffTex, sConst->OSNormTex);
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
+	sConst->normalType = 0;
+	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
+	std::cout << "Should switch to method " << newMethod << std::endl;
+	UIItem* endButtons = canvas[0]->Items[canvas[0]->Items.size() - 1];
+	for (int i = 2; i != canvas[0]->Items.size() - 1; i++) {
+		canvas[0]->Items[i]->cleanup();
+	}
+	canvas[0]->Items.erase(canvas[0]->Items.begin() + 2, canvas[0]->Items.end());
+	createUI();
+	canvas[0]->addItem(endButtons);
+	canvas[0]->updateDisplay();
+};
