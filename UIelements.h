@@ -1236,11 +1236,13 @@ struct Widget {
 	}
 
 	void update() {
-		for (size_t i = 0; i != canvas.size(); i++) {
-			canvas[i]->updateDisplay();
+		if (isVisible) {
+			for (size_t i = 0; i != canvas.size(); i++) {
+				canvas[i]->updateDisplay();
+			}
+			measureWindowPositions();
+			customUpdate();
 		}
-		measureWindowPositions();
-		customUpdate();
 	}
 
 	virtual void cleanupSubClasses() {

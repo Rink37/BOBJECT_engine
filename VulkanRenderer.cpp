@@ -752,10 +752,6 @@ private:
 
 		session::get()->currentStudio.unpackWebcamSettings(webcamRot, webcamIndex);
 
-		//std::cout << webcamTexture::get()->webCam->sizeRatio << std::endl;
-		//std::cout << static_cast<int>(webcamTexture::get()->webCam->camIndex) << std::endl;
-		//std::cout << static_cast<int>(webcamTexture::get()->webCam->rotationState) << std::endl;
-
 		for (string path : session::get()->currentStudio.modelPaths) {
 			StaticObject newObject(path);
 			newObject.mat = &sConst->surfaceMat;
@@ -1104,6 +1100,7 @@ private:
 
 			engine->recreateSwapChain();
 			engine->recreateDrawImage(&test);
+			
 			blurX.cleanup();
 			blurY.cleanup();
 			blurX.setup(xBlur, &test);
