@@ -15,7 +15,7 @@ layout(binding = 2) uniform RemapParamObject {
 void main(){
 	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
 
-	vec4 sumColour = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	vec4 sumColour = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 	vec2 grad = imageLoad(gradients, pixelCoords).rg;
 	vec2 normPix = imageLoad(coordsImage, pixelCoords).rg;
@@ -23,28 +23,142 @@ void main(){
 	float estStd = rpo.gradientThreshold;
 	int kernSize = rpo.averagerKernelRadius;
 
-	for (int x = pixelCoords.x - kernSize; x <= pixelCoords.x + kernSize;x++){
-		for (int y = pixelCoords.y - kernSize; y <= pixelCoords.y + kernSize; y++){
-			if (x < 0 || x >= imageSize(gradients).x){
-				continue;
-			}
-			if (y < 0 || y >= imageSize(gradients).y){
-				continue;
-			}
+	ivec2 size = imageSize(gradients);
+
+	float tsf = 1.0f;
+	float bsf = 1.0f;
+	int x = 0;
+	int y = 0;
+	float xsf_l[50];
+	float xsf_r[50];
+	int xsfIndex = 0;
+	sumColour.rg = normPix;
+	for (int i = 0; i != 50; i++){
+		xsf_l[i] = 1.0f;
+		xsf_r[i] = 1.0f;
+	}
+	for (int r_x = 1; r_x <= kernSize; r_x++){
+		x = pixelCoords.x - r_x;
+		tsf = 1.0f;
+		bsf = 1.0f;
+		for (int r_y = 1; r_y <= kernSize; r_y++){
+			y = pixelCoords.y - r_y;
 			vec2 vz = abs((imageLoad(gradients, ivec2(x,y)).rg - grad) / estStd);
-			float z = (vz.x + vz.y) / 2.0;
-			if (z == 0.0){
-				sumColour.rg += imageLoad(coordsImage, ivec2(x, y)).rg;
-				sumColour.w += 1.0;
+			if (vz.x <= 1.0){
+				vz.x = 1.0;
 			} else {
-				vec2 pix = imageLoad(coordsImage, ivec2(x,y)).rg;
-				if (pix != vec2(0.0, 0.0)){
-					sumColour.rg += pix * 1/(z*z);
-					sumColour.w += 1/(z*z);
-				}
+				vz.x = 1.0 / vz.x;
+			}
+			if (vz.y <= 1.0){
+				vz.y = 1.0;
+			} else {
+				vz.y = 1.0 / vz.y;
+			}
+			tsf *= vz.y;
+			xsfIndex = r_y - 1;
+			xsf_l[xsfIndex] *= vz.x;
+			float z = tsf * xsf_l[xsfIndex];
+			vec2 pix = imageLoad(coordsImage, ivec2(x,y)).rg;
+			if (pix != vec2(0.0, 0.0)){
+				sumColour.rg += imageLoad(coordsImage, ivec2(x,y)).rg * z;
+				sumColour.w += z;
+			}
+			
+			y = pixelCoords.y + r_y;
+			vz = abs((imageLoad(gradients, ivec2(x,y)).rg - grad) / estStd);
+			z = (vz.x + vz.y) / 2.0;
+			if (vz.x <= 1.0){
+				vz.x = 1.0;
+			} else {
+				vz.x = 1.0 / vz.x;
+			}
+			if (vz.y <= 1.0){
+				vz.y = 1.0;
+			} else {
+				vz.y = 1.0 / vz.y;
+			}
+			bsf *= vz.y;
+			xsfIndex = r_y - 1 + kernSize;
+			xsf_l[xsfIndex] *= vz.x;
+			z = bsf * xsf_l[xsfIndex];
+			pix = imageLoad(coordsImage, ivec2(x,y)).rg;
+			if (pix != vec2(0.0, 0.0)){
+				sumColour.rg += imageLoad(coordsImage, ivec2(x,y)).rg * z;
+				sumColour.w += z;
+			}
+		}
+		tsf = 1.0f;
+		bsf = 1.0f;
+		x = pixelCoords.x + r_x;
+		for (int r_y = 1; r_y <= kernSize; r_y++){
+			y = pixelCoords.y - r_y;
+			vec2 vz = abs((imageLoad(gradients, ivec2(x,y)).rg - grad) / estStd);
+			if (vz.x <= 1.0){
+				vz.x = 1.0;
+			} else {
+				vz.x = 1.0 / vz.x;
+			}
+			if (vz.y <= 1.0){
+				vz.y = 1.0;
+			} else {
+				vz.y = 1.0 / vz.y;
+			}
+			tsf *= vz.y;
+			xsfIndex = r_y - 1;
+			xsf_r[xsfIndex] *= vz.x;
+			float z = tsf * xsf_r[xsfIndex];
+			vec2 pix = imageLoad(coordsImage, ivec2(x,y)).rg;
+			if (pix != vec2(0.0, 0.0)){
+				sumColour.rg += imageLoad(coordsImage, ivec2(x,y)).rg * z;
+				sumColour.w += z;
+			}
+				
+			y = pixelCoords.y + r_y;
+			vz = abs((imageLoad(gradients, ivec2(x,y)).rg - grad) / estStd);
+			if (vz.x <= 1.0){
+				vz.x = 1.0;
+			} else {
+				vz.x = 1.0 / vz.x;
+			}
+			if (vz.y <= 1.0){
+				vz.y = 1.0;
+			} else {
+				vz.y = 1.0 / vz.y;
+			}
+			bsf *= vz.y;
+			xsfIndex = r_y - 1 + kernSize;
+			xsf_r[xsfIndex] *= vz.x;
+			z = bsf * xsf_r[xsfIndex];
+			pix = imageLoad(coordsImage, ivec2(x,y)).rg;
+			if (pix != vec2(0.0, 0.0)){
+				sumColour.rg += imageLoad(coordsImage, ivec2(x,y)).rg * z;
+				sumColour.w += z;
 			}
 		}
 	}
+
+	//for (int x = pixelCoords.x - kernSize; x <= pixelCoords.x + kernSize;x++){
+		//for (int y = pixelCoords.y - kernSize; y <= pixelCoords.y + kernSize; y++){
+			//if (x < 0 || x >= imageSize(gradients).x){
+				//continue;
+			//}
+			//if (y < 0 || y >= imageSize(gradients).y){
+				//continue;
+			//}
+			//vec2 vz = abs((imageLoad(gradients, ivec2(x,y)).rg - grad) / estStd);
+			//float z = (vz.x + vz.y) / 2.0;
+			//if (z == 0.0){
+				//sumColour.rg += imageLoad(coordsImage, ivec2(x, y)).rg;
+				//sumColour.w += 1.0;
+			//} else {
+				//vec2 pix = imageLoad(coordsImage, ivec2(x,y)).rg;
+				//if (pix != vec2(0.0, 0.0)){
+					//sumColour.rg += pix * 1/(z*z);
+					//sumColour.w += 1/(z*z);
+				//}
+			//}
+		//}
+	//}
 
 	vec4 pixel = vec4((sumColour.rg/sumColour.w), 1.0, 1.0);
 

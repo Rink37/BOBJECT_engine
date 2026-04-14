@@ -129,7 +129,7 @@ public:
 	Texture* baseDiffuse = nullptr;
 	Texture* baseOSNormal = nullptr;
 
-	uint32_t method = KUWAHARA;
+	uint32_t method = ITERATIVE_COORDMAP;
 
 private:
 	RemapParamObject params{};
@@ -293,17 +293,17 @@ public:
 
 			Slider* kuwaharaKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 			kuwaharaKernSlider->updateDisplay();
-			kuwaharaKernSlider->setSlideValues(remapper->minIts, remapper->maxIts, 15);
+			kuwaharaKernSlider->setSlideValues(remapper->minIts, remapper->maxIts, 5);
 			kuwaharaKernSlider->setIntCallback(iterationSliderFunction, false);
 
 			Slider* averagerKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 			averagerKernSlider->updateDisplay();
-			averagerKernSlider->setSlideValues(remapper->minAveragerKernel, remapper->maxAveragerKernel, 15);
+			averagerKernSlider->setSlideValues(remapper->minAveragerKernel, remapper->maxAveragerKernel, 5);
 			averagerKernSlider->setIntCallback(averagerSliderFunction, false);
 
 			Slider* gradientThreshSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 			gradientThreshSlider->updateDisplay();
-			gradientThreshSlider->setSlideValues(remapper->minGradientThreshold, remapper->maxGradientThreshold, 0.06f);
+			gradientThreshSlider->setSlideValues(remapper->minGradientThreshold, remapper->maxGradientThreshold, 0.05f);
 			gradientThreshSlider->setFloatCallback(gradientSliderFunction, false);
 
 			Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
