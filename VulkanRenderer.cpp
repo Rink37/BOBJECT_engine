@@ -663,6 +663,8 @@ private:
 		vkDeviceWaitIdle(Engine::get()->device);
 
 		sConst->normalType = 0;
+		remapMenu.remapper->baseOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		remapMenu.remapper->baseOSNormal->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		sConst->loadNormal(remapMenu.remapper->baseOSNormal->copyTexture());
 		surfaceMenu.setNormal(sConst->currentNormal());
 

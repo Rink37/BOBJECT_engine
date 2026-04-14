@@ -30,7 +30,7 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 			width = static_cast<uint32_t>(static_cast<float>(baseWidth) / static_cast<float>(baseHeight) * 1024.0f);
 		}
 		baseDiffuse = diffTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
-		baseOSNormal = OSNormTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+		baseOSNormal = OSNormTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
 
 		if (colourConverter == nullptr) {
 			colourConverter = new filter(std::vector<Texture*>{baseDiffuse}, new RGB_2_YCBCRSHADER, VK_FORMAT_R8G8B8A8_UNORM);
@@ -102,7 +102,7 @@ void RemapBackend::createReferenceMaps(Texture* diffTex, Texture* OSNormTex) {
 		break;
 	case (ITERATIVE_COORDMAP):
 		baseDiffuse = diffTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
-		baseOSNormal = OSNormTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+		baseOSNormal = OSNormTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
 
 		if (colourConverter == nullptr) {
 			colourConverter = new filter(std::vector<Texture*>{baseDiffuse}, new RGB_2_YCBCRSHADER, VK_FORMAT_R8G8B8A8_UNORM);
@@ -413,6 +413,8 @@ void RemapUI::incrementMethod(UIItem*) {
 	uint32_t newMethod = remapper->method + 1;
 	newMethod %= METHODCOUNT;
 	sConst->normalType = 0;
+	remapper->baseOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	remapper->baseOSNormal->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	sConst->loadNormal(remapper->baseOSNormal->copyTexture());
 	remapper->cleanup();
 	delete remapper;
@@ -438,6 +440,8 @@ void RemapUI::incrementMethod(UIItem*) {
 void RemapUI::reduceMethod(UIItem*) {
 	uint32_t newMethod = (remapper->method >= 1)?remapper->method - 1 : METHODCOUNT - 1;
 	sConst->normalType = 0;
+	remapper->baseOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	remapper->baseOSNormal->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	sConst->loadNormal(remapper->baseOSNormal->copyTexture());
 	remapper->cleanup();
 	delete remapper;
