@@ -48,11 +48,19 @@ void main(){
 				vz.x = 1.0;
 			} else {
 				vz.x = 1.0 / vz.x;
+				vz.x *= vz.x;
+				vz.x = 1-vz.x;
+				vz.x = (1- vz.x * vz.x * vz.x);
+				vz.x *= vz.x;
 			}
 			if (vz.y <= 1.0){
 				vz.y = 1.0;
 			} else {
 				vz.y = 1.0 / vz.y;
+				vz.y *= vz.y;
+				vz.y = 1-vz.y;
+				vz.y = (1- vz.y * vz.y * vz.y);
+				vz.y *= vz.y;
 			}
 			tsf *= vz.y;
 			xsfIndex = r_y - 1;
@@ -71,11 +79,19 @@ void main(){
 				vz.x = 1.0;
 			} else {
 				vz.x = 1.0 / vz.x;
+				vz.x *= vz.x;
+				vz.x = 1-vz.x;
+				vz.x = (1- vz.x * vz.x * vz.x);
+				vz.x *= vz.x;
 			}
 			if (vz.y <= 1.0){
 				vz.y = 1.0;
 			} else {
 				vz.y = 1.0 / vz.y;
+				vz.y *= vz.y;
+				vz.y = 1-vz.y;
+				vz.y = (1- vz.y * vz.y * vz.y);
+				vz.y *= vz.y;
 			}
 			bsf *= vz.y;
 			xsfIndex = r_y - 1 + kernSize;
@@ -97,11 +113,19 @@ void main(){
 				vz.x = 1.0;
 			} else {
 				vz.x = 1.0 / vz.x;
+				vz.x *= vz.x;
+				vz.x = 1-vz.x;
+				vz.x = (1- vz.x * vz.x * vz.x);
+				vz.x *= vz.x;
 			}
 			if (vz.y <= 1.0){
 				vz.y = 1.0;
 			} else {
 				vz.y = 1.0 / vz.y;
+				vz.y *= vz.y;
+				vz.y = 1-vz.y;
+				vz.y = (1- vz.y * vz.y * vz.y);
+				vz.y *= vz.y;
 			}
 			tsf *= vz.y;
 			xsfIndex = r_y - 1;
@@ -119,11 +143,19 @@ void main(){
 				vz.x = 1.0;
 			} else {
 				vz.x = 1.0 / vz.x;
+				vz.x *= vz.x;
+				vz.x = 1-vz.x;
+				vz.x = (1- vz.x * vz.x * vz.x);
+				vz.x *= vz.x;
 			}
 			if (vz.y <= 1.0){
 				vz.y = 1.0;
 			} else {
 				vz.y = 1.0 / vz.y;
+				vz.y *= vz.y;
+				vz.y = 1-vz.y;
+				vz.y = (1- vz.y * vz.y * vz.y);
+				vz.y *= vz.y;
 			}
 			bsf *= vz.y;
 			xsfIndex = r_y - 1 + kernSize;

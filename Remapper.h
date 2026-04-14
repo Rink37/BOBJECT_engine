@@ -129,7 +129,7 @@ public:
 	Texture* baseDiffuse = nullptr;
 	Texture* baseOSNormal = nullptr;
 
-	uint32_t method = ITERATIVE_COORDMAP;
+	uint32_t method = ITERATIVE;
 
 private:
 	RemapParamObject params{};

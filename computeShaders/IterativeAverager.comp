@@ -47,14 +47,20 @@ void main(){
 				if (vz.x <= 1.0){
 					vz.x = 1.0;
 				} else {
-					//vz.x *= vz.x;
 					vz.x = 1.0 / vz.x;
+					vz.x *= vz.x;
+					vz.x = 1-vz.x;
+					vz.x = (1- vz.x * vz.x * vz.x);
+					vz.x *= vz.x;
 				}
 				if (vz.y <= 1.0){
 					vz.y = 1.0;
 				} else {
-					//vz.y *= vz.y;
 					vz.y = 1.0 / vz.y;
+					vz.y *= vz.y;
+					vz.y = 1-vz.y;
+					vz.y = (1- vz.y * vz.y * vz.y);
+					vz.y *= vz.y;
 				}
 				tsf *= vz.y;
 				xsfIndex = r_y - 1;
@@ -72,11 +78,19 @@ void main(){
 					vz.x = 1.0;
 				} else {
 					vz.x = 1.0 / vz.x;
+					vz.x *= vz.x;
+					vz.x = 1-vz.x;
+					vz.x = (1- vz.x * vz.x * vz.x);
+					vz.x *= vz.x;
 				}
 				if (vz.y <= 1.0){
 					vz.y = 1.0;
 				} else {
 					vz.y = 1.0 / vz.y;
+					vz.y *= vz.y;
+					vz.y = 1-vz.y;
+					vz.y = (1- vz.y * vz.y * vz.y);
+					vz.y *= vz.y;
 				}
 				bsf *= vz.y;
 				xsfIndex = r_y - 1 + kernSize;
@@ -98,11 +112,19 @@ void main(){
 					vz.x = 1.0;
 				} else {
 					vz.x = 1.0 / vz.x;
+					vz.x *= vz.x;
+					vz.x = 1-vz.x;
+					vz.x = (1- vz.x * vz.x * vz.x);
+					vz.x *= vz.x;
 				}
 				if (vz.y <= 1.0){
 					vz.y = 1.0;
 				} else {
 					vz.y = 1.0 / vz.y;
+					vz.y *= vz.y;
+					vz.y = 1-vz.y;
+					vz.y = (1- vz.y * vz.y * vz.y);
+					vz.y *= vz.y;
 				}
 				tsf *= vz.y;
 				xsfIndex = r_y - 1;
@@ -116,16 +138,23 @@ void main(){
 				
 				y = pixelCoords.y + r_y;
 				vz = abs((imageLoad(gradients, ivec2(x,y)).rg - grad) / estStd);
-				z = (vz.x + vz.y) / 2.0;
 				if (vz.x <= 1.0){
 					vz.x = 1.0;
 				} else {
 					vz.x = 1.0 / vz.x;
+					vz.x *= vz.x;
+					vz.x = 1-vz.x;
+					vz.x = (1- vz.x * vz.x * vz.x);
+					vz.x *= vz.x;
 				}
 				if (vz.y <= 1.0){
 					vz.y = 1.0;
 				} else {
 					vz.y = 1.0 / vz.y;
+					vz.y *= vz.y;
+					vz.y = 1-vz.y;
+					vz.y = (1- vz.y * vz.y * vz.y);
+					vz.y *= vz.y;
 				}
 				bsf *= vz.y;
 				xsfIndex = r_y - 1 + kernSize;
