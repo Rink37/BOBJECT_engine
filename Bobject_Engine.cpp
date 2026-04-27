@@ -446,7 +446,7 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	bool isWireframe = false;
 	int index = 0;
 
-	shaderData flatShader = FLATSHADER;
+	shaderData flatShader = AC_FLATSHADER;
 	shaderData bfShader = AC_BFSHADER;
 	shaderData uiShader = UISHADER;
 	shaderData wShader = WSHADER;
@@ -544,9 +544,6 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 		std::vector<unsigned char> VertShaderCode = sd->vertData;
 		std::vector<unsigned char> FragShaderCode = sd->fragData;
 
-		//std::cout << index << ": " << VertShaderCode.size() << std::endl;
-		//index++;
-
 		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
 		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode); 
 		
@@ -606,7 +603,7 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 		vkDestroyShaderModule(device, VertShaderModule, nullptr);
 	}
 
-	shaderData OS_BF = OS_BFSHADER;
+	shaderData OS_BF = AC_OS_BFSHADER;
 	VkPipeline* CurrentPipeline = new VkPipeline;
 
 	std::vector<unsigned char> VertShaderCode = OS_BF.vertData;
@@ -667,7 +664,7 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 
 	graphicsPass.GraphicsPipelines.push_back(CurrentPipeline);
 
-	shaderData TS_BF = TS_BFSHADER;
+	shaderData TS_BF = AC_TS_BFSHADER;
 	VkPipeline* TangentPipeline = new VkPipeline;
 
 	auto tangentVertShaderCode = TS_BF.vertData;

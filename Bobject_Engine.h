@@ -28,15 +28,15 @@
 #include<memory>
 
 #include"include/ShaderDataType.h"
-#include"include/Flat.h"
+#include"include/AC_Flat.h"
 #include"include/AC_BF.h"
 #include"include/UI.h"
 #include"include/UIGray.h"
 #include"include/UV.h"
 #include"include/W.h"
 #include"include/NormalGenerator.h"
-#include"include/OS_BF.h"
-#include"include/TS_BF.h"
+#include"include/AC_OS_BF.h"
+#include"include/AC_TS_BF.h"
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;

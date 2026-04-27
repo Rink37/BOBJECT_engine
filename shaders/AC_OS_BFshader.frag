@@ -2,16 +2,17 @@
 
 precision mediump float;
 
-layout(location = 0) in vec3 normalInterp;
-layout(location = 1) in vec2 fragTexCoord;
-layout(location = 2) in vec3 vertPos;
-layout(location = 3) in vec3 ambientLighting;
-layout(location = 4) in vec3 lightPos;
-layout(location = 5) in vec3 cameraPos;
+layout(binding = 1) uniform sampler2D texSampler;
+layout(binding = 2) uniform sampler2D normalSampler;
+
+layout(location = 0) in vec2 fragTexCoord;
+layout(location = 1) in vec3 vertPos;
+layout(location = 2) in mat4 modelMat;
+layout(location = 7) in vec3 ambientLighting;
+layout(location = 8) in vec3 lightPos;
+layout(location = 9) in vec3 cameraPos;
 
 layout(location = 0) out vec4 outColor;
-
-layout(binding = 1) uniform sampler2D texSampler;
 
 const vec3 lightColor = vec3(1.0, 1.0, 1.0);
 const float lightPower = 40.0;
@@ -25,7 +26,6 @@ const mat4 ditherMatrix = mat4(0.0, 0.5, 0.125, 0.625,
 0.9375, 0.4375, 0.8125, 0.3125);
 
 void main(){
-	
 	vec4 tex = texture(texSampler, fragTexCoord);
 	ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
 	float ditherThresh = ditherMatrix[pixelCoord.x%4][pixelCoord.y%4];
@@ -36,8 +36,9 @@ void main(){
 
 	vec4 ambient = vec4(tex.rgb*ambientLighting*ambientScale, tex.a); 
 
-	vec3 normal = normalize(normalInterp);
-	
+	vec4 convertedNormal = modelMat * vec4(normalize(texture(normalSampler, fragTexCoord).rgb * 2.0 - 1.0), 1.0);
+	vec3 normal = normalize(convertedNormal.rgb);
+
 	vec3 lightDir = normalize(lightPos - vertPos);
 	float distance = distance(lightPos, vertPos);
 
@@ -58,6 +59,5 @@ void main(){
 	vec4 specularOut = vec4(tex.rgb*specColor.rgb*specular*lightColor.rgb*lightPower/distance, tex.a);
 
 	outColor = ambient + diffuse + specularOut;
-	//outColor = vec4(lightDir, 1.0);
 	outColor.rgb = pow(outColor.rgb, vec3(1/2.2));
 }

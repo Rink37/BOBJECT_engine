@@ -248,6 +248,9 @@ int main(){
 	loadAndWriteShaders(basepath, string("UV"), 1, outRoot);
 	loadAndWriteShaders(basepath, string("W"), 1, outRoot);
 	loadAndWriteShaders(basepath, string("Flat"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("AC_Flat"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("AC_TS_BF"), 0, outRoot);
+	loadAndWriteShaders(basepath, string("AC_OS_BF"), 0, outRoot);
 	cout << "Done" << endl;
 	return 0;
 }

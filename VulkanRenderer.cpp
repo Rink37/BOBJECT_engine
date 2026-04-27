@@ -911,7 +911,7 @@ private:
 			surfaceMenu.setDiffuse(sConst->currentDiffuse());
 		}
 		if (tomogNorm != nullptr) {
-			std::cout << "Normal found" << std::endl;
+			//std::cout << "Normal found" << std::endl;
 			sConst->normalType = 1;
 			sConst->loadNormal(tomogNorm->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0));
 			if (!sConst->normalAvailable) {
@@ -1157,7 +1157,7 @@ private:
 		graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
 		VkPipelineLayout pipelineLayoutSet[2] = { currentPass->diffusePipelineLayout, currentPass->diffNormPipelineLayout };
 		pipelineLayout = (viewIndex == 1 && lit) ? pipelineLayoutSet[drawMat->pipelineLayoutIndex] : currentPass->diffusePipelineLayout;
-		std::cout << "Draw variables updated " << std::endl;
+		//std::cout << "Draw variables updated " << std::endl;
 	}
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, GraphicsPass* currentPass, uint32_t imageIndex) {
