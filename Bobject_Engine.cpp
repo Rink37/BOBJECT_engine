@@ -447,7 +447,7 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	int index = 0;
 
 	shaderData flatShader = FLATSHADER;
-	shaderData bfShader = BFSHADER;
+	shaderData bfShader = AC_BFSHADER;
 	shaderData uiShader = UISHADER;
 	shaderData wShader = WSHADER;
 	shaderData uvShader = UVSHADER;

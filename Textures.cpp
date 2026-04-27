@@ -683,7 +683,7 @@ void Texture::transitionMatToImg() {
 
 	uchar* matData = new uchar[texMat.total() * 4];
 	cv::Mat continuousRGBA(texMat.size(), CV_8UC4, matData);
-	cv::cvtColor(texMat, continuousRGBA, cv::COLOR_BGR2RGBA, 4);
+	cv::cvtColor(texMat, continuousRGBA, cv::COLOR_BGRA2RGBA, 4);
 
 	texWidth = continuousRGBA.size().width;
 	texHeight = continuousRGBA.size().height;

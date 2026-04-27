@@ -136,7 +136,7 @@ public:
 
 	imageTexture(std::string filename, VkFormat format) {
 		// Image texture which is loaded from file
-		texMat = cv::imread(filename);
+		texMat = cv::imread(filename, cv::IMREAD_UNCHANGED);
 		textureFormat = format;
 		transitionMatToImg();
 		createTextureImageView();

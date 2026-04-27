@@ -19,9 +19,19 @@ float ambientScale = 0.2;
 const vec3 specColor = vec3(1.0, 1.0, 1.0);
 const float shininess = 16.0;
 
+const mat4 ditherMatrix = mat4(0.0, 0.5, 0.125, 0.625,
+								0.75, 0.25, 0.875, 0.375,
+								0.1875, 0.6875, 0.0625, 0.5625,
+								0.9375, 0.4375, 0.8125, 0.3125);
+
 void main(){
 	
 	vec4 tex = texture(texSampler, fragTexCoord);
+	ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
+	float ditherThresh = ditherMatrix[pixelCoord.x%4][pixelCoord.y%4];
+	if (tex.w <= ditherThresh){
+		discard;
+	}
 	tex.rgb = pow(tex.rgb, vec3(2.2));
 
 	vec4 ambient = vec4(tex.rgb*ambientLighting*ambientScale, tex.a); 
