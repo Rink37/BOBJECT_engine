@@ -421,13 +421,12 @@ public:
 		Material* webcamMat = newMaterial(&webcamOn, "WebcamOnBtn");
 
 		std::function<void(UIItem*)> toggleWebcamFunct = bind(&WebcamMenu::toggleWebcam, this, placeholders::_1);
-		//std::function<void(UIItem*)> configureWebcamFunct = bind(&WebcamMenu::calibrateWebcam, this, placeholders::_1);
 
 		Arrangement* Videobuttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 1.0f, 0.2f, 0.05f, 0.01f, ARRANGE_CENTER);
 
 		Videobuttons->addItem(getPtr(new Button(webcamMat)));
 		Videobuttons->addItem(getPtr(new Checkbox(playMat, pauseMat, toggleWebcamFunct)));
-		Videobuttons->addItem(getPtr(new Button(settingsMat, openSettings))); // configureWebcamFunct)));
+		Videobuttons->addItem(getPtr(new Button(settingsMat, openSettings)));
 		Videobuttons->addItem(getPtr(new Checkbox(renderedMat, unrenderedMat, lightingFunction)));
 
 		Videobuttons->arrangeItems();
@@ -442,12 +441,6 @@ private:
 			webcamTexture::get()->webCam->shouldUpdate = owner->activestate;
 		}
 	}
-
-	//void calibrateWebcam(UIItem* owner) {
-	//	if (webcamTexture::get()->webCam != nullptr) {
-	//		webcamTexture::get()->webCam->calibrateCornerFilter();
-	//	}
-	//}
 };
 
 class Application {
@@ -478,10 +471,8 @@ public:
 		Engine::get()->createRenderPass(testGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		test = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, testGP.renderPass);
 		Engine::get()->createGraphicsPipelines(testGP);
-		blurX.setup(xBlur, &test);
-		blurY.setup(yBlur, blurX.getRenderTargets());
 
-		currentPass = &testGP;// &Engine::get()->defaultPass;
+		currentPass = &testGP;
 
 		updateColourScheme();
 		updateLightAzimuth(0.0f);
@@ -512,16 +503,10 @@ private:
 	RemapUI remapMenu = RemapUI(&UIElements, sConst);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
 
-
-	shaderData* xBlur = new GAUSSBLURXSHADER;
-	shaderData* yBlur = new GAUSSBLURYSHADER;
-
 	UIItem* UITestImage = nullptr;
 
 	vector<Widget*> widgets;
 
-	postProcessFilter blurX;
-	postProcessFilter blurY;
 	drawImage test;
 	GraphicsPass testGP;
 	GraphicsPass* currentPass = nullptr;
@@ -766,7 +751,6 @@ private:
 			staticObjects.push_back(newObject);
 		}
 		if (session::get()->currentStudio.diffusePath != "None") {
-			// This segment does not work properly because the surface menu construction produces errors
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
 
 			sConst->diffuseIdx = 1;
@@ -911,7 +895,6 @@ private:
 			surfaceMenu.setDiffuse(sConst->currentDiffuse());
 		}
 		if (tomogNorm != nullptr) {
-			//std::cout << "Normal found" << std::endl;
 			sConst->normalType = 1;
 			sConst->loadNormal(tomogNorm->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0));
 			if (!sConst->normalAvailable) {
@@ -1025,7 +1008,6 @@ private:
 		else if (viewIndex == 2) {
 			engine->pipelineindex = 3;
 		}
-		std::cout << engine->pipelineindex << std::endl;
 		updateDrawVariables();
 	}
 
@@ -1070,11 +1052,8 @@ private:
 			widgets[i]->cleanup();
 		}
 
-		blurX.cleanup();
-		blurY.cleanup();
 		test.cleanup(Engine::get()->device);
 		testGP.cleanup(Engine::get()->device);
-		//vkDestroyRenderPass(Engine::get()->device, testRP, nullptr);
 
 		sConst->cleanup();
 		engine->cleanup();
@@ -1101,12 +1080,6 @@ private:
 			engine->recreateSwapChain();
 			engine->recreateDrawImage(&test);
 			
-			blurX.cleanup();
-			blurY.cleanup();
-			blurX.setup(xBlur, &test);
-			blurY.setup(yBlur, blurX.getRenderTargets());
-			//normalizer.setup(testShader, &test);
-			//normalizer.recreateDescriptorSets();
 			return;
 		}
 		else if (result != VK_SUCCESS) {
@@ -1117,7 +1090,6 @@ private:
 	}
 
 	void updateUniformBuffer(uint32_t currentImage) {
-
 		// We probably don't need to do this for every frame
 
 		camera.updateCamera(engine->window);
@@ -1157,13 +1129,11 @@ private:
 		graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
 		VkPipelineLayout pipelineLayoutSet[2] = { currentPass->diffusePipelineLayout, currentPass->diffNormPipelineLayout };
 		pipelineLayout = (viewIndex == 1 && lit) ? pipelineLayoutSet[drawMat->pipelineLayoutIndex] : currentPass->diffusePipelineLayout;
-		//std::cout << "Draw variables updated " << std::endl;
 	}
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, GraphicsPass* currentPass, uint32_t imageIndex) {
 		uint32_t currentFrame = engine->currentFrame;
 
-		//engine->beginRenderPass(commandBuffer, testRP, &test, imageIndex, backgroundColour);
 		engine->beginRenderPass(commandBuffer, currentPass, &test, imageIndex, backgroundColour);
 
 		if (showWireframe) {
@@ -1202,14 +1172,7 @@ private:
 
 		// Post-processing can be put here
 
-		//blurX.filterImage(commandBuffer, imageIndex);
-		//blurY.filterImage(commandBuffer, imageIndex);
-
-		//VkImage resultImage = blurY.getFilterResult(commandBuffer, imageIndex);
-
 		Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex);
-
-		//Engine::get()->copyImageToSwapchain(commandBuffer, resultImage, test.imageExtent, imageIndex);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw runtime_error("failed to record command buffer!");

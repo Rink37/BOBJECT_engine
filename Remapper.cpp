@@ -426,7 +426,7 @@ void RemapUI::incrementMethod(UIItem*) {
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
-	std::cout << "Should switch to method " << newMethod << std::endl;
+	//std::cout << "Should switch to method " << newMethod << std::endl;
 	UIItem* endButtons = canvas[0]->Items[canvas[0]->Items.size() - 1];
 	for (int i = 2; i != canvas[0]->Items.size()-1; i++) {
 		canvas[0]->Items[i]->cleanup();
@@ -453,7 +453,7 @@ void RemapUI::reduceMethod(UIItem*) {
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
-	std::cout << "Should switch to method " << newMethod << std::endl;
+	//std::cout << "Should switch to method " << newMethod << std::endl;
 	UIItem* endButtons = canvas[0]->Items[canvas[0]->Items.size() - 1];
 	for (int i = 2; i != canvas[0]->Items.size() - 1; i++) {
 		canvas[0]->Items[i]->cleanup();
