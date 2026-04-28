@@ -446,9 +446,6 @@ void Engine::createGraphicsPipelines() {
 
 void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 
-	bool isWireframe = false;
-	int index = 0;
-
 	shaderData flatShader = FLATSHADER;
 	shaderData AC_flatShader = AC_FLATSHADER;
 	shaderData bfShader = BFSHADER;

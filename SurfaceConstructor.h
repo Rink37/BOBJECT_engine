@@ -191,6 +191,8 @@ public:
 		unlitSurfaceMat.init(webTex);
 		surfaceMat.init(webTex);
 	}
+
+	bool alphaClipEnabled = true;
 	
 	void updateSurfaceMat() {
 		Texture* d = nullptr;
@@ -204,13 +206,28 @@ public:
 			Texture* n = nullptr;
 			switch (normalType) {
 			case 0:
-				renderPipeline = "OSNormBF";
+				if (alphaClipEnabled) {
+					renderPipeline = "AC_OSNormBF";
+				}
+				else {
+					renderPipeline = "OSNormBF";
+				}
 				break;
 			case 1:
-				renderPipeline = "TSNormBF";
+				if (alphaClipEnabled) {
+					renderPipeline = "AC_TSNormBF";
+				}
+				else {
+					renderPipeline = "TSNormBF";
+				}	
 				break;
 			default:
-				renderPipeline = "OSNormBF";
+				if (alphaClipEnabled) {
+					renderPipeline = "AC_OSNormBF";
+				}
+				else {
+					renderPipeline = "OSNormBF";
+				}
 				break;
 			}
 			switch (normalIdx*(normalIdx + normalType)) {
@@ -238,7 +255,12 @@ public:
 			surfaceMat.init(d, n);
 		}
 		else {
-			renderPipeline = "BFShading";
+			if (alphaClipEnabled) {
+				renderPipeline = "AC_BFShading";
+			}
+			else {
+				renderPipeline = "BFShading";
+			}
 			unlitSurfaceMat.init(d);
 			surfaceMat.init(d);
 		}

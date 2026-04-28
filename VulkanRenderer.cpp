@@ -718,7 +718,12 @@ private:
 		sConst->normalAvailable = false;
 		surfaceMenu.setDiffuse(sConst->currentDiffuse());
 
-		sConst->renderPipeline = "BFShading";
+		if (sConst->alphaClipEnabled) {
+			sConst->renderPipeline = "AC_BFShading";
+		}
+		else {
+			sConst->renderPipeline = "BFShading";
+		}
 		sConst->updateSurfaceMat();
 	}
 	
@@ -1000,13 +1005,18 @@ private:
 
 	void updatePipelineIndex() {
 		if ((viewIndex == 0 || viewIndex == 1) && lit) {
-			engine->pipelineindex = 1;
+			engine->pipelineindex = engine->PipelineMap.at(sConst->renderPipeline);
 		}
 		else if (viewIndex != 2) {
-			engine->pipelineindex = 0;
+			if (sConst->alphaClipEnabled) {
+				engine->pipelineindex = engine->PipelineMap.at("AC_FlatShading");
+			}
+			else {
+				engine->pipelineindex = engine->PipelineMap.at("FlatShading");
+			}
 		}
 		else if (viewIndex == 2) {
-			engine->pipelineindex = 3;
+			engine->pipelineindex = engine->PipelineMap.at("Wireframe");
 		}
 		updateDrawVariables();
 	}
@@ -1124,7 +1134,6 @@ private:
 	void updateDrawVariables() {
 		Material* activeSurfaceMat = &((lit) ? sConst->surfaceMat : sConst->unlitSurfaceMat);
 		drawMat = ((!tomogActive) ? activeSurfaceMat : &tomogUI.scannedMaterial);
-		std::cout << drawMat->descriptorSets.size() << std::endl;
 		renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
 		graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
 		VkPipelineLayout pipelineLayoutSet[2] = { currentPass->diffusePipelineLayout, currentPass->diffNormPipelineLayout };
