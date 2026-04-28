@@ -31,8 +31,8 @@
 #define SLIDER_DISCRETE 1
 
 #define PI 3.14159265f
-#define OPF_PI 4.71238898f // Equivalent to 3*PI / 2 - basic optimization
-#define HALF_PI 1.57079632f // Equivalent to PI / 2
+#define OPF_PI 4.71238898f 
+#define HALF_PI 1.57079632f
 
 struct UIImage {
 	bool isVisible = true;
@@ -253,7 +253,6 @@ public:
 
 		this->extenty = this->extentx * this->sqAxisRatio;
 
-		//baseExtentx = extentx;
 		UVextentx = extentx;
 		baseExtenty = baseExtentx * sqAxisRatio;
 		baseSqAxisRatio = sqAxisRatio;

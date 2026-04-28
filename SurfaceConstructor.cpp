@@ -261,6 +261,8 @@ void SurfaceMenu::removeNormalMenu(UIItem* owner) {
 
 	SurfacePanel->updateDisplay();
 	hasNormal = false;
+
+	update();
 }
 
 void SurfaceMenu::toggleDiffuseCam(UIItem* owner) {
@@ -283,6 +285,7 @@ void SurfaceMenu::loadDiffuseImage(UIItem* owner) {
 		sConst->updateSurfaceMat();
 		SurfacePanel->arrangeItems();
 		session::get()->currentStudio.diffusePath = fileName;
+		update();
 	}
 }
 
@@ -336,6 +339,7 @@ void SurfaceMenu::toggleNormalType(UIItem* owner) {
 	}
 	sConst->updateSurfaceMat();
 	setNormal(sConst->currentNormal());
+	update();
 }
 
 void SurfaceMenu::loadNormalImage(UIItem* owner) {
@@ -358,6 +362,7 @@ void SurfaceMenu::loadNormalImage(UIItem* owner) {
 		else {
 			session::get()->currentStudio.TSPath = fileName;
 		}
+		update();
 	}
 }
 
@@ -495,4 +500,6 @@ void SurfaceMenu::createNormalMenu(UIItem* owner) {
 	SurfacePanel->updateDisplay();
 
 	hasNormal = true;
+
+	update();
 }
