@@ -1,5 +1,6 @@
 #include<iostream>
 #include<filesystem>
+#include<algorithm>
 #include<fstream>
 #include<string>
 #include<vector>
@@ -7,14 +8,14 @@
 #include<iomanip>
 #include<Windows.h>
 #include<stdio.h>
-#include <bits/stdc++.h> // No idea why this is claimed to be an error - it works fine
+#include <bits/stdc++.h> 
 
 using namespace std;
 
 string getGlslcPath(){
 	string searchPath("C:\\VulkanSDK\\");
 	string glslcPath = searchPath;
-	for (const auto & entry : filesystem::directory_iterator(searchPath)){
+	for (const auto & entry : std::filesystem::directory_iterator(searchPath)){
 		glslcPath = entry.path().string();
 	}
 	glslcPath += string("\\Bin\\glslc.exe");
@@ -22,6 +23,9 @@ string getGlslcPath(){
 }
 
 void compileShader(string glslcPath, string glslName, string spvName){
+	if (!filesystem::exists(glslName)){
+		return;
+	}
 	string compileCommand = glslcPath + string(" ") + glslName + string(" -o ") + spvName;
 	FILE* pipe = popen(compileCommand.c_str(), "r");
 	string result = "";
@@ -130,7 +134,7 @@ std::string readHelperFile(const std::string& filename, const std::string& shade
 }
 
 void compileAndWriteShaders(string basepath, string shadername, bool wireframe, string outRoot){
-    string compGlslPath = basepath + shadername + string("shader.comp");
+    string compGlslPath = basepath + shadername + string(".comp");
 	string compPath = basepath + shadername + string("Comp.spv");
 	string vertGlslPath = basepath + shadername + string("shader.vert");
 	string vertPath = basepath + shadername + string("Vert.spv");
@@ -247,71 +251,71 @@ void compileAndWriteShaders(string basepath, string shadername, bool wireframe, 
 	out.close();
 }
 
-void loadAndWriteShaders(string basepath, string shadername, bool wireframe, string outRoot){
-    string compPath = basepath + shadername + string("Comp.spv");
-	string vertPath = basepath + shadername + string("Vert.spv");
-	string fragPath = basepath + shadername + string("Frag.spv");
-	string helperPath = basepath + shadername + string("Helper.txt");
-	vector<char> vertData;
-	vector<char> fragData;
-	vector<char> compData;
-	try{
-		vertData = readFile(vertPath);
-		fragData = readFile(fragPath);
-		std:: cout << "Vert and frag found" << std::endl;
-	} catch(std::runtime_error){
-	} 
-	try{
-		compData = readFile(compPath);
-		std::cout << "Comp found" << std::endl;
-	} catch(std::runtime_error){
-	}
-
-	string capShaderName = shadername;
-    std::transform(capShaderName.begin(), capShaderName.end(), capShaderName.begin(), ::toupper);
-	ofstream out(outRoot+shadername+string(".h"));
-	out << string("#ifndef ")+capShaderName+string("DATA\n");
-	out << string("#define ")+capShaderName+string("DATA\n");
-
-	out << string("#include \"ShaderDataType.h\"\n\n");
-	
-	int type = 0;
-
-	if (vertData.size() > 0){
-		out << string("const std::vector<unsigned char> ")+shadername+string("VertData = { ");
-		for (size_t i = 0; i!= vertData.size(); i++){
-			out << "0x" << hex << setw(2) << setfill('0') << (int)(unsigned char) vertData[i];
-			if (i < vertData.size()-1){
-				out << ", ";
-			}
-		}
-		out << string(" };\n\n");
-	}
-	if (fragData.size() > 0){
-		out << string("const std::vector<unsigned char> ")+shadername+string("FragData = { ");
-		for (size_t i = 0; i!= fragData.size(); i++){
-			out << "0x" << hex << setw(2) << setfill('0') << (int)(unsigned char) fragData[i];
-			if (i < fragData.size()-1){
-				out << ", ";
-			}
-		}
-		out << string(" };\n\n");
-		type = 0;
-		out << string("const uint8_t ")+shadername+string("Type = MESH_SHADER;\n");
-	} 
-	if (compData.size() > 0){
-		out << string("const std::vector<unsigned char> ")+shadername+string("CompData = { ");
-		for (size_t i = 0; i!= compData.size(); i++){
-			out << "0x" << hex << setw(2) << setfill('0') << (int)(unsigned char) compData[i];
-			if (i < compData.size()-1){
-				out << ", ";
-			}
-		}
-		out << string(" };\n\n");
-		//out << string("const uint8_t ")+shadername+string("type = COMP_SHADER;\n\n");
-		type = 1;
-		out << string("const uint8_t ")+shadername+string("Type = COMP_SHADER;\n");
-	}
+//void loadAndWriteShaders(string basepath, string shadername, bool wireframe, string outRoot){
+//    string compPath = basepath + shadername + string("Comp.spv");
+//	string vertPath = basepath + shadername + string("Vert.spv");
+//	string fragPath = basepath + shadername + string("Frag.spv");
+//	string helperPath = basepath + shadername + string("Helper.txt");
+//	vector<char> vertData;
+//	vector<char> fragData;
+//	vector<char> compData;
+//	try{
+//		vertData = readFile(vertPath);
+//		fragData = readFile(fragPath);
+//		std:: cout << "Vert and frag found" << std::endl;
+//	} catch(std::runtime_error){
+//	} 
+//	try{
+//		compData = readFile(compPath);
+//		std::cout << "Comp found" << std::endl;
+//	} catch(std::runtime_error){
+//	}
+//
+//	string capShaderName = shadername;
+//    std::transform(capShaderName.begin(), capShaderName.end(), capShaderName.begin(), ::toupper);
+//	ofstream out(outRoot+shadername+string(".h"));
+//	out << string("#ifndef ")+capShaderName+string("DATA\n");
+//	out << string("#define ")+capShaderName+string("DATA\n");
+//
+//	out << string("#include \"ShaderDataType.h\"\n\n");
+//	
+//	int type = 0;
+//
+//	if (vertData.size() > 0){
+//		out << string("const std::vector<unsigned char> ")+shadername+string("VertData = { ");
+//		for (size_t i = 0; i!= vertData.size(); i++){
+//			out << "0x" << hex << setw(2) << setfill('0') << (int)(unsigned char) vertData[i];
+//			if (i < vertData.size()-1){
+//				out << ", ";
+//			}
+//		}
+//		out << string(" };\n\n");
+//	}
+//	if (fragData.size() > 0){
+//		out << string("const std::vector<unsigned char> ")+shadername+string("FragData = { ");
+//		for (size_t i = 0; i!= fragData.size(); i++){
+//			out << "0x" << hex << setw(2) << setfill('0') << (int)(unsigned char) fragData[i];
+//			if (i < fragData.size()-1){
+//				out << ", ";
+//			}
+//		}
+//		out << string(" };\n\n");
+//		type = 0;
+//		out << string("const uint8_t ")+shadername+string("Type = MESH_SHADER;\n");
+//	} 
+//	if (compData.size() > 0){
+//		out << string("const std::vector<unsigned char> ")+shadername+string("CompData = { ");
+//		for (size_t i = 0; i!= compData.size(); i++){
+//			out << "0x" << hex << setw(2) << setfill('0') << (int)(unsigned char) compData[i];
+//			if (i < compData.size()-1){
+//				out << ", ";
+//			}
+//		}
+//		out << string(" };\n\n");
+//		//out << string("const uint8_t ")+shadername+string("type = COMP_SHADER;\n\n");
+//		type = 1;
+//		out << string("const uint8_t ")+shadername+string("Type = COMP_SHADER;\n");
+//	}
 	
 	//out << string("class ")+shadername+string("Shader : public shaderData{\n");
 	//out << string("public:\n");
@@ -323,43 +327,40 @@ void loadAndWriteShaders(string basepath, string shadername, bool wireframe, str
 	//	out << string("\tstd::vector<unsigned char> &compData = &")+shadername+string("compData;\n");
 	//	out << string("\tuint8_t type = COMP_SHADER;\n\n");
 	//}
-	if (wireframe){
-		out << string("const bool ")+shadername+string("Wireframe = true;\n\n");
-	} else {
-		out << string("const bool ")+shadername+string("Wireframe = false;\n\n");
-	}
+//	if (wireframe){
+//		out << string("const bool ")+shadername+string("Wireframe = true;\n\n");
+//	} else {
+//		out << string("const bool ")+shadername+string("Wireframe = false;\n\n");
+//	}
 
-	bool isHelperAvailable = false;
-	try{
-		out << readHelperFile(helperPath, shadername);
-		isHelperAvailable = true;
-	} catch(std::runtime_error){
-		std::cout << "No helper file found" << std::endl;
-	}
+//	bool isHelperAvailable = false;
+//	try{
+//		out << readHelperFile(helperPath, shadername);
+//		isHelperAvailable = true;
+//	} catch(std::runtime_error){
+//		std::cout << "No helper file found" << std::endl;
+//	}
 	//out << string("};\n\n");
-	out << string("#endif\n\n");
+//	out << string("#endif\n\n");
 
-	out << string("#ifndef ") + capShaderName + string("SHADER\n");
-	if (compData.size() == 0){
-		out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("FragData, ")+shadername+string("VertData, ")+shadername+string("Wireframe )\n");
-	} else {
-		if (isHelperAvailable){
-			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("CompData, ")+shadername+string("Wireframe, ") + shadername + string("IO )\n");
-		} else {
-			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("CompData, ")+shadername+string("Wireframe )\n");
-		}
-	}
+//	out << string("#ifndef ") + capShaderName + string("SHADER\n");
+//	if (compData.size() == 0){
+//		out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("FragData, ")+shadername+string("VertData, ")+shadername+string("Wireframe )\n");
+//	} else {
+//		if (isHelperAvailable){
+//			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("CompData, ")+shadername+string("Wireframe, ") + shadername + string("IO )\n");
+//		} else {
+//			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("CompData, ")+shadername+string("Wireframe )\n");
+//		}
+//	}
 
 	//out << string("#define ")+capShaderName+string("SHADER ")+shadername+string("Shader()\n");
 	
-	out << string("#endif\n");
-	out.close();
-}
+//	out << string("#endif\n");
+//	out.close();
+//}
 
 int main(){
-	string glslcPath = getGlslcPath();
-	cout << glslcPath << endl;
-
 	char rootChar[MAX_PATH];
 	GetModuleFileName(NULL, rootChar, MAX_PATH);
 	std::filesystem::path rootPth{rootChar};
@@ -368,40 +369,40 @@ int main(){
 	string basepath = rootPath + string("/computeShaders/");
 	string outRoot = rootPath + string("/include/");
 	
-	loadAndWriteShaders(basepath, string("Kuwahara"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("SobelX"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("SobelY"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("GaussBlurX"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("GaussBlurY"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("SobelCombined"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("ReferenceKuwahara"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("Averager"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("IterativeAverager"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("CoordIterativeAverager"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("BoxAverager"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("GradRemap"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("OSToTSConverter"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("TSToOSConverter"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("OS_EdgeFill"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("inPlaceTest"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("NormalGenerator"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("RGB_2_YCbCr"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("CreateCoordMap"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("CoordMapRead"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("Kuwahara"), 0, outRoot);
+	//loadAndWriteShaders(basepath, string("SobelX"), 0, outRoot);
+	//loadAndWriteShaders(basepath, string("SobelY"), 0, outRoot);
+	//loadAndWriteShaders(basepath, string("GaussBlurX"), 0, outRoot);
+	//loadAndWriteShaders(basepath, string("GaussBlurY"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("SobelCombined"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("ReferenceKuwahara"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("Averager"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("IterativeAverager"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("CoordIterativeAverager"), 0, outRoot);
+	//loadAndWriteShaders(basepath, string("BoxAverager"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("GradRemap"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("OSToTSConverter"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("TSToOSConverter"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("OS_EdgeFill"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("inPlaceTest"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("NormalGenerator"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("RGB_2_YCbCr"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("CreateCoordMap"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("CoordMapRead"), 0, outRoot);
 
 	basepath = rootPath+string("/shaders/");
 	compileAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("OS_BF"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("BF"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("AC_BF"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("UIGray"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("UI"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("UV"), 1, outRoot);
-	loadAndWriteShaders(basepath, string("W"), 1, outRoot);
-	loadAndWriteShaders(basepath, string("Flat"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("AC_Flat"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("AC_TS_BF"), 0, outRoot);
-	loadAndWriteShaders(basepath, string("AC_OS_BF"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("OS_BF"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("BF"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("AC_BF"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("UIGray"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("UI"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("UV"), 1, outRoot);
+	compileAndWriteShaders(basepath, string("W"), 1, outRoot);
+	compileAndWriteShaders(basepath, string("Flat"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("AC_Flat"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("AC_TS_BF"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("AC_OS_BF"), 0, outRoot);
 	cout << "Done" << endl;
 	return 0;
 }

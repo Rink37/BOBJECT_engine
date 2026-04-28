@@ -74,6 +74,10 @@ endif()
 # Ensure that we can find all files used in the main application
 target_include_directories(VulkanRenderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+add_custom_command(TARGET VulkanRenderer PRE_BUILD
+				COMMAND ./ConvertShaders
+				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/shaders)
+
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	add_custom_command(TARGET VulkanRenderer POST_BUILD
 				   COMMAND ${CMAKE_COMMAND} -E copy
