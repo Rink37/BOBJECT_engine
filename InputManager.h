@@ -102,6 +102,8 @@ private:
 
 	static void callback(GLFWwindow*, int, int, int);
 
+	static void cursorExitCallback(GLFWwindow*, int);
+
 	Mouse mouse;
 };
 

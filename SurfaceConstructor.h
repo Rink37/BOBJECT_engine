@@ -60,8 +60,6 @@ public:
 	void transitionToTS(Mesh*);
 	void transitionToOS(Mesh*);
 
-	void contextConvert();
-
 	bool normalAvailable = false;
 
 	Material unlitSurfaceMat;
@@ -339,7 +337,7 @@ private:
 	std::function<void(UIItem*)> remapCallback;
 
 	bool hasNormal = false;
-	bool normalsEnabled = true; // DEBUG - lets us disable any UI for normals
+	bool normalsEnabled = true;
 
 	Checkbox* diffuseTog = nullptr;
 	Checkbox* normalTog = nullptr;
@@ -364,8 +362,6 @@ private:
 	void loadNormalImage(UIItem*);
 
 	void saveNormalImage(UIItem*);
-
-	void contextConvertMap(UIItem*);
 };
 
 #endif

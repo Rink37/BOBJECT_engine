@@ -835,6 +835,7 @@ public:
 			return true;
 		}
 		else if (eventType == LMB_RELEASE && isHeld) {
+			//std::cout << "Slider has been released" << std::endl;
 			isHeld = false;
 			this->calculateScreenPosition();
 			if (hasCallback && !updateOnMove) {
@@ -1265,7 +1266,7 @@ struct Widget {
 			checkboxes[i]->cleanup();
 		}
 		checkboxes.clear();
-		spacers.clear(); // spacers should have essentially no info so we can just delete them
+		spacers.clear();
 		for (size_t i = 0; i != Arrangements.size(); i++) {
 			Arrangements[i]->Items.clear();
 			Arrangements[i]->cleanup();
@@ -1299,7 +1300,7 @@ struct Widget {
 	}
 
 	Material* newMaterial(imageData* imgData, std::string name) {
-		if (loadList->checkForMaterial(name+"Mat")) {
+		if (loadList->checkForMaterial(name + "Mat")) {
 			return loadList->findMatPtr(name + "Mat");
 		}
 		else {

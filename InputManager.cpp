@@ -84,6 +84,7 @@ void KeyManager::callback(GLFWwindow* window, int key, int scancode, int action,
 
 void MouseManager::initCallbacks(GLFWwindow* window) {
 	glfwSetMouseButtonCallback(window, callback);
+	glfwSetCursorEnterCallback(window, cursorExitCallback);
 	for (MouseManager* mouseManager : _instances) {
 		mouseManager->windowArea = window;
 	}
@@ -96,6 +97,15 @@ void MouseManager::callback(GLFWwindow* window, int button, int action, int mods
 		mouseManager->updateMouseState(button, action != GLFW_RELEASE, xpos, ypos);
 	}
 };
+
+void MouseManager::cursorExitCallback(GLFWwindow* window, int entered) {
+	if (!entered) {
+		for (MouseManager* mouseManager : _instances) {
+			mouseManager->updateMouseState(GLFW_MOUSE_BUTTON_RIGHT, false, mouseManager->mouse.xpos, mouseManager->mouse.ypos);
+			mouseManager->updateMouseState(GLFW_MOUSE_BUTTON_LEFT, false, mouseManager->mouse.xpos, mouseManager->mouse.ypos);
+		}
+	}
+}
 
 void MouseManager::updateMouseState(int key, bool state, double xpos, double ypos) {
 	int clickCode = MOUSE_HOVER;
