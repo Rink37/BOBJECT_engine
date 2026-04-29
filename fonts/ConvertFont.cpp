@@ -40,7 +40,7 @@ void loadAndWriteFile(string path, int colCount, int rowCount, int cellWidth, in
     out << string("const int ")+nameNoExt+string("Channels = ");
     out << texChannels;
     out << ";\n\n";
-    out << string("const float")+nameNoExt+string("Advances[] = {");
+    out << string("const float ")+nameNoExt+string("Advances[] = {");
     for (int i = 0; i != 94; i++){
         float advance;
         advances.read((char*)(&advance), sizeof(float));

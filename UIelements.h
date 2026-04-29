@@ -213,20 +213,31 @@ public:
 		float W = static_cast<float>(Engine::get()->windowWidth);
 		float H = static_cast<float>(Engine::get()->windowHeight);
 
-		float pos = -(static_cast<float>(characters.size()) - 0.5f) * characterSize;
+		float pos = -static_cast<float>(characters.size()) * characterSize;
 		for (fontMesh mesh : characters) {
+			pos += characterSize * mesh.advanceWidth * 1.2f;
 			mesh.UpdateVertices(pos, 0.0f, characterSize, W / H);
-			pos += characterSize * 2.0f;
+			pos += characterSize * mesh.advanceWidth * 1.2f;
 		}
 	}
 
 	void addCharacter(int unicodeCharacter) {
-		fontMesh newMesh(unicodeCharacter, textFont);
-		float W = static_cast<float>(Engine::get()->windowWidth);
-		float H = static_cast<float>(Engine::get()->windowHeight);
-		newMesh.UpdateVertices(0.0f, 0.0f, characterSize, W/H);
-		characters.push_back(newMesh);
-		updateDisplay();
+		if (unicodeCharacter == 32) {
+			fontMesh newMesh(33, textFont);
+			float W = static_cast<float>(Engine::get()->windowWidth);
+			float H = static_cast<float>(Engine::get()->windowHeight);
+			newMesh.isVisible = false;
+			characters.push_back(newMesh);
+			updateDisplay();
+		}
+		else {
+			fontMesh newMesh(unicodeCharacter, textFont);
+			float W = static_cast<float>(Engine::get()->windowWidth);
+			float H = static_cast<float>(Engine::get()->windowHeight);
+			newMesh.UpdateVertices(0.0f, 0.0f, characterSize, W / H);
+			characters.push_back(newMesh);
+			updateDisplay();
+		}
 	}
 
 	void addText(std::string text) {
@@ -241,7 +252,9 @@ public:
 		}
 
 		for (fontMesh mesh : characters) {
-			Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->defaultPass.diffusePipelineLayout, textFont->fontMat->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
+			if (mesh.isVisible) {
+				Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->defaultPass.diffusePipelineLayout, textFont->fontMat->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
+			}
 		}
 
 		return commandBuffer;

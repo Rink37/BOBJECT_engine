@@ -12,6 +12,8 @@ public:
 
 	void getCorners(int, float&, float&, float&, float&);
 
+	void getAdvanceWidth(int, float&);
+
 	const float getSqAxisRatio() {
 		return static_cast<float>(cellHeight) / static_cast<float>(cellWidth);
 	}
@@ -38,6 +40,7 @@ public:
 		fontRef = meshFont;
 		unicodeCharacter = character;
 		sqAxisRatio = fontRef->getSqAxisRatio();
+		fontRef->getAdvanceWidth(unicodeCharacter, advanceWidth);
 	}
 
 	void* vBuffer = nullptr;
@@ -49,6 +52,9 @@ public:
 
 	int unicodeCharacter = 0;
 	float sqAxisRatio = 0.0f;
+	float advanceWidth = 1.0f;
+
+	bool isVisible = true;
 
 	font* fontRef;
 };

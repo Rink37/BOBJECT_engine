@@ -31,6 +31,11 @@ void font::getCorners(int character, float& left, float& right, float& top, floa
 	bottom = static_cast<float>(ibottom) / static_cast<float>(fontAtlas->texHeight);
 }
 
+void font::getAdvanceWidth(int character, float& width) {
+	character -= 33;
+	width = coolvetica_sdfAdvances[character];
+}
+
 void fontMesh::UpdateVertices(float xp, float yp, float xsc, float windowRatio) {
 	vertices.clear();
 
