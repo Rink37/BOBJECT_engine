@@ -11,6 +11,15 @@ public:
 	font();
 
 	void getCorners(int, float&, float&, float&, float&);
+
+	const float getSqAxisRatio() {
+		return static_cast<float>(cellHeight) / static_cast<float>(cellWidth);
+	}
+
+	void cleanup() {
+		fontAtlas->cleanup();
+		fontMat->cleanupDescriptor();
+	}
 	
 	Texture* fontAtlas;
 	Material* fontMat;
@@ -28,6 +37,7 @@ public:
 		indices = { 0, 3, 2, 2, 1, 0 };
 		fontRef = meshFont;
 		unicodeCharacter = character;
+		sqAxisRatio = fontRef->getSqAxisRatio();
 	}
 
 	void* vBuffer = nullptr;
@@ -38,6 +48,7 @@ public:
 	void updateVertexBuffer();
 
 	int unicodeCharacter = 0;
+	float sqAxisRatio = 0.0f;
 
 	font* fontRef;
 };

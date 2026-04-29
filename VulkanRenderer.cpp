@@ -324,7 +324,7 @@ public:
 
 		font* testFont = new font();
 		TextBox* testTextBox = new TextBox(testFont);
-		testTextBox->addCharacter(67);
+		testTextBox->addText("Hello world!");
 		canvas.push_back(getPtr(testTextBox));
 
 

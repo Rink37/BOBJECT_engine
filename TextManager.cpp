@@ -31,7 +31,7 @@ void font::getCorners(int character, float& left, float& right, float& top, floa
 	bottom = static_cast<float>(ibottom) / static_cast<float>(fontAtlas->texHeight);
 }
 
-void fontMesh::UpdateVertices(float xp, float yp, float xsc, float ysc) {
+void fontMesh::UpdateVertices(float xp, float yp, float xsc, float windowRatio) {
 	vertices.clear();
 
 	Vertex vertex{};
@@ -39,7 +39,9 @@ void fontMesh::UpdateVertices(float xp, float yp, float xsc, float ysc) {
 	float left, right, top, bottom;
 	fontRef->getCorners(unicodeCharacter, left, right, top, bottom);
 
-	std::cout << left << " " << right << " " << top << " " << bottom << std::endl;
+	//std::cout << left << " " << right << " " << top << " " << bottom << std::endl;
+
+	float ysc = xsc * sqAxisRatio * windowRatio;
 
 	vertex.pos = { -xsc + xp, yp - ysc, 0.0f };
 	vertex.normal = { 0.0f, 0.0f, 0.0f };

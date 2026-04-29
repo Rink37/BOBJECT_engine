@@ -210,14 +210,29 @@ public:
 	}
 
 	void updateDisplay() {
+		float W = static_cast<float>(Engine::get()->windowWidth);
+		float H = static_cast<float>(Engine::get()->windowHeight);
 
+		float pos = -(static_cast<float>(characters.size()) - 0.5f) * characterSize;
+		for (fontMesh mesh : characters) {
+			mesh.UpdateVertices(pos, 0.0f, characterSize, W / H);
+			pos += characterSize * 2.0f;
+		}
 	}
 
 	void addCharacter(int unicodeCharacter) {
 		fontMesh newMesh(unicodeCharacter, textFont);
-		std::cout << "Character = " << unicodeCharacter << std::endl;
-		newMesh.UpdateVertices(0.0f, 0.0f, 0.2f, 0.2f);
+		float W = static_cast<float>(Engine::get()->windowWidth);
+		float H = static_cast<float>(Engine::get()->windowHeight);
+		newMesh.UpdateVertices(0.0f, 0.0f, characterSize, W/H);
 		characters.push_back(newMesh);
+		updateDisplay();
+	}
+
+	void addText(std::string text) {
+		for (int i = 0; i != text.size(); i++) {
+			addCharacter(text[i]);
+		}
 	}
 
 	VkCommandBuffer draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
@@ -232,10 +247,19 @@ public:
 		return commandBuffer;
 	}
 
+	void cleanup() {
+		for (fontMesh mesh : characters) {
+			mesh.cleanup();
+		}
+		textFont->cleanup();
+	}
+
 	bool isVisible = true;
 
 	std::vector<fontMesh> characters;
 	font* textFont;
+
+	float characterSize = 0.05f;
 };
 
 class ImagePanel : public UIItem {
