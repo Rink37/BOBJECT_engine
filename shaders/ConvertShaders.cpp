@@ -396,6 +396,7 @@ int main(){
 	compileAndWriteShaders(basepath, string("BF"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("AC_BF"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("UIGray"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("UIText"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("UI"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("UV"), 1, outRoot);
 	compileAndWriteShaders(basepath, string("W"), 1, outRoot);

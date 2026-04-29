@@ -41,6 +41,7 @@
 #include"include/OS_BF.h"
 #include"include/AC_TS_BF.h"
 #include"include/TS_BF.h"
+#include"include/UIText.h"
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -255,8 +256,6 @@ public:
 
 	GraphicsPass defaultPass;
 
-	//VkRenderPass renderPass = nullptr;
-
 	std::vector<VkFence> inFlightFences = {};
 	VkSwapchainKHR swapChain = nullptr;
 	std::vector<VkSemaphore> imageAvailableSemaphores = {};
@@ -276,14 +275,10 @@ public:
 	std::vector<void*> uniformBuffersMapped = {};
 	void* colourBufferMapped = nullptr;
 
-	//VkPipelineLayout diffusePipelineLayout = nullptr;
-	//VkPipelineLayout diffNormPipelineLayout = nullptr;
-
 	std::vector<VkBuffer> uniformBuffers = {};
 	VkBuffer colourBuffer = nullptr;
 
 	std::map<std::string, int> PipelineMap = {};
-	//std::vector<VkPipeline*> GraphicsPipelines = {};
 
 	bool framebufferResized = false;
 

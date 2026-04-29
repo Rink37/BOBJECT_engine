@@ -5,6 +5,7 @@
 #include"Textures.h"
 #include"Materials.h"
 #include"Meshes.h"
+#include"TextManager.h"
 #include<iostream>
 #include<vector>
 #include<array>
@@ -200,6 +201,41 @@ struct UIItem {
 			image = nullptr;
 		}
 	}
+};
+
+class TextBox : public UIItem {
+public:
+	TextBox(font* inFont) {
+		textFont = inFont;
+	}
+
+	void updateDisplay() {
+
+	}
+
+	void addCharacter(int unicodeCharacter) {
+		fontMesh newMesh(unicodeCharacter, textFont);
+		std::cout << "Character = " << unicodeCharacter << std::endl;
+		newMesh.UpdateVertices(0.0f, 0.0f, 0.2f, 0.2f);
+		characters.push_back(newMesh);
+	}
+
+	VkCommandBuffer draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		if (!isVisible) {
+			return commandBuffer;
+		}
+
+		for (fontMesh mesh : characters) {
+			Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->defaultPass.diffusePipelineLayout, textFont->fontMat->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
+		}
+
+		return commandBuffer;
+	}
+
+	bool isVisible = true;
+
+	std::vector<fontMesh> characters;
+	font* textFont;
 };
 
 class ImagePanel : public UIItem {
@@ -1208,6 +1244,12 @@ struct Widget {
 		}
 	}
 
+	virtual void drawText(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+		for (size_t i = 0; i != TextBoxes.size(); i++) {
+			TextBoxes[i]->draw(commandBuffer, currentFrame);
+		}
+	}
+
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
 		if (!isInArea(mouseX, mouseY) && Sliders.size() == 0 && Rotators.size() == 0) {
 			return false;
@@ -1355,6 +1397,11 @@ struct Widget {
 		return Rotators[Rotators.size() - 1].get();
 	}
 
+	UIItem* getPtr(TextBox* textBox) {
+		TextBoxes.emplace_back(textBox);
+		return TextBoxes[TextBoxes.size() - 1].get();
+	}
+
 	std::vector<UIItem*> canvas;
 	bool isSetup = false;
 
@@ -1376,6 +1423,7 @@ private:
 	std::vector<std::shared_ptr<Grid>> Grids;
 	std::vector<std::shared_ptr<Slider>> Sliders;
 	std::vector<std::shared_ptr<Rotator>> Rotators;
+	std::vector<std::shared_ptr<TextBox>> TextBoxes;
 };
 
 #endif

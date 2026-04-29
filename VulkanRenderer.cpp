@@ -322,6 +322,12 @@ public:
 		
 		canvas.push_back(getPtr(buttons));
 
+		font* testFont = new font();
+		TextBox* testTextBox = new TextBox(testFont);
+		testTextBox->addCharacter(67);
+		canvas.push_back(getPtr(testTextBox));
+
+
 		isSetup = true;
 	}
 };
@@ -503,7 +509,7 @@ private:
 	RemapUI remapMenu = RemapUI(&UIElements, sConst);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
 
-	UIItem* UITestImage = nullptr;
+	//UIItem* UITestImage = nullptr;
 
 	vector<Widget*> widgets;
 
@@ -1164,6 +1170,12 @@ private:
 
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->drawImages(commandBuffer, currentFrame);
+		}
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UIText")]);
+
+		for (size_t i = 0; i != widgets.size(); i++) {
+			widgets[i]->drawText(commandBuffer, currentFrame);
 		}
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[graphicsPipelineIndex]);

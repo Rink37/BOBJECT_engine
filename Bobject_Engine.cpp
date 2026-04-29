@@ -441,6 +441,7 @@ void Engine::createGraphicsPipelines() {
 	PipelineMap.insert({ string("AC_OSNormBF"), 9 });
 	PipelineMap.insert({ string("TSNormBF"), 10 });
 	PipelineMap.insert({ string("AC_TSNormBF"), 11 });
+	PipelineMap.insert({ string("UIText"), 12 });
 	createGraphicsPipelines(defaultPass);
 }
 
@@ -458,6 +459,7 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	shaderData AC_OS_BF = AC_OS_BFSHADER;
 	shaderData TS_BF = TS_BFSHADER;
 	shaderData AC_TS_BF = AC_TS_BFSHADER;
+	shaderData uiTextShader = UITEXTSHADER;
 
 	std::vector<shaderData*> shaderDatas;
 	std::vector<int> pipelineIndices;
@@ -492,6 +494,9 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	shaderDatas.push_back(&AC_TS_BF);
 	pipelineIndices.push_back(1);
 	vertexInputInfoIndices.push_back(1);
+	shaderDatas.push_back(&uiTextShader);
+	pipelineIndices.push_back(0);
+	vertexInputInfoIndices.push_back(0);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
