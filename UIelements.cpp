@@ -71,28 +71,28 @@ void TextBox::updateDisplay() {
 	bool hideCharacters = false;
 	std::vector<uint32_t> wordIndices{};
 	uint32_t index = 0;
-	for (fontMesh mesh : characters) {
-		//if (hideCharacters) {
-		//	mesh.isVisible = false;
-		//	continue;
-		//}
-		pos_x += characterSize * mesh.advanceWidth * 1.2f;
-		if (mesh.unicodeCharacter != 32 && pos_x > maxPos_x) {
+	for (fontMesh* mesh : characters) {
+		if (hideCharacters) {
+			mesh->setVisibility(false);
+			continue;
+		}
+		pos_x += characterSize * mesh->advanceWidth * 1.2f;
+		if (mesh->unicodeCharacter != 32 && pos_x > maxPos_x) {
 			pos_x = posx - extentx;
 			pos_y += characterHeight * 2.0f;
 			if (pos_y > maxPos_y) {
 				hideCharacters = true;
-				mesh.isVisible = false;
+				mesh->setVisibility(false);
 			}
 			if (lastSpacePosition != posx - extentx){
 				for (uint32_t meshRef : wordIndices) {
 					if (hideCharacters) {
-						characters[meshRef].isVisible = false;
+						characters[meshRef]->setVisibility(false);
 					}
 					else {
-						pos_x += characterSize * characters[meshRef].advanceWidth * 1.2f;
-						characters[meshRef].UpdateVertices(pos_x, pos_y, characterSize, W / H);
-						pos_x += characterSize * characters[meshRef].advanceWidth * 1.2f;
+						pos_x += characterSize * characters[meshRef]->advanceWidth * 1.2f;
+						characters[meshRef]->UpdateVertices(pos_x, pos_y, characterSize, W / H);
+						pos_x += characterSize * characters[meshRef]->advanceWidth * 1.2f;
 					}
 				}
 			}
@@ -100,20 +100,29 @@ void TextBox::updateDisplay() {
 				wordIndices.clear();
 			}
 			lastSpacePosition = posx - extentx;
-			pos_x += characterSize * mesh.advanceWidth * 1.2f;
+			pos_x += characterSize * mesh->advanceWidth * 1.2f;
 		}
-		if (mesh.unicodeCharacter == 32) {
+		if (mesh->unicodeCharacter == 32) {
 			lastSpacePosition = pos_x;
 			wordIndices.clear();
 		}
 		else {
 			wordIndices.push_back(index);
-			mesh.isVisible = !hideCharacters;
+			mesh->setVisibility(!hideCharacters);
 		}
-		mesh.UpdateVertices(pos_x, pos_y, characterSize, W / H);
-		pos_x += characterSize * mesh.advanceWidth * 1.2f;
+		mesh->UpdateVertices(pos_x, pos_y, characterSize, W / H);
+		pos_x += characterSize * mesh->advanceWidth * 1.2f;
 		index++;
 	}
+	for (fontMesh* mesh : characters) {
+		if (mesh->isVisible) {
+			std::cout << 1 << " ";
+		}
+		else {
+			std::cout << 0 << " ";
+		}
+	}
+	std::cout << std::endl;
 }
 
 void TextBox::calculateScreenPosition() {

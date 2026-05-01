@@ -217,19 +217,19 @@ public:
 
 	void addCharacter(int unicodeCharacter) {
 		if (unicodeCharacter == 32) {
-			fontMesh newMesh(33, textFont);
+			fontMesh* newMesh = new fontMesh(33, textFont);
 			float W = static_cast<float>(Engine::get()->windowWidth);
 			float H = static_cast<float>(Engine::get()->windowHeight);
-			newMesh.UpdateVertices(0.0f, 0.0f, characterSize, W / H);
-			newMesh.isVisible = false;
-			newMesh.unicodeCharacter = 32;
+			newMesh->UpdateVertices(0.0f, 0.0f, characterSize, W / H);
+			newMesh->isVisible = false;
+			newMesh->unicodeCharacter = 32;
 			characters.push_back(newMesh);
 		}
 		else {
-			fontMesh newMesh(unicodeCharacter, textFont);
+			fontMesh* newMesh = new fontMesh(unicodeCharacter, textFont);
 			float W = static_cast<float>(Engine::get()->windowWidth);
 			float H = static_cast<float>(Engine::get()->windowHeight);
-			newMesh.UpdateVertices(0.0f, 0.0f, characterSize, W / H);
+			newMesh->UpdateVertices(0.0f, 0.0f, characterSize, W / H);
 			characters.push_back(newMesh);
 		}
 	}
@@ -247,9 +247,9 @@ public:
 			return commandBuffer;
 		}
 
-		for (fontMesh mesh : characters) {
-			if (mesh.isVisible) {
-				Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->defaultPass.diffusePipelineLayout, textFont->fontMat->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
+		for (fontMesh* mesh : characters) {
+			if (mesh->isVisible) {
+				Engine::get()->drawObject(commandBuffer, mesh->vertexBuffer, mesh->indexBuffer, Engine::get()->defaultPass.diffusePipelineLayout, textFont->fontMat->descriptorSets[currentFrame], static_cast<uint32_t>(mesh->indices.size()));
 			}
 		}
 
@@ -257,15 +257,16 @@ public:
 	}
 
 	void cleanup() {
-		for (fontMesh mesh : characters) {
-			mesh.cleanup();
+		for (fontMesh* mesh : characters) {
+			mesh->cleanup();
+			delete mesh;
 		}
 		textFont->cleanup();
 	}
 
 	bool isVisible = true;
 
-	std::vector<fontMesh> characters;
+	std::vector<fontMesh*> characters;
 	font* textFont;
 
 	float characterSize = 0.05f;

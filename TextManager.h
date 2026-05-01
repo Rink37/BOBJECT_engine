@@ -43,6 +43,10 @@ public:
 		fontRef->getAdvanceWidth(unicodeCharacter, advanceWidth);
 	}
 
+	void setVisibility(bool state) {
+		isVisible = state;
+	}
+
 	void* vBuffer = nullptr;
 
 	void UpdateVertices(float, float, float, float);
