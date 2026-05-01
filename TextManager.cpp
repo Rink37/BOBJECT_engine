@@ -3,6 +3,7 @@
 #include"include/coolvetica_sdf.h"
 
 font::font() {
+	std::cout << "New font created" << std::endl;
 	imageData fontData = COOLVETICA_SDF;
 	fontAtlas = new imageTexture(&fontData);
 	fontMat = new Material(fontAtlas);
@@ -43,8 +44,6 @@ void fontMesh::UpdateVertices(float xp, float yp, float xsc, float windowRatio) 
 
 	float left, right, top, bottom;
 	fontRef->getCorners(unicodeCharacter, left, right, top, bottom);
-
-	//std::cout << left << " " << right << " " << top << " " << bottom << std::endl;
 
 	float ysc = xsc * sqAxisRatio * windowRatio;
 

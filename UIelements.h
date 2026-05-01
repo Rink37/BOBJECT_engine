@@ -205,30 +205,25 @@ struct UIItem {
 
 class TextBox : public UIItem {
 public:
-	TextBox(font* inFont) {
+	TextBox(font* inFont, float px, float py, float ex, float ey, float fSize = 0.02f) {
+		setDims(px, py, ex, ey);
 		textFont = inFont;
+		characterSize = fSize;
 	}
 
-	void updateDisplay() {
-		float W = static_cast<float>(Engine::get()->windowWidth);
-		float H = static_cast<float>(Engine::get()->windowHeight);
+	void updateDisplay();
 
-		float pos = -static_cast<float>(characters.size()) * characterSize;
-		for (fontMesh mesh : characters) {
-			pos += characterSize * mesh.advanceWidth * 1.2f;
-			mesh.UpdateVertices(pos, 0.0f, characterSize, W / H);
-			pos += characterSize * mesh.advanceWidth * 1.2f;
-		}
-	}
+	void calculateScreenPosition();
 
 	void addCharacter(int unicodeCharacter) {
 		if (unicodeCharacter == 32) {
 			fontMesh newMesh(33, textFont);
 			float W = static_cast<float>(Engine::get()->windowWidth);
 			float H = static_cast<float>(Engine::get()->windowHeight);
+			newMesh.UpdateVertices(0.0f, 0.0f, characterSize, W / H);
 			newMesh.isVisible = false;
+			newMesh.unicodeCharacter = 32;
 			characters.push_back(newMesh);
-			updateDisplay();
 		}
 		else {
 			fontMesh newMesh(unicodeCharacter, textFont);
@@ -236,14 +231,15 @@ public:
 			float H = static_cast<float>(Engine::get()->windowHeight);
 			newMesh.UpdateVertices(0.0f, 0.0f, characterSize, W / H);
 			characters.push_back(newMesh);
-			updateDisplay();
 		}
 	}
 
 	void addText(std::string text) {
+		boxText += text;
 		for (int i = 0; i != text.size(); i++) {
 			addCharacter(text[i]);
 		}
+		updateDisplay();
 	}
 
 	VkCommandBuffer draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
@@ -273,6 +269,24 @@ public:
 	font* textFont;
 
 	float characterSize = 0.05f;
+
+private:
+	void setDims(float px, float py, float ex, float ey) {
+		this->posx = px;
+		this->posy = -1.0f * py;
+		this->anchorx = px;
+		this->anchory = py;
+		this->extentx = ex;
+		this->extenty = ey;
+
+		this->sqAxisRatio = ey / ex;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
+	}
+
+	std::string boxText = "";
 };
 
 class ImagePanel : public UIItem {

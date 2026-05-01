@@ -57,6 +57,82 @@ void UIItem::addItem(UIItem *item) {
 	Items.push_back(item);
 }
 
+void TextBox::updateDisplay() {
+	float W = static_cast<float>(Engine::get()->windowWidth);
+	float H = static_cast<float>(Engine::get()->windowHeight);
+
+	float characterHeight = characterSize * W / H;
+
+	float pos_x = posx - extentx;
+	float maxPos_x = posx + extentx;
+	float pos_y = posy - extenty + characterHeight;
+	float maxPos_y = posy + extenty - characterHeight;
+	float lastSpacePosition = pos_x;
+	bool hideCharacters = false;
+	std::vector<uint32_t> wordIndices{};
+	uint32_t index = 0;
+	for (fontMesh mesh : characters) {
+		//if (hideCharacters) {
+		//	mesh.isVisible = false;
+		//	continue;
+		//}
+		pos_x += characterSize * mesh.advanceWidth * 1.2f;
+		if (mesh.unicodeCharacter != 32 && pos_x > maxPos_x) {
+			pos_x = posx - extentx;
+			pos_y += characterHeight * 2.0f;
+			if (pos_y > maxPos_y) {
+				hideCharacters = true;
+				mesh.isVisible = false;
+			}
+			if (lastSpacePosition != posx - extentx){
+				for (uint32_t meshRef : wordIndices) {
+					if (hideCharacters) {
+						characters[meshRef].isVisible = false;
+					}
+					else {
+						pos_x += characterSize * characters[meshRef].advanceWidth * 1.2f;
+						characters[meshRef].UpdateVertices(pos_x, pos_y, characterSize, W / H);
+						pos_x += characterSize * characters[meshRef].advanceWidth * 1.2f;
+					}
+				}
+			}
+			else {
+				wordIndices.clear();
+			}
+			lastSpacePosition = posx - extentx;
+			pos_x += characterSize * mesh.advanceWidth * 1.2f;
+		}
+		if (mesh.unicodeCharacter == 32) {
+			lastSpacePosition = pos_x;
+			wordIndices.clear();
+		}
+		else {
+			wordIndices.push_back(index);
+			mesh.isVisible = !hideCharacters;
+		}
+		mesh.UpdateVertices(pos_x, pos_y, characterSize, W / H);
+		pos_x += characterSize * mesh.advanceWidth * 1.2f;
+		index++;
+	}
+}
+
+void TextBox::calculateScreenPosition() {
+	float W = static_cast<float>(Engine::get()->windowWidth);
+	float H = static_cast<float>(Engine::get()->windowHeight);
+
+	float bufferRatioX, bufferRatioY;
+
+	bufferRatioX = static_cast<float>(buffer) / (2 * W);
+	bufferRatioY = static_cast<float>(buffer) / (2 * H);
+
+	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY);
+
+	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W;
+	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W;
+	this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H;
+	this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H;
+}
+
 void Arrangement::calculateScreenPosition() {
 	float W = static_cast<float>(Engine::get()->windowWidth);
 	float H = static_cast<float>(Engine::get()->windowHeight);

@@ -323,8 +323,8 @@ public:
 		canvas.push_back(getPtr(buttons));
 
 		font* testFont = new font();
-		TextBox* testTextBox = new TextBox(testFont);
-		testTextBox->addText("Hello world!");
+		TextBox* testTextBox = new TextBox(testFont, 0.0f, 0.0f, 0.3f, 0.2f);
+		testTextBox->addText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vestibulum aliquet ligula vel dictum. Praesent scelerisque orci at tincidunt placerat. Aliquam et blandit nulla. Nullam consequat ligula vitae massa luctus, et tincidunt felis dictum. Morbi mattis dapibus ante, vitae eleifend ipsum rutrum vitae. Proin in mauris eget metus mattis interdum vel eget nisi. Nulla porta sapien id eros malesuada laoreet. Integer et rhoncus magna, sed ullamcorper elit. Quisque ut massa ut nibh venenatis ultrices ac id tortor. Sed mattis, massa at vestibulum tincidunt, arcu diam vestibulum libero, vel lacinia tortor sapien quis sem. Proin scelerisque pharetra odio, quis congue turpis. Proin arcu leo, blandit quis ex vitae, posuere sollicitudin turpis. Duis ullamcorper sodales dui ac posuere. Pellentesque nibh felis, finibus in elit sed, iaculis fringilla est.");
 		canvas.push_back(getPtr(testTextBox));
 
 
