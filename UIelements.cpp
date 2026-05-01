@@ -114,15 +114,6 @@ void TextBox::updateDisplay() {
 		pos_x += characterSize * mesh->advanceWidth * 1.2f;
 		index++;
 	}
-	for (fontMesh* mesh : characters) {
-		if (mesh->isVisible) {
-			std::cout << 1 << " ";
-		}
-		else {
-			std::cout << 0 << " ";
-		}
-	}
-	std::cout << std::endl;
 }
 
 void TextBox::calculateScreenPosition() {

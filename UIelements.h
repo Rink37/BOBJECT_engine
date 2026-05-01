@@ -262,6 +262,7 @@ public:
 			delete mesh;
 		}
 		textFont->cleanup();
+		delete textFont;
 	}
 
 	bool isVisible = true;
@@ -1374,6 +1375,10 @@ struct Widget {
 			Rotators[i]->cleanup();
 		}
 		Rotators.clear();
+		for (size_t i = 0; i != TextBoxes.size(); i++) {
+			TextBoxes[i]->cleanup();
+		}
+		TextBoxes.clear();
 		isSetup = false;
 	}
 
