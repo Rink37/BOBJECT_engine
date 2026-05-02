@@ -205,10 +205,11 @@ struct UIItem {
 
 class TextBox : public UIItem {
 public:
-	TextBox(font* inFont, float px, float py, float ex, float ey, float fSize = 0.02f) {
+	TextBox(font* inFont, float px, float py, float ex, float ey, float fSize = 0.02f, int hArrange = ARRANGE_START) {
 		setDims(px, py, ex, ey);
 		textFont = inFont;
 		characterSize = fSize;
+		horizontalArrange = hArrange;
 	}
 
 	void updateDisplay();
@@ -232,14 +233,16 @@ public:
 			newMesh->UpdateVertices(0.0f, 0.0f, characterSize, W / H);
 			characters.push_back(newMesh);
 		}
+		boxText += static_cast<char>(unicodeCharacter);
 	}
 
 	void addText(std::string text) {
-		boxText += text;
+		//boxText += text;
 		for (int i = 0; i != text.size(); i++) {
 			addCharacter(text[i]);
 		}
 		updateDisplay();
+		std::cout << boxText << std::endl;
 	}
 
 	VkCommandBuffer draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
@@ -289,6 +292,9 @@ private:
 	}
 
 	std::string boxText = "";
+
+	int horizontalArrange = ARRANGE_START;
+	int verticalArrange = ARRANGE_START;
 };
 
 class ImagePanel : public UIItem {

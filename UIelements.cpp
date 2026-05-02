@@ -70,6 +70,9 @@ void TextBox::updateDisplay() {
 	float lastSpacePosition = pos_x;
 	bool hideCharacters = false;
 	std::vector<uint32_t> wordIndices{};
+	std::vector<uint32_t> spaceIndices{};
+	std::vector<uint32_t> lineIndices{};
+	std::vector<float> positions{};
 	uint32_t index = 0;
 	for (fontMesh* mesh : characters) {
 		if (hideCharacters) {
@@ -78,19 +81,78 @@ void TextBox::updateDisplay() {
 		}
 		pos_x += characterSize * mesh->advanceWidth * 1.2f;
 		if (mesh->unicodeCharacter != 32 && pos_x > maxPos_x) {
+			// New line handling
+			if (lastSpacePosition != posx - extentx) {
+				uint32_t adjustment = 0;
+				for (uint32_t meshRef : wordIndices) {
+					uint32_t eraseIndex = meshRef - lineIndices[0] - adjustment;
+					if (eraseIndex >= lineIndices.size()) {
+						continue;
+					}
+					lineIndices.erase(lineIndices.begin() + eraseIndex);
+					positions.erase(positions.begin() + eraseIndex);
+					adjustment++;
+				}
+			}
+			if (spaceIndices[spaceIndices.size() - 1] == lineIndices[lineIndices.size() - 1]) {
+				spaceIndices.erase(spaceIndices.begin() + spaceIndices.size() - 1);
+			}
+			float lineWidth = 0, leftSpacing = 0;
+			lineWidth = positions[positions.size() - 1] + characters[lineIndices[lineIndices.size() - 1]]->advanceWidth * characterSize;
+			switch (horizontalArrange) {
+			case(ARRANGE_CENTER):
+				leftSpacing = (maxPos_x - lineWidth) / 2.0f;
+				for (uint32_t index : lineIndices) {
+					characters[index]->UpdateVertices(positions[index - lineIndices[0]] + leftSpacing, pos_y, characterSize, W / H);
+				}
+				break;
+			case (ARRANGE_END):
+				leftSpacing = (maxPos_x - lineWidth);
+				for (uint32_t index : lineIndices) {
+					characters[index]->UpdateVertices(positions[index - lineIndices[0]] + leftSpacing, pos_y, characterSize, W / H);
+				}
+				break;
+			case (ARRANGE_FILL):
+				if (spaceIndices.size() > 0) {
+					leftSpacing = (maxPos_x - lineWidth) / spaceIndices.size();
+					for (uint32_t spaceIndex : spaceIndices) {
+						for (int i = spaceIndex - lineIndices[0] + 1; i != lineIndices.size(); i++) {
+							uint32_t index = lineIndices[i];
+							characters[index]->UpdateVertices(positions[index - lineIndices[0]] + leftSpacing, pos_y, characterSize, W / H);
+							positions[index - lineIndices[0]] += leftSpacing;
+						}
+					}
+				}
+				else {
+					leftSpacing = (maxPos_x - lineWidth) / lineIndices.size();
+					float totalSpacing = 0.0f;
+					for (uint32_t index : lineIndices) {
+						characters[index]->UpdateVertices(positions[index - lineIndices[0]] + totalSpacing, pos_y, characterSize, W / H);
+						totalSpacing += leftSpacing;
+					}
+				}
+				break;
+			default:
+				break;
+			}
 			pos_x = posx - extentx;
 			pos_y += characterHeight * 2.0f;
+			lineIndices.clear();
+			spaceIndices.clear();
+			positions.clear();
 			if (pos_y > maxPos_y) {
 				hideCharacters = true;
 				mesh->setVisibility(false);
 			}
 			if (lastSpacePosition != posx - extentx){
 				for (uint32_t meshRef : wordIndices) {
+					lineIndices.push_back(meshRef);
 					if (hideCharacters) {
 						characters[meshRef]->setVisibility(false);
 					}
 					else {
 						pos_x += characterSize * characters[meshRef]->advanceWidth * 1.2f;
+						positions.push_back(pos_x);
 						characters[meshRef]->UpdateVertices(pos_x, pos_y, characterSize, W / H);
 						pos_x += characterSize * characters[meshRef]->advanceWidth * 1.2f;
 					}
@@ -105,11 +167,14 @@ void TextBox::updateDisplay() {
 		if (mesh->unicodeCharacter == 32) {
 			lastSpacePosition = pos_x;
 			wordIndices.clear();
+			spaceIndices.push_back(index);
 		}
 		else {
 			wordIndices.push_back(index);
 			mesh->setVisibility(!hideCharacters);
 		}
+		lineIndices.push_back(index);
+		positions.push_back(pos_x);
 		mesh->UpdateVertices(pos_x, pos_y, characterSize, W / H);
 		pos_x += characterSize * mesh->advanceWidth * 1.2f;
 		index++;
