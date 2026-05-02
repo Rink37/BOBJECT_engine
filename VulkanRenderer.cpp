@@ -322,10 +322,10 @@ public:
 		
 		canvas.push_back(getPtr(buttons));
 
-		font* testFont = new font();
-		TextBox* testTextBox = new TextBox(testFont, 0.0f, 0.0f, 0.3f, 0.2f);
-		testTextBox->addText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vestibulum aliquet ligula vel dictum. Praesent scelerisque orci at tincidunt placerat. Aliquam et blandit nulla. Nullam consequat ligula vitae massa luctus, et tincidunt felis dictum. Morbi mattis dapibus ante, vitae eleifend ipsum rutrum vitae. Proin in mauris eget metus mattis interdum vel eget nisi. Nulla porta sapien id eros malesuada laoreet. Integer et rhoncus magna, sed ullamcorper elit. Quisque ut massa ut nibh venenatis ultrices ac id tortor. Sed mattis, massa at vestibulum tincidunt, arcu diam vestibulum libero, vel lacinia tortor sapien quis sem. Proin scelerisque pharetra odio, quis congue turpis. Proin arcu leo, blandit quis ex vitae, posuere sollicitudin turpis. Duis ullamcorper sodales dui ac posuere. Pellentesque nibh felis, finibus in elit sed, iaculis fringilla est.");
-		canvas.push_back(getPtr(testTextBox));
+		//font* testFont = new font();
+		//TextBox* testTextBox = new TextBox(testFont, 0.0f, 0.0f, 0.3f, 0.2f);
+		//testTextBox->addText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vestibulum aliquet ligula vel dictum. Praesent scelerisque orci at tincidunt placerat. Aliquam et blandit nulla. Nullam consequat ligula vitae massa luctus, et tincidunt felis dictum. Morbi mattis dapibus ante, vitae eleifend ipsum rutrum vitae. Proin in mauris eget metus mattis interdum vel eget nisi. Nulla porta sapien id eros malesuada laoreet. Integer et rhoncus magna, sed ullamcorper elit. Quisque ut massa ut nibh venenatis ultrices ac id tortor. Sed mattis, massa at vestibulum tincidunt, arcu diam vestibulum libero, vel lacinia tortor sapien quis sem. Proin scelerisque pharetra odio, quis congue turpis. Proin arcu leo, blandit quis ex vitae, posuere sollicitudin turpis. Duis ullamcorper sodales dui ac posuere. Pellentesque nibh felis, finibus in elit sed, iaculis fringilla est.");
+		//canvas.push_back(getPtr(testTextBox));
 
 		isSetup = true;
 	}
@@ -351,17 +351,17 @@ public:
 		imageData wb = WIREFRAMEBUTTON;
 		wireframeMat = newMaterial(&wb, "WireframeBtn");
 
-		canvas.push_back(getPtr(new Arrangement(ORIENT_VERTICAL, -1.0f, -0.75f, 0.1f, 0.5f, 0.01f, ARRANGE_START)));
+		ObjectButtons = getPtr(new Arrangement(ORIENT_VERTICAL, -1.0f, -0.75f, 0.2f, 0.5f, 0.01f, ARRANGE_END, SCALE_BY_DIMENSIONS));
 
-		ObjectButtons = canvas[0];
+		canvas.push_back(ObjectButtons);
 		
 		isSetup = true;
 	}
 
-	void addObject(std::function<void(UIItem*)> toggleFunction, std::function<void(UIItem*)> wireframeToggle) {
+	void addObject(std::function<void(UIItem*)> toggleFunction, std::function<void(UIItem*)> wireframeToggle, std::string nameString = "Object Name") {
 		ObjectButtons->arrangeItems();
 
-		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 2.0f, 1.0f, 0.01f, ARRANGE_START);
+		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 4.5f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		Checkbox* objectButton = new Checkbox(visibleMat, invisibleMat, toggleFunction);
 		objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
@@ -371,6 +371,11 @@ public:
 
 		ObjectMap.insert({ objectButton->Name, ObjectButtons->Items.size() });
 
+		font* objectFont = new font();
+		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 3.0f, 1.0f);
+		objectName->addText(nameString);
+
+		objButtons->addItem(getPtr(objectName));
 		objButtons->addItem(getPtr(objectButton));
 		objButtons->addItem(getPtr(objWireframeButton));
 		objButtons->arrangeItems();
@@ -750,11 +755,21 @@ private:
 		for (string path : session::get()->currentStudio.modelPaths) {
 			StaticObject newObject(path);
 			newObject.mat = &sConst->surfaceMat;
+			string objectName = path;
+			string del = "\\";
+			auto pos = objectName.find(del);
+			while (pos != string::npos) {
+				objectName.erase(0, pos + del.length());
+				pos = objectName.find(del);
+			}
+			del = ".";
+			pos = objectName.find(del);
+			objectName = objectName.substr(0, pos);
 
 			std::function<void(UIItem*)> visibleFunction = std::bind(&Application::setObjectVisibility, this, placeholders::_1);
 			std::function<void(UIItem*)> wireFunction = std::bind(&Application::setObjectWireframe, this, placeholders::_1);
 
-			objectMenu.addObject(visibleFunction, wireFunction);
+			objectMenu.addObject(visibleFunction, wireFunction, objectName);
 
 			newObject.isVisible = true;
 
@@ -1031,13 +1046,23 @@ private:
 		if (modelPath == "fail") {
 			return;
 		}
+		string objectName = modelPath;
+		string del = "\\";
+		auto pos = objectName.find(del);
+		while (pos != string::npos) {
+			objectName.erase(0, pos + del.length());
+			pos = objectName.find(del);
+		}
+		del = ".";
+		pos = objectName.find(del);
+		objectName = objectName.substr(0, pos);
 		StaticObject newObject(modelPath);
 		newObject.mat = &sConst->surfaceMat;
 
 		std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
 		std::function<void(UIItem*)> wireFunction = bind(&Application::setObjectWireframe, this, placeholders::_1);
 
-		objectMenu.addObject(visibleFunction, wireFunction);
+		objectMenu.addObject(visibleFunction, wireFunction, objectName);
 		newObject.isVisible = true;
 
 		staticObjects.push_back(newObject);
