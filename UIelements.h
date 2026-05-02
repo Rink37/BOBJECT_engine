@@ -205,11 +205,12 @@ struct UIItem {
 
 class TextBox : public UIItem {
 public:
-	TextBox(font* inFont, float px, float py, float ex, float ey, float fSize = 0.02f, int hArrange = ARRANGE_START) {
+	TextBox(font* inFont, float px, float py, float ex, float ey, float fSize = 0.02f, int hArrange = ARRANGE_START, int vArrange = ARRANGE_START) {
 		setDims(px, py, ex, ey);
 		textFont = inFont;
 		characterSize = fSize;
 		horizontalArrange = hArrange;
+		verticalArrange = vArrange;
 	}
 
 	void updateDisplay();

@@ -372,7 +372,7 @@ public:
 		ObjectMap.insert({ objectButton->Name, ObjectButtons->Items.size() });
 
 		font* objectFont = new font();
-		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 3.0f, 1.0f);
+		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 3.0f, 1.0f, 0.02f, ARRANGE_START, ARRANGE_CENTER);
 		objectName->addText(nameString);
 
 		objButtons->addItem(getPtr(objectName));

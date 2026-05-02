@@ -67,6 +67,22 @@ void TextBox::updateDisplay() {
 	float maxPos_x = posx + extentx;
 	float pos_y = posy - extenty + characterHeight;
 	float maxPos_y = posy + extenty - characterHeight;
+	float vSpacing = characterHeight * 2.0f;
+	int maxLines = static_cast<int>(extenty / characterHeight);
+	float remainingVSpace = 2.0f * extenty - maxLines * characterHeight * 2.0f;
+	switch (verticalArrange) {
+	case (ARRANGE_CENTER):
+		pos_y += remainingVSpace / 2.0f;
+		break;
+	case (ARRANGE_END):
+		pos_y += remainingVSpace;
+		break;
+	case (ARRANGE_FILL):
+		vSpacing = (remainingVSpace > 0)?vSpacing + remainingVSpace / (maxLines - 1) : vSpacing;
+		break;
+	default:
+		break;
+	}
 	float lastSpacePosition = pos_x;
 	bool hideCharacters = false;
 	std::vector<uint32_t> wordIndices{};
@@ -136,7 +152,7 @@ void TextBox::updateDisplay() {
 				break;
 			}
 			pos_x = posx - extentx;
-			pos_y += characterHeight * 2.0f;
+			pos_y += vSpacing;
 			lineIndices.clear();
 			spaceIndices.clear();
 			positions.clear();
