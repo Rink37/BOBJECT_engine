@@ -31,6 +31,10 @@
 #define SLIDER_CONTINUOUS 0
 #define SLIDER_DISCRETE 1
 
+#define SPACE_CHAR 32
+#define TAB_CHAR 9
+#define NEWLINE_CHAR 10
+
 #define PI 3.14159265f
 #define OPF_PI 4.71238898f 
 #define HALF_PI 1.57079632f
@@ -222,20 +226,28 @@ public:
 	}
 
 	void addCharacter(int unicodeCharacter) {
-		if (unicodeCharacter == 32) {
-			fontMesh* newMesh = new fontMesh(33, textFont);
-			float W = static_cast<float>(Engine::get()->windowWidth);
-			float H = static_cast<float>(Engine::get()->windowHeight);
-			newMesh->UpdateVertices(0.0f, 0.0f, characterSize, H / W);
+		fontMesh* newMesh = nullptr;
+		switch (unicodeCharacter) {
+		case (SPACE_CHAR):
+			newMesh = new fontMesh(33, textFont);
 			newMesh->isVisible = false;
-			newMesh->unicodeCharacter = 32;
+			newMesh->unicodeCharacter = SPACE_CHAR;
 			characters.push_back(newMesh);
-		}
-		else {
+			break;
+		case (TAB_CHAR):
+			newMesh = new fontMesh(33, textFont);
+			newMesh->isVisible = false;
+			newMesh->unicodeCharacter = TAB_CHAR;
+			characters.push_back(newMesh);
+			break;
+		case (NEWLINE_CHAR):
+			newMesh = new fontMesh(33, textFont);
+			newMesh->isVisible = false;
+			newMesh->unicodeCharacter = NEWLINE_CHAR;
+			characters.push_back(newMesh);
+			break;
+		default:
 			fontMesh* newMesh = new fontMesh(unicodeCharacter, textFont);
-			float W = static_cast<float>(Engine::get()->windowWidth);
-			float H = static_cast<float>(Engine::get()->windowHeight);
-			newMesh->UpdateVertices(0.0f, 0.0f, characterSize, H / W);
 			characters.push_back(newMesh);
 		}
 		boxText += static_cast<char>(unicodeCharacter);

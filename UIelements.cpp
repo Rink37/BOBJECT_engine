@@ -59,8 +59,6 @@ void UIItem::addItem(UIItem *item) {
 
 void TextBox::updateDisplay() {
 	this->calculateScreenPosition();
-
-	//std::cout << horizontalArrange << " " << verticalArrange << std::endl;
 	
 	float W = static_cast<float>(Engine::get()->windowWidth);
 	float H = static_cast<float>(Engine::get()->windowHeight);
@@ -94,7 +92,12 @@ void TextBox::updateDisplay() {
 			continue;
 		}
 		pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
-		if (mesh->unicodeCharacter != 32 && pos_x > maxPos_x) {
+		if (mesh->unicodeCharacter == NEWLINE_CHAR) {
+			wordIndices.clear();
+			mesh->setVisibility(false);
+			lastSpacePosition = posx - extentx;
+		}
+		if ((mesh->unicodeCharacter != SPACE_CHAR && pos_x > maxPos_x) || mesh->unicodeCharacter == NEWLINE_CHAR) {
 			// New line handling
 			if (lastSpacePosition != posx - extentx) {
 				uint32_t adjustment = 0;
@@ -137,7 +140,6 @@ void TextBox::updateDisplay() {
 						for (int i = spaceIndex - lineIndices[0] + 1; i != lineIndices.size(); i++) {
 							uint32_t index = lineIndices[i];
 							xps[index] += leftSpacing;
-							positions[index - lineIndices[0]] += leftSpacing;
 						}
 					}
 				}
@@ -181,9 +183,15 @@ void TextBox::updateDisplay() {
 				wordIndices.clear();
 			}
 			lastSpacePosition = posx - extentx;
+			if (mesh->unicodeCharacter == NEWLINE_CHAR) {
+				lineIndices.push_back(index);
+				positions.push_back(pos_x);
+				index++;
+				continue;
+			}
 			pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
 		}
-		if (mesh->unicodeCharacter == 32) {
+		if (mesh->unicodeCharacter == SPACE_CHAR) {
 			lastSpacePosition = pos_x;
 			wordIndices.clear();
 			spaceIndices.push_back(index);
