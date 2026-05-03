@@ -323,7 +323,7 @@ public:
 		canvas.push_back(getPtr(buttons));
 
 		font* testFont = new font();
-		TextBox* testTextBox = new TextBox(testFont, 0.0f, 0.0f, 0.3f, 0.2f);
+		TextBox* testTextBox = new TextBox(testFont, 0.0f, 0.0f, 0.3f, 0.2f, 24, ARRANGE_FILL, ARRANGE_FILL);
 		testTextBox->addText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vestibulum aliquet ligula vel dictum. Praesent scelerisque orci at tincidunt placerat. Aliquam et blandit nulla. Nullam consequat ligula vitae massa luctus, et tincidunt felis dictum. Morbi mattis dapibus ante, vitae eleifend ipsum rutrum vitae. Proin in mauris eget metus mattis interdum vel eget nisi. Nulla porta sapien id eros malesuada laoreet. Integer et rhoncus magna, sed ullamcorper elit. Quisque ut massa ut nibh venenatis ultrices ac id tortor. Sed mattis, massa at vestibulum tincidunt, arcu diam vestibulum libero, vel lacinia tortor sapien quis sem. Proin scelerisque pharetra odio, quis congue turpis. Proin arcu leo, blandit quis ex vitae, posuere sollicitudin turpis. Duis ullamcorper sodales dui ac posuere. Pellentesque nibh felis, finibus in elit sed, iaculis fringilla est.");
 		canvas.push_back(getPtr(testTextBox));
 
@@ -372,7 +372,7 @@ public:
 		ObjectMap.insert({ objectButton->Name, ObjectButtons->Items.size() });
 
 		font* objectFont = new font();
-		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 3.0f, 1.0f, 0.02f, ARRANGE_START, ARRANGE_CENTER);
+		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 3.5f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
 		objectName->addText(nameString);
 
 		objButtons->addItem(getPtr(objectName));

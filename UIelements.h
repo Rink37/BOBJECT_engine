@@ -205,7 +205,7 @@ struct UIItem {
 
 class TextBox : public UIItem {
 public:
-	TextBox(font* inFont, float px, float py, float ex, float ey, float fSize = 0.02f, int hArrange = ARRANGE_START, int vArrange = ARRANGE_START) {
+	TextBox(font* inFont, float px, float py, float ex, float ey, uint32_t fSize = 24, int hArrange = ARRANGE_START, int vArrange = ARRANGE_START) {
 		setDims(px, py, ex, ey);
 		textFont = inFont;
 		characterSize = fSize;
@@ -217,12 +217,16 @@ public:
 
 	void calculateScreenPosition();
 
+	bool isArrangement() {
+		return true;
+	}
+
 	void addCharacter(int unicodeCharacter) {
 		if (unicodeCharacter == 32) {
 			fontMesh* newMesh = new fontMesh(33, textFont);
 			float W = static_cast<float>(Engine::get()->windowWidth);
 			float H = static_cast<float>(Engine::get()->windowHeight);
-			newMesh->UpdateVertices(0.0f, 0.0f, characterSize, W / H);
+			newMesh->UpdateVertices(0.0f, 0.0f, characterSize, H / W);
 			newMesh->isVisible = false;
 			newMesh->unicodeCharacter = 32;
 			characters.push_back(newMesh);
@@ -231,7 +235,7 @@ public:
 			fontMesh* newMesh = new fontMesh(unicodeCharacter, textFont);
 			float W = static_cast<float>(Engine::get()->windowWidth);
 			float H = static_cast<float>(Engine::get()->windowHeight);
-			newMesh->UpdateVertices(0.0f, 0.0f, characterSize, W / H);
+			newMesh->UpdateVertices(0.0f, 0.0f, characterSize, H / W);
 			characters.push_back(newMesh);
 		}
 		boxText += static_cast<char>(unicodeCharacter);
@@ -274,7 +278,7 @@ public:
 	std::vector<fontMesh*> characters;
 	font* textFont;
 
-	float characterSize = 0.05f;
+	uint32_t characterSize = 24; // Size in pixels
 
 private:
 	void setDims(float px, float py, float ex, float ey) {
