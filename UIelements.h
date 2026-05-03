@@ -238,12 +238,14 @@ public:
 			newMesh = new fontMesh(33, textFont);
 			newMesh->isVisible = false;
 			newMesh->unicodeCharacter = TAB_CHAR;
+			newMesh->advanceWidth *= 6.0f;
 			characters.push_back(newMesh);
 			break;
 		case (NEWLINE_CHAR):
 			newMesh = new fontMesh(33, textFont);
 			newMesh->isVisible = false;
 			newMesh->unicodeCharacter = NEWLINE_CHAR;
+			newMesh->advanceWidth = 0.0f;
 			characters.push_back(newMesh);
 			break;
 		default:

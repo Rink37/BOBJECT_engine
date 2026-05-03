@@ -97,7 +97,7 @@ void TextBox::updateDisplay() {
 			mesh->setVisibility(false);
 			lastSpacePosition = posx - extentx;
 		}
-		if ((mesh->unicodeCharacter != SPACE_CHAR && pos_x > maxPos_x) || mesh->unicodeCharacter == NEWLINE_CHAR) {
+		if ((mesh->unicodeCharacter != SPACE_CHAR && mesh->unicodeCharacter != TAB_CHAR && pos_x > maxPos_x) || mesh->unicodeCharacter == NEWLINE_CHAR) {
 			// New line handling
 			if (lastSpacePosition != posx - extentx) {
 				uint32_t adjustment = 0;
@@ -111,8 +111,10 @@ void TextBox::updateDisplay() {
 					adjustment++;
 				}
 			}
-			if (spaceIndices[spaceIndices.size() - 1] == lineIndices[lineIndices.size() - 1]) {
-				spaceIndices.erase(spaceIndices.begin() + spaceIndices.size() - 1);
+			if (spaceIndices.size() > 0) {
+				if (spaceIndices[spaceIndices.size() - 1] == lineIndices[lineIndices.size() - 1]) {
+					spaceIndices.erase(spaceIndices.begin() + spaceIndices.size() - 1);
+				}
 			}
 			for (int i = 0; i != positions.size(); i++) {
 				xps.push_back(positions[i]);
@@ -191,7 +193,7 @@ void TextBox::updateDisplay() {
 			}
 			pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
 		}
-		if (mesh->unicodeCharacter == SPACE_CHAR) {
+		if (mesh->unicodeCharacter == SPACE_CHAR || mesh->unicodeCharacter == TAB_CHAR) {
 			lastSpacePosition = pos_x;
 			wordIndices.clear();
 			spaceIndices.push_back(index);
