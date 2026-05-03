@@ -60,7 +60,7 @@ void UIItem::addItem(UIItem *item) {
 void TextBox::updateDisplay() {
 	this->calculateScreenPosition();
 
-	std::cout << horizontalArrange << " " << verticalArrange << std::endl;
+	//std::cout << horizontalArrange << " " << verticalArrange << std::endl;
 	
 	float W = static_cast<float>(Engine::get()->windowWidth);
 	float H = static_cast<float>(Engine::get()->windowHeight);
@@ -74,23 +74,7 @@ void TextBox::updateDisplay() {
 	float pos_y = posy - extenty + characterHeight;
 	float maxPos_y = posy + extenty - characterHeight;
 	float vSpacing = characterHeight * 2.0f;
-	int maxLines = static_cast<int>(extenty / characterHeight);
-	float remainingVSpace = 2.0f * extenty - maxLines * characterHeight * 2.0f;
-	remainingVSpace = (remainingVSpace < 0.0f) ? 0.0f : remainingVSpace;
-	
-	switch (verticalArrange) {
-	case (ARRANGE_CENTER):
-		pos_y += remainingVSpace / 2.0f;
-		break;
-	case (ARRANGE_END):
-		pos_y += remainingVSpace;
-		break;
-	case (ARRANGE_FILL):
-		vSpacing = (remainingVSpace > 0)?vSpacing + remainingVSpace / (maxLines - 1) : vSpacing;
-		break;
-	default:
-		break;
-	}
+	uint32_t maxLines = static_cast<uint32_t>(extenty / characterHeight);
 
 	float lastSpacePosition = pos_x;
 	bool hideCharacters = false;
@@ -98,7 +82,12 @@ void TextBox::updateDisplay() {
 	std::vector<uint32_t> spaceIndices{};
 	std::vector<uint32_t> lineIndices{};
 	std::vector<float> positions{};
+
+	std::vector<float> xps{};
+	std::vector<int> yis{};
+	std::vector<float> lineps = {pos_y};
 	uint32_t index = 0;
+	uint32_t lineIndex = 0;
 	for (fontMesh* mesh : characters) {
 		if (hideCharacters) {
 			mesh->setVisibility(false);
@@ -122,19 +111,23 @@ void TextBox::updateDisplay() {
 			if (spaceIndices[spaceIndices.size() - 1] == lineIndices[lineIndices.size() - 1]) {
 				spaceIndices.erase(spaceIndices.begin() + spaceIndices.size() - 1);
 			}
+			for (int i = 0; i != positions.size(); i++) {
+				xps.push_back(positions[i]);
+				yis.push_back(lineIndex);
+			}
 			float lineWidth = 0, leftSpacing = 0;
 			lineWidth = positions[positions.size() - 1] + characters[lineIndices[lineIndices.size() - 1]]->advanceWidth * scaledCharacterSize;
 			switch (horizontalArrange) {
 			case(ARRANGE_CENTER):
 				leftSpacing = (maxPos_x - lineWidth) / 2.0f;
 				for (uint32_t index : lineIndices) {
-					characters[index]->UpdateVertices(positions[index - lineIndices[0]] + leftSpacing, pos_y, scaledCharacterSize, W / H);
+					xps[index] += leftSpacing;
 				}
 				break;
 			case (ARRANGE_END):
 				leftSpacing = (maxPos_x - lineWidth);
 				for (uint32_t index : lineIndices) {
-					characters[index]->UpdateVertices(positions[index - lineIndices[0]] + leftSpacing, pos_y, scaledCharacterSize, W / H);
+					xps[index] += leftSpacing;
 				}
 				break;
 			case (ARRANGE_FILL):
@@ -143,7 +136,7 @@ void TextBox::updateDisplay() {
 					for (uint32_t spaceIndex : spaceIndices) {
 						for (int i = spaceIndex - lineIndices[0] + 1; i != lineIndices.size(); i++) {
 							uint32_t index = lineIndices[i];
-							characters[index]->UpdateVertices(positions[index - lineIndices[0]] + leftSpacing, pos_y, scaledCharacterSize, W / H);
+							xps[index] += leftSpacing;
 							positions[index - lineIndices[0]] += leftSpacing;
 						}
 					}
@@ -152,7 +145,7 @@ void TextBox::updateDisplay() {
 					leftSpacing = (maxPos_x - lineWidth) / lineIndices.size();
 					float totalSpacing = 0.0f;
 					for (uint32_t index : lineIndices) {
-						characters[index]->UpdateVertices(positions[index - lineIndices[0]] + totalSpacing, pos_y, scaledCharacterSize, W / H);
+						xps[index] += totalSpacing;
 						totalSpacing += leftSpacing;
 					}
 				}
@@ -162,6 +155,8 @@ void TextBox::updateDisplay() {
 			}
 			pos_x = posx - extentx;
 			pos_y += vSpacing;
+			lineIndex++;
+			lineps.push_back(pos_y);
 			lineIndices.clear();
 			spaceIndices.clear();
 			positions.clear();
@@ -178,7 +173,6 @@ void TextBox::updateDisplay() {
 					else {
 						pos_x += scaledCharacterSize * characters[meshRef]->advanceWidth * 1.2f;
 						positions.push_back(pos_x);
-						characters[meshRef]->UpdateVertices(pos_x, pos_y, scaledCharacterSize, W / H);
 						pos_x += scaledCharacterSize * characters[meshRef]->advanceWidth * 1.2f;
 					}
 				}
@@ -200,9 +194,43 @@ void TextBox::updateDisplay() {
 		}
 		lineIndices.push_back(index);
 		positions.push_back(pos_x);
-		mesh->UpdateVertices(pos_x, pos_y, scaledCharacterSize, W / H);
 		pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
 		index++;
+	}
+	for (int i = 0; i != positions.size(); i++) {
+		xps.push_back(positions[i]);
+		yis.push_back(lineIndex);
+	}
+	lineIndex++;
+	lineIndex = (lineIndex > maxLines) ? maxLines : lineIndex;
+		
+	float remainingVSpace = 2.0f * extenty - lineIndex * characterHeight * 2.0f;
+	remainingVSpace = (remainingVSpace < 0.0f) ? 0.0f : remainingVSpace;
+
+	switch (verticalArrange) {
+	case (ARRANGE_CENTER):
+		remainingVSpace /= 2.0f;
+		for (int i = 0; i != lineps.size(); i++) {
+			lineps[i] += remainingVSpace;
+		}
+		break;
+	case (ARRANGE_END):
+		for (int i = 0; i != lineps.size(); i++) {
+			lineps[i] += remainingVSpace;
+		}
+		break;
+	case (ARRANGE_FILL):
+		vSpacing = remainingVSpace / (lineIndex - 1);
+		for (int i = 0; i != lineps.size(); i++) {
+			lineps[i] += vSpacing * i;
+		}
+		break;
+	default:
+		break;
+	}
+	float factor = W / H;
+	for (uint32_t i = 0; i != xps.size(); i++) {
+		characters[i]->UpdateVertices(xps[i], lineps[yis[i]], scaledCharacterSize, factor);
 	}
 }
 

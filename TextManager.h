@@ -58,6 +58,8 @@ public:
 	float sqAxisRatio = 0.0f;
 	float advanceWidth = 1.0f;
 
+	float xpos = 0.0f;
+
 	bool isVisible = true;
 
 	font* fontRef;
