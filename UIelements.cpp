@@ -74,7 +74,10 @@ void TextBox::updateDisplay() {
 	float vSpacing = characterHeight * 2.0f;
 	uint32_t maxLines = static_cast<uint32_t>(extenty / characterHeight);
 
-	float lastSpacePosition = pos_x;
+	float lineWidth = 0.0f;
+	float maxLineWidth = 2.0f * extentx;
+
+	//float lastSpacePosition = pos_x;
 	bool hideCharacters = false;
 	std::vector<uint32_t> wordIndices{};
 	std::vector<uint32_t> spaceIndices{};
@@ -91,126 +94,124 @@ void TextBox::updateDisplay() {
 			mesh->setVisibility(false);
 			continue;
 		}
-		pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
-		if (mesh->unicodeCharacter == NEWLINE_CHAR) {
-			wordIndices.clear();
-			mesh->setVisibility(false);
-			lastSpacePosition = posx - extentx;
-		}
-		if ((mesh->unicodeCharacter != SPACE_CHAR && mesh->unicodeCharacter != TAB_CHAR && pos_x > maxPos_x) || mesh->unicodeCharacter == NEWLINE_CHAR) {
+
+		lineWidth += scaledCharacterSize * mesh->advanceWidth * 2.4f;
+
+		bool isBlank = (mesh->unicodeCharacter == SPACE_CHAR || mesh->unicodeCharacter == TAB_CHAR); // We will want to ignore cases where a spacebar causes an overlap at the edge
+
+		if (lineWidth >= maxLineWidth || mesh->unicodeCharacter == NEWLINE_CHAR) {
 			// New line handling
-			if (lastSpacePosition != posx - extentx) {
-				uint32_t adjustment = 0;
-				for (uint32_t meshRef : wordIndices) {
-					uint32_t eraseIndex = meshRef - lineIndices[0] - adjustment;
-					if (eraseIndex >= lineIndices.size()) {
-						continue;
+			float leftSpacing = 0.0f;
+
+			if (isBlank || mesh->unicodeCharacter == NEWLINE_CHAR) {
+				for (uint32_t wIndex : wordIndices) {
+					lineIndices.push_back(wIndex);
+				}
+				wordIndices.clear();
+			}
+
+			if (lineIndices.size() > 0) {
+				uint32_t lastCharacterIndex = lineIndices[lineIndices.size() - 1];
+				lineWidth = xps[lastCharacterIndex] + scaledCharacterSize * characters[lastCharacterIndex]->advanceWidth * 1.2f;
+
+				switch (horizontalArrange) {
+				case(ARRANGE_CENTER):
+					leftSpacing = (maxPos_x - lineWidth) / 2.0f;
+					for (uint32_t index : lineIndices) {
+						xps[index] += leftSpacing;
 					}
-					lineIndices.erase(lineIndices.begin() + eraseIndex);
-					positions.erase(positions.begin() + eraseIndex);
-					adjustment++;
-				}
-			}
-			if (spaceIndices.size() > 0) {
-				if (spaceIndices[spaceIndices.size() - 1] == lineIndices[lineIndices.size() - 1]) {
-					spaceIndices.erase(spaceIndices.begin() + spaceIndices.size() - 1);
-				}
-			}
-			for (int i = 0; i != positions.size(); i++) {
-				xps.push_back(positions[i]);
-				yis.push_back(lineIndex);
-			}
-			float lineWidth = 0, leftSpacing = 0;
-			lineWidth = positions[positions.size() - 1] + characters[lineIndices[lineIndices.size() - 1]]->advanceWidth * scaledCharacterSize;
-			switch (horizontalArrange) {
-			case(ARRANGE_CENTER):
-				leftSpacing = (maxPos_x - lineWidth) / 2.0f;
-				for (uint32_t index : lineIndices) {
-					xps[index] += leftSpacing;
-				}
-				break;
-			case (ARRANGE_END):
-				leftSpacing = (maxPos_x - lineWidth);
-				for (uint32_t index : lineIndices) {
-					xps[index] += leftSpacing;
-				}
-				break;
-			case (ARRANGE_FILL):
-				if (spaceIndices.size() > 0) {
-					leftSpacing = (maxPos_x - lineWidth) / spaceIndices.size();
-					for (uint32_t spaceIndex : spaceIndices) {
-						for (int i = spaceIndex - lineIndices[0] + 1; i != lineIndices.size(); i++) {
-							uint32_t index = lineIndices[i];
-							xps[index] += leftSpacing;
+					break;
+				case (ARRANGE_END):
+					leftSpacing = (maxPos_x - lineWidth);
+					for (uint32_t index : lineIndices) {
+						xps[index] += leftSpacing;
+					}
+					break;
+				case (ARRANGE_FILL):
+					if (spaceIndices.size() > 0) {
+						leftSpacing = (maxPos_x - lineWidth) / spaceIndices.size();
+						for (uint32_t spaceIndex : spaceIndices) {
+							for (uint32_t i = spaceIndex; i != lineIndices[lineIndices.size() - 1] + 1; i++) {
+								xps[i] += leftSpacing;
+							}
 						}
 					}
-				}
-				else {
-					leftSpacing = (maxPos_x - lineWidth) / lineIndices.size();
-					float totalSpacing = 0.0f;
-					for (uint32_t index : lineIndices) {
-						xps[index] += totalSpacing;
-						totalSpacing += leftSpacing;
+					else {
+						leftSpacing = (maxPos_x - lineWidth) / (lineIndices.size() - 1);
+						float totalSpacing = 0.0f;
+						for (uint32_t index : lineIndices) {
+							xps[index] += totalSpacing;
+							totalSpacing += leftSpacing;
+						}
 					}
+					break;
+				default:
+					break;
 				}
-				break;
-			default:
-				break;
 			}
+			
 			pos_x = posx - extentx;
 			pos_y += vSpacing;
 			lineIndex++;
 			lineps.push_back(pos_y);
 			lineIndices.clear();
 			spaceIndices.clear();
-			positions.clear();
+			lineWidth = 0.0f;
 			if (pos_y > maxPos_y) {
 				hideCharacters = true;
+			}
+
+			//std::cout << "Updating last word" << std::endl;
+
+			if (mesh->unicodeCharacter == NEWLINE_CHAR || isBlank) {
+				xps.push_back(pos_x);
+				yis.push_back(lineIndex);
 				mesh->setVisibility(false);
 			}
-			if (lastSpacePosition != posx - extentx){
-				for (uint32_t meshRef : wordIndices) {
-					lineIndices.push_back(meshRef);
-					if (hideCharacters) {
-						characters[meshRef]->setVisibility(false);
-					}
-					else {
-						pos_x += scaledCharacterSize * characters[meshRef]->advanceWidth * 1.2f;
-						positions.push_back(pos_x);
-						pos_x += scaledCharacterSize * characters[meshRef]->advanceWidth * 1.2f;
-					}
-				}
-			}
 			else {
-				wordIndices.clear();
+				for (uint32_t meshRef : wordIndices) {
+					characters[meshRef]->setVisibility(!hideCharacters);
+					pos_x += scaledCharacterSize * characters[meshRef]->advanceWidth * 1.2f;
+					xps[meshRef] = pos_x;
+					yis[meshRef] = lineIndex;
+					pos_x += scaledCharacterSize * characters[meshRef]->advanceWidth * 1.2f;
+				}
+				wordIndices.push_back(index);
+				mesh->setVisibility(!hideCharacters);
+				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+				xps.push_back(pos_x);
+				yis.push_back(lineIndex);
+				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+				lineWidth = pos_x - (posx - extentx);
 			}
-			lastSpacePosition = posx - extentx;
-			if (mesh->unicodeCharacter == NEWLINE_CHAR) {
-				lineIndices.push_back(index);
-				positions.push_back(pos_x);
-				index++;
-				continue;
-			}
-			pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
-		}
-		if (mesh->unicodeCharacter == SPACE_CHAR || mesh->unicodeCharacter == TAB_CHAR) {
-			lastSpacePosition = pos_x;
-			wordIndices.clear();
-			spaceIndices.push_back(index);
+			std::cout << "Successfully updated word" << std::endl;
 		}
 		else {
-			wordIndices.push_back(index);
-			mesh->setVisibility(!hideCharacters);
+			if (isBlank) {
+				for (uint32_t wIndex : wordIndices) {
+					lineIndices.push_back(wIndex);
+				}
+				wordIndices.clear();
+				spaceIndices.push_back(index);
+				lineIndices.push_back(index);
+				mesh->setVisibility(false);
+				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+				xps.push_back(pos_x);
+				yis.push_back(lineIndex);
+				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+			}
+			else {
+				wordIndices.push_back(index);
+				mesh->setVisibility(!hideCharacters);
+				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+				xps.push_back(pos_x);
+				yis.push_back(lineIndex);
+				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+			}
 		}
-		lineIndices.push_back(index);
-		positions.push_back(pos_x);
-		pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
 		index++;
 	}
-	for (int i = 0; i != positions.size(); i++) {
-		xps.push_back(positions[i]);
-		yis.push_back(lineIndex);
-	}
+
 	lineIndex++;
 	lineIndex = (lineIndex > maxLines) ? maxLines : lineIndex;
 		
