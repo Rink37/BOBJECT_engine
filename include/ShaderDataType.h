@@ -47,9 +47,6 @@ struct shaderData{
 
     bool isWireframe = false;
     uint8_t type = MESH_SHADER;
-
-    //std::map<std::string, int> bindingMap;
-    //std::vector<bool> bindingDirections;
 };
 
 #endif

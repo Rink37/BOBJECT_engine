@@ -106,8 +106,6 @@ struct UIItem {
 	virtual void update(float x, float y, float xsize, float ysize) {
 		this->posx = x;
 		this->posy = y;
-		//this->anchorx = x;
-		//this->anchory = y;
 
 		this->extentx = xsize;
 		this->extenty = ysize;
@@ -390,7 +388,7 @@ public:
 			this->calculateScreenPosition();
 			UVextentx = extentx * sf;
 			if (image != nullptr) {
-				image->UpdateVertices(posx, posy, extentx*sf, extenty);
+				image->UpdateVertices(posx, posy, UVextentx, extenty);
 			}
 		}
 		else {
@@ -402,6 +400,21 @@ public:
 	}
 
 	ImagePanel() = default;
+
+	void setDims(float px, float py, float ex, float ey) {
+		this->posx = px;
+		this->posy = -1.0f * py;
+		this->anchorx = this->posx;
+		this->anchory = this->posy;
+		this->extentx = ex;
+		this->extenty = ey;
+
+		this->sqAxisRatio = ey / ex;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
+	}
 
 	float UVextentx = 0.0f;
 };

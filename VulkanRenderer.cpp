@@ -478,11 +478,11 @@ public:
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
 
-		Engine::get()->createRenderPass(testGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-		test = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, testGP.renderPass);
-		Engine::get()->createGraphicsPipelines(testGP);
+		Engine::get()->createRenderPass(renderGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		renderImage = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, renderGP.renderPass);
+		Engine::get()->createGraphicsPipelines(renderGP);
 
-		currentPass = &testGP;
+		currentPass = &renderGP;
 
 		updateColourScheme();
 		updateLightAzimuth(0.0f);
@@ -513,12 +513,10 @@ private:
 	RemapUI remapMenu = RemapUI(&UIElements, sConst);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
 
-	//UIItem* UITestImage = nullptr;
-
 	vector<Widget*> widgets;
 
-	drawImage test;
-	GraphicsPass testGP;
+	drawImage renderImage;
+	GraphicsPass renderGP;
 	GraphicsPass* currentPass = nullptr;
 
 	bool mouseDown = false;
@@ -1091,8 +1089,8 @@ private:
 			widgets[i]->cleanup();
 		}
 
-		test.cleanup(Engine::get()->device);
-		testGP.cleanup(Engine::get()->device);
+		renderImage.cleanup(Engine::get()->device);
+		renderGP.cleanup(Engine::get()->device);
 
 		sConst->cleanup();
 		engine->cleanup();
@@ -1117,7 +1115,7 @@ private:
 			}	
 
 			engine->recreateSwapChain();
-			engine->recreateDrawImage(&test);
+			engine->recreateDrawImage(&renderImage);
 			
 			return;
 		}
@@ -1172,7 +1170,7 @@ private:
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, GraphicsPass* currentPass, uint32_t imageIndex) {
 		uint32_t currentFrame = engine->currentFrame;
 
-		engine->beginRenderPass(commandBuffer, currentPass, &test, imageIndex, backgroundColour);
+		engine->beginRenderPass(commandBuffer, currentPass, &renderImage, imageIndex, backgroundColour);
 
 		if (showWireframe) {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UVWireframe")]);
@@ -1216,7 +1214,7 @@ private:
 
 		// Post-processing can be put here
 
-		Engine::get()->copyImageToSwapchain(commandBuffer, &test, imageIndex);
+		Engine::get()->copyImageToSwapchain(commandBuffer, &renderImage, imageIndex);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw runtime_error("failed to record command buffer!");
