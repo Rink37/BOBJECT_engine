@@ -64,22 +64,22 @@ const void Mesh::cleanup() {
 	cleaned = true;
 }
 
-void UIMesh::UpdateVertices(float xp, float yp, float xsc, float ysc) {
+void UIMesh::UpdateVertices(float xp, float yp, float xsc, float ysc, float zp) {
 	vertices.clear();
 
 	Vertex vertex{};
 
-	vertex.pos = { -xsc + xp, yp - ysc, 0.0f };
+	vertex.pos = { -xsc + xp, yp - ysc, zp };
 	vertex.normal = { 0.0f, 0.0f, 0.0f };
 	vertex.texCoord = { 0.0f, 0.0f };
 	vertices.push_back(vertex);
-	vertex.pos = { xsc + xp, yp - ysc, 0.0f };
+	vertex.pos = { xsc + xp, yp - ysc, zp };
 	vertex.texCoord = { 1.0f, 0.0f };
 	vertices.push_back(vertex);
-	vertex.pos = { xsc + xp, yp + ysc, 0.0f };
+	vertex.pos = { xsc + xp, yp + ysc, zp };
 	vertex.texCoord = { 1.0f, 1.0f };
 	vertices.push_back(vertex);
-	vertex.pos = { -xsc + xp, yp + ysc, 0.0f };
+	vertex.pos = { -xsc + xp, yp + ysc, zp };
 	vertex.texCoord = { 0.0f, 1.0f };
 	vertices.push_back(vertex);
 

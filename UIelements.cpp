@@ -6,11 +6,11 @@ void UIImage::UpdateVertices(float xp, float yp, float xsc, float ysc) {
 	mesh.UpdateVertices(xp, yp, xsc, ysc);
 }
 
-void bufferPosition(float &extentx, float &extenty, float &posx, float &posy, float brx, float bry) {
+void bufferPosition(float &extentx, float &extenty, float &posx, float &posy, float brx, float bry, float ax, float ay) {
 	
 	float minx, maxx;
-	minx = posx - extentx;
-	maxx = posx + extentx;
+	minx = ax - extentx;
+	maxx = ax + extentx;
 	// x coordinates are described by -1 -> 1 = left to right
 
 	if (minx < -1 + brx) {
@@ -19,10 +19,13 @@ void bufferPosition(float &extentx, float &extenty, float &posx, float &posy, fl
 	else if (maxx > 1 - brx) {
 		posx = 1 - brx - extentx;
 	}
+	else {
+		posx = ax;
+	}
 
 	float miny, maxy;
-	miny = posy - extenty;
-	maxy = posy + extenty;
+	miny = ay - extenty;
+	maxy = ay + extenty;
 	// y coordinates are described by -1 -> 1 = top to bottom
 
 	if (miny < -1 + bry) {
@@ -30,6 +33,9 @@ void bufferPosition(float &extentx, float &extenty, float &posx, float &posy, fl
 	}
 	else if (maxy > 1 - bry) {
 		posy = 1 - bry - extenty;
+	}
+	else {
+		posy = ay;
 	}
 }
 
@@ -44,7 +50,7 @@ void UIItem::calculateScreenPosition() {
 	bufferRatioX = static_cast<float>(buffer) / (2 * W);
 	bufferRatioY = static_cast<float>(buffer) / (2 * H);
 
-	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY);
+	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY, anchorx, anchory);
 
 	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // left position
 	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // right position
@@ -184,7 +190,7 @@ void TextBox::updateDisplay() {
 				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
 				lineWidth = pos_x - (posx - extentx);
 			}
-			std::cout << "Successfully updated word" << std::endl;
+			//std::cout << "Successfully updated word" << std::endl;
 		}
 		else {
 			if (isBlank) {
@@ -254,7 +260,7 @@ void TextBox::calculateScreenPosition() {
 	bufferRatioX = static_cast<float>(buffer) / (2 * W);
 	bufferRatioY = static_cast<float>(buffer) / (2 * H);
 
-	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY);
+	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY, anchorx, anchory);
 
 	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W;
 	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W;
@@ -271,7 +277,7 @@ void Arrangement::calculateScreenPosition() {
 	bufferRatioX = static_cast<float>(buffer) / (2 * W);
 	bufferRatioY = static_cast<float>(buffer) / (2 * H);
 
-	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY);
+	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY, anchorx, anchory);
 
 	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W;
 	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W;
@@ -496,7 +502,7 @@ void Arrangement::calculateVPositions(float ybuffer, float spacerSize, float sca
 			}
 			
 
-			Items[i]->update(xp, yp, xsc, ysc);
+			Items[i]->updateArrangedPosition(xp, yp, xsc, ysc);
 			Items[i]->updateDisplay();
 			Items[i]->arrangeItems();
 
@@ -556,7 +562,7 @@ void Arrangement::calculateHPositions(float xbuffer, float spacerSize, float sca
 				ysc = this->extenty * (1.0f - this->spacing);
 			}
 
-			Items[i]->update(xp, yp, xsc, ysc);
+			Items[i]->updateArrangedPosition(xp, yp, xsc, ysc);
 			Items[i]->updateDisplay();
 			Items[i]->arrangeItems();
 
@@ -618,7 +624,7 @@ void Grid::calculateScreenPosition() {
 	bufferRatioX = static_cast<float>(buffer) / (2 * W);
 	bufferRatioY = static_cast<float>(buffer) / (2 * H);
 
-	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY);
+	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY, anchorx, anchory);
 
 	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W;
 	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W;
@@ -690,7 +696,7 @@ void Slider::calculateScreenPosition() {
 	bufferRatioX = static_cast<float>(buffer) / (2 * W);
 	bufferRatioY = static_cast<float>(buffer) / (2 * H);
 
-	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY);
+	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY, anchorx, anchory);
 
 	switch (orientation) {
 	case (ORIENT_HORIZONTAL):
@@ -756,7 +762,7 @@ void Rotator::calculateScreenPosition() {
 	bufferRatioX = static_cast<float>(buffer) / (2 * W);
 	bufferRatioY = static_cast<float>(buffer) / (2 * H);
 
-	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY);
+	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY, anchorx, anchory);
 
 	float theta = OPF_PI - (2 * PI * slideValue);
 

@@ -106,8 +106,8 @@ struct UIItem {
 	virtual void update(float x, float y, float xsize, float ysize) {
 		this->posx = x;
 		this->posy = y;
-		this->anchorx = x;
-		this->anchory = y;
+		//this->anchorx = x;
+		//this->anchory = y;
 
 		this->extentx = xsize;
 		this->extenty = ysize;
@@ -121,6 +121,32 @@ struct UIItem {
 			this->sqAxisRatio = ysize / xsize;
 		}
 	};
+
+	virtual void setDims(float px, float py, float ex, float ey) {
+		this->posx = px;
+		this->posy = -1.0f * py;
+		this->anchorx = this->posx;
+		this->anchory = this->posy;
+		this->extentx = ex;
+		this->extenty = ey;
+
+		this->sqAxisRatio = ey / ex;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
+	}
+
+	virtual void updateArrangedPosition(float px, float py, float ex, float ey) {
+		this->posx = px;
+		this->posy = py;
+		this->anchorx = this->posx;
+		this->anchory = this->posy;
+		this->extentx = ex;
+		this->extenty = ey;
+
+		this->sqAxisRatio = ey / ex;
+	}
 
 	virtual void updateDisplay() {
 		this->calculateScreenPosition();
@@ -225,7 +251,7 @@ public:
 		return true;
 	}
 
-	void addCharacter(int unicodeCharacter) {
+	void createCharacter(int unicodeCharacter) {
 		fontMesh* newMesh = nullptr;
 		switch (unicodeCharacter) {
 		case (SPACE_CHAR):
@@ -256,12 +282,10 @@ public:
 	}
 
 	void addText(std::string text) {
-		//boxText += text;
 		for (int i = 0; i != text.size(); i++) {
-			addCharacter(text[i]);
+			createCharacter(text[i]);
 		}
 		updateDisplay();
-		std::cout << boxText << std::endl;
 	}
 
 	VkCommandBuffer draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
@@ -295,20 +319,6 @@ public:
 	uint32_t characterSize = 24; // Size in pixels
 
 private:
-	void setDims(float px, float py, float ex, float ey) {
-		this->posx = px;
-		this->posy = -1.0f * py;
-		this->anchorx = px;
-		this->anchory = py;
-		this->extentx = ex;
-		this->extenty = ey;
-
-		this->sqAxisRatio = ey / ex;
-
-		baseExtentx = extentx;
-		baseExtenty = extenty;
-		baseSqAxisRatio = sqAxisRatio;
-	}
 
 	std::string boxText = "";
 
@@ -322,7 +332,7 @@ public:
 	bool isWebcam;
 
 	ImagePanel(Material* surf, bool iW) {
-		update(0.0f, 0.0f, 1.0f, 1.0f);
+		setDims(0.0f, 0.0f, 1.0f, 1.0f);
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(surf);
@@ -344,7 +354,7 @@ public:
 	}
 	
 	ImagePanel(float x, float y, float xsize, float ysize, Material* surf, bool iW) {
-		update(x, -1.0f * y, xsize, ysize);
+		setDims(x, y, xsize, ysize);
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(surf);
@@ -696,8 +706,8 @@ private:
 	void setDims(float px, float py, float ex, float ey, float spc) {
 		this->posx = px;
 		this->posy = -1.0f * py;
-		this->anchorx = px;
-		this->anchory = py;
+		this->anchorx = this->posx;
+		this->anchory = this->posy;
 		this->extentx = ex;
 		this->extenty = ey;
 		this->spacing = spc;
@@ -796,8 +806,8 @@ private:
 	void setDims(float px, float py, float ex, float ey, float spc) {
 		this->posx = px;
 		this->posy = -1.0f * py;
-		this->anchorx = px;
-		this->anchory = py;
+		this->anchorx = this->posx;
+		this->anchory = this->posy;
 		this->extentx = ex;
 		this->extenty = ey;
 		this->spacing = spc;
@@ -823,7 +833,7 @@ public:
 	Slider() = default;
 	
 	Slider(Material* mat, float xp, float yp, float xs, float ys) {
-		update(xp, yp, xs, ys);
+		setDims(xp, yp, xs, ys);
 		
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(mat);
@@ -847,7 +857,7 @@ public:
 	}
 
 	Slider(int orient, Material* mat, float xp, float yp, float xs, float ys) {
-		update(xp, yp, xs, ys);
+		setDims(xp, yp, xs, ys);
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(mat);
@@ -1029,8 +1039,8 @@ public:
 	void update(float x, float y, float xsize, float ysize) {
 		this->posx = x;
 		this->posy = y;
-		this->anchorx = x;
-		this->anchory = y;
+		//this->anchorx = x;
+		//this->anchory = y;
 
 		this->extentx = xsize;
 		this->extenty = ysize;
@@ -1069,7 +1079,7 @@ public:
 	Rotator() = default;
 
 	Rotator(Material* mat, float xp, float yp, float xs, float ys) {
-		update(xp, yp, xs, ys);
+		setDims(xp, yp, xs, ys);
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(mat);
@@ -1214,8 +1224,8 @@ public:
 	void update(float x, float y, float xsize, float ysize) {
 		this->posx = x;
 		this->posy = y;
-		this->anchorx = x;
-		this->anchory = y;
+		//this->anchorx = x;
+		//this->anchory = y;
 
 		ysize *= W / H;
 
@@ -1243,7 +1253,7 @@ private:
 	float sliderWidth = 0.05f;
 	float radius = 100.0f;
 
-	float a, b, e = 0.0f;
+	float a = 0.0f, b = 0.0f, e = 0.0f;
 
 	float W = static_cast<float>(Engine::get()->windowWidth);
 	float H = static_cast<float>(Engine::get()->windowHeight);
