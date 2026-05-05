@@ -9,6 +9,7 @@ const std::vector<unsigned char> WFragData = { 0x03, 0x02, 0x23, 0x07, 0x00, 0x0
 const uint8_t WType = MESH_SHADER;
 const bool WWireframe = true;
 
+const std::vector<shaderIOValue> WIO = {shaderIOValue("UniformBufferObject", 1, true)};
 #endif
 
 #ifndef WSHADER

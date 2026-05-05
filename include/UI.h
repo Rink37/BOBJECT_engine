@@ -9,6 +9,7 @@ const std::vector<unsigned char> UIFragData = { 0x03, 0x02, 0x23, 0x07, 0x00, 0x
 const uint8_t UIType = MESH_SHADER;
 const bool UIWireframe = false;
 
+const std::vector<shaderIOValue> UIIO = {shaderIOValue("UniformBufferObject", 1, true), shaderIOValue("Texture", 0, true)};
 #endif
 
 #ifndef UISHADER

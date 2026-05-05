@@ -1,0 +1,3 @@
+IN 1 "UniformBufferObject"
+IN 0 "DiffTex"
+IN 0 "OSNormTex"

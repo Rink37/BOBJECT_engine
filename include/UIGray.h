@@ -9,6 +9,7 @@ const std::vector<unsigned char> UIGrayFragData = { 0x03, 0x02, 0x23, 0x07, 0x00
 const uint8_t UIGrayType = MESH_SHADER;
 const bool UIGrayWireframe = false;
 
+const std::vector<shaderIOValue> UIGrayIO = {shaderIOValue("UniformBufferObject", 1, true), shaderIOValue("Texture", 0, true)};
 #endif
 
 #ifndef UIGRAYSHADER
