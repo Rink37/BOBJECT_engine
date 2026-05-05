@@ -11,5 +11,5 @@ const std::vector<shaderIOValue> CoordIterativeAveragerIO = {shaderIOValue("norm
 #endif
 
 #ifndef COORDITERATIVEAVERAGERSHADER
-#define COORDITERATIVEAVERAGERSHADER shaderData( CoordIterativeAveragerCompData, CoordIterativeAveragerWireframe, CoordIterativeAveragerIO )
+#define COORDITERATIVEAVERAGERSHADER shaderData( &CoordIterativeAveragerCompData, CoordIterativeAveragerWireframe, CoordIterativeAveragerIO )
 #endif

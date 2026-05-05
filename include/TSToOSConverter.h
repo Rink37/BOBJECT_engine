@@ -12,5 +12,5 @@ const bool TSToOSConverterWireframe = false;
 #endif
 
 #ifndef TSTOOSCONVERTERSHADER
-#define TSTOOSCONVERTERSHADER shaderData( TSToOSConverterFragData, TSToOSConverterVertData, TSToOSConverterWireframe )
+#define TSTOOSCONVERTERSHADER shaderData( &TSToOSConverterFragData, &TSToOSConverterVertData, TSToOSConverterWireframe )
 #endif

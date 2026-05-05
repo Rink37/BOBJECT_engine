@@ -236,12 +236,12 @@ void compileAndWriteShaders(string basepath, string shadername, bool wireframe, 
 
 	out << string("#ifndef ") + capShaderName + string("SHADER\n");
 	if (compData.size() == 0){
-		out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("FragData, ")+shadername+string("VertData, ")+shadername+string("Wireframe )\n");
+		out << string("#define ") + capShaderName + string("SHADER shaderData( &")+shadername+string("FragData, &")+shadername+string("VertData, ")+shadername+string("Wireframe )\n");
 	} else {
 		if (isHelperAvailable){
-			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("CompData, ")+shadername+string("Wireframe, ") + shadername + string("IO )\n");
+			out << string("#define ") + capShaderName + string("SHADER shaderData( &")+shadername+string("CompData, ")+shadername+string("Wireframe, ") + shadername + string("IO )\n");
 		} else {
-			out << string("#define ") + capShaderName + string("SHADER shaderData( ")+shadername+string("CompData, ")+shadername+string("Wireframe )\n");
+			out << string("#define ") + capShaderName + string("SHADER shaderData( &")+shadername+string("CompData, ")+shadername+string("Wireframe )\n");
 		}
 	}
 

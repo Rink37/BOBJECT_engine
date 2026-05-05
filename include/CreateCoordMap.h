@@ -11,5 +11,5 @@ const std::vector<shaderIOValue> CreateCoordMapIO = {shaderIOValue("baseImage", 
 #endif
 
 #ifndef CREATECOORDMAPSHADER
-#define CREATECOORDMAPSHADER shaderData( CreateCoordMapCompData, CreateCoordMapWireframe, CreateCoordMapIO )
+#define CREATECOORDMAPSHADER shaderData( &CreateCoordMapCompData, CreateCoordMapWireframe, CreateCoordMapIO )
 #endif

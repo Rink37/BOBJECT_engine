@@ -141,8 +141,8 @@ void NormalGen::createTSPipeline() {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-	auto VertShaderCode = sD->vertData;
-	auto FragShaderCode = sD->fragData;
+	auto VertShaderCode = *(sD->vertData);
+	auto FragShaderCode = *(sD->fragData);
 
 	VkShaderModule VertShaderModule = Engine::get()->createShaderModule(VertShaderCode);
 	VkShaderModule FragShaderModule = Engine::get()->createShaderModule(FragShaderCode);
@@ -455,8 +455,8 @@ void NormalGen::createOSPipeline() {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-	auto VertShaderCode = sD->vertData;
-	auto FragShaderCode = sD->fragData;
+	auto VertShaderCode = *(sD->vertData);
+	auto FragShaderCode = *(sD->fragData);
 
 	VkShaderModule VertShaderModule = Engine::get()->createShaderModule(VertShaderCode);
 	VkShaderModule FragShaderModule = Engine::get()->createShaderModule(FragShaderCode);

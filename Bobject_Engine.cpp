@@ -593,8 +593,8 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 
 		VkPipeline* CurrentPipeline = new VkPipeline;
 
-		std::vector<unsigned char> VertShaderCode = sd->vertData;
-		std::vector<unsigned char> FragShaderCode = sd->fragData;
+		std::vector<unsigned char> VertShaderCode = *(sd->vertData);
+		std::vector<unsigned char> FragShaderCode = *(sd->fragData);
 
 		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
 		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode); 

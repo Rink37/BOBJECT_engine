@@ -19,29 +19,29 @@ struct shaderIOValue {
 };
 
 struct shaderData{
-    shaderData(std::vector<unsigned char> f, std::vector<unsigned char> v, bool w){
+    shaderData(const std::vector<unsigned char>* f, const std::vector<unsigned char>* v, bool w){
         fragData = f;
         vertData = v;
         isWireframe = w;
         type = MESH_SHADER;
     }
 
-    shaderData(std::vector<unsigned char> c, bool w) {
+    shaderData(const std::vector<unsigned char>* c, bool w) {
         compData = c;
         isWireframe = w;
         type = COMP_SHADER;
     }
 
-    shaderData(std::vector<unsigned char> c, bool w, std::vector<shaderIOValue> IOvalues) {
+    shaderData(const std::vector<unsigned char>* c, bool w, std::vector<shaderIOValue> IOvalues) {
         compData = c;
         isWireframe = w;
         type = COMP_SHADER;
         IO = IOvalues;
     }
 
-    std::vector<unsigned char> fragData;
-    std::vector<unsigned char> vertData;
-    std::vector<unsigned char> compData;
+    const std::vector<unsigned char>* fragData = nullptr;
+    const std::vector<unsigned char>* vertData = nullptr;
+    const std::vector<unsigned char>* compData = nullptr;
 
     std::vector<shaderIOValue> IO;
 

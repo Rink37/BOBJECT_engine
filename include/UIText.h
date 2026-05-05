@@ -13,5 +13,5 @@ const std::vector<shaderIOValue> UITextIO = {shaderIOValue("UniformBufferObject"
 #endif
 
 #ifndef UITEXTSHADER
-#define UITEXTSHADER shaderData( UITextFragData, UITextVertData, UITextWireframe )
+#define UITEXTSHADER shaderData( &UITextFragData, &UITextVertData, UITextWireframe )
 #endif

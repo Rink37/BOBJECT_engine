@@ -13,5 +13,5 @@ const std::vector<shaderIOValue> OS_BFIO = {shaderIOValue("UniformBufferObject",
 #endif
 
 #ifndef OS_BFSHADER
-#define OS_BFSHADER shaderData( OS_BFFragData, OS_BFVertData, OS_BFWireframe )
+#define OS_BFSHADER shaderData( &OS_BFFragData, &OS_BFVertData, OS_BFWireframe )
 #endif

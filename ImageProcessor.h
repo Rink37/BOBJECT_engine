@@ -22,7 +22,7 @@ public:
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
 
-		filterShaderModule = Engine::get()->createShaderModule(sd->compData);
+		filterShaderModule = Engine::get()->createShaderModule(*(sd->compData));
 
 		for (int i = 0; i != outputImageCount; i++) {
 			createFilterTarget();
@@ -43,7 +43,7 @@ public:
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
 
-		filterShaderModule = Engine::get()->createShaderModule(sd->compData);
+		filterShaderModule = Engine::get()->createShaderModule(*(sd->compData));
 
 		targetFormat = outFormat;
 
@@ -70,7 +70,7 @@ public:
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
 
-		filterShaderModule = Engine::get()->createShaderModule(sd->compData);
+		filterShaderModule = Engine::get()->createShaderModule(*(sd->compData));
 
 		for (int i = 0; i != outputImageCount; i++) {
 			createFilterTarget();
@@ -95,7 +95,7 @@ public:
 		texWidth = source[0]->texWidth;
 		texHeight = source[0]->texHeight;
 
-		filterShaderModule = Engine::get()->createShaderModule(sd->compData);
+		filterShaderModule = Engine::get()->createShaderModule(*(sd->compData));
 
 		targetFormat = outFormat;
 

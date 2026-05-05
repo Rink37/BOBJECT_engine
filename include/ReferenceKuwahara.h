@@ -11,5 +11,5 @@ const std::vector<shaderIOValue> ReferenceKuwaharaIO = {shaderIOValue("reference
 #endif
 
 #ifndef REFERENCEKUWAHARASHADER
-#define REFERENCEKUWAHARASHADER shaderData( ReferenceKuwaharaCompData, ReferenceKuwaharaWireframe, ReferenceKuwaharaIO )
+#define REFERENCEKUWAHARASHADER shaderData( &ReferenceKuwaharaCompData, ReferenceKuwaharaWireframe, ReferenceKuwaharaIO )
 #endif

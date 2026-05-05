@@ -11,5 +11,5 @@ const std::vector<shaderIOValue> AveragerIO = {shaderIOValue("normalImage", 0, t
 #endif
 
 #ifndef AVERAGERSHADER
-#define AVERAGERSHADER shaderData( AveragerCompData, AveragerWireframe, AveragerIO )
+#define AVERAGERSHADER shaderData( &AveragerCompData, AveragerWireframe, AveragerIO )
 #endif

@@ -11,5 +11,5 @@ const std::vector<shaderIOValue> SobelCombinedIO = {shaderIOValue("inputImage", 
 #endif
 
 #ifndef SOBELCOMBINEDSHADER
-#define SOBELCOMBINEDSHADER shaderData( SobelCombinedCompData, SobelCombinedWireframe, SobelCombinedIO )
+#define SOBELCOMBINEDSHADER shaderData( &SobelCombinedCompData, SobelCombinedWireframe, SobelCombinedIO )
 #endif

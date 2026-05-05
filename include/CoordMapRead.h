@@ -11,5 +11,5 @@ const std::vector<shaderIOValue> CoordMapReadIO = {shaderIOValue("baseImage", 0,
 #endif
 
 #ifndef COORDMAPREADSHADER
-#define COORDMAPREADSHADER shaderData( CoordMapReadCompData, CoordMapReadWireframe, CoordMapReadIO )
+#define COORDMAPREADSHADER shaderData( &CoordMapReadCompData, CoordMapReadWireframe, CoordMapReadIO )
 #endif

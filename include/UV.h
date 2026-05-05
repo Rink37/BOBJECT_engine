@@ -13,5 +13,5 @@ const std::vector<shaderIOValue> UVIO = {shaderIOValue("UniformBufferObject", 1,
 #endif
 
 #ifndef UVSHADER
-#define UVSHADER shaderData( UVFragData, UVVertData, UVWireframe )
+#define UVSHADER shaderData( &UVFragData, &UVVertData, UVWireframe )
 #endif

@@ -11,5 +11,5 @@ const std::vector<shaderIOValue> inPlaceTestIO = {shaderIOValue("image", 0, true
 #endif
 
 #ifndef INPLACETESTSHADER
-#define INPLACETESTSHADER shaderData( inPlaceTestCompData, inPlaceTestWireframe, inPlaceTestIO )
+#define INPLACETESTSHADER shaderData( &inPlaceTestCompData, inPlaceTestWireframe, inPlaceTestIO )
 #endif

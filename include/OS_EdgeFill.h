@@ -11,5 +11,5 @@ const std::vector<shaderIOValue> OS_EdgeFillIO = {shaderIOValue("normalImage", 0
 #endif
 
 #ifndef OS_EDGEFILLSHADER
-#define OS_EDGEFILLSHADER shaderData( OS_EdgeFillCompData, OS_EdgeFillWireframe, OS_EdgeFillIO )
+#define OS_EDGEFILLSHADER shaderData( &OS_EdgeFillCompData, OS_EdgeFillWireframe, OS_EdgeFillIO )
 #endif

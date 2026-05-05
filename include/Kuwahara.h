@@ -11,5 +11,5 @@ const std::vector<shaderIOValue> KuwaharaIO = {shaderIOValue("inputImage", 0, tr
 #endif
 
 #ifndef KUWAHARASHADER
-#define KUWAHARASHADER shaderData( KuwaharaCompData, KuwaharaWireframe, KuwaharaIO )
+#define KUWAHARASHADER shaderData( &KuwaharaCompData, KuwaharaWireframe, KuwaharaIO )
 #endif

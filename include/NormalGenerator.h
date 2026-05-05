@@ -12,5 +12,5 @@ const bool NormalGeneratorWireframe = false;
 #endif
 
 #ifndef NORMALGENERATORSHADER
-#define NORMALGENERATORSHADER shaderData( NormalGeneratorFragData, NormalGeneratorVertData, NormalGeneratorWireframe )
+#define NORMALGENERATORSHADER shaderData( &NormalGeneratorFragData, &NormalGeneratorVertData, NormalGeneratorWireframe )
 #endif

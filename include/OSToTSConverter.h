@@ -12,5 +12,5 @@ const bool OSToTSConverterWireframe = false;
 #endif
 
 #ifndef OSTOTSCONVERTERSHADER
-#define OSTOTSCONVERTERSHADER shaderData( OSToTSConverterFragData, OSToTSConverterVertData, OSToTSConverterWireframe )
+#define OSTOTSCONVERTERSHADER shaderData( &OSToTSConverterFragData, &OSToTSConverterVertData, OSToTSConverterWireframe )
 #endif

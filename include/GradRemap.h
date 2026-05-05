@@ -11,5 +11,5 @@ const std::vector<shaderIOValue> GradRemapIO = {shaderIOValue("normalImage", 0, 
 #endif
 
 #ifndef GRADREMAPSHADER
-#define GRADREMAPSHADER shaderData( GradRemapCompData, GradRemapWireframe, GradRemapIO )
+#define GRADREMAPSHADER shaderData( &GradRemapCompData, GradRemapWireframe, GradRemapIO )
 #endif

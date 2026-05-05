@@ -13,5 +13,5 @@ const std::vector<shaderIOValue> AC_TS_BFIO = {shaderIOValue("UniformBufferObjec
 #endif
 
 #ifndef AC_TS_BFSHADER
-#define AC_TS_BFSHADER shaderData( AC_TS_BFFragData, AC_TS_BFVertData, AC_TS_BFWireframe )
+#define AC_TS_BFSHADER shaderData( &AC_TS_BFFragData, &AC_TS_BFVertData, AC_TS_BFWireframe )
 #endif

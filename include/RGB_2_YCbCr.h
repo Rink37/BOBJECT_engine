@@ -11,5 +11,5 @@ const std::vector<shaderIOValue> RGB_2_YCbCrIO = {shaderIOValue("normalImage", 0
 #endif
 
 #ifndef RGB_2_YCBCRSHADER
-#define RGB_2_YCBCRSHADER shaderData( RGB_2_YCbCrCompData, RGB_2_YCbCrWireframe, RGB_2_YCbCrIO )
+#define RGB_2_YCBCRSHADER shaderData( &RGB_2_YCbCrCompData, RGB_2_YCbCrWireframe, RGB_2_YCbCrIO )
 #endif
