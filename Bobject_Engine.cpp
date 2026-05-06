@@ -488,19 +488,6 @@ VkShaderModule Engine::createShaderModule(const vector<unsigned char>& code) {
 }
 
 void Engine::createGraphicsPipelines() {
-	PipelineMap.insert({ string("FlatShading"), 0 });
-	PipelineMap.insert({ string("AC_FlatShading"), 1 });
-	PipelineMap.insert({ string("BFShading"), 2 });
-	PipelineMap.insert({ string("AC_BFShading"), 3 });
-	PipelineMap.insert({ string("UIShading"), 4 });
-	PipelineMap.insert({ string("Wireframe"), 5 });
-	PipelineMap.insert({ string("UVWireframe"), 6 });
-	PipelineMap.insert({ string("UIGrayShading"), 7 });
-	PipelineMap.insert({ string("OSNormBF"), 8 });
-	PipelineMap.insert({ string("AC_OSNormBF"), 9 });
-	PipelineMap.insert({ string("TSNormBF"), 10 });
-	PipelineMap.insert({ string("AC_TSNormBF"), 11 });
-	PipelineMap.insert({ string("UIText"), 12 });
 	createGraphicsPipelines(defaultPass);
 }
 
@@ -652,6 +639,10 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 		}
 
 		uint32_t pipelineLayoutIndex = graphicsPass.layoutMap.at(key);
+
+		if (PipelineMap.count(sd->shaderName) == 0) {
+			PipelineMap.insert({ sd->shaderName, i });
+		}
 
 		//std::cout << graphicsPass.pipelineLayouts[pipelineLayoutIndex] << std::endl;
 

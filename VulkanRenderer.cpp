@@ -1031,14 +1031,14 @@ private:
 		}
 		else if (viewIndex != 2) {
 			if (sConst->alphaClipEnabled) {
-				engine->pipelineindex = engine->PipelineMap.at("AC_FlatShading");
+				engine->pipelineindex = engine->PipelineMap.at("AC_Flat");
 			}
 			else {
-				engine->pipelineindex = engine->PipelineMap.at("FlatShading");
+				engine->pipelineindex = engine->PipelineMap.at("Flat");
 			}
 		}
 		else if (viewIndex == 2) {
-			engine->pipelineindex = engine->PipelineMap.at("Wireframe");
+			engine->pipelineindex = engine->PipelineMap.at("W");
 		}
 		updateDrawVariables();
 	}
@@ -1082,6 +1082,8 @@ private:
 		if (tomographyPlane != nullptr) {
 			tomographyPlane->mesh->cleanup();
 		}
+
+		wireMat->cleanup();
 
 		UIElements.empty();
 		ObjectElements.empty();
@@ -1179,7 +1181,7 @@ private:
 		engine->beginRenderPass(commandBuffer, currentPass, &renderImage, imageIndex, backgroundColour);
 
 		if (showWireframe) {
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UVWireframe")]);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UV")]);
 
 			for (uint32_t i : visibleObjects) {
 				if (staticObjects[i].isWireframeVisible) {
@@ -1188,13 +1190,13 @@ private:
 			}
 		}
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UIGrayShading")]);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UIGray")]);
 
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->drawUI(commandBuffer, currentFrame);
 		}
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UIShading")]);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UI")]);
 
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->drawImages(commandBuffer, currentFrame);

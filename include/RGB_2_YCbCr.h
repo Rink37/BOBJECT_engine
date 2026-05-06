@@ -7,9 +7,11 @@ const std::vector<unsigned char> RGB_2_YCbCrCompData = { 0x03, 0x02, 0x23, 0x07,
 const uint8_t RGB_2_YCbCrType = COMP_SHADER;
 const bool RGB_2_YCbCrWireframe = false;
 
+const std::string RGB_2_YCbCrName = "RGB_2_YCbCr";
+
 const std::vector<shaderIOValue> RGB_2_YCbCrIO = {shaderIOValue("normalImage", 0, true), shaderIOValue("resultImage", 0, false)};
 #endif
 
 #ifndef RGB_2_YCBCRSHADER
-#define RGB_2_YCBCRSHADER shaderData( &RGB_2_YCbCrCompData, RGB_2_YCbCrWireframe, RGB_2_YCbCrIO )
+#define RGB_2_YCBCRSHADER shaderData( &RGB_2_YCbCrCompData, RGB_2_YCbCrWireframe, RGB_2_YCbCrIO, RGB_2_YCbCrName )
 #endif

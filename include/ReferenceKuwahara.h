@@ -7,9 +7,11 @@ const std::vector<unsigned char> ReferenceKuwaharaCompData = { 0x03, 0x02, 0x23,
 const uint8_t ReferenceKuwaharaType = COMP_SHADER;
 const bool ReferenceKuwaharaWireframe = false;
 
+const std::string ReferenceKuwaharaName = "ReferenceKuwahara";
+
 const std::vector<shaderIOValue> ReferenceKuwaharaIO = {shaderIOValue("referenceImage", 0, true), shaderIOValue("inputImage", 0, true), shaderIOValue("resultImage", 0, false), shaderIOValue("RemapParamObject", 1, true)};
 #endif
 
 #ifndef REFERENCEKUWAHARASHADER
-#define REFERENCEKUWAHARASHADER shaderData( &ReferenceKuwaharaCompData, ReferenceKuwaharaWireframe, ReferenceKuwaharaIO )
+#define REFERENCEKUWAHARASHADER shaderData( &ReferenceKuwaharaCompData, ReferenceKuwaharaWireframe, ReferenceKuwaharaIO, ReferenceKuwaharaName )
 #endif

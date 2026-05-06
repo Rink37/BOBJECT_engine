@@ -9,9 +9,11 @@ const std::vector<unsigned char> FlatFragData = { 0x03, 0x02, 0x23, 0x07, 0x00, 
 const uint8_t FlatType = MESH_SHADER;
 const bool FlatWireframe = false;
 
+const std::string FlatName = "Flat";
+
 const std::vector<shaderIOValue> FlatIO = {shaderIOValue("UniformBufferObject", 1, true), shaderIOValue("DiffTex", 0, true)};
 #endif
 
 #ifndef FLATSHADER
-#define FLATSHADER shaderData( &FlatFragData, &FlatVertData, FlatWireframe, FlatIO )
+#define FLATSHADER shaderData( &FlatFragData, &FlatVertData, FlatWireframe, FlatIO, FlatName )
 #endif

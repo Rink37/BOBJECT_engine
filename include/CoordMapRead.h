@@ -7,9 +7,11 @@ const std::vector<unsigned char> CoordMapReadCompData = { 0x03, 0x02, 0x23, 0x07
 const uint8_t CoordMapReadType = COMP_SHADER;
 const bool CoordMapReadWireframe = false;
 
+const std::string CoordMapReadName = "CoordMapRead";
+
 const std::vector<shaderIOValue> CoordMapReadIO = {shaderIOValue("baseImage", 0, true), shaderIOValue("coordMap", 0, true), shaderIOValue("resultImage", 0, false)};
 #endif
 
 #ifndef COORDMAPREADSHADER
-#define COORDMAPREADSHADER shaderData( &CoordMapReadCompData, CoordMapReadWireframe, CoordMapReadIO )
+#define COORDMAPREADSHADER shaderData( &CoordMapReadCompData, CoordMapReadWireframe, CoordMapReadIO, CoordMapReadName )
 #endif

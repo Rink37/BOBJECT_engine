@@ -7,9 +7,11 @@ const std::vector<unsigned char> IterativeAveragerCompData = { 0x03, 0x02, 0x23,
 const uint8_t IterativeAveragerType = COMP_SHADER;
 const bool IterativeAveragerWireframe = false;
 
+const std::string IterativeAveragerName = "IterativeAverager";
+
 const std::vector<shaderIOValue> IterativeAveragerIO = {shaderIOValue("normalImage", 0, true), shaderIOValue("gradients", 0, true), shaderIOValue("RemapParamObject", 1, true)};
 #endif
 
 #ifndef ITERATIVEAVERAGERSHADER
-#define ITERATIVEAVERAGERSHADER shaderData( &IterativeAveragerCompData, IterativeAveragerWireframe, IterativeAveragerIO )
+#define ITERATIVEAVERAGERSHADER shaderData( &IterativeAveragerCompData, IterativeAveragerWireframe, IterativeAveragerIO, IterativeAveragerName )
 #endif

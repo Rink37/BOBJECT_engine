@@ -9,9 +9,11 @@ const std::vector<unsigned char> AC_FlatFragData = { 0x03, 0x02, 0x23, 0x07, 0x0
 const uint8_t AC_FlatType = MESH_SHADER;
 const bool AC_FlatWireframe = false;
 
+const std::string AC_FlatName = "AC_Flat";
+
 const std::vector<shaderIOValue> AC_FlatIO = {shaderIOValue("UniformBufferObject", 1, true), shaderIOValue("DiffTex", 0, true)};
 #endif
 
 #ifndef AC_FLATSHADER
-#define AC_FLATSHADER shaderData( &AC_FlatFragData, &AC_FlatVertData, AC_FlatWireframe, AC_FlatIO )
+#define AC_FLATSHADER shaderData( &AC_FlatFragData, &AC_FlatVertData, AC_FlatWireframe, AC_FlatIO, AC_FlatName )
 #endif

@@ -319,7 +319,7 @@ public:
 	bool generateDiffuse = true;
 	bool generateNormal = true;
 
-	std::string renderPipeline = std::string("BFShading");
+	std::string renderPipeline = std::string("BF");
 	Texture* baseDiffuse = nullptr;
 
 	Material scannedMaterial;
@@ -449,13 +449,13 @@ private:
 			tomographer.calculate_normal();
 			normalAvailable = true;
 			scannedMaterial.init(baseDiffuse, loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"));
-			renderPipeline = "TSNormBF";
+			renderPipeline = "TS_BF";
 		}
 		else if (generateNormal && generateDiffuse) {
 			tomographer.calculate_NormAndDiff();
 			normalAvailable = true;
 			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogDiffTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"));
-			renderPipeline = "TSNormBF";
+			renderPipeline = "TS_BF";
 		}
 		else {
 			std::cout << "Invalid configuration" << std::endl;

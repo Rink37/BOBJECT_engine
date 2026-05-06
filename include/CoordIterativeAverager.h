@@ -7,9 +7,11 @@ const std::vector<unsigned char> CoordIterativeAveragerCompData = { 0x03, 0x02, 
 const uint8_t CoordIterativeAveragerType = COMP_SHADER;
 const bool CoordIterativeAveragerWireframe = false;
 
+const std::string CoordIterativeAveragerName = "CoordIterativeAverager";
+
 const std::vector<shaderIOValue> CoordIterativeAveragerIO = {shaderIOValue("normalImage", 0, true), shaderIOValue("gradients", 0, true), shaderIOValue("RemapParamObject", 1, true)};
 #endif
 
 #ifndef COORDITERATIVEAVERAGERSHADER
-#define COORDITERATIVEAVERAGERSHADER shaderData( &CoordIterativeAveragerCompData, CoordIterativeAveragerWireframe, CoordIterativeAveragerIO )
+#define COORDITERATIVEAVERAGERSHADER shaderData( &CoordIterativeAveragerCompData, CoordIterativeAveragerWireframe, CoordIterativeAveragerIO, CoordIterativeAveragerName )
 #endif

@@ -9,8 +9,10 @@ const std::vector<unsigned char> TSToOSConverterFragData = { 0x03, 0x02, 0x23, 0
 const uint8_t TSToOSConverterType = MESH_SHADER;
 const bool TSToOSConverterWireframe = false;
 
+const std::string TSToOSConverterName = "TSToOSConverter";
+
 #endif
 
 #ifndef TSTOOSCONVERTERSHADER
-#define TSTOOSCONVERTERSHADER shaderData( &TSToOSConverterFragData, &TSToOSConverterVertData, TSToOSConverterWireframe )
+#define TSTOOSCONVERTERSHADER shaderData( &TSToOSConverterFragData, &TSToOSConverterVertData, TSToOSConverterWireframe, TSToOSConverterName )
 #endif

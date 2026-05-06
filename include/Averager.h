@@ -7,9 +7,11 @@ const std::vector<unsigned char> AveragerCompData = { 0x03, 0x02, 0x23, 0x07, 0x
 const uint8_t AveragerType = COMP_SHADER;
 const bool AveragerWireframe = false;
 
+const std::string AveragerName = "Averager";
+
 const std::vector<shaderIOValue> AveragerIO = {shaderIOValue("normalImage", 0, true), shaderIOValue("gradients", 0, true), shaderIOValue("resultImage", 0, false), shaderIOValue("RemapParamObject", 1, true)};
 #endif
 
 #ifndef AVERAGERSHADER
-#define AVERAGERSHADER shaderData( &AveragerCompData, AveragerWireframe, AveragerIO )
+#define AVERAGERSHADER shaderData( &AveragerCompData, AveragerWireframe, AveragerIO, AveragerName )
 #endif

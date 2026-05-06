@@ -7,9 +7,11 @@ const std::vector<unsigned char> CreateCoordMapCompData = { 0x03, 0x02, 0x23, 0x
 const uint8_t CreateCoordMapType = COMP_SHADER;
 const bool CreateCoordMapWireframe = false;
 
+const std::string CreateCoordMapName = "CreateCoordMap";
+
 const std::vector<shaderIOValue> CreateCoordMapIO = {shaderIOValue("baseImage", 0, true), shaderIOValue("resultImage", 0, false)};
 #endif
 
 #ifndef CREATECOORDMAPSHADER
-#define CREATECOORDMAPSHADER shaderData( &CreateCoordMapCompData, CreateCoordMapWireframe, CreateCoordMapIO )
+#define CREATECOORDMAPSHADER shaderData( &CreateCoordMapCompData, CreateCoordMapWireframe, CreateCoordMapIO, CreateCoordMapName )
 #endif

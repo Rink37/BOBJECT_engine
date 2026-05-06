@@ -9,8 +9,10 @@ const std::vector<unsigned char> NormalGeneratorFragData = { 0x03, 0x02, 0x23, 0
 const uint8_t NormalGeneratorType = MESH_SHADER;
 const bool NormalGeneratorWireframe = false;
 
+const std::string NormalGeneratorName = "NormalGenerator";
+
 #endif
 
 #ifndef NORMALGENERATORSHADER
-#define NORMALGENERATORSHADER shaderData( &NormalGeneratorFragData, &NormalGeneratorVertData, NormalGeneratorWireframe )
+#define NORMALGENERATORSHADER shaderData( &NormalGeneratorFragData, &NormalGeneratorVertData, NormalGeneratorWireframe, NormalGeneratorName )
 #endif

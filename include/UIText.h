@@ -9,9 +9,11 @@ const std::vector<unsigned char> UITextFragData = { 0x03, 0x02, 0x23, 0x07, 0x00
 const uint8_t UITextType = MESH_SHADER;
 const bool UITextWireframe = false;
 
+const std::string UITextName = "UIText";
+
 const std::vector<shaderIOValue> UITextIO = {shaderIOValue("UniformBufferObject", 1, true), shaderIOValue("Texture", 0, true)};
 #endif
 
 #ifndef UITEXTSHADER
-#define UITEXTSHADER shaderData( &UITextFragData, &UITextVertData, UITextWireframe, UITextIO )
+#define UITEXTSHADER shaderData( &UITextFragData, &UITextVertData, UITextWireframe, UITextIO, UITextName )
 #endif

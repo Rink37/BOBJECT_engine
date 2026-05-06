@@ -64,7 +64,7 @@ public:
 
 	Material unlitSurfaceMat;
 	Material surfaceMat;
-	std::string renderPipeline = "BFShading";
+	std::string renderPipeline = "BF";
 
 	webcamTexture* webTex = nullptr;
 	Texture *diffTex = nullptr; // The non-webcam texture used as the diffuse on the surface
@@ -205,26 +205,26 @@ public:
 			switch (normalType) {
 			case 0:
 				if (alphaClipEnabled) {
-					renderPipeline = "AC_OSNormBF";
+					renderPipeline = "AC_OS_BF";
 				}
 				else {
-					renderPipeline = "OSNormBF";
+					renderPipeline = "OS_BF";
 				}
 				break;
 			case 1:
 				if (alphaClipEnabled) {
-					renderPipeline = "AC_TSNormBF";
+					renderPipeline = "AC_TS";
 				}
 				else {
-					renderPipeline = "TSNormBF";
+					renderPipeline = "TS_BF";
 				}	
 				break;
 			default:
 				if (alphaClipEnabled) {
-					renderPipeline = "AC_OSNormBF";
+					renderPipeline = "AC_OS_BF";
 				}
 				else {
-					renderPipeline = "OSNormBF";
+					renderPipeline = "OS_BF";
 				}
 				break;
 			}
@@ -254,10 +254,10 @@ public:
 		}
 		else {
 			if (alphaClipEnabled) {
-				renderPipeline = "AC_BFShading";
+				renderPipeline = "AC_BF";
 			}
 			else {
-				renderPipeline = "BFShading";
+				renderPipeline = "BF";
 			}
 			unlitSurfaceMat.init(d);
 			surfaceMat.init(d);

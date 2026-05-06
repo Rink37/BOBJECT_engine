@@ -9,9 +9,11 @@ const std::vector<unsigned char> UVFragData = { 0x03, 0x02, 0x23, 0x07, 0x00, 0x
 const uint8_t UVType = MESH_SHADER;
 const bool UVWireframe = true;
 
+const std::string UVName = "UV";
+
 const std::vector<shaderIOValue> UVIO = {shaderIOValue("UniformBufferObject", 1, true)};
 #endif
 
 #ifndef UVSHADER
-#define UVSHADER shaderData( &UVFragData, &UVVertData, UVWireframe, UVIO )
+#define UVSHADER shaderData( &UVFragData, &UVVertData, UVWireframe, UVIO, UVName )
 #endif

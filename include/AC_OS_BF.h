@@ -9,9 +9,11 @@ const std::vector<unsigned char> AC_OS_BFFragData = { 0x03, 0x02, 0x23, 0x07, 0x
 const uint8_t AC_OS_BFType = MESH_SHADER;
 const bool AC_OS_BFWireframe = false;
 
+const std::string AC_OS_BFName = "AC_OS_BF";
+
 const std::vector<shaderIOValue> AC_OS_BFIO = {shaderIOValue("UniformBufferObject", 1, true), shaderIOValue("DiffTex", 0, true), shaderIOValue("OSNormTex", 0, true)};
 #endif
 
 #ifndef AC_OS_BFSHADER
-#define AC_OS_BFSHADER shaderData( &AC_OS_BFFragData, &AC_OS_BFVertData, AC_OS_BFWireframe, AC_OS_BFIO )
+#define AC_OS_BFSHADER shaderData( &AC_OS_BFFragData, &AC_OS_BFVertData, AC_OS_BFWireframe, AC_OS_BFIO, AC_OS_BFName )
 #endif
