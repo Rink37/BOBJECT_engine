@@ -6,7 +6,7 @@ void UIImage::UpdateVertices(float xp, float yp, float xsc, float ysc) {
 	mesh.UpdateVertices(xp, yp, xsc, ysc);
 }
 
-void bufferPosition(float &extentx, float &extenty, float &posx, float &posy, float brx, float bry, float ax, float ay) {
+static void bufferPosition(float &extentx, float &extenty, float &posx, float &posy, float brx, float bry, float ax, float ay) {
 	
 	float minx, maxx;
 	minx = ax - extentx;
@@ -779,11 +779,11 @@ void Rotator::calculateScreenPosition() {
 }
 
 void Rotator::calculateSlideValue(double mouseX, double mouseY) {
-	float x = mouseX - centroid[0];
-	float y = mouseY - centroid[1];
+	double x = mouseX - centroid[0];
+	double y = mouseY - centroid[1];
 
-	float theta = atan2(y, x);
-	float angleFromVert = OPF_PI - theta; // We want to increase clockwise from vertical
+	double theta = atan2(y, x);
+	float angleFromVert = OPF_PI - static_cast<float>(theta); // We want to increase clockwise from vertical
 
 	slideValue = angleFromVert / (2 * PI);
 

@@ -37,7 +37,7 @@ void filter::getFilterLayout(shaderData* sD) {
 }
 
 void filter::createDescriptorSetLayout() {
-	int descriptorElementCount = IObindings.size();
+	int descriptorElementCount = static_cast<int>(IObindings.size());
 
 	unsigned int descriptorImageCount = 0;
 	unsigned int descriptorBufferCount = 0;
@@ -98,7 +98,7 @@ void filter::createDescriptorSetLayout() {
 }
 
 void filter::createDescriptorSet() {
-	int descriptorElementCount = IObindings.size();
+	int descriptorElementCount = static_cast<int>(IObindings.size());
 
 	VkDescriptorSetAllocateInfo descSetAllocInfo = {
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -175,7 +175,7 @@ void filter::createDescriptorSet() {
 }
 
 void filter::updateDescriptorSet() {
-	int descriptorElementCount = IObindings.size();
+	int descriptorElementCount = static_cast<int>(IObindings.size());
 	
 	std::vector<VkWriteDescriptorSet> descWrite = {};
 	std::vector<VkDescriptorImageInfo*> imageInfos = {};
@@ -277,7 +277,7 @@ void filter::createFilterPipeline() {
 
 void filter::createFilterTarget() {
 	filterTarget.push_back(new Texture);
-	uint32_t index = filterTarget.size() - 1;
+	uint32_t index = static_cast<uint32_t>(filterTarget.size()) - 1;
 	filterTarget[index]->textureFormat = targetFormat;
 	filterTarget[index]->textureUsage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Transfer dst might cause issues? I'm not sure yet
 	filterTarget[index]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -373,7 +373,7 @@ void postProcessFilter::setup(shaderData* sd, std::vector<drawImage*> drawImgs) 
 	for (size_t i = 0; i != drawImgs.size(); i++) {
 		targets.push_back(drawImgs[i]);
 	}
-	uint32_t imageCount = targets[0]->images.size();
+	uint32_t imageCount = static_cast<uint32_t>(targets[0]->images.size());
 	for (uint32_t i = 0; i != imageCount; i++) {
 		std::vector<Texture*> srcs{};
 		for (size_t j = 0; j != targets.size(); j++) {
@@ -393,7 +393,7 @@ void postProcessFilter::setup(shaderData* sd, std::vector<drawImage*> drawImgs) 
 }
 
 void postProcessFilter::setup(shaderData* sd, std::vector<Texture*> textures){
-	uint32_t imageCount = textures.size();
+	uint32_t imageCount = static_cast<uint32_t>(textures.size());
 	for (uint32_t i = 0; i != imageCount; i++) {
 		filters.push_back(filter(std::vector<Texture*>{textures[i]}, sd));
 		filters[i].filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -410,7 +410,7 @@ void postProcessFilter::setup(shaderData* sd, std::vector<drawImage*> drawImgs, 
 	for (size_t i = 0; i != drawImgs.size(); i++) {
 		targets.push_back(drawImgs[i]);
 	}
-	uint32_t imageCount = targets[0]->images.size();
+	uint32_t imageCount = static_cast<uint32_t>(targets[0]->images.size());
 	for (uint32_t i = 0; i != imageCount; i++) {
 		std::vector<Texture*> srcs{};
 		for (size_t j = 0; j != targets.size(); j++) {
@@ -430,7 +430,7 @@ void postProcessFilter::setup(shaderData* sd, std::vector<drawImage*> drawImgs, 
 }
 
 void postProcessFilter::setup(shaderData* sd, std::vector<Texture*> textures, VkBuffer uniformBuffer, uint32_t bufferSize) {
-	uint32_t imageCount = textures.size();
+	uint32_t imageCount = static_cast<uint32_t>(textures.size());
 	for (uint32_t i = 0; i != imageCount; i++) {
 		filters.push_back(filter(std::vector<Texture*>{textures[i]}, sd, uniformBuffer, bufferSize));
 		filters[i].filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -451,7 +451,7 @@ VkImage postProcessFilter::getFilterResult(VkCommandBuffer commandBuffer, uint32
 
 void postProcessFilter::recreateDescriptorSets() {
 
-	uint32_t imageCount = filters.size();
+	uint32_t imageCount = static_cast<uint32_t>(filters.size());
 
 	for (size_t i = 0; i < imageCount; i++) {
 		filters[i].updateDescriptorSet();

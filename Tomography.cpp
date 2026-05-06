@@ -4,14 +4,14 @@
 using namespace cv;
 using namespace std;
 
-float eucDist(Point a, Point b) {
+static float eucDist(Point a, Point b) {
 	return sqrtf(powf(a.x - b.x, 2) + powf(a.y - b.y, 2));
 }
 
 const int MAX_FEATURES = 5000;
 const float GOOD_MATCH_PERCENT = 0.05f;
 
-void change_contrast(Mat* img, float alpha, int beta) {
+static void change_contrast(Mat* img, float alpha, int beta) {
 	if (img->channels() == 3) {
 		for (int y = 0; y < img->rows; y++) {
 			for (int x = 0; x < img->cols; x++) {
@@ -30,7 +30,7 @@ void change_contrast(Mat* img, float alpha, int beta) {
 	}
 }
 
-vector<float> calculateCDF(Mat hist) {
+static vector<float> calculateCDF(Mat hist) {
 	vector<float> cdf;
 	uint32_t currentSum = 0;
 	for (int i = 0; i != 256; i++) {
@@ -43,7 +43,7 @@ vector<float> calculateCDF(Mat hist) {
 	return cdf;
 }
 
-vector<uint8_t> calculateLUT(vector<float> refCDF, vector<float>srcCDF) {
+static vector<uint8_t> calculateLUT(vector<float> refCDF, vector<float>srcCDF) {
 	vector<uint8_t> lookup;
 	uint8_t lookup_val = 0;
 	for (int i = 0; i != 256; i++) {
@@ -58,7 +58,7 @@ vector<uint8_t> calculateLUT(vector<float> refCDF, vector<float>srcCDF) {
 	return lookup;
 }
 
-Mat getDiffuseGray(Mat img) {
+static Mat getDiffuseGray(Mat img) {
 
 	// This is a functional implementation of the algorithm but success will depend on the image being adequately illuminantly normalized
 	// This also does not appear to play very nicely with naturally light brushstrokes, so I'm not sure what to do about that
@@ -151,23 +151,23 @@ Mat getDiffuseGray(Mat img) {
 	return diffuse;
 }
 
-float lineLength(Vec4i l) {
+static float lineLength(Vec4i l) {
 	return sqrt(static_cast<float>((l[0] - l[2]) * (l[0] - l[2]) + (l[1] - l[3]) * (l[1] - l[3])));
 }
 
-float angleBetweenLines(Vec4i l1, Vec4i l2) {
+static float angleBetweenLines(Vec4i l1, Vec4i l2) {
 	Vec2f l1_dir = Vec2f(static_cast<float>(l1[2] - l1[0]) / lineLength(l1), static_cast<float>(l1[3] - l1[1]) / lineLength(l1));
 	Vec2f l2_dir = Vec2f(static_cast<float>(l2[2] - l2[0]) / lineLength(l2), static_cast<float>(l2[3] - l2[1]) / lineLength(l2));
 	float angle = acos(l1_dir[0] * l2_dir[0] + l1_dir[1] * l2_dir[1]);
 	return angle * 180.0f / 3.14159265f;
 }
 
-Point rotate(Point a, float angle) {
+static Point rotate(Point a, float angle) {
 	float ang = - angle * 3.14159265f / 180.0f;
 	return Point(a.x * cos(ang) - a.y * sin(ang), a.x * sin(ang) + a.y * cos(ang));
 }
 
-void rotateLines(Vec4i& l1, Vec4i& l2, float angle, Point rotationCenter) {
+static void rotateLines(Vec4i& l1, Vec4i& l2, float angle, Point rotationCenter) {
 	Point l1_1 = Point(l1[0], l1[1]);
 	Point l1_2 = Point(l1[2], l1[3]);
 	Point l2_1 = Point(l2[0], l2[1]);
@@ -188,7 +188,7 @@ void rotateLines(Vec4i& l1, Vec4i& l2, float angle, Point rotationCenter) {
 	l2 = Vec4i(l2_1.x, l2_1.y, l2_2.x, l2_2.y);
 }
 
-Point intersectionOfLines(Vec4i l1, Vec4i l2) {
+static Point intersectionOfLines(Vec4i l1, Vec4i l2) {
 	float x_1 = l1[0];
 	float x_2 = l1[2];
 	float x_3 = l2[0];
@@ -202,11 +202,7 @@ Point intersectionOfLines(Vec4i l1, Vec4i l2) {
 	float determinant = (x_1 - x_2) * (y_3 - y_4) - (y_1 - y_2) * (x_3 - x_4);
 	float x = (x_1 * y_2 - y_1 * x_2) * (x_3 - x_4) - (x_1 - x_2) * (x_3 * y_4 - y_3 * x_4);
 	float y = (x_1 * y_2 - y_1 * x_2) * (y_3 - y_4) - (y_1 - y_2) * (x_3 * y_4 - y_3 * x_4);
-	
-	//float determinant = (l1[0] - l1[2]) * (l2[1] - l2[3]) - (l1[1] - l1[3]) * (l2[0] - l2[2]);
-	//float x = (l1[0] * l1[3] - l1[1] * l1[2]) * (l2[0] - l2[2]) - (l1[0] - l1[2]) * (l2[0] * l2[3] - l2[1] * l2[2]);
-	//float y = (l1[0] * l1[3] - l1[1] * l1[2]) * (l2[1] - l2[3]) - (l1[1] - l1[3]) * (l2[0] * l2[3] - l2[1] * l2[2]);
-	std::cout << x/determinant << " " << y/determinant << std::endl;
+
 	if (determinant == 0.0f) {
 		// We assume that this function will never be called on parallel lines, so this case is only found if lines are perfectly vertical/horizontal
 		if (l1[0] - l1[2] == 0.0f && l2[0] - l2[2] != 0.0f) {
@@ -235,11 +231,11 @@ Point intersectionOfLines(Vec4i l1, Vec4i l2) {
 	return intersect;
 }
 
-float pointDist(Point a, Point b) {
+static float pointDist(Point a, Point b) {
 	return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 }
 
-int findCornerType(Vec4i l1, Vec4i l2, Point cornerPos) {
+static int findCornerType(Vec4i l1, Vec4i l2, Point cornerPos) {
 	// Assume that lines have been rotated so that they match the newly rotated image
 	Point l1_1 = Point(l1[0], l1[1]);
 	Point l1_2 = Point(l1[2], l1[3]);
@@ -274,7 +270,7 @@ int findCornerType(Vec4i l1, Vec4i l2, Point cornerPos) {
 	return 3; // Bottom left
 }
 
-float estMaxDist(Point corner, Size imageSize, float rotation) {
+static float estMaxDist(Point corner, Size imageSize, float rotation) {
 	// Need a function which can determine the maximum size we should check for so we can reduce the number of scale iterations
 	Point a = Point(0.0f, 0.0f);
 	Point b = Point(0.0f, imageSize.height);
@@ -299,7 +295,7 @@ float estMaxDist(Point corner, Size imageSize, float rotation) {
 	return maxDist;
 }
 
-Point getCurrentCorner(int cornerType, Point center, int width, int height) {
+static Point getCurrentCorner(int cornerType, Point center, int width, int height) {
 	Point currentCorner;
 	int x = 0;
 	int y = 0;
@@ -331,19 +327,13 @@ Point getCurrentCorner(int cornerType, Point center, int width, int height) {
 	return currentCorner;
 }
 
-bool match_template(Mat src, Mat* target, Size outdims) {
+static bool match_template(Mat src, Mat* target, Size outdims) {
 	Mat srcGray, targetGray;
-	//Mat srcChannels[3], targetChannels[3];
-
-	//split(src, srcChannels);
-	//split(*target, targetChannels);
 
 	vector<Point2f> srcPoints, matchPoints;
 
 	cvtColor(src, srcGray, COLOR_BGR2GRAY);
 	cvtColor(*target, targetGray, COLOR_BGR2GRAY);
-
-	//resize(targetGray, targetGray, Size(src.rows * target->cols / target->rows, src.rows));
 
 	normalize(srcGray, srcGray, 0, 255, NORM_MINMAX);
 	normalize(targetGray, targetGray, 0, 255, NORM_MINMAX);
@@ -380,8 +370,6 @@ bool match_template(Mat src, Mat* target, Size outdims) {
 		}
 	}
 
-	std::cout << srcPoints.size() << std::endl;
-
 	for (size_t i = 0; i < srcPoints.size(); i++) {
 		srcPoints[i] = Point2f(srcPoints[i].x * outdims.width / src.cols, srcPoints[i].y * outdims.height / src.rows);
 		matchPoints[i] = Point2f(matchPoints[i].x * target->cols / targetGray.cols, matchPoints[i].y * target->rows / targetGray.rows);
@@ -401,7 +389,7 @@ bool match_template(Mat src, Mat* target, Size outdims) {
 }
 
 
-void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchRequired) {
+static void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchRequired) {
 
 	int defaultHeight = src.rows;
 	int defaultWidth = src.cols;
@@ -443,7 +431,7 @@ void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchRequired
 
 	int src_tx = static_cast<int>(src_resultCenter.x - src_imageCenter.x);
 	int src_ty = static_cast<int>(src_resultCenter.y - src_imageCenter.y);
-	std::cout << Point(src_tx, src_ty) << std::endl;
+	//std::cout << Point(src_tx, src_ty) << std::endl;
 
 	cv::Mat src_translation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, src_tx, 0, 1, src_ty);
 
@@ -490,7 +478,7 @@ void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchRequired
 			iterDim = defaultDim;
 			iterHeight = targetHeight;
 			iterWidth = targetWidth;
-			std::cout << iterHeight << " " << iterWidth << std::endl;
+			//std::cout << iterHeight << " " << iterWidth << std::endl;
 		}
 
 		Mat downscaled;
@@ -558,7 +546,7 @@ void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchRequired
 				Vec4i l2 = lines[largestLines[1]];
 				intersection = intersectionOfLines(l1, l2);
 				if (intersection != Point(-1.0f, -1.0f)) {
-					std::cout << "Corner found" << std::endl;
+					//std::cout << "Corner found" << std::endl;
 
 					if (sizeMatchRequired) {
 						float maxDist = estMaxDist(intersection, Size(iterWidth, iterHeight), rotateAngle);
@@ -599,8 +587,6 @@ void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchRequired
 
 		transformedIntersection = Point(transformedIntersection.x + tx, transformedIntersection.y + ty);
 
-		std::cout << Point(tx, ty) << std::endl;
-
 		cv::Mat translation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, tx, 0, 1, ty);
 
 		cv::warpAffine(downscaled, downscaled, translation_matrix, Size(iterDim, iterDim));
@@ -619,7 +605,7 @@ void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchRequired
 
 		for (int j = 0; j != rotationsPerIter; j++) {
 			
-			std::cout << static_cast<float>(i*rotationsPerIter + j) / static_cast<float>(stepsPerIter * rotationsPerIter) << std::endl;
+			//std::cout << static_cast<float>(i*rotationsPerIter + j) / static_cast<float>(stepsPerIter * rotationsPerIter) << std::endl;
 			
 			float rotAngle = 360.0f * static_cast<float>(j) / static_cast<float>(rotationsPerIter);
 
@@ -679,13 +665,6 @@ void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchRequired
 				cv::Mat backtranslation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, maxLoc.x - src_tx, 0, 1, maxLoc.y - src_ty);
 				cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
 
-				//cv::Mat smallMatch;
-				//cv::resize(currentMatch, smallMatch, currentMatch.size() / 5);
-				//cv::imshow("SmallMatch", smallMatch);
-				//cv::waitKey(0);
-
-				//correlation = maxCorr;
-
 				bool success = match_template(src, &currentMatch, src.size());
 				if (success) {
 					finalRot = rotateAngle + rotAngle;
@@ -703,13 +682,6 @@ void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchRequired
 				if (maxImgCorr > imgCorrelation) {
 					backtranslation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, maxLoc.x - src_tx, 0, 1, maxLoc.y - src_ty);
 					cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
-					
-					//cv::resize(currentMatch, smallMatch, currentMatch.size() / 5);
-					//cv::imshow("SmallMatch", smallMatch);
-					//cv::waitKey(0);
-
-					//correlation = maxCorr;
-					//imgCorrelation = maxImgCorr;
 					
 					bool success = match_template(src, &currentMatch, src.size());
 					if (success) {
@@ -744,7 +716,7 @@ void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchRequired
 	*target = matched.clone();
 }
 
-void calculateVector(vector<float>& lightVec, float phi, float theta) {
+static void calculateVector(vector<float>& lightVec, float phi, float theta) {
 	// phi is the rotation around z, theta is the angle above the surface
 	// We assume theta is given from the plane not from the plane normal
 	// We assume that phi is given from the positive horizontal
@@ -764,7 +736,7 @@ void calculateVector(vector<float>& lightVec, float phi, float theta) {
 	lightVec.push_back(z * -1);
 }
 
-void matrixTranspose(vector<vector<float>> src, vector<vector<float>>& out) {
+static void matrixTranspose(vector<vector<float>> src, vector<vector<float>>& out) {
 	// switches the rows and columns of the src matrix
 	// Does not fail
 	
@@ -780,10 +752,9 @@ void matrixTranspose(vector<vector<float>> src, vector<vector<float>>& out) {
 		}
 		out.push_back(col);
 	}
-
 }
 
-void matrixDot(vector<vector<float>> a, vector<vector<float>> b, vector<vector<float>>& out) {
+static void matrixDot(vector<vector<float>> a, vector<vector<float>> b, vector<vector<float>>& out) {
 	// Consider index 0 as horizontal and index 1 as vertical i.e. value = mat[x][y]
 
 	assert(a.size() == b[0].size()); // function only works when the row length of a matches the column length of b
@@ -802,7 +773,7 @@ void matrixDot(vector<vector<float>> a, vector<vector<float>> b, vector<vector<f
 
 }
 
-void printMatrix(vector<vector<float>> matrix) {
+static void printMatrix(vector<vector<float>> matrix) {
 	for (int y = 0; y != matrix[0].size(); y++) {
 		for (int x = 0; x != matrix.size(); x++) {
 			cout << matrix[x][y] << " ";
@@ -813,7 +784,7 @@ void printMatrix(vector<vector<float>> matrix) {
 }
 
 
-float matrixDeterminant(vector<vector<float>> matrix) {
+static float matrixDeterminant(vector<vector<float>> matrix) {
 	if (matrix.size() == 1 && matrix[0].size() == 1) {
 		return matrix[0][0];
 	}
@@ -842,7 +813,7 @@ float matrixDeterminant(vector<vector<float>> matrix) {
 	return determinant;
 }
 
-void calculateCofactor(vector<vector<float>> matrix, vector<vector<float>>& out) {
+static void calculateCofactor(vector<vector<float>> matrix, vector<vector<float>>& out) {
 	out.clear();
 	for (int x = 0; x != matrix.size(); x++) {
 		vector<float> cofactorCol;
@@ -876,7 +847,7 @@ void calculateCofactor(vector<vector<float>> matrix, vector<vector<float>>& out)
 	}
 }
 
-void matrixInverse(vector<vector<float>> matrix, vector<vector<float>>& inverse) { // compute the inverse of a square matrix
+static void matrixInverse(vector<vector<float>> matrix, vector<vector<float>>& inverse) { // compute the inverse of a square matrix
 	vector<vector<float>> cofactorMatrix;
 	vector<vector<float>> cofactorTranspose;
 	calculateCofactor(matrix, cofactorMatrix);
@@ -893,7 +864,7 @@ void matrixInverse(vector<vector<float>> matrix, vector<vector<float>>& inverse)
 	}
 }
 
-vector<vector<float>> constructTomogMatrix(vector<int> indexes, vector<vector<float>> D) {
+static vector<vector<float>> constructTomogMatrix(vector<int> indexes, vector<vector<float>> D) {
 	vector<vector<float>> reducedD;
 
 	for (int i = 0; i != D.size(); i++) {
@@ -910,13 +881,9 @@ vector<vector<float>> constructTomogMatrix(vector<int> indexes, vector<vector<fl
 	matrixDot(reducedD, DT, Ddot);
 	// Ddot = 3x3 matrix
 
-	//printMatrix(Ddot);
-
 	vector<vector<float>> DdotInverse;
 	matrixInverse(Ddot, DdotInverse);
 	// DdotInverse = 3x3 matrix
-
-	//printMatrix(DdotInverse);
 
 	vector<vector<float>> transformationD;
 	matrixDot(DT, DdotInverse, transformationD);
@@ -928,7 +895,7 @@ vector<vector<float>> constructTomogMatrix(vector<int> indexes, vector<vector<fl
 	return tomogMatrix;
 }
 
-bool checkForEmptyInArea(Mat img, int x, int y, int range) {
+static bool checkForEmptyInArea(Mat img, int x, int y, int range) {
 	for (int dx = x - range; dx != x + range + 1; dx++) {
 		for (int dy = y - range; dy != y + range + 1; dy++) {
 			if (dy < 0 || dy >= img.cols) {
@@ -945,14 +912,14 @@ bool checkForEmptyInArea(Mat img, int x, int y, int range) {
 	return false;
 }
 
-Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
+static Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the normal texture which describes the surface of the canvas from a set of differently lit images
 	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
 	// Seems like CPU compute takes a few minutes so worth investigating GPU
 	// D represents the list of light vectors for each image
 	// Assumes that the painting is a lambertian surface
 
-	std::vector<Texture*> images = {};
-	std::vector<std::vector<float>> D = {};
+	std::vector<Texture*> images{};
+	std::vector<std::vector<float>> D{};
 
 	for (size_t i = 0; i != items.size(); i++) {
 		if (items[i]->correctedImage != nullptr && items[i]->lightDirection != std::vector<float>{0.0f, 0.0f, 0.0f}) {
@@ -1035,7 +1002,7 @@ Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the normal te
 	return normal;
 }
 
-Mat calculateDiffuse(std::vector<TomogItem*> items, Mat normal) {
+static Mat calculateDiffuse(std::vector<TomogItem*> items, Mat normal) {
 
 	std::vector<Texture*> images = {};
 	std::vector<std::vector<float>> D = {};
@@ -1110,7 +1077,7 @@ Mat calculateDiffuse(std::vector<TomogItem*> items, Mat normal) {
 	return diffuse;
 }
 
-std::vector<Mat> calculate_norm_diff(std::vector<TomogItem*> items) {
+static std::vector<Mat> calculate_norm_diff(std::vector<TomogItem*> items) {
 	// This could be made into a GPU compute operation since it's highly parallel, but I'm not sure if this would actually be faster considering the time cost of copying a vector of (presumably high resolution) images
 	// Seems like CPU compute takes a few minutes so worth investigating GPU
 	// D represents the list of light vectors for each image
@@ -1148,19 +1115,6 @@ std::vector<Mat> calculate_norm_diff(std::vector<TomogItem*> items) {
 	}
 
 	for (int y = 0; y != normal.cols; y++) {
-		if (y % 25 == 0 && y != 0) {
-			cout << static_cast<float>(y) / static_cast<float>(normal.cols) << endl;
-			//if (y % 500 == 0 && y != 0) {
-			//	Mat smallNormal;
-			//	cv::resize(normal, smallNormal, normal.size() / 5);
-			//	cv::imshow("Normal", smallNormal);
-			//	cv::waitKey(0);
-			//	Mat smallDiff;
-			//	cv::resize(diffuse, smallDiff, diffuse.size() / 5);
-			//	cv::imshow("Diffuse", smallDiff);
-			//	cv::waitKey(0);
-			//}
-		}
 		for (int x = 0; x != normal.rows; x++) {
 			vector<vector<float>> L;
 			vector<float> Lcol;
@@ -1280,12 +1234,9 @@ void Tomographer::align(int index) {
 	}
 	
 	match_partial(scaledAlign, &image, item->rotation, !equalRes);
-	//bool success = match_template(scaledAlign, &image, dims);
 
 	item->correctedImage = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), item->name + "Matched");
 	item->correctedImage->getCVMat();
-
-	std::cout << "Done" << std::endl;
 }
 
 void Tomographer::remove_element(int index) {

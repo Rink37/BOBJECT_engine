@@ -127,7 +127,7 @@ void Engine::createSurface() {
 	}
 }
 
-VkSampleCountFlagBits Engine::getMaxUseableSampleCount() {
+VkSampleCountFlagBits Engine::getMaxUseableSampleCount() const {
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 
@@ -369,7 +369,7 @@ void Engine::createRenderPass(VkRenderPass& newRenderPass, VkFormat imageFormat,
 	}
 }
 
-void Engine::createDescriptorSetLayout(std::string key, std::vector<shaderIOValue> IO, GraphicsPass& graphicsPass) {
+void Engine::createDescriptorSetLayout(std::string key, std::vector<shaderIOValue> IO, GraphicsPass& graphicsPass) const {
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings{};
 
 	uint32_t index = 0;
@@ -427,7 +427,7 @@ void Engine::createDescriptorSetLayout(std::string key, std::vector<shaderIOValu
 }
 
 
-VkShaderModule Engine::createShaderModule(const vector<unsigned char>& code) {
+VkShaderModule Engine::createShaderModule(const vector<unsigned char>& code) const {
 	VkShaderModuleCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.codeSize = code.size();
@@ -894,7 +894,7 @@ void Engine::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMess
 	}
 }
 
-uint32_t Engine::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t Engine::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const {
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
@@ -907,7 +907,7 @@ uint32_t Engine::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags prope
 	throw runtime_error("failed to find suitable memory type!");
 }
 
-VkFormat Engine::findSupportedFormat(const vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+VkFormat Engine::findSupportedFormat(const vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const {
 	for (VkFormat format : candidates) {
 		VkFormatProperties props;
 		vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
@@ -926,7 +926,7 @@ VkFormat Engine::findDepthFormat() {
 	return findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-void Engine::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
+void Engine::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const {
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -963,7 +963,7 @@ void Engine::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, Vk
 	vkBindImageMemory(device, image, imageMemory, 0);
 }
 
-VkImageView Engine::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels) {
+VkImageView Engine::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels) const {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = image;
@@ -984,7 +984,7 @@ VkImageView Engine::createImageView(VkImage image, VkFormat format, VkImageAspec
 	return imageView;
 }
 
-QueueFamilyIndices Engine::findQueueFamilies(VkPhysicalDevice device) {
+QueueFamilyIndices Engine::findQueueFamilies(VkPhysicalDevice device) const {
 	QueueFamilyIndices indices;
 
 	uint32_t queueFamilyCount = 0;
@@ -1106,7 +1106,7 @@ bool Engine::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 	return requiredExtensions.empty();
 }
 
-SwapChainSupportDetails Engine::querySwapChainSupport(VkPhysicalDevice device) {
+SwapChainSupportDetails Engine::querySwapChainSupport(VkPhysicalDevice device) const {
 	SwapChainSupportDetails details;
 
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
@@ -1150,7 +1150,7 @@ VkPresentModeKHR Engine::chooseSwapPresentMode(const vector<VkPresentModeKHR>& a
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D Engine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+VkExtent2D Engine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const {
 	if (capabilities.currentExtent.width != numeric_limits<uint32_t>::max()) {
 		return capabilities.currentExtent;
 	}
@@ -1238,7 +1238,7 @@ void Engine::recreateDrawImage(drawImage* image) {
 	}
 }
 
-void Engine::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
+void Engine::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const {
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferInfo.size = size;
@@ -1264,7 +1264,7 @@ void Engine::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryP
 	vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
-VkCommandBuffer Engine::beginSingleTimeCommands() {
+VkCommandBuffer Engine::beginSingleTimeCommands() const {
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -1283,7 +1283,7 @@ VkCommandBuffer Engine::beginSingleTimeCommands() {
 	return commandBuffer;
 }
 
-void Engine::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
+void Engine::endSingleTimeCommands(VkCommandBuffer commandBuffer) const {
 	vkEndCommandBuffer(commandBuffer);
 
 	VkSubmitInfo submitInfo{};
@@ -1333,7 +1333,7 @@ VkCommandBuffer Engine::beginSingleTimeComputeCommand() {
 	return commandBuffer;
 }
 
-void Engine::endSingleTimeComputeCommand(VkCommandBuffer commandBuffer) {
+void Engine::endSingleTimeComputeCommand(VkCommandBuffer commandBuffer) const {
 	vkEndCommandBuffer(commandBuffer);
 
 	VkSubmitInfo submitInfo{};
@@ -1373,48 +1373,6 @@ uint32_t Engine::getRenderTarget() {
 	vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 
 	return imageIndex;
-}
-
-void Engine::beginRenderPass(VkCommandBuffer commandBuffer, uint32_t imageIndex, glm::vec3 backgroundColour) {
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-	beginInfo.pInheritanceInfo = nullptr;
-
-	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-		throw runtime_error("failed to begin recording command buffer!");
-	}
-
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = defaultPass.renderPass;
-	renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-
-	renderPassInfo.renderArea.offset = { 0,0 };
-	renderPassInfo.renderArea.extent = swapChainExtent;
-
-	array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { {backgroundColour.r, backgroundColour.g, backgroundColour.b, 1.0f} };
-	clearValues[1].depthStencil = { 1.0f, 0 };
-
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassInfo.pClearValues = clearValues.data();
-
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(swapChainExtent.width);
-	viewport.height = static_cast<float>(swapChainExtent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-	VkRect2D scissor{};
-	scissor.offset = { 0,0 };
-	scissor.extent = swapChainExtent;
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
 void Engine::beginRenderPass(VkCommandBuffer commandBuffer, GraphicsPass* graphicsPass, drawImage* target, uint32_t imageIndex, glm::vec3 backgroundColour) {
@@ -1609,9 +1567,7 @@ void Engine::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage& image
 
 void Engine::transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout) {
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
 	transitionImageLayout(commandBuffer, image, oldLayout, newLayout);
-
 	endSingleTimeCommands(commandBuffer);
 }
 
@@ -1664,61 +1620,20 @@ drawImage Engine::createDrawImage(uint32_t width, int32_t height, VkFormat forma
 	return newDrawImage;
 }
 
-void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, drawImage* image, uint32_t imageIndex) {
-	bool supportsBlit = true;
-
-	VkFormatProperties formatProps;
-
-	transitionImageLayout(commandBuffer, swapChainImages[imageIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-	if (supportsBlit)
-	{
-		VkOffset3D srcBlitSize;
-		srcBlitSize.x = image->imageExtent.width;
-		srcBlitSize.y = image->imageExtent.height;
-		srcBlitSize.z = 1;
-		VkOffset3D dstBlitSize;
-		dstBlitSize.x = swapChainExtent.width;
-		dstBlitSize.y = swapChainExtent.height;
-		dstBlitSize.z = 1;
-		VkImageBlit imageBlitRegion{};
-		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageBlitRegion.srcSubresource.layerCount = 1;
-		imageBlitRegion.srcOffsets[1] = srcBlitSize;
-		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageBlitRegion.dstSubresource.layerCount = 1;
-		imageBlitRegion.dstOffsets[1] = dstBlitSize;
-
-		vkCmdBlitImage(
-			commandBuffer,
-			image->images[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1,
-			&imageBlitRegion,
-			VK_FILTER_NEAREST);
-	}
-	else
-	{
-		throw runtime_error("Blitting cannot be performed");
-	}
-
-	transitionImageLayout(commandBuffer, swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-}
-
 void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, VkImage image, VkExtent2D extent, uint32_t imageIndex) {
 	bool supportsBlit = true;
 
-	VkFormatProperties formatProps;
+	VkFormatProperties formatProps{};
 
 	transitionImageLayout(commandBuffer, swapChainImages[imageIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	if (supportsBlit)
 	{
-		VkOffset3D srcBlitSize;
+		VkOffset3D srcBlitSize{};
 		srcBlitSize.x = extent.width;
 		srcBlitSize.y = extent.height;
 		srcBlitSize.z = 1;
-		VkOffset3D dstBlitSize;
+		VkOffset3D dstBlitSize{};
 		dstBlitSize.x = swapChainExtent.width;
 		dstBlitSize.y = swapChainExtent.height;
 		dstBlitSize.z = 1;
@@ -1744,4 +1659,8 @@ void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, VkImage image, 
 	}
 
 	transitionImageLayout(commandBuffer, swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+}
+
+void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, drawImage* image, uint32_t imageIndex) {
+	copyImageToSwapchain(commandBuffer, image->images[imageIndex], image->imageExtent, imageIndex);
 }

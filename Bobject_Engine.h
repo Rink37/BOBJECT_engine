@@ -131,12 +131,12 @@ struct drawImage {
 	
 	std::vector<VkFramebuffer> imageFrameBuffers = {};
 	
-	VkImage colourImage;
-	VkImageView colourImageView;
-	VkDeviceMemory colourImageMemory;
+	VkImage colourImage = nullptr;
+	VkImageView colourImageView = nullptr;
+	VkDeviceMemory colourImageMemory = nullptr;
 	
-	VkExtent2D imageExtent;
-	VkFormat imageFormat;
+	VkExtent2D imageExtent{};
+	VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
 	VkImageUsageFlags imageUsage;
 
 	VkRenderPass* boundRenderPass = nullptr;
@@ -166,14 +166,14 @@ struct drawImage {
 };
 
 struct GraphicsPass {
-	VkRenderPass renderPass;
+	VkRenderPass renderPass = nullptr;
 
-	std::vector<VkPipeline*> GraphicsPipelines = {};
-	std::vector<shaderData> shaderDatas = {};
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {};
-	std::vector<VkPipelineLayout> pipelineLayouts = {};
-	std::map<std::string, uint32_t> layoutMap;
-	std::map<std::string, uint32_t> pipelineMap;
+	std::vector<VkPipeline*> GraphicsPipelines{};
+	std::vector<shaderData> shaderDatas{};
+	std::vector<VkDescriptorSetLayout> descriptorSetLayouts{};
+	std::vector<VkPipelineLayout> pipelineLayouts{};
+	std::map<std::string, uint32_t> layoutMap{};
+	std::map<std::string, uint32_t> pipelineMap{};
 
 	void cleanup(VkDevice device) {
 		shaderDatas.clear();
@@ -209,7 +209,7 @@ struct QueueFamilyIndices {
 	std::optional<uint32_t> presentFamily;
 	std::optional<uint32_t> computeFamily;
 
-	const bool isComplete() {
+	bool isComplete() const {
 		return graphicsFamily.has_value() && presentFamily.has_value() && computeFamily.has_value();
 	}
 };
@@ -299,30 +299,29 @@ public:
 	void recreateSwapChain();
 	std::uint32_t getRenderTarget();
 	void beginRenderPass(VkCommandBuffer, GraphicsPass*, drawImage*, uint32_t, glm::vec3);
-	void beginRenderPass(VkCommandBuffer, uint32_t, glm::vec3);
 	void drawObject(VkCommandBuffer, VkBuffer, VkBuffer, VkPipelineLayout, VkDescriptorSet, std::uint32_t);
 	VkResult submitAndPresentFrame(std::uint32_t);
 
-	std::uint32_t findMemoryType(std::uint32_t, VkMemoryPropertyFlags);
+	std::uint32_t findMemoryType(std::uint32_t, VkMemoryPropertyFlags) const;
 
-	void createBuffer(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&);
+	void createBuffer(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&) const;
 	void copyBuffer(VkBuffer, VkBuffer, VkDeviceSize);
-	VkCommandBuffer beginSingleTimeCommands();
-	void endSingleTimeCommands(VkCommandBuffer);
+	VkCommandBuffer beginSingleTimeCommands() const;
+	void endSingleTimeCommands(VkCommandBuffer) const;
 
 	VkCommandBuffer beginSingleTimeComputeCommand();
-	void endSingleTimeComputeCommand(VkCommandBuffer);
+	void endSingleTimeComputeCommand(VkCommandBuffer) const;
 
 	drawImage createDrawImage(uint32_t, int32_t, VkFormat, VkImageUsageFlags, VkRenderPass);
 	void recreateDrawImage(drawImage*);
 
-	VkShaderModule createShaderModule(const std::vector<unsigned char>&);
+	VkShaderModule createShaderModule(const std::vector<unsigned char>&) const;
 
 	const char* appName = "BOBJECT_engine app";
 
-	VkSampleCountFlagBits getMaxUseableSampleCount();
+	VkSampleCountFlagBits getMaxUseableSampleCount() const;
 
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice);
+	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice) const;
 
 	uint32_t currentFrame = 0;
 
@@ -338,8 +337,8 @@ public:
 	void copyImageToSwapchain(VkCommandBuffer, drawImage*, uint32_t);
 	void copyImageToSwapchain(VkCommandBuffer, VkImage, VkExtent2D, uint32_t);
 
-	void createImage(uint32_t, uint32_t, uint32_t, VkSampleCountFlagBits, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
-	VkImageView createImageView(VkImage, VkFormat, VkImageAspectFlags, uint32_t);
+	void createImage(uint32_t, uint32_t, uint32_t, VkSampleCountFlagBits, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&) const;
+	VkImageView createImageView(VkImage, VkFormat, VkImageAspectFlags, uint32_t) const;
 
 	void transitionImageLayout(VkCommandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
@@ -378,7 +377,7 @@ private:
 	void createLogicalDevice();
 	void createSwapChain();
 	void createImageViews();
-	void createDescriptorSetLayout(std::string, std::vector<shaderIOValue>, GraphicsPass&);
+	void createDescriptorSetLayout(std::string, std::vector<shaderIOValue>, GraphicsPass&) const;
 	void createGraphicsPipelines();
 	void createCommandPool();
 	void createComputeCommandPool();
@@ -397,7 +396,7 @@ private:
 
 	void DestroyDebugUtilsMessengerEXT(VkInstance, VkDebugUtilsMessengerEXT, const VkAllocationCallbacks*);
 
-	VkFormat findSupportedFormat(const std::vector<VkFormat>&, VkImageTiling, VkFormatFeatureFlags);
+	VkFormat findSupportedFormat(const std::vector<VkFormat>&, VkImageTiling, VkFormatFeatureFlags) const;
 
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT&);
 
@@ -415,11 +414,11 @@ private:
 
 	bool checkDeviceExtensionSupport(VkPhysicalDevice);
 
-	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice);
+	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice) const;
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>&);
 
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>&);
-	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR&);
+	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR&) const;
 };
 
 #endif
