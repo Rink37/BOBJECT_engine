@@ -433,7 +433,7 @@ private:
 			item->setIsEnabled(true);
 			item->setVisibility(true);
 		}
-		tomographer.remove_element(tomographer.items.size()-1);
+		tomographer.remove_element(static_cast<int>(tomographer.items.size())-1);
 	}
 
 	void updateDiffuseGen(UIItem* owner) {

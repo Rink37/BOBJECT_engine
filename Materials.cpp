@@ -214,3 +214,96 @@ void Material::createDescriptorSets() {
 		}
 	}
 }
+
+void Material::createDescriptorSets(std::string targetShader, GraphicsPass* currentPass) {
+	
+	VkDescriptorSetAllocateInfo allocInfo{};
+	std::vector<shaderIOValue>* IOvals = &currentPass->shaderDatas[currentPass->pipelineMap.at(targetShader)].IO;
+
+	std::string key = "";
+
+	uint8_t textureCount = 0;
+
+	for (shaderIOValue ioVal : *IOvals) {
+		key += std::to_string(ioVal.type) + "_";
+		if (ioVal.type == 0) {
+			textureCount++;
+		}
+	}
+	if (textures.size() < textureCount) {
+		throw runtime_error("Material could not be created - not enough textures were provided");
+	}
+
+	pipelineLayoutIndex = Engine::get()->defaultPass.layoutMap.at(key);
+	descriptorSetLayout = Engine::get()->defaultPass.descriptorSetLayouts[pipelineLayoutIndex];
+	pipelineLayout = Engine::get()->defaultPass.pipelineLayouts[pipelineLayoutIndex];
+
+	vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	allocInfo.pSetLayouts = layouts.data();
+
+	descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+	if (vkAllocateDescriptorSets(Engine::get()->device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+		throw runtime_error("failed to allocate descriptor sets!");
+	}
+
+	uint32_t textureIndex = 0;
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		std::vector<VkWriteDescriptorSet> descriptorWrites{};
+		
+		for (shaderIOValue ioVal : *IOvals) {
+			VkWriteDescriptorSet descriptorWrite{};
+
+			if (ioVal.type == 1) {
+				
+				VkDescriptorBufferInfo bufferInfo{};
+				if (isUIMat) {
+					bufferInfo.buffer = Engine::get()->colourBuffer;
+					bufferInfo.offset = 0;
+					bufferInfo.range = sizeof(ColourSchemeObject);
+				}
+				else {
+					bufferInfo.buffer = Engine::get()->uniformBuffers[i];
+					bufferInfo.offset = 0;
+					bufferInfo.range = sizeof(UniformBufferObject);
+				}
+				
+				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrite.dstSet = descriptorSets[i];
+				descriptorWrite.dstBinding = 0;
+				descriptorWrite.dstArrayElement = 0;
+				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				descriptorWrite.descriptorCount = 1;
+				descriptorWrite.pBufferInfo = &bufferInfo;
+			
+			}
+			else {
+
+				VkDescriptorImageInfo imageInfo{};
+				imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				imageInfo.imageView = textures[textureIndex]->textureImageView;
+				textureIndex++;
+				imageInfo.sampler = Engine::get()->textureSampler;
+
+				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrite.dstSet = descriptorSets[i];
+				descriptorWrite.dstBinding = 1;
+				descriptorWrite.dstArrayElement = 0;
+				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorWrite.descriptorCount = 1;
+				descriptorWrite.pImageInfo = &imageInfo;
+
+			}
+
+			descriptorWrites.push_back(descriptorWrite);
+		}
+
+		vkUpdateDescriptorSets(Engine::get()->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+
+	}
+}

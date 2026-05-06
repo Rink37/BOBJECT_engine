@@ -768,8 +768,8 @@ void matrixTranspose(vector<vector<float>> src, vector<vector<float>>& out) {
 	// switches the rows and columns of the src matrix
 	// Does not fail
 	
-	int width = src.size();
-	int height = src[0].size();
+	int width = static_cast<int>(src.size());
+	int height = static_cast<int>(src[0].size());
 
 	out.clear();
 
@@ -887,7 +887,7 @@ void matrixInverse(vector<vector<float>> matrix, vector<vector<float>>& inverse)
 	for (int x = 0; x != matrix.size(); x++) {
 		vector<float> col;
 		for (int y = 0; y != matrix[0].size(); y++) {
-			col.push_back(cofactorTranspose[x][y] * 1.0 / determinant);
+			col.push_back(cofactorTranspose[x][y] * 1.0f / determinant);
 		}
 		inverse.push_back(col);
 	}

@@ -268,26 +268,6 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 	}
 }
 
-//void RemapBackend::smootheResult(VkCommandBuffer commandBuffer) {
-//	referenceKuwahara->filterImage(commandBuffer);
-
-//	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
-
-//	if (filteredOSNormal != nullptr) {
-//		filteredOSNormal->cleanup();
-//		filteredOSNormal = nullptr;
-//	}
-
-//	referenceKuwahara->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-//	referenceKuwahara->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	
-//	filteredOSNormal = referenceKuwahara->filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, baseWidth, baseHeight);
-//	filteredOSNormal->textureImageView = filteredOSNormal->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-
-//	referenceKuwahara->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-//	referenceKuwahara->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
-//}
-
 void RemapBackend::cleanup() {
 	if (baseDiffuse != nullptr) {
 		baseDiffuse->cleanup();
@@ -426,7 +406,6 @@ void RemapUI::incrementMethod(UIItem*) {
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat");
 	sConst->normalType = 0;
 	sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
-	//std::cout << "Should switch to method " << newMethod << std::endl;
 	UIItem* endButtons = canvas[0]->Items[canvas[0]->Items.size() - 1];
 	for (int i = 2; i != canvas[0]->Items.size()-1; i++) {
 		canvas[0]->Items[i]->cleanup();
