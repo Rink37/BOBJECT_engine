@@ -130,5 +130,60 @@ public:
 	}
 };
 
+class MaterialTemplate {
+public:
+	MaterialTemplate(std::string sName, GraphicsPass* bPass) {
+		shaderName = sName;
+		boundPass = bPass;
+		
+		std::vector<shaderIOValue>* IOvals = &boundPass->shaderDatas[boundPass->pipelineMap.at(shaderName)].IO;
+
+		for (shaderIOValue IOval : *IOvals) {
+			textureMap.insert({ IOval.name, nullptr });
+			textureOrder.push_back(IOval.name);
+		}
+	}
+
+	std::vector<std::string> listChannels() {
+		std::vector<std::string> channels{};
+		for (auto mapElem : textureMap) {
+			channels.push_back(mapElem.first);
+		}
+		return channels;
+	}
+
+	void setTexture(std::string textureChannel, Texture* newTexture) {
+		if (textureMap.count(textureChannel) == 0) {
+			std::cout << "Invalid texture channel" << std::endl;
+			return;
+		}
+		textureMap.at(textureChannel) = newTexture;
+	}
+
+	Material* createMaterial() {
+		bool isValid = true;
+		for (auto mapElem : textureMap) {
+			if (mapElem.second == nullptr) {
+				isValid = false;
+				break;
+			}
+		}
+		if (!isValid) {
+			throw std::runtime_error("Failed to create new material; insufficient textures available");
+		}
+		std::vector<Texture*> materialTextures{};
+		for (std::string channel : textureOrder) {
+			materialTextures.push_back(textureMap.at(channel));
+		}
+		Material* newMat = new Material(materialTextures, shaderName, boundPass);
+		return newMat;
+	}
+
+	std::string shaderName;
+	GraphicsPass* boundPass;
+
+	std::vector<std::string> textureOrder{};
+	std::map<std::string, Texture*> textureMap{};
+};
 
 #endif
