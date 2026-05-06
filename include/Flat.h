@@ -13,5 +13,5 @@ const std::vector<shaderIOValue> FlatIO = {shaderIOValue("UniformBufferObject", 
 #endif
 
 #ifndef FLATSHADER
-#define FLATSHADER shaderData( &FlatFragData, &FlatVertData, FlatWireframe )
+#define FLATSHADER shaderData( &FlatFragData, &FlatVertData, FlatWireframe, FlatIO )
 #endif

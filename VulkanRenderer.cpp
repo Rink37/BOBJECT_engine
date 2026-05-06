@@ -1163,8 +1163,7 @@ private:
 		drawMat = ((!tomogActive) ? activeSurfaceMat : &tomogUI.scannedMaterial);
 		renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
 		graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
-		VkPipelineLayout pipelineLayoutSet[2] = { currentPass->diffusePipelineLayout, currentPass->diffNormPipelineLayout };
-		pipelineLayout = (viewIndex == 1 && lit) ? pipelineLayoutSet[drawMat->pipelineLayoutIndex] : currentPass->diffusePipelineLayout;
+		pipelineLayout = (viewIndex == 1 && lit) ? currentPass->pipelineLayouts[drawMat->pipelineLayoutIndex] : currentPass->pipelineLayouts[currentPass->layoutMap.at("1_0_")];
 	}
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, GraphicsPass* currentPass, uint32_t imageIndex) {
@@ -1177,7 +1176,7 @@ private:
 
 			for (uint32_t i : visibleObjects) {
 				if (staticObjects[i].isWireframeVisible) {
-					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, currentPass->diffusePipelineLayout, sConst->webcamPtr->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+					//engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, currentPass->pipelineLayouts[currentPass->layoutMap.at("1_0_")], sConst->webcamPtr->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 				}
 			}
 		}

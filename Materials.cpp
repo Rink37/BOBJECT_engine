@@ -45,16 +45,31 @@ void Material::createDescriptorPool() {
 void Material::createDescriptorSets() {
 	VkDescriptorSetAllocateInfo allocInfo{};
 
+	std::string key = "";
+
 	if (textures.size() == 1) {
-		descriptorSetLayout = Engine::get()->diffuseDescriptorSetLayout;
-		pipelineLayout = Engine::get()->defaultPass.diffusePipelineLayout;
-		pipelineLayoutIndex = 0;
+		key = "1_0_";
+		
+		pipelineLayoutIndex = Engine::get()->defaultPass.layoutMap.at(key);
+		descriptorSetLayout = Engine::get()->defaultPass.descriptorSetLayouts[pipelineLayoutIndex];
+		pipelineLayout = Engine::get()->defaultPass.pipelineLayouts[pipelineLayoutIndex];
+	}
+	else if (textures.size() == 0) {
+		key = "1_";
+
+		pipelineLayoutIndex = Engine::get()->defaultPass.layoutMap.at(key);
+		descriptorSetLayout = Engine::get()->defaultPass.descriptorSetLayouts[pipelineLayoutIndex];
+		pipelineLayout = Engine::get()->defaultPass.pipelineLayouts[pipelineLayoutIndex];
 	}
 	else {
-		descriptorSetLayout = Engine::get()->diffNormDescriptorSetLayout;
-		pipelineLayout = Engine::get()->defaultPass.diffNormPipelineLayout;
-		pipelineLayoutIndex = 1;
+		key = "1_0_0_";
+
+		pipelineLayoutIndex = Engine::get()->defaultPass.layoutMap.at(key);
+		descriptorSetLayout = Engine::get()->defaultPass.descriptorSetLayouts[pipelineLayoutIndex];
+		pipelineLayout = Engine::get()->defaultPass.pipelineLayouts[pipelineLayoutIndex];
 	}
+
+	std::cout << pipelineLayoutIndex << std::endl;
 
 	vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 
@@ -104,6 +119,18 @@ void Material::createDescriptorSets() {
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].pImageInfo = &imageInfo;
+
+			vkUpdateDescriptorSets(Engine::get()->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		}
+		else if (textures.size() == 0) {
+			array<VkWriteDescriptorSet, 1> descriptorWrites{};
+			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[0].dstSet = descriptorSets[i];
+			descriptorWrites[0].dstBinding = 0;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].pBufferInfo = &bufferInfo;
 
 			vkUpdateDescriptorSets(Engine::get()->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}

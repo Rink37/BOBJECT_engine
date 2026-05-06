@@ -372,11 +372,10 @@ void Engine::createRenderPass(VkRenderPass& newRenderPass, VkFormat imageFormat,
 void Engine::createDescriptorSetLayout() {
 	VkDescriptorSetLayoutBinding uboLayoutBinding{}; //First we define the uniform buffer object - contains things like projection matrix
 	uboLayoutBinding.binding = 0;
-	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	uboLayoutBinding.descriptorCount = 1;
-
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	uboLayoutBinding.pImmutableSamplers = nullptr;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 	VkDescriptorSetLayoutBinding samplerLayoutBinding{}; //We then define the descriptor for the shader. 
 	samplerLayoutBinding.binding = 1;
@@ -399,18 +398,78 @@ void Engine::createDescriptorSetLayout() {
 	layoutInfo.bindingCount = static_cast<uint32_t>(diffBindings.size());
 	layoutInfo.pBindings = diffBindings.data();
 
-	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &diffuseDescriptorSetLayout) != VK_SUCCESS) {
-		throw runtime_error("failed to create descriptor set layout!");
-	}
+	//if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &diffuseDescriptorSetLayout) != VK_SUCCESS) {
+	//	throw runtime_error("failed to create descriptor set layout!");
+	//}
 
 	array<VkDescriptorSetLayoutBinding, 3> normDiffBindings = { uboLayoutBinding, samplerLayoutBinding, normalLayoutBinding };
 
 	layoutInfo.bindingCount = static_cast<uint32_t>(normDiffBindings.size());
 	layoutInfo.pBindings = normDiffBindings.data();
 
-	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &diffNormDescriptorSetLayout) != VK_SUCCESS) {
+	//if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &diffNormDescriptorSetLayout) != VK_SUCCESS) {
+	//	throw runtime_error("failed to create descriptor set layout!");
+	//}
+}
+
+void Engine::createDescriptorSetLayout(std::string key, std::vector<shaderIOValue> IO, GraphicsPass& graphicsPass) {
+	std::vector<VkDescriptorSetLayoutBinding> layoutBindings{};
+
+	uint32_t index = 0;
+	for (shaderIOValue IOval : IO) {
+		VkDescriptorSetLayoutBinding layoutBinding{};
+		layoutBinding.descriptorCount = 1;
+		layoutBinding.binding = index;
+		layoutBinding.pImmutableSamplers = nullptr;
+		index++;
+		if (IOval.type == 0) {
+			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		else {
+			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		}
+		layoutBindings.push_back(layoutBinding);
+	}
+
+	VkDescriptorSetLayout newDescriptorSetLayout = nullptr;
+	VkPipelineLayout newPipelineLayout = nullptr;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+	layoutInfo.pBindings = layoutBindings.data();
+
+	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &newDescriptorSetLayout) != VK_SUCCESS) {
 		throw runtime_error("failed to create descriptor set layout!");
 	}
+
+	std::vector<VkDynamicState> dynamicStates = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
+	VkPipelineDynamicStateCreateInfo dynamicState{};
+	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+	dynamicState.pDynamicStates = dynamicStates.data();
+
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &newDescriptorSetLayout;
+
+	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &newPipelineLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
+	graphicsPass.descriptorSetLayouts.push_back(newDescriptorSetLayout);
+	graphicsPass.pipelineLayouts.push_back(newPipelineLayout);
+	graphicsPass.layoutMap.insert({ key, graphicsPass.descriptorSetLayouts.size() - 1 });
+
+	std::cout << key << std::endl;
+	std::cout << newPipelineLayout << std::endl;
 }
 
 
@@ -460,42 +519,33 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	shaderData TS_BF = TS_BFSHADER;
 	shaderData AC_TS_BF = AC_TS_BFSHADER;
 	shaderData uiTextShader = UITEXTSHADER;
-
-	std::vector<shaderData*> shaderDatas;
-	std::vector<int> pipelineIndices;
 	std::vector<int> vertexInputInfoIndices;
 
-	shaderDatas.push_back(&flatShader);
-	pipelineIndices.push_back(0);
-	shaderDatas.push_back(&AC_flatShader);
-	pipelineIndices.push_back(0);
-	shaderDatas.push_back(&bfShader);
-	pipelineIndices.push_back(0);
-	shaderDatas.push_back(&AC_bfShader);
-	pipelineIndices.push_back(0);
-	shaderDatas.push_back(&uiShader);
-	pipelineIndices.push_back(0);
-	shaderDatas.push_back(&wShader);
-	pipelineIndices.push_back(0);
-	shaderDatas.push_back(&uvShader);
-	pipelineIndices.push_back(0);
-	shaderDatas.push_back(&uiShaderGray);
-	pipelineIndices.push_back(0);
-	copy(pipelineIndices.begin(), pipelineIndices.end(), back_inserter(vertexInputInfoIndices));
-	shaderDatas.push_back(&OS_BF);
-	pipelineIndices.push_back(1);
+	graphicsPass.shaderDatas.push_back(flatShader);
 	vertexInputInfoIndices.push_back(0);
-	shaderDatas.push_back(&AC_OS_BF);
-	pipelineIndices.push_back(1);
+	graphicsPass.shaderDatas.push_back(AC_flatShader);
 	vertexInputInfoIndices.push_back(0);
-	shaderDatas.push_back(&TS_BF);
-	pipelineIndices.push_back(1);
+	graphicsPass.shaderDatas.push_back(bfShader);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(AC_bfShader);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(uiShader);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(wShader);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(uvShader);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(uiShaderGray);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(OS_BF);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(AC_OS_BF);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(TS_BF);
 	vertexInputInfoIndices.push_back(1);
-	shaderDatas.push_back(&AC_TS_BF);
-	pipelineIndices.push_back(1);
+	graphicsPass.shaderDatas.push_back(AC_TS_BF);
 	vertexInputInfoIndices.push_back(1);
-	shaderDatas.push_back(&uiTextShader);
-	pipelineIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(uiTextShader);
 	vertexInputInfoIndices.push_back(0);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -572,24 +622,38 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.pSetLayouts = &diffuseDescriptorSetLayout;
+	//pipelineLayoutInfo.pSetLayouts = &diffuseDescriptorSetLayout;
 
-	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPass.diffusePipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
-	}
+	//if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPass.diffusePipelineLayout) != VK_SUCCESS) {
+	//	throw std::runtime_error("failed to create pipeline layout!");
+	//}
 
-	pipelineLayoutInfo.pSetLayouts = &diffNormDescriptorSetLayout;
+	//pipelineLayoutInfo.pSetLayouts = &diffNormDescriptorSetLayout;
 
-	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPass.diffNormPipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
-	}
+	//if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPass.diffNormPipelineLayout) != VK_SUCCESS) {
+	//	throw std::runtime_error("failed to create pipeline layout!");
+	//}
 
-	VkPipelineLayout pipelineLayouts[2] = { graphicsPass.diffusePipelineLayout, graphicsPass.diffNormPipelineLayout };
+	//VkPipelineLayout pipelineLayouts[2] = { graphicsPass.diffusePipelineLayout, graphicsPass.diffNormPipelineLayout };
 	VkPipelineVertexInputStateCreateInfo vertexInputInfos[2] = { vertexInputInfo, tangentVertexInputInfo };
 
+	for (int i = 0; i != graphicsPass.shaderDatas.size(); i++) {
+		shaderData* sd = &graphicsPass.shaderDatas[i];
 
-	for (int i = 0; i != shaderDatas.size(); i++) {
-		shaderData* sd = shaderDatas[i];
+		std::string key = "";
+
+		for (auto ioVal : sd->IO) {
+			key += std::to_string(ioVal.type) + "_";
+		}
+
+		if (graphicsPass.layoutMap.count(key) == 0) {
+			createDescriptorSetLayout(key, sd->IO, graphicsPass);
+			//std::cout << key << " " << graphicsPass.layoutMap.at(key) << std::endl;
+		}
+
+		uint32_t pipelineLayoutIndex = graphicsPass.layoutMap.at(key);
+
+		std::cout << graphicsPass.pipelineLayouts[pipelineLayoutIndex] << std::endl;
 
 		VkPipeline* CurrentPipeline = new VkPipeline;
 
@@ -639,7 +703,7 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 		pipelineInfo.pMultisampleState = &multisampling;
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.layout = pipelineLayouts[pipelineIndices[i]];
+		pipelineInfo.layout = graphicsPass.pipelineLayouts[pipelineLayoutIndex];
 		pipelineInfo.renderPass = graphicsPass.renderPass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -827,13 +891,15 @@ void Engine::cleanup() {
 
 	vkDestroySampler(device, textureSampler, nullptr);
 
-	for (VkPipeline* pipeline : defaultPass.GraphicsPipelines) {
-		vkDestroyPipeline(device, *pipeline, nullptr);
-	}
+	defaultPass.cleanup(device);
 
-	vkDestroyPipelineLayout(device, defaultPass.diffusePipelineLayout, nullptr);
-	vkDestroyPipelineLayout(device, defaultPass.diffNormPipelineLayout, nullptr);
-	vkDestroyRenderPass(device, defaultPass.renderPass, nullptr);
+	//for (VkPipeline* pipeline : defaultPass.GraphicsPipelines) {
+	//	vkDestroyPipeline(device, *pipeline, nullptr);
+	//}
+
+	//vkDestroyPipelineLayout(device, defaultPass.diffusePipelineLayout, nullptr);
+	//vkDestroyPipelineLayout(device, defaultPass.diffNormPipelineLayout, nullptr);
+	//vkDestroyRenderPass(device, defaultPass.renderPass, nullptr);
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroyBuffer(device, uniformBuffers[i], nullptr);
@@ -843,8 +909,8 @@ void Engine::cleanup() {
 	vkDestroyBuffer(device, colourBuffer, nullptr);
 	vkFreeMemory(device, colourBufferMemory, nullptr);
 
-	vkDestroyDescriptorSetLayout(device, diffuseDescriptorSetLayout, nullptr);
-	vkDestroyDescriptorSetLayout(device, diffNormDescriptorSetLayout, nullptr);
+	//vkDestroyDescriptorSetLayout(device, diffuseDescriptorSetLayout, nullptr);
+	//vkDestroyDescriptorSetLayout(device, diffNormDescriptorSetLayout, nullptr);
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);

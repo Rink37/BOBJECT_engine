@@ -13,5 +13,5 @@ const std::vector<shaderIOValue> AC_FlatIO = {shaderIOValue("UniformBufferObject
 #endif
 
 #ifndef AC_FLATSHADER
-#define AC_FLATSHADER shaderData( &AC_FlatFragData, &AC_FlatVertData, AC_FlatWireframe )
+#define AC_FLATSHADER shaderData( &AC_FlatFragData, &AC_FlatVertData, AC_FlatWireframe, AC_FlatIO )
 #endif

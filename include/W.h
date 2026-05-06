@@ -13,5 +13,5 @@ const std::vector<shaderIOValue> WIO = {shaderIOValue("UniformBufferObject", 1, 
 #endif
 
 #ifndef WSHADER
-#define WSHADER shaderData( &WFragData, &WVertData, WWireframe )
+#define WSHADER shaderData( &WFragData, &WVertData, WWireframe, WIO )
 #endif

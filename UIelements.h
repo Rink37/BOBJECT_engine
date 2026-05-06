@@ -65,7 +65,7 @@ struct UIImage {
 			return commandBuffer;
 		}
 
-		Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->defaultPass.diffusePipelineLayout, mat[matidx]->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
+		Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->defaultPass.pipelineLayouts[Engine::get()->defaultPass.layoutMap.at("1_0_")], mat[matidx]->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
 
 		return commandBuffer;
 	}
@@ -293,7 +293,7 @@ public:
 
 		for (fontMesh* mesh : characters) {
 			if (mesh->isVisible) {
-				Engine::get()->drawObject(commandBuffer, mesh->vertexBuffer, mesh->indexBuffer, Engine::get()->defaultPass.diffusePipelineLayout, textFont->fontMat->descriptorSets[currentFrame], static_cast<uint32_t>(mesh->indices.size()));
+				Engine::get()->drawObject(commandBuffer, mesh->vertexBuffer, mesh->indexBuffer, Engine::get()->defaultPass.pipelineLayouts[Engine::get()->defaultPass.layoutMap.at("1_0_")], textFont->fontMat->descriptorSets[currentFrame], static_cast<uint32_t>(mesh->indices.size()));
 			}
 		}
 

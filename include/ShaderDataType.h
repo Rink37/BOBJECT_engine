@@ -26,6 +26,14 @@ struct shaderData{
         type = MESH_SHADER;
     }
 
+    shaderData(const std::vector<unsigned char>* f, const std::vector<unsigned char>* v, bool w, std::vector<shaderIOValue> IOvalues) {
+        fragData = f;
+        vertData = v;
+        isWireframe = w;
+        type = MESH_SHADER;
+        IO = IOvalues;
+    }
+
     shaderData(const std::vector<unsigned char>* c, bool w) {
         compData = c;
         isWireframe = w;

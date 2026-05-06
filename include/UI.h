@@ -13,5 +13,5 @@ const std::vector<shaderIOValue> UIIO = {shaderIOValue("UniformBufferObject", 1,
 #endif
 
 #ifndef UISHADER
-#define UISHADER shaderData( &UIFragData, &UIVertData, UIWireframe )
+#define UISHADER shaderData( &UIFragData, &UIVertData, UIWireframe, UIIO )
 #endif
