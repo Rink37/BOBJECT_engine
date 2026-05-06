@@ -732,10 +732,10 @@ private:
 		surfaceMenu.setDiffuse(sConst->currentDiffuse());
 
 		if (sConst->alphaClipEnabled) {
-			sConst->renderPipeline = "AC_BFShading";
+			sConst->renderPipeline = "AC_BF";
 		}
 		else {
-			sConst->renderPipeline = "BFShading";
+			sConst->renderPipeline = "BF";
 		}
 		sConst->updateSurfaceMat();
 	}
@@ -1027,18 +1027,18 @@ private:
 
 	void updatePipelineIndex() {
 		if ((viewIndex == 0 || viewIndex == 1) && lit) {
-			engine->pipelineindex = engine->PipelineMap.at(sConst->renderPipeline);
+			engine->pipelineindex = currentPass->pipelineMap.at(sConst->renderPipeline);
 		}
 		else if (viewIndex != 2) {
 			if (sConst->alphaClipEnabled) {
-				engine->pipelineindex = engine->PipelineMap.at("AC_Flat");
+				engine->pipelineindex = currentPass->pipelineMap.at("AC_Flat");
 			}
 			else {
-				engine->pipelineindex = engine->PipelineMap.at("Flat");
+				engine->pipelineindex = currentPass->pipelineMap.at("Flat");
 			}
 		}
 		else if (viewIndex == 2) {
-			engine->pipelineindex = engine->PipelineMap.at("W");
+			engine->pipelineindex = currentPass->pipelineMap.at("W");
 		}
 		updateDrawVariables();
 	}
@@ -1170,7 +1170,7 @@ private:
 		drawMat = ((!tomogActive) ? activeSurfaceMat : &tomogUI.scannedMaterial);
 		drawMat = (viewIndex == 2) ? wireMat : drawMat;
 		renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
-		graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
+		graphicsPipelineIndex = (viewIndex == 1 && lit) ? currentPass->pipelineMap.at(renderPipelineName) : engine->pipelineindex;
 		pipelineLayout = (viewIndex == 1 && lit) ? currentPass->pipelineLayouts[drawMat->pipelineLayoutIndex] : currentPass->pipelineLayouts[currentPass->layoutMap.at("1_0_")];
 		pipelineLayout = (viewIndex == 2) ? currentPass->pipelineLayouts[currentPass->layoutMap.at("1_")] : pipelineLayout;
 	}
@@ -1181,7 +1181,7 @@ private:
 		engine->beginRenderPass(commandBuffer, currentPass, &renderImage, imageIndex, backgroundColour);
 
 		if (showWireframe) {
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UV")]);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UV")]);
 
 			for (uint32_t i : visibleObjects) {
 				if (staticObjects[i].isWireframeVisible) {
@@ -1190,19 +1190,19 @@ private:
 			}
 		}
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UIGray")]);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIGray")]);
 
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->drawUI(commandBuffer, currentFrame);
 		}
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UI")]);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UI")]);
 
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->drawImages(commandBuffer, currentFrame);
 		}
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[engine->PipelineMap.at("UIText")]);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIText")]);
 
 		for (size_t i = 0; i != widgets.size(); i++) {
 			widgets[i]->drawText(commandBuffer, currentFrame);

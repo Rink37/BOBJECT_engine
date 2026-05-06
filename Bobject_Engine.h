@@ -167,14 +167,13 @@ struct drawImage {
 
 struct GraphicsPass {
 	VkRenderPass renderPass;
-	//VkPipelineLayout diffusePipelineLayout = nullptr;
-	//VkPipelineLayout diffNormPipelineLayout = nullptr;
-	
+
 	std::vector<VkPipeline*> GraphicsPipelines = {};
 	std::vector<shaderData> shaderDatas = {};
 	std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {};
 	std::vector<VkPipelineLayout> pipelineLayouts = {};
-	std::map<std::string, int> layoutMap;
+	std::map<std::string, uint32_t> layoutMap;
+	std::map<std::string, uint32_t> pipelineMap;
 
 	void cleanup(VkDevice device) {
 		shaderDatas.clear();
@@ -191,8 +190,6 @@ struct GraphicsPass {
 			vkDestroyPipelineLayout(device, layout, nullptr);
 		}
 
-		//vkDestroyPipelineLayout(device, diffusePipelineLayout, nullptr);
-		//vkDestroyPipelineLayout(device, diffNormPipelineLayout, nullptr);
 		vkDestroyRenderPass(device, renderPass, nullptr);
 	}
 };
@@ -279,9 +276,6 @@ public:
 	std::vector<VkCommandBuffer> commandBuffers = {};
 
 	std::vector<VkFramebuffer> swapChainFramebuffers = {};
-
-	//VkDescriptorSetLayout diffuseDescriptorSetLayout = nullptr;
-	//VkDescriptorSetLayout diffNormDescriptorSetLayout = nullptr;
 
 	VkExtent2D swapChainExtent = {};
 
@@ -384,7 +378,6 @@ private:
 	void createLogicalDevice();
 	void createSwapChain();
 	void createImageViews();
-	void createDescriptorSetLayout();
 	void createDescriptorSetLayout(std::string, std::vector<shaderIOValue>, GraphicsPass&);
 	void createGraphicsPipelines();
 	void createCommandPool();

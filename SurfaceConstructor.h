@@ -213,7 +213,7 @@ public:
 				break;
 			case 1:
 				if (alphaClipEnabled) {
-					renderPipeline = "AC_TS";
+					renderPipeline = "AC_TS_BF";
 				}
 				else {
 					renderPipeline = "TS_BF";

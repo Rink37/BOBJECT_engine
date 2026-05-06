@@ -52,8 +52,36 @@ void Material::createDescriptorPool() {
 			throw runtime_error("failed to create descriptor pool!");
 		}
 	}
+}
 
-	
+void Material::createDescriptorPool(std::string targetShader, GraphicsPass* currentPass) {
+	std::vector<shaderIOValue>* IOvals = &currentPass->shaderDatas[currentPass->pipelineMap.at(targetShader)].IO;
+
+	VkDescriptorPoolCreateInfo poolInfo{};
+	std::vector<VkDescriptorPoolSize> poolSizes{};
+
+	for (shaderIOValue IOval : *IOvals) {
+		VkDescriptorPoolSize poolSize{};
+		poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+		if (IOval.type == 1) {
+			poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		}
+		else {
+			poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		}
+
+		poolSizes.push_back(poolSize);
+	}
+
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+	poolInfo.pPoolSizes = poolSizes.data();
+	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+	if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+		throw runtime_error("failed to create descriptor pool!");
+	}
 }
 
 void Material::createDescriptorSets() {

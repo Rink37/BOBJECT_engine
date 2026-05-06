@@ -15,6 +15,16 @@ public:
 		createMaterial();
 	}
 
+	Material(std::vector<Texture*> inTextures, std::string targetShader, GraphicsPass* graphicsPass) {
+		if (textures[0]->textureFormat == VK_FORMAT_R8_UNORM) {
+			isUIMat = true;
+		}
+		for (Texture* tex : inTextures) {
+			textures.push_back(tex);
+		}
+		createMaterial(targetShader, graphicsPass);
+	}
+
 	void init() {
 		if (!cleaned) {
 			cleanupDescriptor();
@@ -100,8 +110,17 @@ public:
 		cleaned = false;
 	}
 
+	void createMaterial(std::string shaderName, GraphicsPass* currentPass) {
+		createDescriptorPool(shaderName, currentPass);
+		createDescriptorSets(shaderName, currentPass);
+		cleaned = false;
+	}
+
 	void createDescriptorPool();
+	void createDescriptorPool(std::string, GraphicsPass*);
+	
 	void createDescriptorSets();
+	void createDescriptorSets(std::string, GraphicsPass*);
 
 	bool cleaned = true;
 	bool isUIMat = false;

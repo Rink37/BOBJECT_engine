@@ -369,49 +369,6 @@ void Engine::createRenderPass(VkRenderPass& newRenderPass, VkFormat imageFormat,
 	}
 }
 
-void Engine::createDescriptorSetLayout() {
-	VkDescriptorSetLayoutBinding uboLayoutBinding{}; //First we define the uniform buffer object - contains things like projection matrix
-	uboLayoutBinding.binding = 0;
-	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uboLayoutBinding.pImmutableSamplers = nullptr;
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-	VkDescriptorSetLayoutBinding samplerLayoutBinding{}; //We then define the descriptor for the shader. 
-	samplerLayoutBinding.binding = 1;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
-	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	VkDescriptorSetLayoutBinding normalLayoutBinding{}; //We then define the descriptor for the shader. 
-	normalLayoutBinding.binding = 2;
-	normalLayoutBinding.descriptorCount = 1;
-	normalLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	normalLayoutBinding.pImmutableSamplers = nullptr;
-	normalLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	array<VkDescriptorSetLayoutBinding, 2> diffBindings = { uboLayoutBinding, samplerLayoutBinding };
-
-	VkDescriptorSetLayoutCreateInfo layoutInfo{};
-	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = static_cast<uint32_t>(diffBindings.size());
-	layoutInfo.pBindings = diffBindings.data();
-
-	//if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &diffuseDescriptorSetLayout) != VK_SUCCESS) {
-	//	throw runtime_error("failed to create descriptor set layout!");
-	//}
-
-	array<VkDescriptorSetLayoutBinding, 3> normDiffBindings = { uboLayoutBinding, samplerLayoutBinding, normalLayoutBinding };
-
-	layoutInfo.bindingCount = static_cast<uint32_t>(normDiffBindings.size());
-	layoutInfo.pBindings = normDiffBindings.data();
-
-	//if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &diffNormDescriptorSetLayout) != VK_SUCCESS) {
-	//	throw runtime_error("failed to create descriptor set layout!");
-	//}
-}
-
 void Engine::createDescriptorSetLayout(std::string key, std::vector<shaderIOValue> IO, GraphicsPass& graphicsPass) {
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings{};
 
@@ -467,9 +424,6 @@ void Engine::createDescriptorSetLayout(std::string key, std::vector<shaderIOValu
 	graphicsPass.descriptorSetLayouts.push_back(newDescriptorSetLayout);
 	graphicsPass.pipelineLayouts.push_back(newPipelineLayout);
 	graphicsPass.layoutMap.insert({ key, graphicsPass.descriptorSetLayouts.size() - 1 });
-
-	std::cout << key << std::endl;
-	std::cout << newPipelineLayout << std::endl;
 }
 
 
@@ -506,6 +460,7 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	shaderData TS_BF = TS_BFSHADER;
 	shaderData AC_TS_BF = AC_TS_BFSHADER;
 	shaderData uiTextShader = UITEXTSHADER;
+	
 	std::vector<int> vertexInputInfoIndices;
 
 	graphicsPass.shaderDatas.push_back(flatShader);
@@ -606,22 +561,6 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 	dynamicState.pDynamicStates = dynamicStates.data();
 
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 1;
-	//pipelineLayoutInfo.pSetLayouts = &diffuseDescriptorSetLayout;
-
-	//if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPass.diffusePipelineLayout) != VK_SUCCESS) {
-	//	throw std::runtime_error("failed to create pipeline layout!");
-	//}
-
-	//pipelineLayoutInfo.pSetLayouts = &diffNormDescriptorSetLayout;
-
-	//if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPass.diffNormPipelineLayout) != VK_SUCCESS) {
-	//	throw std::runtime_error("failed to create pipeline layout!");
-	//}
-
-	//VkPipelineLayout pipelineLayouts[2] = { graphicsPass.diffusePipelineLayout, graphicsPass.diffNormPipelineLayout };
 	VkPipelineVertexInputStateCreateInfo vertexInputInfos[2] = { vertexInputInfo, tangentVertexInputInfo };
 
 	for (int i = 0; i != graphicsPass.shaderDatas.size(); i++) {
@@ -629,22 +568,19 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 
 		std::string key = "";
 
-		for (auto ioVal : sd->IO) {
+		for (shaderIOValue ioVal : sd->IO) {
 			key += std::to_string(ioVal.type) + "_";
 		}
 
 		if (graphicsPass.layoutMap.count(key) == 0) {
 			createDescriptorSetLayout(key, sd->IO, graphicsPass);
-			//std::cout << key << " " << graphicsPass.layoutMap.at(key) << std::endl;
 		}
 
 		uint32_t pipelineLayoutIndex = graphicsPass.layoutMap.at(key);
 
-		if (PipelineMap.count(sd->shaderName) == 0) {
-			PipelineMap.insert({ sd->shaderName, i });
+		if (graphicsPass.pipelineMap.count(sd->shaderName) == 0) {
+			graphicsPass.pipelineMap.insert({ sd->shaderName, i });
 		}
-
-		//std::cout << graphicsPass.pipelineLayouts[pipelineLayoutIndex] << std::endl;
 
 		VkPipeline* CurrentPipeline = new VkPipeline;
 
@@ -866,7 +802,6 @@ void Engine::initVulkan() {
 	createSwapChain();
 	createImageViews();
 	createRenderPass(defaultPass.renderPass, swapChainImageFormat, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-	createDescriptorSetLayout();
 	createGraphicsPipelines();
 	createColourResources();
 	createDepthResources();
@@ -884,14 +819,6 @@ void Engine::cleanup() {
 
 	defaultPass.cleanup(device);
 
-	//for (VkPipeline* pipeline : defaultPass.GraphicsPipelines) {
-	//	vkDestroyPipeline(device, *pipeline, nullptr);
-	//}
-
-	//vkDestroyPipelineLayout(device, defaultPass.diffusePipelineLayout, nullptr);
-	//vkDestroyPipelineLayout(device, defaultPass.diffNormPipelineLayout, nullptr);
-	//vkDestroyRenderPass(device, defaultPass.renderPass, nullptr);
-
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroyBuffer(device, uniformBuffers[i], nullptr);
 		vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
@@ -899,9 +826,6 @@ void Engine::cleanup() {
 
 	vkDestroyBuffer(device, colourBuffer, nullptr);
 	vkFreeMemory(device, colourBufferMemory, nullptr);
-
-	//vkDestroyDescriptorSetLayout(device, diffuseDescriptorSetLayout, nullptr);
-	//vkDestroyDescriptorSetLayout(device, diffNormDescriptorSetLayout, nullptr);
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
