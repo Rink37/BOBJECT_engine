@@ -15,6 +15,14 @@ public:
 		createMaterial();
 	}
 
+	void init() {
+		if (!cleaned) {
+			cleanupDescriptor();
+			textures.clear();
+		}
+		createMaterial();
+	}
+
 	void init(Texture* defaultTex) {
 		if (!cleaned) {
 			cleanupDescriptor();

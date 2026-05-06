@@ -653,7 +653,7 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 
 		uint32_t pipelineLayoutIndex = graphicsPass.layoutMap.at(key);
 
-		std::cout << graphicsPass.pipelineLayouts[pipelineLayoutIndex] << std::endl;
+		//std::cout << graphicsPass.pipelineLayouts[pipelineLayoutIndex] << std::endl;
 
 		VkPipeline* CurrentPipeline = new VkPipeline;
 

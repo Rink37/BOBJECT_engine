@@ -20,6 +20,20 @@ void Material::createDescriptorPool() {
 			throw runtime_error("failed to create descriptor pool!");
 		}
 	}
+	else if (textures.size() == 0) {
+		array<VkDescriptorPoolSize, 1> poolSizes{};
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+		poolInfo.pPoolSizes = poolSizes.data();
+		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+		if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+			throw runtime_error("failed to create descriptor pool!");
+		}
+	}
 	else {
 		array<VkDescriptorPoolSize, 3> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -68,8 +82,6 @@ void Material::createDescriptorSets() {
 		descriptorSetLayout = Engine::get()->defaultPass.descriptorSetLayouts[pipelineLayoutIndex];
 		pipelineLayout = Engine::get()->defaultPass.pipelineLayouts[pipelineLayoutIndex];
 	}
-
-	std::cout << pipelineLayoutIndex << std::endl;
 
 	vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 

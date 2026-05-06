@@ -484,6 +484,9 @@ public:
 
 		currentPass = &renderGP;
 
+		wireMat = new Material();
+		wireMat->init();
+
 		updateColourScheme();
 		updateLightAzimuth(0.0f);
 		updateLightPolar(0.0f);
@@ -518,6 +521,8 @@ private:
 	drawImage renderImage;
 	GraphicsPass renderGP;
 	GraphicsPass* currentPass = nullptr;
+
+	Material* wireMat = nullptr;
 
 	bool mouseDown = false;
 	bool tomogActive = false;
@@ -1161,9 +1166,11 @@ private:
 	void updateDrawVariables() {
 		Material* activeSurfaceMat = &((lit) ? sConst->surfaceMat : sConst->unlitSurfaceMat);
 		drawMat = ((!tomogActive) ? activeSurfaceMat : &tomogUI.scannedMaterial);
+		drawMat = (viewIndex == 2) ? wireMat : drawMat;
 		renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
 		graphicsPipelineIndex = (viewIndex == 1 && lit) ? engine->PipelineMap.at(renderPipelineName) : engine->pipelineindex;
 		pipelineLayout = (viewIndex == 1 && lit) ? currentPass->pipelineLayouts[drawMat->pipelineLayoutIndex] : currentPass->pipelineLayouts[currentPass->layoutMap.at("1_0_")];
+		pipelineLayout = (viewIndex == 2) ? currentPass->pipelineLayouts[currentPass->layoutMap.at("1_")] : pipelineLayout;
 	}
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, GraphicsPass* currentPass, uint32_t imageIndex) {
@@ -1176,7 +1183,7 @@ private:
 
 			for (uint32_t i : visibleObjects) {
 				if (staticObjects[i].isWireframeVisible) {
-					//engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, currentPass->pipelineLayouts[currentPass->layoutMap.at("1_0_")], sConst->webcamPtr->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, currentPass->pipelineLayouts[currentPass->layoutMap.at("1_")], wireMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 				}
 			}
 		}
