@@ -325,6 +325,18 @@ private:
 	int verticalArrange = ARRANGE_START;
 };
 
+class DropdownMenu : public UIItem {
+public:
+	DropdownMenu(float x, float y, float xsize, float ysize, Material* dropButtonMat, font* inFont) {
+		setDims(x, y, xsize, ysize);
+		Arrangement* mainArranger = new Arrangement(ORIENT_HORIZONTAL, x, y, xsize, ysize, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		mainArranger->addItem(new TextBox(inFont, 0.0f, 0.0f, (xsize * 0.666f)/ysize, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER));
+		mainArranger->addItem(new Button(dropButtonMat));
+		mainArranger->arrangeItems();
+		addItem(mainArranger);
+	}
+};
+
 class ImagePanel : public UIItem {
 // Represents only a webcam view
 public:
