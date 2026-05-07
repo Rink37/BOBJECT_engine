@@ -305,8 +305,9 @@ public:
 			mesh->cleanup();
 			delete mesh;
 		}
-		textFont->cleanup();
-		delete textFont;
+		if (textFont != nullptr) {
+			textFont->cleanup();
+		}
 	}
 
 	bool isVisible = true;

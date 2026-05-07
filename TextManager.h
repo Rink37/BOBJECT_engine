@@ -14,13 +14,16 @@ public:
 
 	void getAdvanceWidth(int, float&);
 
-	const float getSqAxisRatio() {
+	const float getSqAxisRatio() const {
 		return static_cast<float>(cellHeight) / static_cast<float>(cellWidth);
 	}
 
 	void cleanup() {
-		fontAtlas->cleanup();
-		fontMat->cleanupDescriptor();
+		if (!cleaned){
+			fontAtlas->cleanup();
+			fontMat->cleanupDescriptor();
+			cleaned = true;
+		}
 	}
 	
 	Texture* fontAtlas;
@@ -31,6 +34,8 @@ private:
 
 	int cellWidth = 46;
 	int cellHeight = 53;
+
+	bool cleaned = false;
 };
 
 class fontMesh : public Mesh {

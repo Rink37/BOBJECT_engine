@@ -276,9 +276,6 @@ public:
 		imageData wb = WIREFRAMEBUTTON;
 		Material* wireframeViewMat = newMaterial(&wb, "WireframeBtn");
 
-		//imageData lb = LOADBUTTON;
-		//Material* LoadBtnMat = newMaterial(&lb, "LoadBtn");
-
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
 
@@ -312,8 +309,6 @@ public:
 		azimuthSlider->setFloatCallback(azimuthCallback, true);
 
 		Arrangement* buttons = new Arrangement(ORIENT_VERTICAL, -1.0f, 1.0f, 0.1f, 0.25f, 0.0f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-
-		//buttons->addItem(getPtr(new Button(LoadBtnMat, loadObjectFunct)));
 		buttons->addItem(getPtr(Renderbuttons));
 		buttons->addItem(getPtr(polarSlider));
 		buttons->addItem(getPtr(azimuthSlider));
@@ -350,6 +345,9 @@ public:
 
 		imageData wb = WIREFRAMEBUTTON;
 		wireframeMat = newMaterial(&wb, "WireframeBtn");
+
+		imageData sb = SETTINGSBUTTON;
+		settingsMat = newMaterial(&sb, "SettingsBtn");
 
 		Arrangement* textArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -393,6 +391,7 @@ public:
 
 		objButtons->addItem(getPtr(objectName));
 		objButtons->addItem(getPtr(new spacer()));
+		objButtons->addItem(getPtr(new Button(settingsMat)));
 		objButtons->addItem(getPtr(objectButton));
 		objButtons->addItem(getPtr(objWireframeButton));
 		objButtons->arrangeItems();
@@ -422,6 +421,7 @@ private:
 	Material* visibleMat = nullptr;
 	Material* invisibleMat = nullptr;
 	Material* wireframeMat = nullptr;
+	Material* settingsMat = nullptr;
 };
 
 class TextureMenu : public Widget {
@@ -447,14 +447,17 @@ public:
 		imageData wb = WIREFRAMEBUTTON;
 		Material* wireframeMat = newMaterial(&wb, "WireframeBtn");
 
+		imageData sb = SETTINGSBUTTON;
+		settingsMat = newMaterial(&sb, "SettingsBtn");
+
 		Arrangement* textArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		imageData lb = OPENBUTTON;
 		Material* loadMat = newMaterial(&lb, "OpenBtn");
 
-		font* newFont = new font();
+		objectFont = new font();
 
-		TextBox* menuText = new TextBox(newFont, 0.0f, 0.0f, 4.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
+		TextBox* menuText = new TextBox(objectFont, 0.0f, 0.0f, 4.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
 		menuText->addText("TEXTURES");
 		textArrangement->addItem(getPtr(menuText));
 		textArrangement->addItem(getPtr(new spacer()));
@@ -463,6 +466,21 @@ public:
 		TextureButtons = getPtr(new Arrangement(ORIENT_VERTICAL, -0.9f, -0.5625f, 0.2f, 0.4375f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS));
 
 		TextureButtons->addItem(getPtr(textArrangement));
+		
+		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		std::string textureName = "Webcam View";
+
+		textureLoadList->getPtr(webcamTexture::get(), textureName);
+		
+		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		objectName->addText(textureName);
+
+		objButtons->addItem(getPtr(objectName));
+		objButtons->arrangeItems();
+
+		TextureButtons->addItem(getPtr(objButtons));
+		
 		TextureButtons->arrangeItems();
 
 		canvas.push_back(TextureButtons);
@@ -483,17 +501,17 @@ private:
 			del = ".";
 			pos = textureName.find(del);
 			textureName = textureName.substr(0, pos);
-			std::cout << textureName << std::endl;
 			imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
 			textureLoadList->getPtr(loadedTexture, textureName);
 
 			Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-			font* objectFont = new font();
 			TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 			objectName->addText(textureName);
 
 			objButtons->addItem(getPtr(objectName));
+			objButtons->addItem(getPtr(new spacer()));
+			objButtons->addItem(getPtr(new Button(settingsMat)));
 			objButtons->arrangeItems();
 
 			TextureButtons->addItem(getPtr(objButtons));
@@ -503,6 +521,10 @@ private:
 
 	UIItem* TextureButtons = nullptr;
 	LoadList* textureLoadList = nullptr;
+
+	font* objectFont = nullptr;
+
+	Material* settingsMat = nullptr;
 };
 
 class WebcamMenu : public Widget {
