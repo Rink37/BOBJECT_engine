@@ -65,6 +65,8 @@ public:
 
 	float xpos = 0.0f;
 
+	float characterHeight = 0.0f;
+
 	bool isVisible = true;
 
 	font* fontRef;

@@ -120,6 +120,10 @@ struct UIItem {
 		}
 	};
 
+	virtual void addText(std::string text) {
+		return;
+	}
+
 	virtual void setDims(float px, float py, float ex, float ey) {
 		this->posx = px;
 		this->posy = -1.0f * py;
@@ -279,6 +283,15 @@ public:
 		boxText += static_cast<char>(unicodeCharacter);
 	}
 
+	void clearText() {
+		vkDeviceWaitIdle(Engine::get()->device);
+		for (fontMesh* mesh : characters) {
+			mesh->cleanup();
+		}
+		characters.clear();
+		boxText = "";
+	}
+
 	void addText(std::string text) {
 		for (int i = 0; i != text.size(); i++) {
 			createCharacter(text[i]);
@@ -317,24 +330,27 @@ public:
 
 	uint32_t characterSize = 24; // Size in pixels
 
+	void setClickFunction(std::function<void(UIItem*)> func) {
+		clickFunct = func;
+	}
+
+	bool checkForClickEvent(double mousex, double mousey, int clicktype) {
+		std::cout << "Textbox checking for Event" << std::endl;
+		if (clickFunct != nullptr && clicktype == LMB_PRESS && isInArea(mousex, mousey)) {
+			clickFunct(this);
+			return true;
+		}
+		return false;
+	};
+
 private:
 
 	std::string boxText = "";
 
 	int horizontalArrange = ARRANGE_START;
 	int verticalArrange = ARRANGE_START;
-};
 
-class DropdownMenu : public UIItem {
-public:
-	DropdownMenu(float x, float y, float xsize, float ysize, Material* dropButtonMat, font* inFont) {
-		setDims(x, y, xsize, ysize);
-		Arrangement* mainArranger = new Arrangement(ORIENT_HORIZONTAL, x, y, xsize, ysize, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-		mainArranger->addItem(new TextBox(inFont, 0.0f, 0.0f, (xsize * 0.666f)/ysize, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER));
-		mainArranger->addItem(new Button(dropButtonMat));
-		mainArranger->arrangeItems();
-		addItem(mainArranger);
-	}
+	std::function<void(UIItem*)> clickFunct = nullptr;
 };
 
 class ImagePanel : public UIItem {
@@ -528,6 +544,28 @@ public:
 	std::function<void(UIItem*)> clickFunction = nullptr;
 
 	Checkbox() = default;
+
+	Checkbox(Material* onMat, Material* offMat) {
+
+		image = std::unique_ptr<UIImage>(new UIImage);
+		image->mat.push_back(onMat);
+		image->mat.push_back(offMat);
+		image->matidx = 0;
+		this->activestate = true;
+
+		image->isGray = onMat->isUIMat;
+
+		image->texWidth = image->mat[0]->textures[0]->texWidth;
+		image->texHeight = image->mat[0]->textures[0]->texHeight;
+
+		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+
+		update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
+	}
 
 	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func) {
 		
@@ -1300,6 +1338,136 @@ private:
 	bool updateOnMove = false; // If false we only perform callbacks on release, if true we perform callbacks on every movement
 };
 
+class DropdownMenu : public UIItem {
+public:
+	DropdownMenu(float x, float y, float xsize, float ysize, Material* dropButtonMat, Material* raiseButtonMat, font* inFont) {
+		setDims(x, y, xsize, ysize);
+		Arrangement* mainArranger = new Arrangement(ORIENT_HORIZONTAL, x, y, xsize, ysize, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		selectedTextBox = new TextBox(inFont, 0.0f, 0.0f, (xsize * 0.666f) / ysize, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		mainArranger->addItem(selectedTextBox);
+		
+		std::function<void(UIItem*)> dropdownFunc = std::bind(&DropdownMenu::optionsToggle, this, std::placeholders::_1);
+
+		mainArranger->addItem(new spacer());
+		mainArranger->addItem(new Checkbox(dropButtonMat, raiseButtonMat, dropdownFunc));
+		mainArranger->arrangeItems();
+		addItem(mainArranger);
+		textFont = inFont;
+	}
+
+	void setOptionIndex(int index) {
+		if (index >= options.size()) {
+			std::cout << "Invalid option index" << std::endl;
+			return;
+		}
+		optionIndex = index;
+		selectedTextBox->clearText();
+		selectedTextBox->addText(options[index]);
+		std::cout << options[index] << std::endl;
+		arrangeItems();
+		updateDisplay();
+	}
+
+	void addOptions(std::vector<std::string> inOptions) {
+		options.insert(options.end(), inOptions.begin(), inOptions.end());
+	}
+
+	void addOption(std::string inOption) {
+		options.push_back(inOption);
+	}
+
+	void getImages(std::vector<UIImage*>& images, bool isUI) {
+		for (size_t i = 0; i != Items.size(); i++) {
+			std::vector<UIImage*> subimages;
+			Items[i]->getImages(subimages, isUI);
+			for (size_t j = 0; j != subimages.size(); j++) {
+				images.push_back(subimages[j]);
+			}
+		}
+	};
+
+	void updateDisplay() {
+		for (size_t i = 0; i != Items.size(); i++) {
+			Items[i]->updateDisplay();
+		}
+	}
+
+	void drawText(VkCommandBuffer commandbuffer, uint32_t currentFrame) {
+		selectedTextBox->draw(commandbuffer, currentFrame);
+		if (optionsArrangement != nullptr) {
+			for (UIItem* item : optionsArrangement->Items) {
+				TextBox* itemText = static_cast<TextBox*>(item);
+				itemText->draw(commandbuffer, currentFrame);
+			}
+		}
+	}
+
+	bool checkForClickEvent(double mousex, double mousey, int clickType) {
+		bool event = false;
+		for (UIItem* item : Items) {
+			event = item->checkForClickEvent(mousex, mousey, clickType);
+			if (event) {
+				return event;
+			}
+		}
+		return event;
+	};
+
+private:
+	TextBox* selectedTextBox = nullptr;
+	std::vector<std::string> options{};
+
+	Arrangement* optionsArrangement = nullptr;
+	font* textFont = nullptr;
+
+	int optionIndex = 0;
+
+	void optionSelect(UIItem* owner) {
+		int optionIndex = stoi(owner->Name);
+		setOptionIndex(optionIndex);
+		closeOptions(owner);
+		Items[0]->Items[2]->activestate = !Items[0]->Items[2]->activestate;
+		Items[0]->Items[2]->image->matidx = 1;
+	}
+
+	void optionsToggle(UIItem* owner) {
+		if (!owner->activestate) {
+			openOptions(owner);
+		}
+		else {
+			closeOptions(owner);
+		}
+	}
+
+	void openOptions(UIItem* owner) {
+		float boxHeight = options.size() * selectedTextBox->characters[0]->characterHeight;
+		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx, posy - boxHeight / 2.0f - extenty * 2.0f, extentx, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		
+		std::function<void(UIItem*)> optionSelectFunct = std::bind(&DropdownMenu::optionSelect, this, std::placeholders::_1);
+
+		uint32_t optionIndex = 0;
+		for (std::string option : options) {
+			TextBox* optionText = new TextBox(textFont, 0.0f, 0.0f, extentx, boxHeight / options.size(), 18, ARRANGE_START, ARRANGE_CENTER);
+			optionText->addText(option);
+			optionText->Name = std::to_string(optionIndex);
+			optionText->setClickFunction(optionSelectFunct);
+			optionsArrangement->addItem(optionText);
+			optionIndex++;
+		}
+		optionsArrangement->arrangeItems();
+		addItem(optionsArrangement);
+	}
+
+	void closeOptions(UIItem* owner) {
+		if (optionsArrangement != nullptr) {
+			optionsArrangement->cleanup();
+			delete optionsArrangement;
+			optionsArrangement = nullptr;
+			Items.erase(Items.begin() + Items.size() - 1);
+		}
+	}
+};
+
 struct Widget {
 	// Individual widgets should be classes with their own setup scripts, functions etc. which are called in the application with a standard constructor
 	// UI is managed based on pointers, but the widget must explicitly manage the resources so that we don't have any memory leaks
@@ -1361,6 +1529,9 @@ struct Widget {
 	virtual void drawText(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
 		for (size_t i = 0; i != TextBoxes.size(); i++) {
 			TextBoxes[i]->draw(commandBuffer, currentFrame);
+		}
+		for (size_t i = 0; i != DropdownMenus.size(); i++) {
+			DropdownMenus[i]->drawText(commandBuffer, currentFrame);
 		}
 	}
 
@@ -1440,6 +1611,10 @@ struct Widget {
 			TextBoxes[i]->cleanup();
 		}
 		TextBoxes.clear();
+		for (size_t i = 0; i != DropdownMenus.size(); i++) {
+			DropdownMenus[i]->cleanup();
+		}
+		DropdownMenus.clear();
 		isSetup = false;
 	}
 
@@ -1520,6 +1695,11 @@ struct Widget {
 		return TextBoxes[TextBoxes.size() - 1].get();
 	}
 
+	UIItem* getPtr(DropdownMenu* dropdown) {
+		DropdownMenus.emplace_back(dropdown);
+		return DropdownMenus[DropdownMenus.size() - 1].get();
+	}
+
 	std::vector<UIItem*> canvas;
 	bool isSetup = false;
 
@@ -1542,6 +1722,7 @@ private:
 	std::vector<std::shared_ptr<Slider>> Sliders;
 	std::vector<std::shared_ptr<Rotator>> Rotators;
 	std::vector<std::shared_ptr<TextBox>> TextBoxes;
+	std::vector<std::shared_ptr<DropdownMenu>> DropdownMenus;
 };
 
 #endif

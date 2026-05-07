@@ -109,7 +109,7 @@ void TextBox::updateDisplay() {
 			// New line handling
 			float leftSpacing = 0.0f;
 
-			if (isBlank || mesh->unicodeCharacter == NEWLINE_CHAR) {
+			if (isBlank || mesh->unicodeCharacter == NEWLINE_CHAR || maxLines == 1) {
 				for (uint32_t wIndex : wordIndices) {
 					lineIndices.push_back(wIndex);
 				}
