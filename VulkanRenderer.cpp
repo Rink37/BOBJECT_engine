@@ -364,7 +364,7 @@ public:
 		textArrangement->addItem(getPtr(new spacer()));
 		textArrangement->addItem(getPtr(new Button(loadMat, loadObjectFunct)));
 
-		ObjectButtons = getPtr(new Arrangement(ORIENT_VERTICAL, -1.0f, -0.75f, 0.2f, 0.5f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS));
+		ObjectButtons = getPtr(new Arrangement(ORIENT_VERTICAL, -0.9f, 0.3125f, 0.2f, 0.4375f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS));
 
 		ObjectButtons->addItem(getPtr(textArrangement));
 		ObjectButtons->arrangeItems();
@@ -377,7 +377,7 @@ public:
 	void addObject(std::function<void(UIItem*)> toggleFunction, std::function<void(UIItem*)> wireframeToggle, std::string nameString = "Object Name") {
 		ObjectButtons->arrangeItems();
 
-		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		Checkbox* objectButton = new Checkbox(visibleMat, invisibleMat, toggleFunction);
 		objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size() - 1);
@@ -388,10 +388,11 @@ public:
 		ObjectMap.insert({ objectButton->Name, ObjectButtons->Items.size() - 1 });
 
 		font* objectFont = new font();
-		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 3.5f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
+		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 3.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		objectName->addText(nameString);
 
 		objButtons->addItem(getPtr(objectName));
+		objButtons->addItem(getPtr(new spacer()));
 		objButtons->addItem(getPtr(objectButton));
 		objButtons->addItem(getPtr(objWireframeButton));
 		objButtons->arrangeItems();
@@ -401,10 +402,15 @@ public:
 	}
 
 	void clearObjects() {
+		bool isFirstItem = true;
 		for (UIItem* item : ObjectButtons->Items) {
+			if (!isFirstItem) {
+				isFirstItem = true;
+				continue;
+			}
 			item->image->cleanup();
 		}
-		ObjectButtons->Items.clear();
+		ObjectButtons->Items.erase(ObjectButtons->Items.begin()+1, ObjectButtons->Items.end());
 		ObjectMap.clear();
 		ObjectButtons->arrangeItems();
 	}
@@ -416,6 +422,87 @@ private:
 	Material* visibleMat = nullptr;
 	Material* invisibleMat = nullptr;
 	Material* wireframeMat = nullptr;
+};
+
+class TextureMenu : public Widget {
+public:
+	TextureMenu(LoadList* assets, LoadList* textureLL) {
+		loadList = assets;
+		textureLoadList = textureLL;
+	}
+
+	void setup() {
+		if (isSetup) {
+			return;
+		}
+
+		std::function<void(UIItem*)> loadTexFunct = std::bind(&TextureMenu::loadTexture, this, std::placeholders::_1);
+
+		imageData ub = UNRENDEREDBUTTON;
+		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
+
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "CheckboxBtn");
+
+		imageData wb = WIREFRAMEBUTTON;
+		Material* wireframeMat = newMaterial(&wb, "WireframeBtn");
+
+		Arrangement* textArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		imageData lb = OPENBUTTON;
+		Material* loadMat = newMaterial(&lb, "OpenBtn");
+
+		font* newFont = new font();
+
+		TextBox* menuText = new TextBox(newFont, 0.0f, 0.0f, 4.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
+		menuText->addText("TEXTURES");
+		textArrangement->addItem(getPtr(menuText));
+		textArrangement->addItem(getPtr(new spacer()));
+		textArrangement->addItem(getPtr(new Button(loadMat, loadTexFunct)));
+
+		TextureButtons = getPtr(new Arrangement(ORIENT_VERTICAL, -0.9f, -0.5625f, 0.2f, 0.4375f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS));
+
+		TextureButtons->addItem(getPtr(textArrangement));
+		TextureButtons->arrangeItems();
+
+		canvas.push_back(TextureButtons);
+
+		isSetup = true;
+	}
+private:
+	void loadTexture(UIItem* owner) {
+		string fileName = winFile::OpenFileDialog();
+		if (fileName != string("fail")) {
+			string textureName = fileName;
+			string del = "\\";
+			auto pos = textureName.find(del);
+			while (pos != string::npos) {
+				textureName.erase(0, pos + del.length());
+				pos = textureName.find(del);
+			}
+			del = ".";
+			pos = textureName.find(del);
+			textureName = textureName.substr(0, pos);
+			std::cout << textureName << std::endl;
+			imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
+			textureLoadList->getPtr(loadedTexture, textureName);
+
+			Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+			font* objectFont = new font();
+			TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+			objectName->addText(textureName);
+
+			objButtons->addItem(getPtr(objectName));
+			objButtons->arrangeItems();
+
+			TextureButtons->addItem(getPtr(objButtons));
+			TextureButtons->arrangeItems();
+		}
+	}
+
+	UIItem* TextureButtons = nullptr;
+	LoadList* textureLoadList = nullptr;
 };
 
 class WebcamMenu : public Widget {
@@ -516,6 +603,7 @@ public:
 private:
 	LoadList UIElements{};
 	LoadList ObjectElements{};
+	LoadList TextureElements{};
 
 	Engine* engine = Engine::get();
 	surfaceConstructor* sConst = surfaceConstructor::get();
@@ -528,6 +616,7 @@ private:
 	WebcamMenu webcamMenu = WebcamMenu(&UIElements);
 	RenderMenu renderMenu = RenderMenu(&UIElements);
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
+	TextureMenu textureMenu = TextureMenu(&UIElements, &TextureElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	RemapUI remapMenu = RemapUI(&UIElements, sConst);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
@@ -860,6 +949,10 @@ private:
 		mouseManager.addClickListener(objectMenu.getClickCallback());
 		widgets.push_back(&objectMenu);
 
+		textureMenu.setup();
+		mouseManager.addClickListener(textureMenu.getClickCallback());
+		widgets.push_back(&textureMenu);
+
 		saveMenu.setup(loadSessionFunc, newSessionFunc);
 		mouseManager.addClickListener(saveMenu.getClickCallback());
 		widgets.push_back(&saveMenu);
@@ -1103,6 +1196,8 @@ private:
 
 		UIElements.empty();
 		ObjectElements.empty();
+
+		TextureElements.empty();
 
 		if (find(widgets.begin(), widgets.end(), &tomogUI) == widgets.end()) {
 			tomogUI.cleanup();
