@@ -25,10 +25,12 @@ public:
 		createMaterial(targetShader, graphicsPass);
 	}
 
-	void init() {
+	void init(bool clearTextures = true) {
 		if (!cleaned) {
 			cleanupDescriptor();
-			textures.clear();
+			if (clearTextures) {
+				textures.clear();
+			}
 		}
 		createMaterial();
 	}
@@ -144,12 +146,8 @@ public:
 		}
 	}
 
-	std::vector<std::string> listChannels() {
-		std::vector<std::string> channels{};
-		for (auto mapElem : textureMap) {
-			channels.push_back(mapElem.first);
-		}
-		return channels;
+	std::vector<std::string> listChannels() const {
+		return textureOrder;
 	}
 
 	void setTexture(std::string textureChannel, Texture* newTexture) {
@@ -177,6 +175,29 @@ public:
 		}
 		Material* newMat = new Material(materialTextures, shaderName, boundPass);
 		return newMat;
+	}
+
+	Material* updateMaterial(Material* mat) {
+		bool isValid = true;
+		for (auto mapElem : textureMap) {
+			if (mapElem.second == nullptr) {
+				isValid = false;
+				break;
+			}
+		}
+		if (mat->textures.size() < textureOrder.size()) {
+			isValid = false;
+		}
+		if (!isValid) {
+			throw std::runtime_error("Failed to create new material; insufficient textures available");
+		}
+		std::vector<Texture*> materialTextures{};
+		int index = 0;
+		for (std::string channel : textureOrder) {
+			mat->textures[index] = textureMap.at(channel);
+		}
+		mat->init(false);
+		return mat;
 	}
 
 	std::string shaderName;
