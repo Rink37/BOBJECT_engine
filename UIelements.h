@@ -440,7 +440,7 @@ public:
 
 		clickFunction = func;
 
-		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+		setDims(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
 
 		baseExtentx = extentx;
 		baseExtenty = extenty;
@@ -462,7 +462,7 @@ public:
 		clickFunction = func;
 		clickType = code;
 
-		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+		setDims(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
 
 		baseExtentx = extentx;
 		baseExtenty = extenty;
@@ -481,7 +481,7 @@ public:
 
 		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
 
-		update(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
+		setDims(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
 
 		baseExtentx = extentx;
 		baseExtenty = extenty;

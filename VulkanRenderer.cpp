@@ -276,8 +276,8 @@ public:
 		imageData wb = WIREFRAMEBUTTON;
 		Material* wireframeViewMat = newMaterial(&wb, "WireframeBtn");
 
-		imageData lb = LOADBUTTON;
-		Material* LoadBtnMat = newMaterial(&lb, "LoadBtn");
+		//imageData lb = LOADBUTTON;
+		//Material* LoadBtnMat = newMaterial(&lb, "LoadBtn");
 
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
@@ -313,7 +313,7 @@ public:
 
 		Arrangement* buttons = new Arrangement(ORIENT_VERTICAL, -1.0f, 1.0f, 0.1f, 0.25f, 0.0f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-		buttons->addItem(getPtr(new Button(LoadBtnMat, loadObjectFunct)));
+		//buttons->addItem(getPtr(new Button(LoadBtnMat, loadObjectFunct)));
 		buttons->addItem(getPtr(Renderbuttons));
 		buttons->addItem(getPtr(polarSlider));
 		buttons->addItem(getPtr(azimuthSlider));
@@ -337,7 +337,7 @@ public:
 		loadList = assets;
 	}
 
-	void setup() {
+	void setup(std::function<void(UIItem*)> loadObjectFunct) {
 		if (isSetup) {
 			return;
 		}
@@ -351,8 +351,24 @@ public:
 		imageData wb = WIREFRAMEBUTTON;
 		wireframeMat = newMaterial(&wb, "WireframeBtn");
 
-		ObjectButtons = getPtr(new Arrangement(ORIENT_VERTICAL, -1.0f, -0.75f, 0.2f, 0.5f, 0.01f, ARRANGE_END, SCALE_BY_DIMENSIONS));
+		Arrangement* textArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
+		imageData lb = OPENBUTTON;
+		Material* loadMat = newMaterial(&lb, "OpenBtn");
+
+		font* newFont = new font();
+
+		TextBox* menuText = new TextBox(newFont, 0.0f, 0.0f, 3.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
+		menuText->addText("MESHES");
+		textArrangement->addItem(getPtr(menuText));
+		textArrangement->addItem(getPtr(new spacer()));
+		textArrangement->addItem(getPtr(new Button(loadMat, loadObjectFunct)));
+
+		ObjectButtons = getPtr(new Arrangement(ORIENT_VERTICAL, -1.0f, -0.75f, 0.2f, 0.5f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS));
+
+		ObjectButtons->addItem(getPtr(textArrangement));
+		ObjectButtons->arrangeItems();
+		
 		canvas.push_back(ObjectButtons);
 		
 		isSetup = true;
@@ -361,15 +377,15 @@ public:
 	void addObject(std::function<void(UIItem*)> toggleFunction, std::function<void(UIItem*)> wireframeToggle, std::string nameString = "Object Name") {
 		ObjectButtons->arrangeItems();
 
-		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 4.5f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		Checkbox* objectButton = new Checkbox(visibleMat, invisibleMat, toggleFunction);
-		objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size());
+		objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size() - 1);
 
 		Checkbox* objWireframeButton = new Checkbox(wireframeMat, invisibleMat, wireframeToggle);
 		objWireframeButton->Name = objectButton->Name;
 
-		ObjectMap.insert({ objectButton->Name, ObjectButtons->Items.size() });
+		ObjectMap.insert({ objectButton->Name, ObjectButtons->Items.size() - 1 });
 
 		font* objectFont = new font();
 		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 3.5f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
@@ -840,7 +856,7 @@ private:
 		std::function<void(float)> polarFunc = std::bind(&Application::updateLightPolar, this, placeholders::_1);
 		std::function<void(float)> azimuthFunc = std::bind(&Application::updateLightAzimuth, this, placeholders::_1);
 
-		objectMenu.setup();
+		objectMenu.setup(loadObjectFunct);
 		mouseManager.addClickListener(objectMenu.getClickCallback());
 		widgets.push_back(&objectMenu);
 
