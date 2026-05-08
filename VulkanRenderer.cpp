@@ -332,9 +332,9 @@ public:
 	}
 };
 
-class ObjectSettingsMenu : public Widget {
+class MaterialCreator : public Widget {
 public:
-	ObjectSettingsMenu(std::string sName, GraphicsPass* bPass, LoadList* assets, LoadList* textureAssets) {
+	MaterialCreator(std::string sName, GraphicsPass* bPass, LoadList* assets, LoadList* textureAssets) {
 		loadList = assets;
 		textureLL = textureAssets;
 
@@ -351,7 +351,7 @@ public:
 
 		imageData rb = RENDEREDBUTTON;
 		Material* renderedMat = newMaterial(&rb, "RenderBtn");
-		
+
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
 
@@ -373,7 +373,7 @@ public:
 
 		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
 		materialSelect->addOptions(materialOptions);
-		materialSelect->setSelectCallback(std::bind(&ObjectSettingsMenu::createMatOptionsMenu, this, std::placeholders::_1));
+		materialSelect->setSelectCallback(std::bind(&MaterialCreator::createMatOptionsMenu, this, std::placeholders::_1));
 		materialSelect->setOptionIndex(optionIndex);
 
 		totalArrangement->addItem(getPtr(materialSelect));
@@ -406,7 +406,7 @@ private:
 			}
 			canvas[0]->Items.erase(canvas[0]->Items.begin() + 1, canvas[0]->Items.end());
 		}
-		
+
 		shaderName = owner->text;
 		matTemplate = new MaterialTemplate(shaderName, boundPass);
 		std::vector<std::string> availableTextures{};
@@ -423,7 +423,7 @@ private:
 		if (it != texChannels.end()) {
 			texChannels.erase(it);
 		}
-		
+
 		imageData rb = RENDEREDBUTTON;
 		Material* renderedMat = newMaterial(&rb, "RenderBtn");
 
@@ -433,14 +433,14 @@ private:
 		imageData fb = FINISHBUTTON;
 		Material* finishedMat = newMaterial(&fb, "FinishBtn");
 
-		std::function<void(UIItem*)> updateMatTemplate = std::bind(&ObjectSettingsMenu::setTexCallback, this, std::placeholders::_1);
-		std::function<void(UIItem*)> exitCallback = std::bind(&ObjectSettingsMenu::exit, this, std::placeholders::_1);
+		std::function<void(UIItem*)> updateMatTemplate = std::bind(&MaterialCreator::setTexCallback, this, std::placeholders::_1);
+		std::function<void(UIItem*)> exitCallback = std::bind(&MaterialCreator::exit, this, std::placeholders::_1);
 
 		for (std::string channel : texChannels) {
 			TextBox* channelTextBox = new TextBox(inFont, 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 			channelTextBox->addText(channel);
 			canvas[0]->addItem(getPtr(channelTextBox));
-			
+
 			DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
 			materialSelect->addOptions(availableTextures);
 			materialSelect->setSelectCallback(updateMatTemplate);
@@ -468,6 +468,81 @@ private:
 		owner->text = shaderName;
 		finishedCallback(owner);
 	}
+};
+
+class ObjectSettingsMenu : public Widget {
+public:
+	ObjectSettingsMenu(StaticObject* obj , GraphicsPass* bPass, LoadList* assets, LoadList* textureAssets) {
+		loadList = assets;
+		textureLL = textureAssets;
+
+		inFont = new font();
+	}
+
+	void setup(std::function<void(UIItem*)> callback) {
+		finishedCallback = callback;
+
+		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		Arrangement* materialSettingsArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 4.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		TextBox* matLabel = new TextBox(inFont, 0.0f, 0.0f, 3.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
+		matLabel->addText("MATERIAL:");
+
+		imageData sb = SETTINGSBUTTON;
+		Material* settingsMat = newMaterial(&sb, "SettingsBtn");
+
+		imageData pb = PLUSBUTTON;
+		Material* plusMat = newMaterial(&pb, "PlusBtn");
+
+		materialSettingsArrangement->addItem(getPtr(matLabel));
+		materialSettingsArrangement->addItem(getPtr(new spacer()));
+		materialSettingsArrangement->addItem(getPtr(new Button(settingsMat)));
+		materialSettingsArrangement->addItem(getPtr(new Button(plusMat)));
+
+		totalArrangement->addItem(getPtr(materialSettingsArrangement));
+
+		imageData rb = RENDEREDBUTTON;
+		Material* renderedMat = newMaterial(&rb, "RenderBtn");
+		
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+
+		int index = 0;
+		int optionIndex = 0;
+
+		std::vector<std::string> existingMaterials{};
+		textureLL->listMaterials(existingMaterials);
+
+		for (auto elem : existingMaterials) {
+			if (elem == obj->materialName) {
+				optionIndex = index;
+				break;
+			}
+			index++;
+		}
+
+		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
+		materialSelect->addOptions(existingMaterials);
+		materialSelect->setOptionIndex(optionIndex);
+
+		totalArrangement->addItem(getPtr(materialSelect));
+		totalArrangement->arrangeItems();
+
+		canvas.push_back(getPtr(totalArrangement));
+		isSetup = true;
+	}
+
+	int clickIndex = 0;
+
+private:
+	StaticObject* obj = nullptr;
+
+	LoadList* textureLL = nullptr;
+
+	font* inFont = nullptr;
+
+	std::function<void(UIItem*)> finishedCallback = nullptr;
 };
 
 class ObjectMenu : public Widget {
@@ -792,7 +867,7 @@ private:
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	RemapUI remapMenu = RemapUI(&UIElements, sConst);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
-	ObjectSettingsMenu* osm = nullptr; 
+	MaterialCreator* osm = nullptr; 
 
 	vector<Widget*> widgets;
 
@@ -1024,7 +1099,7 @@ private:
 
 	void openSettingsMenu(UIItem* owner) {
 		if (osm == nullptr) {
-			osm = new ObjectSettingsMenu("BF", currentPass, &UIElements, &TextureElements);
+			osm = new MaterialCreator("BF", currentPass, &UIElements, &TextureElements);
 		}
 
 		currentObject = &staticObjects[stoi(owner->Name)];

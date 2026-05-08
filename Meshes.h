@@ -91,6 +91,7 @@ public:
 	StaticMesh* mesh = nullptr;
 	Material* mat = nullptr;
 
+	std::string materialName = "Webcam Material";
 	std::string shaderName = "BF";
 };
 
