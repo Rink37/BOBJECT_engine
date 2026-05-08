@@ -16,12 +16,13 @@ public:
 	}
 
 	Material(std::vector<Texture*> inTextures, std::string targetShader, GraphicsPass* graphicsPass) {
-		if (textures[0]->textureFormat == VK_FORMAT_R8_UNORM) {
-			isUIMat = true;
-		}
 		for (Texture* tex : inTextures) {
 			textures.push_back(tex);
 		}
+		if (textures[0]->textureFormat == VK_FORMAT_R8_UNORM) {
+			isUIMat = true;
+		}
+		std::cout << textures.size() << std::endl;
 		createMaterial(targetShader, graphicsPass);
 	}
 
@@ -141,8 +142,10 @@ public:
 		std::vector<shaderIOValue>* IOvals = &boundPass->shaderDatas[boundPass->pipelineMap.at(shaderName)].IO;
 
 		for (shaderIOValue IOval : *IOvals) {
-			textureMap.insert({ IOval.name, nullptr });
-			textureOrder.push_back(IOval.name);
+			if (IOval.type == 0) {
+				textureMap.insert({ IOval.name, nullptr });
+				textureOrder.push_back(IOval.name);
+			}
 		}
 	}
 
@@ -162,6 +165,7 @@ public:
 		bool isValid = true;
 		for (auto mapElem : textureMap) {
 			if (mapElem.second == nullptr) {
+				std::cout << "Missing item at channel " << mapElem.first << std::endl;
 				isValid = false;
 				break;
 			}

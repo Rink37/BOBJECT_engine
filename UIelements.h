@@ -89,6 +89,7 @@ struct UIItem {
 	float sqAxisRatio = 0.0f; // The ratio between axes if the window was perfectly square
 
 	std::string Name = "Unlabelled";
+	std::string text = "";
 
 	std::shared_ptr<UIImage> image = nullptr; // new UIImage;
 
@@ -1356,7 +1357,7 @@ public:
 	DropdownMenu(float x, float y, float xsize, float ysize, Material* dropButtonMat, Material* raiseButtonMat, font* inFont) {
 		setDims(x, y, xsize, ysize);
 		Arrangement* mainArranger = new Arrangement(ORIENT_HORIZONTAL, x, y, xsize, ysize, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-		selectedTextBox = new TextBox(inFont, 0.0f, 0.0f, (xsize * 0.666f) / ysize, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		selectedTextBox = new TextBox(inFont, 0.0f, 0.0f, (xsize * 0.8f) / ysize, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		mainArranger->addItem(selectedTextBox);
 		
 		std::function<void(UIItem*)> dropdownFunc = std::bind(&DropdownMenu::optionsToggle, this, std::placeholders::_1);
@@ -1377,7 +1378,7 @@ public:
 		optionIndex = index;
 		selectedTextBox->clearText();
 		selectedTextBox->addText(options[index]);
-		this->Name = options[index];
+		this->text = options[index];
 		arrangeItems();
 		updateDisplay();
 	}

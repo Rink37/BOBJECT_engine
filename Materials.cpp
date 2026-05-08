@@ -82,6 +82,8 @@ void Material::createDescriptorPool(std::string targetShader, GraphicsPass* curr
 	if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
 		throw runtime_error("failed to create descriptor pool!");
 	}
+
+	//std::cout << "Created descriptor pool" << std::endl;
 }
 
 void Material::createDescriptorSets() {
@@ -251,11 +253,11 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 		throw runtime_error("failed to allocate descriptor sets!");
 	}
 
-	uint32_t textureIndex = 0;
-
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		std::vector<VkWriteDescriptorSet> descriptorWrites{};
 		
+		uint32_t textureIndex = 0;
+		uint32_t bindingIndex = 0;
 		for (shaderIOValue ioVal : *IOvals) {
 			VkWriteDescriptorSet descriptorWrite{};
 
@@ -275,7 +277,7 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 				
 				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				descriptorWrite.dstSet = descriptorSets[i];
-				descriptorWrite.dstBinding = 0;
+				descriptorWrite.dstBinding = bindingIndex;
 				descriptorWrite.dstArrayElement = 0;
 				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				descriptorWrite.descriptorCount = 1;
@@ -292,7 +294,7 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 
 				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				descriptorWrite.dstSet = descriptorSets[i];
-				descriptorWrite.dstBinding = 1;
+				descriptorWrite.dstBinding = bindingIndex;
 				descriptorWrite.dstArrayElement = 0;
 				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				descriptorWrite.descriptorCount = 1;
@@ -301,6 +303,8 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 			}
 
 			descriptorWrites.push_back(descriptorWrite);
+
+			bindingIndex++;
 		}
 
 		vkUpdateDescriptorSets(Engine::get()->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);

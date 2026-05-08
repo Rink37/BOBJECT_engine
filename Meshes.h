@@ -2,6 +2,7 @@
 #define MESHDEFS
 
 #include"Bobject_Engine.h"
+#include"Materials.h"
 
 struct Mesh {
 	std::vector<Vertex> vertices;
@@ -72,6 +73,32 @@ public:
 private:
 	void constructMesh();
 	void computeTangents();
+};
+
+class StaticObject {
+public:
+	StaticObject(std::string name) {
+		mesh = new StaticMesh(name);
+	}
+
+	bool isVisible = true;
+	bool isWireframeVisible = true;
+	StaticMesh* mesh = nullptr;
+	Material* mat = nullptr;
+
+	std::string shaderName = "BF";
+};
+
+class PlaneObject {
+public:
+	PlaneObject(uint32_t width, uint32_t height) {
+		mesh = new PlaneMesh(width, height);
+	}
+
+	bool isVisible = true;
+	bool isWireframeVisible = true;
+	PlaneMesh* mesh = nullptr;
+	Material* mat = nullptr;
 };
 
 #endif

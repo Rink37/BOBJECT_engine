@@ -344,7 +344,9 @@ public:
 		matTemplate = new MaterialTemplate(shaderName, boundPass);
 	}
 
-	void setup(){
+	void setup(std::function<void(UIItem*)> callback) {
+		finishedCallback = callback;
+
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		imageData rb = RENDEREDBUTTON;
@@ -376,6 +378,9 @@ public:
 		canvas.push_back(getPtr(totalArrangement));
 		isSetup = true;
 	}
+
+	int clickIndex = 0;
+
 private:
 	MaterialTemplate* matTemplate = nullptr;
 
@@ -386,6 +391,8 @@ private:
 
 	font* inFont = nullptr;
 
+	std::function<void(UIItem*)> finishedCallback = nullptr;
+
 	void createMatOptionsMenu(UIItem* owner) {
 		if (canvas[0]->Items.size() > 1) {
 			for (int i = 1; i != canvas[0]->Items.size(); i++) {
@@ -394,7 +401,7 @@ private:
 			canvas[0]->Items.erase(canvas[0]->Items.begin() + 1, canvas[0]->Items.end());
 		}
 		
-		std::string shaderName = owner->Name;
+		std::string shaderName = owner->text;
 		matTemplate = new MaterialTemplate(shaderName, boundPass);
 		std::vector<std::string> availableTextures{};
 		textureLL->listTextures(availableTextures);
@@ -411,12 +418,22 @@ private:
 		std::cout << std::endl;
 
 		std::vector<std::string> texChannels = matTemplate->listChannels();
-
+		it = find(texChannels.begin(), texChannels.end(), std::string("UniformBufferObject"));
+		if (it != texChannels.end()) {
+			texChannels.erase(it);
+		}
+		
 		imageData rb = RENDEREDBUTTON;
 		Material* renderedMat = newMaterial(&rb, "RenderBtn");
 
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+
+		imageData fb = FINISHBUTTON;
+		Material* finishedMat = newMaterial(&fb, "FinishBtn");
+
+		std::function<void(UIItem*)> updateMatTemplate = std::bind(&ObjectSettingsMenu::setTexCallback, this, std::placeholders::_1);
+		std::function<void(UIItem*)> exitCallback = std::bind(&ObjectSettingsMenu::exit, this, std::placeholders::_1);
 
 		for (std::string channel : texChannels) {
 			TextBox* channelTextBox = new TextBox(inFont, 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
@@ -425,11 +442,30 @@ private:
 			
 			DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
 			materialSelect->addOptions(availableTextures);
+			materialSelect->setSelectCallback(updateMatTemplate);
 			materialSelect->setOptionIndex(defaultIndex);
+			materialSelect->Name = channel;
 
 			canvas[0]->addItem(getPtr(materialSelect));
 		}
+		canvas[0]->addItem(getPtr(new Button(finishedMat, exitCallback)));
 		canvas[0]->arrangeItems();
+	}
+
+	void setTexCallback(UIItem* owner) {
+		std::string channel = owner->Name;
+		std::string selectedTexture = owner->text;
+
+		matTemplate->setTexture(channel, textureLL->getTexture(selectedTexture));
+	}
+
+	void exit(UIItem* owner) {
+		Material* mat = matTemplate->createMaterial();
+		std::cout << "Created material!" << std::endl;
+		textureLL->getPtr(mat, "TestObjectMaterial");
+		owner->Name = "TestObjectMaterial";
+		owner->text = shaderName;
+		finishedCallback(owner);
 	}
 };
 
@@ -496,9 +532,12 @@ public:
 		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 3.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		objectName->addText(nameString);
 
+		Button* newButton = new Button(settingsMat, optionsMenu);
+		newButton->Name = to_string(ObjectButtons->Items.size() - 1);
+
 		objButtons->addItem(getPtr(objectName));
 		objButtons->addItem(getPtr(new spacer()));
-		objButtons->addItem(getPtr(new Button(settingsMat, optionsMenu)));
+		objButtons->addItem(getPtr(newButton));
 		objButtons->addItem(getPtr(objectButton));
 		objButtons->addItem(getPtr(objWireframeButton));
 		objButtons->arrangeItems();
@@ -757,6 +796,8 @@ private:
 	GraphicsPass renderGP;
 	GraphicsPass* currentPass = nullptr;
 
+	StaticObject* currentObject = nullptr;
+
 	Material* wireMat = nullptr;
 
 	bool mouseDown = false;
@@ -979,9 +1020,26 @@ private:
 		if (osm == nullptr) {
 			osm = new ObjectSettingsMenu("BF", currentPass, &UIElements, &TextureElements);
 		}
-		osm->setup();
-		mouseManager.addClickListener(osm->getClickCallback());
+
+		currentObject = &staticObjects[stoi(owner->Name)];
+		osm->setup(std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1));
+		osm->clickIndex = mouseManager.addClickListener(osm->getClickCallback());
 		widgets.push_back(osm);
+	}
+
+	void closeSettingsMenu(UIItem* owner) {
+		currentObject->mat = TextureElements.getMaterial(owner->Name);
+		currentObject->shaderName = owner->text;
+
+		vkDeviceWaitIdle(Engine::get()->device);
+		osm->cleanup();
+		mouseManager.removeClickListener(osm->clickIndex);
+
+		widgets.erase(find(widgets.begin(), widgets.end(), osm));
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+
+		osm = nullptr;
 	}
 	
 	void loadSave(UIItem* owner) {

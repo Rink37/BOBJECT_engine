@@ -9,30 +9,6 @@
 
 #include"include/BakedImages.h"
 
-class StaticObject {
-public:
-	StaticObject(std::string name) {
-		mesh = new StaticMesh(name);
-	}
-
-	bool isVisible = true;
-	bool isWireframeVisible = true;
-	StaticMesh* mesh = nullptr;
-	Material* mat = nullptr;
-};
-
-class PlaneObject {
-public:
-	PlaneObject(uint32_t width, uint32_t height) {
-		mesh = new PlaneMesh(width, height);
-	}
-
-	bool isVisible = true;
-	bool isWireframeVisible = true;
-	PlaneMesh* mesh = nullptr;
-	Material* mat = nullptr;
-};
-
 class surfaceConstructor {
 public:
 	// Singleton management //
