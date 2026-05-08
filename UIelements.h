@@ -199,7 +199,9 @@ struct UIItem {
 	}
 
 	virtual void setVisibility(bool vis) {
-		image->isVisible = vis;
+		if (image != nullptr) {
+			image->isVisible = vis;
+		}
 	}
 
 	virtual void setIsEnabled(bool enabled) {
@@ -233,6 +235,14 @@ struct UIItem {
 			image->cleanup();
 			image = nullptr;
 		}
+	}
+
+	virtual void addOption(std::string) {
+		return;
+	}
+
+	virtual void setOptionIndex(int) {
+		return;
 	}
 };
 
@@ -312,6 +322,12 @@ public:
 		}
 
 		return commandBuffer;
+	}
+
+	void setVisibility(bool vis) {
+		for (fontMesh* mesh : characters) {
+			mesh->isVisible = vis;
+		}
 	}
 
 	void cleanup() {
@@ -1389,10 +1405,20 @@ public:
 
 	void addOption(std::string inOption) {
 		options.push_back(inOption);
+		setOptionIndex(options.size() - 1);
 	}
 
 	void setSelectCallback(std::function<void(UIItem*)> cFunct) {
 		selectCallback = cFunct;
+	}
+
+	void setVisibility(bool vis) {
+		for (UIItem* item : Items) {
+			item->setVisibility(vis);
+		}
+		if (vis) {
+			updateDisplay();
+		}
 	}
 
 	void getImages(std::vector<UIImage*>& images, bool isUI) {

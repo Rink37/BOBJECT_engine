@@ -101,6 +101,8 @@ public:
 
 	std::vector<Texture*> textures = {};
 
+	std::string shaderName = "BF";
+
 	VkDescriptorSetLayout descriptorSetLayout = nullptr;
 	VkPipelineLayout pipelineLayout = nullptr;
 	uint32_t pipelineLayoutIndex = 0;
@@ -113,7 +115,8 @@ public:
 		cleaned = false;
 	}
 
-	void createMaterial(std::string shaderName, GraphicsPass* currentPass) {
+	void createMaterial(std::string sName, GraphicsPass* currentPass) {
+		shaderName = sName;
 		createDescriptorPool(shaderName, currentPass);
 		createDescriptorSets(shaderName, currentPass);
 		cleaned = false;

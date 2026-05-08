@@ -472,16 +472,19 @@ private:
 
 class ObjectSettingsMenu : public Widget {
 public:
-	ObjectSettingsMenu(StaticObject* obj , GraphicsPass* bPass, LoadList* assets, LoadList* textureAssets) {
+	ObjectSettingsMenu(StaticObject* object, LoadList* assets, LoadList* textureAssets, std::function<void(std::function<void(UIItem*)>)> newMatFunc, std::function<void(UIItem*)> closeMatFunc) {
 		loadList = assets;
 		textureLL = textureAssets;
 
 		inFont = new font();
+
+		obj = object;
+
+		openMaterialMenu = newMatFunc;
+		closeMaterialMenu = closeMatFunc;
 	}
 
-	void setup(std::function<void(UIItem*)> callback) {
-		finishedCallback = callback;
-
+	void setup() {
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		Arrangement* materialSettingsArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 4.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
@@ -495,10 +498,12 @@ public:
 		imageData pb = PLUSBUTTON;
 		Material* plusMat = newMaterial(&pb, "PlusBtn");
 
+		std::function<void(UIItem*)> newMatBtn = std::bind(&ObjectSettingsMenu::newMaterialMenu, this, std::placeholders::_1);
+
 		materialSettingsArrangement->addItem(getPtr(matLabel));
 		materialSettingsArrangement->addItem(getPtr(new spacer()));
 		materialSettingsArrangement->addItem(getPtr(new Button(settingsMat)));
-		materialSettingsArrangement->addItem(getPtr(new Button(plusMat)));
+		materialSettingsArrangement->addItem(getPtr(new Button(plusMat, newMatBtn)));
 
 		totalArrangement->addItem(getPtr(materialSettingsArrangement));
 
@@ -514,7 +519,7 @@ public:
 		std::vector<std::string> existingMaterials{};
 		textureLL->listMaterials(existingMaterials);
 
-		for (auto elem : existingMaterials) {
+		for (std::string elem : existingMaterials) {
 			if (elem == obj->materialName) {
 				optionIndex = index;
 				break;
@@ -525,8 +530,11 @@ public:
 		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
 		materialSelect->addOptions(existingMaterials);
 		materialSelect->setOptionIndex(optionIndex);
+		materialSelect->setSelectCallback(std::bind(&ObjectSettingsMenu::selectMaterialCallback, this, std::placeholders::_1));
 
-		totalArrangement->addItem(getPtr(materialSelect));
+		matSelPtr = getPtr(materialSelect);
+
+		totalArrangement->addItem(matSelPtr);
 		totalArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(totalArrangement));
@@ -540,9 +548,37 @@ private:
 
 	LoadList* textureLL = nullptr;
 
+	UIItem* matSelPtr = nullptr;
+
 	font* inFont = nullptr;
 
-	std::function<void(UIItem*)> finishedCallback = nullptr;
+	//std::function<void(UIItem*)> finishedCallback = nullptr;
+
+	std::function<void(std::function<void(UIItem*)>)> openMaterialMenu = nullptr;
+	std::function<void(UIItem*)> closeMaterialMenu = nullptr;
+
+	void newMaterialMenu(UIItem* owner) {
+		std::function<void(UIItem*)> closeFnc = std::bind(&ObjectSettingsMenu::exitMaterialMenu, this, std::placeholders::_1);
+		if (openMaterialMenu != nullptr) {
+			openMaterialMenu(closeFnc);
+		}
+	}
+
+	void exitMaterialMenu(UIItem* owner) {
+		obj->mat = textureLL->getMaterial(owner->Name);
+		obj->shaderName = owner->text;
+		obj->materialName = owner->Name;
+		matSelPtr->addOption(obj->materialName);
+		if (closeMaterialMenu != nullptr) {
+			closeMaterialMenu(owner);
+		}
+	}
+
+	void selectMaterialCallback(UIItem* owner) {
+		obj->mat = textureLL->getMaterial(owner->text);
+		obj->shaderName = obj->mat->shaderName;
+		obj->materialName = owner->text;
+	}
 };
 
 class ObjectMenu : public Widget {
@@ -867,7 +903,8 @@ private:
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	RemapUI remapMenu = RemapUI(&UIElements, sConst);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
-	MaterialCreator* osm = nullptr; 
+	MaterialCreator* mc = nullptr; 
+	ObjectSettingsMenu* osm = nullptr;
 
 	vector<Widget*> widgets;
 
@@ -1097,32 +1134,43 @@ private:
 		sConst->updateSurfaceMat();
 	}
 
-	void openSettingsMenu(UIItem* owner) {
+	void openObjectSettingsMenu(UIItem* owner) {
+		StaticObject* activeObject = &staticObjects[stoi(owner->Name)];
 		if (osm == nullptr) {
-			osm = new MaterialCreator("BF", currentPass, &UIElements, &TextureElements);
+			osm = new ObjectSettingsMenu(activeObject, &UIElements, &TextureElements, std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1));
 		}
-
-		currentObject = &staticObjects[stoi(owner->Name)];
-		osm->setup(std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1));
+		osm->setup();
 		osm->clickIndex = mouseManager.addClickListener(osm->getClickCallback());
 		widgets.push_back(osm);
 	}
 
-	void closeSettingsMenu(UIItem* owner) {
-		currentObject->mat = TextureElements.getMaterial(owner->Name);
-		currentObject->shaderName = owner->text;
+	void openSettingsMenu(std::function<void(UIItem*)> closeFnc) {
+		if (mc == nullptr) {
+			mc = new MaterialCreator("BF", currentPass, &UIElements, &TextureElements);
+		}
+		osm->hide();
+		mc->setup(closeFnc);
+		mc->clickIndex = mouseManager.addClickListener(mc->getClickCallback());
+		widgets.push_back(mc);
+	}
 
-		std::cout << currentObject->shaderName << std::endl;
+	void closeSettingsMenu(UIItem* owner) {
+		//currentObject->mat = TextureElements.getMaterial(owner->Name);
+		//currentObject->shaderName = owner->text;
+
+		//std::cout << currentObject->shaderName << std::endl;
 
 		vkDeviceWaitIdle(Engine::get()->device);
-		osm->cleanup();
-		mouseManager.removeClickListener(osm->clickIndex);
+		mc->cleanup();
+		mouseManager.removeClickListener(mc->clickIndex);
 
-		widgets.erase(find(widgets.begin(), widgets.end(), osm));
+		osm->show();
+
+		widgets.erase(find(widgets.begin(), widgets.end(), mc));
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 
-		osm = nullptr;
+		mc = nullptr;
 		use_sConst = false;
 	}
 	
@@ -1157,7 +1205,7 @@ private:
 
 			std::function<void(UIItem*)> visibleFunction = std::bind(&Application::setObjectVisibility, this, placeholders::_1);
 			std::function<void(UIItem*)> wireFunction = std::bind(&Application::setObjectWireframe, this, placeholders::_1);
-			std::function<void(UIItem*)> optionsFunction = std::bind(&Application::openSettingsMenu, this, placeholders::_1);
+			std::function<void(UIItem*)> optionsFunction = std::bind(&Application::openObjectSettingsMenu, this, placeholders::_1);
 
 			objectMenu.addObject(visibleFunction, wireFunction, optionsFunction, objectName);
 
@@ -1456,7 +1504,7 @@ private:
 
 		std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
 		std::function<void(UIItem*)> wireFunction = bind(&Application::setObjectWireframe, this, placeholders::_1);
-		std::function<void(UIItem*)> optionsFunction = std::bind(&Application::openSettingsMenu, this, placeholders::_1);
+		std::function<void(UIItem*)> optionsFunction = std::bind(&Application::openObjectSettingsMenu, this, placeholders::_1);
 
 		objectMenu.addObject(visibleFunction, wireFunction, optionsFunction, objectName);
 		newObject.isVisible = true;
