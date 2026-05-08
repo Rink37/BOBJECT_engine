@@ -124,6 +124,12 @@ struct LoadList {
 		materialMap.clear();
 	}
 
+	void listTextures(std::vector<std::string>& list) {
+		for (auto elem : textureMap) {
+			list.push_back(elem.first);
+		}
+	}
+
 private:
 	std::map<std::string, int> textureMap = {};
 	std::map<std::string, int> materialMap = {};

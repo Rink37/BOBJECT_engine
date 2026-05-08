@@ -316,8 +316,8 @@ public:
 	void cleanup() {
 		for (fontMesh* mesh : characters) {
 			mesh->cleanup();
-			delete mesh;
 		}
+		characters.clear();
 		if (textFont != nullptr) {
 			textFont->cleanup();
 		}
@@ -335,7 +335,6 @@ public:
 	}
 
 	bool checkForClickEvent(double mousex, double mousey, int clicktype) {
-		std::cout << "Textbox checking for Event" << std::endl;
 		if (clickFunct != nullptr && clicktype == LMB_PRESS && isInArea(mousex, mousey)) {
 			clickFunct(this);
 			return true;
@@ -866,6 +865,22 @@ public:
 		}
 		return found;
 	}
+
+	void setDims(float px, float py, float ex, float ey) {
+		this->posx = px;
+		this->posy = -1.0f * py;
+		this->anchorx = this->posx;
+		this->anchory = this->posy;
+		this->extentx = ex;
+		this->extenty = ey;
+
+		this->sqAxisRatio = ey / ex;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
+	}
+
 private:
 	void setDims(float px, float py, float ex, float ey, float spc) {
 		this->posx = px;
@@ -1288,8 +1303,6 @@ public:
 	void update(float x, float y, float xsize, float ysize) {
 		this->posx = x;
 		this->posy = y;
-		//this->anchorx = x;
-		//this->anchory = y;
 
 		ysize *= W / H;
 
@@ -1351,6 +1364,7 @@ public:
 		mainArranger->addItem(new spacer());
 		mainArranger->addItem(new Checkbox(dropButtonMat, raiseButtonMat, dropdownFunc));
 		mainArranger->arrangeItems();
+		
 		addItem(mainArranger);
 		textFont = inFont;
 	}
@@ -1363,7 +1377,7 @@ public:
 		optionIndex = index;
 		selectedTextBox->clearText();
 		selectedTextBox->addText(options[index]);
-		std::cout << options[index] << std::endl;
+		this->Name = options[index];
 		arrangeItems();
 		updateDisplay();
 	}
@@ -1374,6 +1388,10 @@ public:
 
 	void addOption(std::string inOption) {
 		options.push_back(inOption);
+	}
+
+	void setSelectCallback(std::function<void(UIItem*)> cFunct) {
+		selectCallback = cFunct;
 	}
 
 	void getImages(std::vector<UIImage*>& images, bool isUI) {
@@ -1387,9 +1405,32 @@ public:
 	};
 
 	void updateDisplay() {
-		for (size_t i = 0; i != Items.size(); i++) {
-			Items[i]->updateDisplay();
+		this->calculateScreenPosition();
+		for (UIItem* item : Items) {
+			item->updateDisplay();
 		}
+	}
+
+	void arrangeItems() {
+		for (UIItem* item : Items) {
+			item->arrangeItems();
+		}
+	};
+
+	void updateArrangedPosition(float px, float py, float ex, float ey) {
+		this->posx = px;
+		this->posy = py;
+		this->anchorx = this->posx;
+		this->anchory = this->posy;
+		this->extentx = ex;
+		this->extenty = ey;
+
+		this->sqAxisRatio = ey / ex;
+
+		//std::cout << this->posy << std::endl;
+
+		Items[0]->updateArrangedPosition(px, py, ex, ey);
+		Items[0]->arrangeItems();
 	}
 
 	void drawText(VkCommandBuffer commandbuffer, uint32_t currentFrame) {
@@ -1413,6 +1454,12 @@ public:
 		return event;
 	};
 
+	void cleanup() {
+		for (UIItem* item : Items) {
+			item->cleanup();
+		}
+	}
+
 private:
 	TextBox* selectedTextBox = nullptr;
 	std::vector<std::string> options{};
@@ -1422,12 +1469,15 @@ private:
 
 	int optionIndex = 0;
 
+	std::function<void(UIItem*)> selectCallback = nullptr;
+
 	void optionSelect(UIItem* owner) {
 		int optionIndex = stoi(owner->Name);
 		setOptionIndex(optionIndex);
 		closeOptions(owner);
-		Items[0]->Items[2]->activestate = !Items[0]->Items[2]->activestate;
-		Items[0]->Items[2]->image->matidx = 1;
+		if (selectCallback != nullptr) {
+			selectCallback(this);
+		}
 	}
 
 	void optionsToggle(UIItem* owner) {
@@ -1464,6 +1514,8 @@ private:
 			delete optionsArrangement;
 			optionsArrangement = nullptr;
 			Items.erase(Items.begin() + Items.size() - 1);
+			Items[0]->Items[2]->activestate = true;
+			Items[0]->Items[2]->image->matidx = 0;
 		}
 	}
 };

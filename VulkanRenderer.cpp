@@ -322,13 +322,114 @@ public:
 		//testTextBox->addText("\tThis line should be separate!\n\n\tLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vestibulum aliquet ligula vel dictum. Praesent scelerisque orci at tincidunt placerat. Aliquam et blandit nulla. Nullam consequat ligula vitae massa luctus, et tincidunt felis dictum. Morbi mattis dapibus ante, vitae eleifend ipsum rutrum vitae. Proin in mauris eget metus mattis interdum vel eget nisi. Nulla porta sapien id eros malesuada laoreet. Integer et rhoncus magna, sed ullamcorper elit. Quisque ut massa ut nibh venenatis ultrices ac id tortor. Sed mattis, massa at vestibulum tincidunt, arcu diam vestibulum libero, vel lacinia tortor sapien quis sem. Proin scelerisque pharetra odio, quis congue turpis. Proin arcu leo, blandit quis ex vitae, posuere sollicitudin turpis. Duis ullamcorper sodales dui ac posuere. Pellentesque nibh felis, finibus in elit sed, iaculis fringilla est.");
 		//canvas.push_back(getPtr(testTextBox));
 
-		DropdownMenu* testMenu = new DropdownMenu(0.0f, 0.0f, 0.3f, 0.05f, renderedMat, visibleMat, testFont);
-		testMenu->addOptions(std::vector<std::string>{"Hello", "World!", "This", "Is", "A", "Test"});
-		testMenu->setOptionIndex(1);
+		//DropdownMenu* testMenu = new DropdownMenu(0.0f, 0.0f, 0.3f, 0.05f, renderedMat, visibleMat, testFont);
+		//testMenu->addOptions(std::vector<std::string>{"Hello", "World!", "This", "Is", "A", "Test"});
+		//testMenu->setOptionIndex(1);
 		
-		canvas.push_back(getPtr(testMenu));
+		//canvas.push_back(getPtr(testMenu));
 
 		isSetup = true;
+	}
+};
+
+class ObjectSettingsMenu : public Widget {
+public:
+	ObjectSettingsMenu(std::string sName, GraphicsPass* bPass, LoadList* assets, LoadList* textureAssets) {
+		loadList = assets;
+		textureLL = textureAssets;
+
+		inFont = new font();
+		shaderName = sName;
+		boundPass = bPass;
+		matTemplate = new MaterialTemplate(shaderName, boundPass);
+	}
+
+	void setup(){
+		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		imageData rb = RENDEREDBUTTON;
+		Material* renderedMat = newMaterial(&rb, "RenderBtn");
+		
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+
+		int index = 0;
+		int optionIndex = 0;
+
+		std::vector<std::string> materialOptions{};
+		for (auto elem : boundPass->pipelineMap) {
+			if (elem.first == shaderName) {
+				optionIndex = index;
+			}
+			materialOptions.push_back(elem.first);
+			index++;
+		}
+
+		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
+		materialSelect->addOptions(materialOptions);
+		materialSelect->setSelectCallback(std::bind(&ObjectSettingsMenu::createMatOptionsMenu, this, std::placeholders::_1));
+		materialSelect->setOptionIndex(optionIndex);
+
+		totalArrangement->addItem(getPtr(materialSelect));
+		totalArrangement->arrangeItems();
+
+		canvas.push_back(getPtr(totalArrangement));
+		isSetup = true;
+	}
+private:
+	MaterialTemplate* matTemplate = nullptr;
+
+	std::string shaderName = "";
+	GraphicsPass* boundPass = nullptr;
+
+	LoadList* textureLL = nullptr;
+
+	font* inFont = nullptr;
+
+	void createMatOptionsMenu(UIItem* owner) {
+		if (canvas[0]->Items.size() > 1) {
+			for (int i = 1; i != canvas[0]->Items.size(); i++) {
+				canvas[0]->Items[i]->cleanup();
+			}
+			canvas[0]->Items.erase(canvas[0]->Items.begin() + 1, canvas[0]->Items.end());
+		}
+		
+		std::string shaderName = owner->Name;
+		matTemplate = new MaterialTemplate(shaderName, boundPass);
+		std::vector<std::string> availableTextures{};
+		textureLL->listTextures(availableTextures);
+
+		auto it = find(availableTextures.begin(), availableTextures.end(), std::string("Webcam View"));
+		int defaultIndex = 0;
+		if (it != availableTextures.end()) {
+			defaultIndex = it - availableTextures.begin();
+		}
+
+		for (std::string tex : availableTextures) {
+			std::cout << tex << " ";
+		}
+		std::cout << std::endl;
+
+		std::vector<std::string> texChannels = matTemplate->listChannels();
+
+		imageData rb = RENDEREDBUTTON;
+		Material* renderedMat = newMaterial(&rb, "RenderBtn");
+
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+
+		for (std::string channel : texChannels) {
+			TextBox* channelTextBox = new TextBox(inFont, 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+			channelTextBox->addText(channel);
+			canvas[0]->addItem(getPtr(channelTextBox));
+			
+			DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
+			materialSelect->addOptions(availableTextures);
+			materialSelect->setOptionIndex(defaultIndex);
+
+			canvas[0]->addItem(getPtr(materialSelect));
+		}
+		canvas[0]->arrangeItems();
 	}
 };
 
@@ -378,7 +479,7 @@ public:
 		isSetup = true;
 	}
 
-	void addObject(std::function<void(UIItem*)> toggleFunction, std::function<void(UIItem*)> wireframeToggle, std::string nameString = "Object Name") {
+	void addObject(std::function<void(UIItem*)> toggleFunction, std::function<void(UIItem*)> wireframeToggle, std::function<void(UIItem*)> optionsMenu, std::string nameString = "Object Name") {
 		ObjectButtons->arrangeItems();
 
 		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
@@ -397,7 +498,7 @@ public:
 
 		objButtons->addItem(getPtr(objectName));
 		objButtons->addItem(getPtr(new spacer()));
-		objButtons->addItem(getPtr(new Button(settingsMat)));
+		objButtons->addItem(getPtr(new Button(settingsMat, optionsMenu)));
 		objButtons->addItem(getPtr(objectButton));
 		objButtons->addItem(getPtr(objWireframeButton));
 		objButtons->arrangeItems();
@@ -648,6 +749,7 @@ private:
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	RemapUI remapMenu = RemapUI(&UIElements, sConst);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
+	ObjectSettingsMenu* osm = nullptr; 
 
 	vector<Widget*> widgets;
 
@@ -872,6 +974,15 @@ private:
 		}
 		sConst->updateSurfaceMat();
 	}
+
+	void openSettingsMenu(UIItem* owner) {
+		if (osm == nullptr) {
+			osm = new ObjectSettingsMenu("BF", currentPass, &UIElements, &TextureElements);
+		}
+		osm->setup();
+		mouseManager.addClickListener(osm->getClickCallback());
+		widgets.push_back(osm);
+	}
 	
 	void loadSave(UIItem* owner) {
 
@@ -904,8 +1015,9 @@ private:
 
 			std::function<void(UIItem*)> visibleFunction = std::bind(&Application::setObjectVisibility, this, placeholders::_1);
 			std::function<void(UIItem*)> wireFunction = std::bind(&Application::setObjectWireframe, this, placeholders::_1);
+			std::function<void(UIItem*)> optionsFunction = std::bind(&Application::openSettingsMenu, this, placeholders::_1);
 
-			objectMenu.addObject(visibleFunction, wireFunction, objectName);
+			objectMenu.addObject(visibleFunction, wireFunction, optionsFunction, objectName);
 
 			newObject.isVisible = true;
 
@@ -1201,8 +1313,9 @@ private:
 
 		std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
 		std::function<void(UIItem*)> wireFunction = bind(&Application::setObjectWireframe, this, placeholders::_1);
+		std::function<void(UIItem*)> optionsFunction = std::bind(&Application::openSettingsMenu, this, placeholders::_1);
 
-		objectMenu.addObject(visibleFunction, wireFunction, objectName);
+		objectMenu.addObject(visibleFunction, wireFunction, optionsFunction, objectName);
 		newObject.isVisible = true;
 
 		staticObjects.push_back(newObject);
