@@ -800,6 +800,8 @@ private:
 
 	Material* wireMat = nullptr;
 
+	bool use_sConst = true;
+
 	bool mouseDown = false;
 	bool tomogActive = false;
 
@@ -1040,6 +1042,7 @@ private:
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 
 		osm = nullptr;
+		use_sConst = false;
 	}
 	
 	void loadSave(UIItem* owner) {
@@ -1518,14 +1521,22 @@ private:
 			widgets[i]->drawText(commandBuffer, currentFrame);
 		}
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[graphicsPipelineIndex]);
+		if (use_sConst) {
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[graphicsPipelineIndex]);
 
-		for (uint32_t i : visibleObjects) {
-			engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, pipelineLayout, drawMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+			for (uint32_t i : visibleObjects) {
+				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, pipelineLayout, drawMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+			}
+
+			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
+				engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));
+			}
 		}
-
-		if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
-			engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));	
+		else {
+			for (uint32_t i : visibleObjects) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(staticObjects[i].shaderName)]);
+				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, staticObjects[i].mat->pipelineLayout, staticObjects[i].mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+			}
 		}
 
 		vkCmdEndRenderPass(commandBuffer);

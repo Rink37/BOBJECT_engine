@@ -204,7 +204,7 @@ public:
 		return mat;
 	}
 
-	std::string shaderName;
+	std::string shaderName = "";
 	GraphicsPass* boundPass;
 
 	std::vector<std::string> textureOrder{};
