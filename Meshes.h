@@ -81,6 +81,11 @@ public:
 		mesh = new StaticMesh(name);
 	}
 
+	void setMat(Material* m, std::string shader) {
+		mat = m;
+		shaderName = shader;
+	}
+
 	bool isVisible = true;
 	bool isWireframeVisible = true;
 	StaticMesh* mesh = nullptr;

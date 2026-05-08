@@ -367,6 +367,10 @@ public:
 			index++;
 		}
 
+		std::vector<std::string> existingMaterials{};
+		textureLL->listMaterials(existingMaterials);
+		newMaterialName = "Material" + std::to_string(existingMaterials.size() - 1);
+
 		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
 		materialSelect->addOptions(materialOptions);
 		materialSelect->setSelectCallback(std::bind(&ObjectSettingsMenu::createMatOptionsMenu, this, std::placeholders::_1));
@@ -386,6 +390,8 @@ private:
 
 	std::string shaderName = "";
 	GraphicsPass* boundPass = nullptr;
+
+	std::string newMaterialName = "";
 
 	LoadList* textureLL = nullptr;
 
@@ -462,8 +468,8 @@ private:
 	void exit(UIItem* owner) {
 		Material* mat = matTemplate->createMaterial();
 		std::cout << "Created material!" << std::endl;
-		textureLL->getPtr(mat, "TestObjectMaterial");
-		owner->Name = "TestObjectMaterial";
+		textureLL->getPtr(mat, newMaterialName);
+		owner->Name = newMaterialName;
 		owner->text = shaderName;
 		finishedCallback(owner);
 	}
@@ -753,6 +759,9 @@ public:
 		renderImage = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, renderGP.renderPass);
 		Engine::get()->createGraphicsPipelines(renderGP);
 
+		Material* webcamMat = new Material(webcamTexture::get());
+		TextureElements.getPtr(webcamMat, "Webcam Material");
+
 		currentPass = &renderGP;
 
 		wireMat = new Material();
@@ -800,7 +809,7 @@ private:
 
 	Material* wireMat = nullptr;
 
-	bool use_sConst = true;
+	bool use_sConst = false;
 
 	bool mouseDown = false;
 	bool tomogActive = false;
@@ -1081,6 +1090,7 @@ private:
 			objectMenu.addObject(visibleFunction, wireFunction, optionsFunction, objectName);
 
 			newObject.isVisible = true;
+			newObject.setMat(TextureElements.getMaterial("Webcam Material"), "BF");
 
 			staticObjects.push_back(newObject);
 		}
@@ -1378,6 +1388,7 @@ private:
 
 		objectMenu.addObject(visibleFunction, wireFunction, optionsFunction, objectName);
 		newObject.isVisible = true;
+		newObject.setMat(TextureElements.getMaterial("Webcam Material"), "BF");
 
 		staticObjects.push_back(newObject);
 		session::get()->currentStudio.modelPaths.push_back(modelPath);

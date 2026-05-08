@@ -130,6 +130,12 @@ struct LoadList {
 		}
 	}
 
+	void listMaterials(std::vector <std::string>& list) {
+		for (auto elem : materialMap) {
+			list.push_back(elem.first);
+		}
+	}
+
 private:
 	std::map<std::string, int> textureMap = {};
 	std::map<std::string, int> materialMap = {};
