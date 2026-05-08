@@ -472,7 +472,7 @@ private:
 
 class ObjectSettingsMenu : public Widget {
 public:
-	ObjectSettingsMenu(StaticObject* object, LoadList* assets, LoadList* textureAssets, std::function<void(std::function<void(UIItem*)>)> newMatFunc, std::function<void(UIItem*)> closeMatFunc) {
+	ObjectSettingsMenu(StaticObject* object, LoadList* assets, LoadList* textureAssets, std::function<void(std::function<void(UIItem*)>)> newMatFunc, std::function<void(UIItem*)> closeMatFunc, std::function<void(UIItem*)> closeFunc) {
 		loadList = assets;
 		textureLL = textureAssets;
 
@@ -482,6 +482,8 @@ public:
 
 		openMaterialMenu = newMatFunc;
 		closeMaterialMenu = closeMatFunc;
+
+		finishedCallback = closeFunc;
 	}
 
 	void setup() {
@@ -513,6 +515,9 @@ public:
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
 
+		imageData fb = FINISHBUTTON;
+		Material* finishMat = newMaterial(&fb, "FinishBtn");
+
 		int index = 0;
 		int optionIndex = 0;
 
@@ -535,6 +540,7 @@ public:
 		matSelPtr = getPtr(materialSelect);
 
 		totalArrangement->addItem(matSelPtr);
+		totalArrangement->addItem(getPtr(new Button(finishMat, finishedCallback)));
 		totalArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(totalArrangement));
@@ -552,7 +558,7 @@ private:
 
 	font* inFont = nullptr;
 
-	//std::function<void(UIItem*)> finishedCallback = nullptr;
+	std::function<void(UIItem*)> finishedCallback = nullptr;
 
 	std::function<void(std::function<void(UIItem*)>)> openMaterialMenu = nullptr;
 	std::function<void(UIItem*)> closeMaterialMenu = nullptr;
@@ -1137,11 +1143,23 @@ private:
 	void openObjectSettingsMenu(UIItem* owner) {
 		StaticObject* activeObject = &staticObjects[stoi(owner->Name)];
 		if (osm == nullptr) {
-			osm = new ObjectSettingsMenu(activeObject, &UIElements, &TextureElements, std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1));
+			osm = new ObjectSettingsMenu(activeObject, &UIElements, &TextureElements, std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeObjectSettingsMenu, this, std::placeholders::_1));
 		}
 		osm->setup();
 		osm->clickIndex = mouseManager.addClickListener(osm->getClickCallback());
 		widgets.push_back(osm);
+	}
+
+	void closeObjectSettingsMenu(UIItem* owner) {
+		vkDeviceWaitIdle(Engine::get()->device);
+		osm->cleanup();
+		mouseManager.removeClickListener(osm->clickIndex);
+
+		widgets.erase(find(widgets.begin(), widgets.end(), osm));
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+
+		osm = nullptr;
 	}
 
 	void openSettingsMenu(std::function<void(UIItem*)> closeFnc) {
