@@ -407,7 +407,7 @@ private:
 			canvas[0]->Items.erase(canvas[0]->Items.begin() + 1, canvas[0]->Items.end());
 		}
 		
-		std::string shaderName = owner->text;
+		shaderName = owner->text;
 		matTemplate = new MaterialTemplate(shaderName, boundPass);
 		std::vector<std::string> availableTextures{};
 		textureLL->listTextures(availableTextures);
@@ -417,11 +417,6 @@ private:
 		if (it != availableTextures.end()) {
 			defaultIndex = it - availableTextures.begin();
 		}
-
-		for (std::string tex : availableTextures) {
-			std::cout << tex << " ";
-		}
-		std::cout << std::endl;
 
 		std::vector<std::string> texChannels = matTemplate->listChannels();
 		it = find(texChannels.begin(), texChannels.end(), std::string("UniformBufferObject"));
@@ -1041,6 +1036,8 @@ private:
 	void closeSettingsMenu(UIItem* owner) {
 		currentObject->mat = TextureElements.getMaterial(owner->Name);
 		currentObject->shaderName = owner->text;
+
+		std::cout << currentObject->shaderName << std::endl;
 
 		vkDeviceWaitIdle(Engine::get()->device);
 		osm->cleanup();
