@@ -688,6 +688,116 @@ private:
 	Material* settingsMat = nullptr;
 };
 
+class TextureLoadMenu : public Widget {
+public:
+	TextureLoadMenu(LoadList* assets, LoadList* texLL) {
+		loadList = assets;
+		textureLL = texLL;
+	}
+
+	void setup(std::function<void(UIItem*)> update, std::function<void(UIItem*)> exit) {
+		if (isSetup) {
+			return;
+		}
+
+		updateTextureMenu = update;
+		exitCallback = exit;
+
+		fileName = winFile::OpenFileDialog();
+		if (fileName == string("fail")) {
+			return; // We will need to check if this menu has been setup after the setup function is called otherwise we will have some draw errors
+		}
+		textureName = fileName;
+		string del = "\\";
+		auto pos = textureName.find(del);
+		while (pos != string::npos) {
+			textureName.erase(0, pos + del.length());
+			pos = textureName.find(del);
+		}
+		del = ".";
+
+		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		font* newFont = new font();
+		TextBox* TexLoadLabel = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		TexLoadLabel->addText(std::string("Loading ") + textureName);
+
+		mainArrangement->addItem(getPtr(TexLoadLabel));
+
+		std::vector<std::string> loadOptions{ "Colour", "Normalized vector" };
+
+		imageData rb = RENDEREDBUTTON;
+		Material* renderedMat = newMaterial(&rb, "RenderBtn");
+
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+
+		imageData fb = FINISHBUTTON;
+		Material* finishedMat = newMaterial(&fb, "FinishBtn");
+
+		DropdownMenu* loadOption = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, newFont);
+		loadOption->addOptions(loadOptions);
+		loadOption->setSelectCallback(std::bind(&TextureLoadMenu::setOptionCallback, this, std::placeholders::_1));
+		loadOption->setOptionIndex(0);
+
+		mainArrangement->addItem(getPtr(loadOption));
+
+		Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.0f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		finishButtons->addItem(getPtr(new spacer()));
+		finishButtons->addItem(getPtr(new Button(finishedMat, std::bind(&TextureLoadMenu::finishCallback, this, std::placeholders::_1))));
+
+		mainArrangement->addItem(getPtr(finishButtons));
+
+		mainArrangement->arrangeItems();
+
+		pos = textureName.find(del);
+		textureName = textureName.substr(0, pos);
+
+		canvas.push_back(getPtr(mainArrangement));
+
+		isSetup = true;
+	}
+
+	int clickIndex = 0;
+private:
+	LoadList* textureLL = nullptr;
+
+	std::string textureName = "";
+	std::string fileName = "";
+
+	bool isNormalized = false;
+
+	std::function<void(UIItem*)> updateTextureMenu = nullptr;
+	std::function<void(UIItem*)> exitCallback = nullptr; 
+
+	void setOptionCallback(UIItem* owner) {
+		if (owner->text == std::string("Colour")) {
+			isNormalized = false;
+		}
+		else {
+			isNormalized = true;
+		}
+	}
+
+	void finishCallback(UIItem* owner) {
+		imageTexture* loadedTexture = nullptr;
+		if (isNormalized) {
+			loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
+		}
+		else {
+			loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
+		}
+		textureLL->getPtr(loadedTexture, textureName);
+		owner->Name = textureName;
+		if (updateTextureMenu != nullptr) {
+			updateTextureMenu(owner);
+		}
+		if (exitCallback != nullptr) {
+			exitCallback(nullptr);
+		}
+	}
+};
+
 class TextureMenu : public Widget {
 public:
 	TextureMenu(LoadList* assets, LoadList* textureLL) {
@@ -695,12 +805,13 @@ public:
 		textureLoadList = textureLL;
 	}
 
-	void setup(std::function<void(UIItem*)> callback) {
+	void setup(std::function<void(UIItem*)> modCallback, std::function<void(std::function<void(UIItem*)>)> loadCallback) {
 		if (isSetup) {
 			return;
 		}
 
-		modifyCallback = callback;
+		modifyCallback = modCallback;
+		loadTextureCallback = loadCallback;
 
 		std::function<void(UIItem*)> loadTexFunct = std::bind(&TextureMenu::loadTexture, this, std::placeholders::_1);
 
@@ -754,38 +865,63 @@ public:
 		isSetup = true;
 	}
 private:
+	std::function<void(std::function<void(UIItem*)>)> loadTextureCallback = nullptr;
+
 	void loadTexture(UIItem* owner) {
-		string fileName = winFile::OpenFileDialog();
-		if (fileName != string("fail")) {
-			string textureName = fileName;
-			string del = "\\";
-			auto pos = textureName.find(del);
-			while (pos != string::npos) {
-				textureName.erase(0, pos + del.length());
-				pos = textureName.find(del);
-			}
-			del = ".";
-			pos = textureName.find(del);
-			textureName = textureName.substr(0, pos);
-			imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
-			textureLoadList->getPtr(loadedTexture, textureName);
-
-			Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-
-			TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
-			objectName->addText(textureName);
-
-			Button* settingsButton = new Button(settingsMat, modifyCallback);
-			settingsButton->Name = textureName;
-
-			objButtons->addItem(getPtr(objectName));
-			objButtons->addItem(getPtr(new spacer()));
-			objButtons->addItem(getPtr(settingsButton));
-			objButtons->arrangeItems();
-
-			TextureButtons->addItem(getPtr(objButtons));
-			TextureButtons->arrangeItems();
+		if (loadTextureCallback != nullptr) {
+			loadTextureCallback(std::bind(&TextureMenu::addTexture, this, std::placeholders::_1));
 		}
+		//string fileName = winFile::OpenFileDialog();
+		//if (fileName != string("fail")) {
+		//	string textureName = fileName;
+		//	string del = "\\";
+		//	auto pos = textureName.find(del);
+		//	while (pos != string::npos) {
+		//		textureName.erase(0, pos + del.length());
+		//		pos = textureName.find(del);
+		//	}
+		//	del = ".";
+		//	pos = textureName.find(del);
+		//	textureName = textureName.substr(0, pos);
+		//	imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
+		//	textureLoadList->getPtr(loadedTexture, textureName);
+
+		//	Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		//	TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		//	objectName->addText(textureName);
+
+		//	Button* settingsButton = new Button(settingsMat, modifyCallback);
+		//	settingsButton->Name = textureName;
+
+		//	objButtons->addItem(getPtr(objectName));
+		//	objButtons->addItem(getPtr(new spacer()));
+		//	objButtons->addItem(getPtr(settingsButton));
+		//	objButtons->arrangeItems();
+
+		//	TextureButtons->addItem(getPtr(objButtons));
+		//	TextureButtons->arrangeItems();
+		//}
+	}
+
+	void addTexture(UIItem* owner) {
+		std::string textureName = owner->Name;
+		
+		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		objectName->addText(textureName);
+
+		Button* settingsButton = new Button(settingsMat, modifyCallback);
+		settingsButton->Name = textureName;
+
+		objButtons->addItem(getPtr(objectName));
+		objButtons->addItem(getPtr(new spacer()));
+		objButtons->addItem(getPtr(settingsButton));
+		objButtons->arrangeItems();
+
+		TextureButtons->addItem(getPtr(objButtons));
+		TextureButtons->arrangeItems();
 	}
 
 	UIItem* TextureButtons = nullptr;
@@ -919,6 +1055,7 @@ private:
 	MaterialCreator* mc = nullptr; 
 	ObjectSettingsMenu* osm = nullptr;
 	RemapTexSelector rts = RemapTexSelector(&UIElements, &TextureElements);
+	TextureLoadMenu tlm = TextureLoadMenu(&UIElements, &TextureElements);
 
 	vector<Widget*> widgets;
 
@@ -1162,6 +1299,22 @@ private:
 		sConst->updateSurfaceMat();
 	}
 
+	void createTexLoadMenu(std::function<void(UIItem*)> updateTexMenu) {
+		std::function<void(UIItem*)> exitCallback = std::bind(&Application::exitTexLoadMenu, this, std::placeholders::_1);
+		
+		tlm.setup(updateTexMenu, exitCallback);
+		tlm.clickIndex = mouseManager.addClickListener(tlm.getClickCallback());
+		widgets.push_back(&tlm);
+	}
+
+	void exitTexLoadMenu(UIItem* owner) {
+		vkDeviceWaitIdle(Engine::get()->device);
+		tlm.cleanup();
+		mouseManager.removeClickListener(tlm.clickIndex);
+
+		widgets.erase(find(widgets.begin(), widgets.end(), &tlm));
+	}
+
 	void openObjectSettingsMenu(UIItem* owner) {
 		StaticObject* activeObject = &staticObjects[stoi(owner->Name)];
 		if (osm == nullptr) {
@@ -1314,6 +1467,8 @@ private:
 		std::function<void(UIItem*)> webcamSettings = std::bind(&Application::createWebSettings, this, placeholders::_1);
 		std::function<void(UIItem*)> texModify = std::bind(&Application::createRemapTexSelector, this, placeholders::_1);
 
+		std::function<void(std::function<void(UIItem*)>)> openTexLoad = std::bind(&Application::createTexLoadMenu, this, placeholders::_1);
+
 		std::function<void(float)> polarFunc = std::bind(&Application::updateLightPolar, this, placeholders::_1);
 		std::function<void(float)> azimuthFunc = std::bind(&Application::updateLightAzimuth, this, placeholders::_1);
 
@@ -1321,7 +1476,7 @@ private:
 		mouseManager.addClickListener(objectMenu.getClickCallback());
 		widgets.push_back(&objectMenu);
 
-		textureMenu.setup(texModify);
+		textureMenu.setup(texModify, openTexLoad);
 		mouseManager.addClickListener(textureMenu.getClickCallback());
 		widgets.push_back(&textureMenu);
 
