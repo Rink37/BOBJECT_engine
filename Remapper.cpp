@@ -306,8 +306,8 @@ void RemapBackend::cleanup() {
 	vkFreeMemory(Engine::get()->device, paramBufferMemory, nullptr);
 }
 
-void RemapUI::fullRemap(Texture*diffTex, Texture*OSNormTex) {
-	remapper->createReferenceMaps(diffTex, OSNormTex);
+void RemapUI::fullRemap(Texture* refTex, Texture* targetTex) {
+	remapper->createReferenceMaps(refTex, targetTex);
 }
 
 void RemapUI::kuwaharaCallback(int kern) {

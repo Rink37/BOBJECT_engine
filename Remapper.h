@@ -239,7 +239,7 @@ private:
 			return;
 		}
 		Texture* refTex = textureLL->getTexture(refName);
-		Texture* targetTex = textureLL->getTexture(refName);
+		Texture* targetTex = textureLL->getTexture(targetName);
 
 		if (continueCallback != nullptr) {
 			continueCallback(refTex, targetTex);
@@ -262,6 +262,9 @@ public:
 		
 		remapper = new RemapBackend();
 		remapper->setup();
+		if (targetTex->textureFormat != VK_FORMAT_R8G8B8A8_UNORM) {
+			remapper->toggleNormalization();
+		}
 		fullRemap(refTex, targetTex);
 		
 		imageData tcb = TESTCHECKBOXBUTTON;
