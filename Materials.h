@@ -16,13 +16,12 @@ public:
 	}
 
 	Material(std::vector<Texture*> inTextures, std::string targetShader, GraphicsPass* graphicsPass) {
-		for (Texture* tex : inTextures) {
-			textures.push_back(tex);
-		}
+		textures = inTextures;
 		if (textures[0]->textureFormat == VK_FORMAT_R8_UNORM) {
 			isUIMat = true;
 		}
 		std::cout << textures.size() << std::endl;
+		std::cout << targetShader << std::endl;
 		createMaterial(targetShader, graphicsPass);
 	}
 
@@ -178,7 +177,9 @@ public:
 		}
 		std::vector<Texture*> materialTextures{};
 		for (std::string channel : textureOrder) {
+			std::cout << channel << std::endl;
 			materialTextures.push_back(textureMap.at(channel));
+			std::cout << textureMap.at(channel) << std::endl;
 		}
 		Material* newMat = new Material(materialTextures, shaderName, boundPass);
 		return newMat;

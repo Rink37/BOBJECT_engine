@@ -82,8 +82,6 @@ void Material::createDescriptorPool(std::string targetShader, GraphicsPass* curr
 	if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
 		throw runtime_error("failed to create descriptor pool!");
 	}
-
-	//std::cout << "Created descriptor pool" << std::endl;
 }
 
 void Material::createDescriptorSets() {
@@ -254,12 +252,12 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 	}
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		std::vector<VkWriteDescriptorSet> descriptorWrites{};
+		std::vector<VkWriteDescriptorSet> descriptorWrites{ (*IOvals).size(), VkWriteDescriptorSet{} };
+		std::vector<VkDescriptorImageInfo> imageInfos{ textureCount, VkDescriptorImageInfo{} };
 		
 		uint32_t textureIndex = 0;
 		uint32_t bindingIndex = 0;
 		for (shaderIOValue ioVal : *IOvals) {
-			VkWriteDescriptorSet descriptorWrite{};
 
 			if (ioVal.type == 1) {
 				
@@ -275,34 +273,33 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 					bufferInfo.range = sizeof(UniformBufferObject);
 				}
 				
-				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				descriptorWrite.dstSet = descriptorSets[i];
-				descriptorWrite.dstBinding = bindingIndex;
-				descriptorWrite.dstArrayElement = 0;
-				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-				descriptorWrite.descriptorCount = 1;
-				descriptorWrite.pBufferInfo = &bufferInfo;
+				descriptorWrites[bindingIndex].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrites[bindingIndex].dstSet = descriptorSets[i];
+				descriptorWrites[bindingIndex].dstBinding = bindingIndex;
+				descriptorWrites[bindingIndex].dstArrayElement = 0;
+				descriptorWrites[bindingIndex].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				descriptorWrites[bindingIndex].descriptorCount = 1;
+				descriptorWrites[bindingIndex].pBufferInfo = &bufferInfo;
 			
 			}
 			else {
 
-				VkDescriptorImageInfo imageInfo{};
-				imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-				imageInfo.imageView = textures[textureIndex]->textureImageView;
+				imageInfos[textureIndex].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				imageInfos[textureIndex].imageView = textures[textureIndex]->textureImageView;
+				imageInfos[textureIndex].sampler = Engine::get()->textureSampler;
+
+				descriptorWrites[bindingIndex].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrites[bindingIndex].dstSet = descriptorSets[i];
+				descriptorWrites[bindingIndex].dstBinding = bindingIndex;
+				descriptorWrites[bindingIndex].dstArrayElement = 0;
+				descriptorWrites[bindingIndex].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorWrites[bindingIndex].descriptorCount = 1;
+				descriptorWrites[bindingIndex].pImageInfo = &imageInfos[textureIndex];
+
 				textureIndex++;
-				imageInfo.sampler = Engine::get()->textureSampler;
-
-				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				descriptorWrite.dstSet = descriptorSets[i];
-				descriptorWrite.dstBinding = bindingIndex;
-				descriptorWrite.dstArrayElement = 0;
-				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				descriptorWrite.descriptorCount = 1;
-				descriptorWrite.pImageInfo = &imageInfo;
-
 			}
 
-			descriptorWrites.push_back(descriptorWrite);
+			//descriptorWrites.push_back(descriptorWrite);
 
 			bindingIndex++;
 		}

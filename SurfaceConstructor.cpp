@@ -17,7 +17,6 @@ using namespace std;
 using namespace cv;
 
 void surfaceConstructor::generateOSMap(Mesh* inputMesh) {
-
 	NormalGen generator(loadList);
 	generator.setupOSExtractor();
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();

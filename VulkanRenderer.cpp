@@ -12,9 +12,12 @@
 #include"Tomography.h"
 #include"LoadLists.h"
 #include"Remapper.h"
+#include"ImageProcessor.h"
+#include"GenerateNormalMap.h"
 
 #include<chrono>
 
+#include"include/OS_EdgeFill.h"
 #include"include/BakedImages.h"
 
 using namespace cv;
@@ -462,7 +465,7 @@ private:
 
 	void exit(UIItem* owner) {
 		Material* mat = matTemplate->createMaterial();
-		std::cout << "Created material!" << std::endl;
+		//std::cout << "Created material!" << std::endl;
 		textureLL->getPtr(mat, newMaterialName);
 		owner->Name = newMaterialName;
 		owner->text = shaderName;
@@ -486,7 +489,10 @@ public:
 		finishedCallback = closeFunc;
 	}
 
-	void setup() {
+	void setup(std::function<void(UIItem*)> addTex) {
+
+		addTextureFunc = addTex;
+
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		Arrangement* materialSettingsArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 4.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
@@ -540,6 +546,17 @@ public:
 		matSelPtr = getPtr(materialSelect);
 
 		totalArrangement->addItem(matSelPtr);
+		
+		Arrangement* genNormArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		TextBox* genNormText = new TextBox(inFont, 0.0f, 0.0f, 3.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		genNormText->addText("Generate OS normal:");
+
+		genNormArrangement->addItem(getPtr(genNormText));
+		genNormArrangement->addItem(getPtr(new spacer()));
+		genNormArrangement->addItem(getPtr(new Button(plusMat, std::bind(&ObjectSettingsMenu::createNormalMap, this, std::placeholders::_1))));
+		
+		totalArrangement->addItem(getPtr(genNormArrangement));
+
 		totalArrangement->addItem(getPtr(new Button(finishMat, finishedCallback)));
 		totalArrangement->arrangeItems();
 
@@ -563,6 +580,8 @@ private:
 	std::function<void(std::function<void(UIItem*)>)> openMaterialMenu = nullptr;
 	std::function<void(UIItem*)> closeMaterialMenu = nullptr;
 
+	std::function<void(UIItem*)> addTextureFunc = nullptr;
+
 	void newMaterialMenu(UIItem* owner) {
 		std::function<void(UIItem*)> closeFnc = std::bind(&ObjectSettingsMenu::exitMaterialMenu, this, std::placeholders::_1);
 		if (openMaterialMenu != nullptr) {
@@ -584,6 +603,41 @@ private:
 		obj->mat = textureLL->getMaterial(owner->text);
 		obj->shaderName = obj->mat->shaderName;
 		obj->materialName = owner->text;
+	}
+
+	void createNormalMap(UIItem* owner) {
+
+		NormalGen generator(textureLL);
+		generator.setupOSExtractor();
+		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+		commandBuffer = generator.drawOSMap(commandBuffer, obj->mesh);
+		Engine::get()->endSingleTimeCommands(commandBuffer);
+
+		Texture* EdgeFillImg = generator.objectSpaceMap.colour->copyTexture(generator.objectSpaceMap.colour->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+		filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+		OS_EdgeFill.filterImage();
+		OS_EdgeFill.filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		OS_EdgeFill.filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+		std::string normalName = obj->objectName + "_OSNorm";
+
+		Texture* OSNormTex = OS_EdgeFill.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
+		
+		OSNormTex->textureImageView = OSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+		textureLL->replacePtr(OSNormTex, normalName);
+
+		if (addTextureFunc != nullptr) {
+			owner->Name = normalName;
+			addTextureFunc(owner);
+		}
+
+		generator.cleanupGenOS();
+		EdgeFillImg->cleanup();
+		OS_EdgeFill.cleanup();
 	}
 };
 
@@ -686,6 +740,7 @@ private:
 	Material* invisibleMat = nullptr;
 	Material* wireframeMat = nullptr;
 	Material* settingsMat = nullptr;
+
 };
 
 class TextureLoadMenu : public Widget {
@@ -864,6 +919,11 @@ public:
 
 		isSetup = true;
 	}
+
+	std::function<void(UIItem*)> getAddTexCallback() {
+		return std::bind(&TextureMenu::addTexture, this, std::placeholders::_1);
+	}
+
 private:
 	std::function<void(std::function<void(UIItem*)>)> loadTextureCallback = nullptr;
 
@@ -871,37 +931,6 @@ private:
 		if (loadTextureCallback != nullptr) {
 			loadTextureCallback(std::bind(&TextureMenu::addTexture, this, std::placeholders::_1));
 		}
-		//string fileName = winFile::OpenFileDialog();
-		//if (fileName != string("fail")) {
-		//	string textureName = fileName;
-		//	string del = "\\";
-		//	auto pos = textureName.find(del);
-		//	while (pos != string::npos) {
-		//		textureName.erase(0, pos + del.length());
-		//		pos = textureName.find(del);
-		//	}
-		//	del = ".";
-		//	pos = textureName.find(del);
-		//	textureName = textureName.substr(0, pos);
-		//	imageTexture* loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
-		//	textureLoadList->getPtr(loadedTexture, textureName);
-
-		//	Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-
-		//	TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
-		//	objectName->addText(textureName);
-
-		//	Button* settingsButton = new Button(settingsMat, modifyCallback);
-		//	settingsButton->Name = textureName;
-
-		//	objButtons->addItem(getPtr(objectName));
-		//	objButtons->addItem(getPtr(new spacer()));
-		//	objButtons->addItem(getPtr(settingsButton));
-		//	objButtons->arrangeItems();
-
-		//	TextureButtons->addItem(getPtr(objButtons));
-		//	TextureButtons->arrangeItems();
-		//}
 	}
 
 	void addTexture(UIItem* owner) {
@@ -1322,7 +1351,8 @@ private:
 		if (osm == nullptr) {
 			osm = new ObjectSettingsMenu(activeObject, &UIElements, &TextureElements, std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeObjectSettingsMenu, this, std::placeholders::_1));
 		}
-		osm->setup();
+		
+		osm->setup(textureMenu.getAddTexCallback());
 		osm->clickIndex = mouseManager.addClickListener(osm->getClickCallback());
 		widgets.push_back(osm);
 	}
@@ -1397,6 +1427,7 @@ private:
 			del = ".";
 			pos = objectName.find(del);
 			objectName = objectName.substr(0, pos);
+			newObject.objectName = objectName;
 
 			std::function<void(UIItem*)> visibleFunction = std::bind(&Application::setObjectVisibility, this, placeholders::_1);
 			std::function<void(UIItem*)> wireFunction = std::bind(&Application::setObjectWireframe, this, placeholders::_1);
@@ -1699,6 +1730,7 @@ private:
 		objectName = objectName.substr(0, pos);
 		StaticObject newObject(modelPath);
 		newObject.mat = &sConst->surfaceMat;
+		newObject.objectName = objectName;
 
 		std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
 		std::function<void(UIItem*)> wireFunction = bind(&Application::setObjectWireframe, this, placeholders::_1);

@@ -22,7 +22,7 @@ struct LoadList {
 			if (textureAssociator.count(name) > 0) {
 				for (std::string matName : textureAssociator.at(name)) {
 					int index = materialMap.at(matName);
-					auto it = find(materials[index].get()->textures.begin(), materials[index].get()->textures.begin(), getTexture(name));
+					auto it = find(materials[index].get()->textures.begin(), materials[index].get()->textures.end(), getTexture(name));
 					replaceIndices.push_back(it - materials[index].get()->textures.begin());
 				}
 			}
@@ -31,8 +31,9 @@ struct LoadList {
 		Texture* replacedTex = getPtr(tex, name);
 		if (textureAssociator.count(name) > 0) {
 			for (int i = 0; i != textureAssociator.at(name).size(); i++) {
+
 				std::string matName = textureAssociator.at(name)[i];
-				std::cout << "Updating material " << matName << " since it contains texture " << name << std::endl;
+				std::cout << "Updating material " << matName << " since it contains texture " << name << " at index " << replaceIndices[i] << std::endl;
 				int index = materialMap.at(matName);
 				materials[index].get()->textures[replaceIndices[i]] = replacedTex;
 				materials[index].get()->init(false);
