@@ -131,9 +131,9 @@ public:
 
 	void cleanup();
 
-	Texture* filteredOSNormal = nullptr;
-	Texture* baseDiffuse = nullptr;
-	Texture* baseOSNormal = nullptr;
+	Texture* filteredTarget = nullptr;
+	Texture* baseRef = nullptr;
+	Texture* baseTarget = nullptr;
 
 	uint32_t method = ITERATIVE;
 
@@ -159,21 +159,65 @@ private:
 	filter* coordReader = nullptr;
 };
 
-class RemapUI : public Widget {
+class RemapTexSelector : public Widget {
 public:
-	RemapUI(LoadList* assets, surfaceConstructor* sConst) {
+	RemapTexSelector(LoadList* assets, LoadList* texLL) {
 		loadList = assets;
-		this->sConst = sConst;
+		textureLL = texLL;
 	}
 
-	void setup(std::function<void(UIItem*)> cancelFunct, std::function<void(UIItem*)> finishFunct) {
-		if (sConst->diffTex == nullptr || sConst->OSNormTex == nullptr) {
+	void setup() {
+		std::vector<std::string> availableTextures{};
+		textureLL->listTextures(availableTextures);
+
+		imageData rb = RENDEREDBUTTON;
+		Material* renderedMat = newMaterial(&rb, "RenderBtn");
+
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+
+		imageData fb = FINISHBUTTON;
+		Material* finishedMat = newMaterial(&fb, "FinishBtn");
+		
+		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
+
+		font* newFont = new font();
+		TextBox* setRefText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		setRefText->addText("Set the reference map:");
+
+		DropdownMenu* refDropdown = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, newFont);
+		refDropdown->addOptions(availableTextures);
+		refDropdown->setOptionIndex(0);
+
+		TextBox* setTargetText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		setRefText->addText("Set the target map:");
+
+		DropdownMenu* targetDropdown = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, newFont);
+		refDropdown->addOptions(availableTextures);
+		refDropdown->setOptionIndex(0);
+	}
+
+private:
+	LoadList* textureLL = nullptr;
+};
+
+class RemapUI : public Widget {
+public:
+	RemapUI(LoadList* assets) {
+		loadList = assets;
+		//this->sConst = sConst;
+	}
+
+	void setup(Texture* rTex, Texture* tTex, std::function<void(UIItem*)> cancelFunct, std::function<void(UIItem*)> finishFunct) {
+		refTex = rTex;
+		targetTex = tTex;
+		if (refTex == nullptr || targetTex == nullptr) {
 			return;
 		}
 		
 		remapper = new RemapBackend();
 		remapper->setup();
-		fullRemap(sConst->diffTex, sConst->OSNormTex);
+		fullRemap(refTex, targetTex);
 		
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
@@ -185,7 +229,7 @@ public:
 		std::function<void(UIItem*)> incrementMethodFunction = std::bind(&RemapUI::incrementMethod, this, std::placeholders::_1);
 		std::function<void(UIItem*)> reduceMethodFunction = std::bind(&RemapUI::reduceMethod, this, std::placeholders::_1);
 
-		outMap = getPtr(new ImagePanel(loadList->replacePtr(new Material(remapper->filteredOSNormal), "RemapOSMat"), false));
+		outMap = getPtr(new ImagePanel(loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat"), false));
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -378,8 +422,8 @@ public:
 
 		canvas.push_back(getPtr(column));
 
-		sConst->normalType = 0;
-		sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
+		//sConst->normalType = 0;
+		//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 
 		isSetup = true;
 	}
@@ -400,7 +444,8 @@ public:
 
 private:
 
-	surfaceConstructor* sConst = nullptr;
+	Texture* refTex = nullptr;
+	Texture* targetTex = nullptr;
 
 	void fullRemap(Texture*, Texture*);
 

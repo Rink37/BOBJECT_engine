@@ -907,7 +907,7 @@ private:
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	TextureMenu textureMenu = TextureMenu(&UIElements, &TextureElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
-	RemapUI remapMenu = RemapUI(&UIElements, sConst);
+	RemapUI remapMenu = RemapUI(&UIElements);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
 	MaterialCreator* mc = nullptr; 
 	ObjectSettingsMenu* osm = nullptr;
@@ -1043,7 +1043,7 @@ private:
 		std::function<void(UIItem*)> destroySelf = std::bind(&Application::destroyRemapper, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishRemapper, this, std::placeholders::_1);
 
-		remapMenu.setup(destroySelf, finishSelf);
+		//remapMenu.setup(destroySelf, finishSelf); // I've had to disable this since the new remapper interface requires a separate menu to be called beforehand to specify what textures we want to use
 		if (!remapMenu.isSetup) {
 			return;
 		}
@@ -1061,9 +1061,9 @@ private:
 		vkDeviceWaitIdle(Engine::get()->device);
 
 		sConst->normalType = 0;
-		remapMenu.remapper->baseOSNormal->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		remapMenu.remapper->baseOSNormal->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		sConst->loadNormal(remapMenu.remapper->baseOSNormal->copyTexture());
+		remapMenu.remapper->baseTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		remapMenu.remapper->baseTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		sConst->loadNormal(remapMenu.remapper->baseTarget->copyTexture());
 		surfaceMenu.setNormal(sConst->currentNormal());
 
 		remapMenu.cleanup();
@@ -1080,7 +1080,7 @@ private:
 
 	void finishRemapper(UIItem* owner) {
 		sConst->normalType = 0;
-		sConst->loadNormal(remapMenu.remapper->filteredOSNormal->copyTexture());
+		sConst->loadNormal(remapMenu.remapper->filteredTarget->copyTexture());
 		surfaceMenu.setNormal(sConst->currentNormal());
 
 		remapMenu.cleanup();
