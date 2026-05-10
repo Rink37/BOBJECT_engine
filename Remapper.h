@@ -166,8 +166,11 @@ public:
 		textureLL = texLL;
 	}
 
-	void setup(std::string targetTextureName) {
+	void setup(std::string targetTextureName, std::function<void(Texture*, Texture*)> callback) {
 		targetName = targetTextureName;
+
+		continueCallback = callback;
+
 		std::vector<std::string> availableTextures{};
 		textureLL->listTextures(availableTextures);
 
@@ -187,7 +190,7 @@ public:
 
 		std::function<void(UIItem*)> finishFunct = std::bind(&RemapTexSelector::finish, this, std::placeholders::_1);
 		
-		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
+		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		font* newFont = new font();
 
@@ -215,6 +218,8 @@ public:
 		canvas.push_back(getPtr(mainArrangement));
 		isSetup = true;
 	}
+
+	int clickIndex = 0;
 
 private:
 	LoadList* textureLL = nullptr;

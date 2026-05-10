@@ -695,10 +695,12 @@ public:
 		textureLoadList = textureLL;
 	}
 
-	void setup() {
+	void setup(std::function<void(UIItem*)> callback) {
 		if (isSetup) {
 			return;
 		}
+
+		modifyCallback = callback;
 
 		std::function<void(UIItem*)> loadTexFunct = std::bind(&TextureMenu::loadTexture, this, std::placeholders::_1);
 
@@ -773,9 +775,12 @@ private:
 			TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 			objectName->addText(textureName);
 
+			Button* settingsButton = new Button(settingsMat, modifyCallback);
+			settingsButton->Name = textureName;
+
 			objButtons->addItem(getPtr(objectName));
 			objButtons->addItem(getPtr(new spacer()));
-			objButtons->addItem(getPtr(new Button(settingsMat)));
+			objButtons->addItem(getPtr(settingsButton));
 			objButtons->arrangeItems();
 
 			TextureButtons->addItem(getPtr(objButtons));
@@ -789,6 +794,8 @@ private:
 	font* objectFont = nullptr;
 
 	Material* settingsMat = nullptr;
+
+	std::function<void(UIItem*)> modifyCallback = nullptr;
 };
 
 class WebcamMenu : public Widget {
@@ -911,6 +918,7 @@ private:
 	WebcamSettings webSets = WebcamSettings(&UIElements);
 	MaterialCreator* mc = nullptr; 
 	ObjectSettingsMenu* osm = nullptr;
+	RemapTexSelector rts = RemapTexSelector(&UIElements, &TextureElements);
 
 	vector<Widget*> widgets;
 
@@ -1039,9 +1047,23 @@ private:
 		inWebSettings = false;
 	}
 
+	void createRemapTexSelector(UIItem* owner) {
+		std::function<void(Texture*, Texture*)> continueCallback = std::bind(&Application::createRemapper, this, std::placeholders::_1, std::placeholders::_2);
+		
+		rts.setup(owner->Name, continueCallback);
+		rts.clickIndex = mouseManager.addClickListener(rts.getClickCallback());
+
+		widgets.push_back(&rts);
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	}
+
 	void createRemapper(Texture* refTexture, Texture* targetTexture) {
 		std::function<void(UIItem*)> destroySelf = std::bind(&Application::destroyRemapper, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishRemapper, this, std::placeholders::_1);
+
+		vkDeviceWaitIdle(Engine::get()->device);
+		rts.cleanup();
+		widgets.erase(find(widgets.begin(), widgets.end(), &rts));
 
 		remapMenu.setup(refTexture, targetTexture, destroySelf, finishSelf); 
 		if (!remapMenu.isSetup) {
@@ -1290,6 +1312,7 @@ private:
 		std::function<void(UIItem*)> newSessionFunc = std::bind(&Application::newSession, this, placeholders::_1);
 		std::function<void(UIItem*)> remapCallback = nullptr;// std::bind(&Application::createRemapper, this, placeholders::_1);
 		std::function<void(UIItem*)> webcamSettings = std::bind(&Application::createWebSettings, this, placeholders::_1);
+		std::function<void(UIItem*)> texModify = std::bind(&Application::createRemapTexSelector, this, placeholders::_1);
 
 		std::function<void(float)> polarFunc = std::bind(&Application::updateLightPolar, this, placeholders::_1);
 		std::function<void(float)> azimuthFunc = std::bind(&Application::updateLightAzimuth, this, placeholders::_1);
@@ -1298,7 +1321,7 @@ private:
 		mouseManager.addClickListener(objectMenu.getClickCallback());
 		widgets.push_back(&objectMenu);
 
-		textureMenu.setup();
+		textureMenu.setup(texModify);
 		mouseManager.addClickListener(textureMenu.getClickCallback());
 		widgets.push_back(&textureMenu);
 
