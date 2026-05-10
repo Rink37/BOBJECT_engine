@@ -166,9 +166,15 @@ public:
 		textureLL = texLL;
 	}
 
-	void setup() {
+	void setup(std::string targetTextureName) {
+		targetName = targetTextureName;
 		std::vector<std::string> availableTextures{};
 		textureLL->listTextures(availableTextures);
+
+		if (std::find(availableTextures.begin(), availableTextures.end(), targetName) == availableTextures.end()) {
+			std::cout << "The target texture provided is not a valid texture in the set" << std::endl;
+			return;
+		}
 
 		imageData rb = RENDEREDBUTTON;
 		Material* renderedMat = newMaterial(&rb, "RenderBtn");
@@ -178,34 +184,68 @@ public:
 
 		imageData fb = FINISHBUTTON;
 		Material* finishedMat = newMaterial(&fb, "FinishBtn");
+
+		std::function<void(UIItem*)> finishFunct = std::bind(&RemapTexSelector::finish, this, std::placeholders::_1);
 		
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 
 		font* newFont = new font();
+
+		TextBox* targetText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		targetText->addText(std::string("Remapping ") + targetTextureName);
+
 		TextBox* setRefText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		setRefText->addText("Set the reference map:");
 
 		DropdownMenu* refDropdown = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, newFont);
 		refDropdown->addOptions(availableTextures);
 		refDropdown->setOptionIndex(0);
+		refDropdown->setSelectCallback(std::bind(&RemapTexSelector::setRefName, this, std::placeholders::_1));
 
-		TextBox* setTargetText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
-		setRefText->addText("Set the target map:");
+		Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 2.0f, 0.01f);
+		finishButtons->addItem(getPtr(new spacer()));
+		finishButtons->addItem(getPtr(new Button(finishedMat, finishFunct)));
 
-		DropdownMenu* targetDropdown = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, newFont);
-		refDropdown->addOptions(availableTextures);
-		refDropdown->setOptionIndex(0);
+		mainArrangement->addItem(getPtr(targetText));
+		mainArrangement->addItem(getPtr(setRefText));
+		mainArrangement->addItem(getPtr(refDropdown));
+		mainArrangement->addItem(getPtr(finishButtons));
+		mainArrangement->arrangeItems();
+
+		canvas.push_back(getPtr(mainArrangement));
+		isSetup = true;
 	}
 
 private:
 	LoadList* textureLL = nullptr;
+
+	std::string targetName = "";
+	std::string refName = "";
+
+	std::function<void(Texture*, Texture*)> continueCallback = nullptr;
+
+	void setRefName(UIItem* owner) {
+		refName = owner->text;
+	}
+
+	void finish(UIItem* owner) {
+		if (targetName.size() == 0 || refName.size() == 0) {
+			std::cout << "Insufficient textures to continue" << std::endl;
+			return;
+		}
+		Texture* refTex = textureLL->getTexture(refName);
+		Texture* targetTex = textureLL->getTexture(refName);
+
+		if (continueCallback != nullptr) {
+			continueCallback(refTex, targetTex);
+		}
+	}
 };
 
 class RemapUI : public Widget {
 public:
 	RemapUI(LoadList* assets) {
 		loadList = assets;
-		//this->sConst = sConst;
 	}
 
 	void setup(Texture* rTex, Texture* tTex, std::function<void(UIItem*)> cancelFunct, std::function<void(UIItem*)> finishFunct) {

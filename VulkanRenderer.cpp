@@ -1039,11 +1039,11 @@ private:
 		inWebSettings = false;
 	}
 
-	void createRemapper(UIItem* owner) {
+	void createRemapper(Texture* refTexture, Texture* targetTexture) {
 		std::function<void(UIItem*)> destroySelf = std::bind(&Application::destroyRemapper, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishRemapper, this, std::placeholders::_1);
 
-		//remapMenu.setup(destroySelf, finishSelf); // I've had to disable this since the new remapper interface requires a separate menu to be called beforehand to specify what textures we want to use
+		remapMenu.setup(refTexture, targetTexture, destroySelf, finishSelf); 
 		if (!remapMenu.isSetup) {
 			return;
 		}
@@ -1288,7 +1288,7 @@ private:
 		std::function<void(UIItem*)> loadObjectFunct = std::bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
 		std::function<void(UIItem*)> loadSessionFunc = std::bind(&Application::loadSave, this, placeholders::_1);
 		std::function<void(UIItem*)> newSessionFunc = std::bind(&Application::newSession, this, placeholders::_1);
-		std::function<void(UIItem*)> remapCallback = std::bind(&Application::createRemapper, this, placeholders::_1);
+		std::function<void(UIItem*)> remapCallback = nullptr;// std::bind(&Application::createRemapper, this, placeholders::_1);
 		std::function<void(UIItem*)> webcamSettings = std::bind(&Application::createWebSettings, this, placeholders::_1);
 
 		std::function<void(float)> polarFunc = std::bind(&Application::updateLightPolar, this, placeholders::_1);
