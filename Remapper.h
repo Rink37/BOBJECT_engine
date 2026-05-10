@@ -166,7 +166,7 @@ public:
 		textureLL = texLL;
 	}
 
-	void setup(std::string targetTextureName, std::function<void(Texture*, Texture*)> callback) {
+	void setup(std::string targetTextureName, std::function<void(std::string, std::string)> callback) {
 		targetName = targetTextureName;
 
 		continueCallback = callback;
@@ -227,7 +227,7 @@ private:
 	std::string targetName = "";
 	std::string refName = "";
 
-	std::function<void(Texture*, Texture*)> continueCallback = nullptr;
+	std::function<void(std::string, std::string)> continueCallback = nullptr;
 
 	void setRefName(UIItem* owner) {
 		refName = owner->text;
@@ -238,24 +238,26 @@ private:
 			std::cout << "Insufficient textures to continue" << std::endl;
 			return;
 		}
-		Texture* refTex = textureLL->getTexture(refName);
-		Texture* targetTex = textureLL->getTexture(targetName);
 
 		if (continueCallback != nullptr) {
-			continueCallback(refTex, targetTex);
+			continueCallback(refName, targetName);
 		}
 	}
 };
 
 class RemapUI : public Widget {
 public:
-	RemapUI(LoadList* assets) {
+	RemapUI(LoadList* assets, LoadList* textureLoadList) {
 		loadList = assets;
+		textureLL = textureLoadList;
 	}
 
-	void setup(Texture* rTex, Texture* tTex, std::function<void(UIItem*)> cancelFunct, std::function<void(UIItem*)> finishFunct) {
-		refTex = rTex;
-		targetTex = tTex;
+	void setup(std::string rTexName, std::string tTexName, std::function<void(UIItem*)> cancelFunct, std::function<void(UIItem*)> finishFunct) {
+		refTexName = rTexName;
+		targetTexName = tTexName;
+		
+		refTex = textureLL->getTexture(rTexName);
+		targetTex = textureLL->getTexture(tTexName);
 		if (refTex == nullptr || targetTex == nullptr) {
 			return;
 		}
@@ -344,8 +346,13 @@ public:
 
 private:
 
+	LoadList* textureLL = nullptr;
+
 	Texture* refTex = nullptr;
 	Texture* targetTex = nullptr;
+
+	std::string refTexName = "";
+	std::string targetTexName = "";
 
 	void fullRemap(Texture*, Texture*);
 

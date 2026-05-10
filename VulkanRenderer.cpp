@@ -1050,7 +1050,7 @@ private:
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	TextureMenu textureMenu = TextureMenu(&UIElements, &TextureElements);
 	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
-	RemapUI remapMenu = RemapUI(&UIElements);
+	RemapUI remapMenu = RemapUI(&UIElements, &TextureElements);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
 	MaterialCreator* mc = nullptr; 
 	ObjectSettingsMenu* osm = nullptr;
@@ -1185,7 +1185,7 @@ private:
 	}
 
 	void createRemapTexSelector(UIItem* owner) {
-		std::function<void(Texture*, Texture*)> continueCallback = std::bind(&Application::createRemapper, this, std::placeholders::_1, std::placeholders::_2);
+		std::function<void(std::string, std::string)> continueCallback = std::bind(&Application::createRemapper, this, std::placeholders::_1, std::placeholders::_2);
 		
 		rts.setup(owner->Name, continueCallback);
 		rts.clickIndex = mouseManager.addClickListener(rts.getClickCallback());
@@ -1194,7 +1194,7 @@ private:
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 
-	void createRemapper(Texture* refTexture, Texture* targetTexture) {
+	void createRemapper(std::string refTexture, std::string targetTexture) {
 		std::function<void(UIItem*)> destroySelf = std::bind(&Application::destroyRemapper, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishRemapper, this, std::placeholders::_1);
 
