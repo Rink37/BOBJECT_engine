@@ -1219,11 +1219,12 @@ private:
 	void destroyRemapper(UIItem* owner) {
 		vkDeviceWaitIdle(Engine::get()->device);
 
-		sConst->normalType = 0;
+		//sConst->normalType = 0;
 		remapMenu.remapper->baseTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		remapMenu.remapper->baseTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		sConst->loadNormal(remapMenu.remapper->baseTarget->copyTexture());
-		surfaceMenu.setNormal(sConst->currentNormal());
+		TextureElements.replacePtr(remapMenu.remapper->baseTarget->copyTexture(), remapMenu.targetTexName);
+		//sConst->loadNormal(remapMenu.remapper->baseTarget->copyTexture());
+		//surfaceMenu.setNormal(sConst->currentNormal());
 
 		remapMenu.cleanup();
 
@@ -1238,9 +1239,10 @@ private:
 	}
 
 	void finishRemapper(UIItem* owner) {
-		sConst->normalType = 0;
-		sConst->loadNormal(remapMenu.remapper->filteredTarget->copyTexture());
-		surfaceMenu.setNormal(sConst->currentNormal());
+		TextureElements.replacePtr(remapMenu.remapper->filteredTarget->copyTexture(), remapMenu.targetTexName);
+		//sConst->normalType = 0;
+		//sConst->loadNormal(remapMenu.remapper->filteredTarget->copyTexture());
+		//surfaceMenu.setNormal(sConst->currentNormal());
 
 		remapMenu.cleanup();
 		mouseManager.removeClickListener(remapMenu.clickIndex);

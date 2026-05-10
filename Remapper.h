@@ -326,6 +326,8 @@ public:
 
 		//sConst->normalType = 0;
 		//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
+		
+		textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 
 		isSetup = true;
 	}
@@ -344,6 +346,7 @@ public:
 	RemapBackend* remapper = nullptr;
 	UIItem* outMap = nullptr;
 
+	std::string targetTexName = "";
 private:
 
 	LoadList* textureLL = nullptr;
@@ -352,7 +355,6 @@ private:
 	Texture* targetTex = nullptr;
 
 	std::string refTexName = "";
-	std::string targetTexName = "";
 
 	void fullRemap(Texture*, Texture*);
 

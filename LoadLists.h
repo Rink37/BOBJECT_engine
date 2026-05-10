@@ -17,10 +17,28 @@ struct LoadList {
 	}
 
 	Texture* replacePtr(Texture* tex, std::string name) {
+		std::vector<int> replaceIndices{};
 		if (checkForTexture(name)) {
+			if (textureAssociator.count(name) > 0) {
+				for (std::string matName : textureAssociator.at(name)) {
+					int index = materialMap.at(matName);
+					auto it = find(materials[index].get()->textures.begin(), materials[index].get()->textures.begin(), getTexture(name));
+					replaceIndices.push_back(it - materials[index].get()->textures.begin());
+				}
+			}
 			deleteTexture(name);
 		}
-		return getPtr(tex, name);
+		Texture* replacedTex = getPtr(tex, name);
+		if (textureAssociator.count(name) > 0) {
+			for (int i = 0; i != textureAssociator.at(name).size(); i++) {
+				std::string matName = textureAssociator.at(name)[i];
+				std::cout << "Updating material " << matName << " since it contains texture " << name << std::endl;
+				int index = materialMap.at(matName);
+				materials[index].get()->textures[replaceIndices[i]] = replacedTex;
+				materials[index].get()->init(false);
+			}
+		}
+		return replacedTex;
 	}
 
 	void cleanup(std::string name) {
@@ -37,6 +55,18 @@ struct LoadList {
 			tex->cleanupDescriptor();
 			delete tex;
 			return materials.at(materialMap.at(name)).get();
+		}
+		for (auto elem : textureMap) {
+			auto it = find(tex->textures.begin(), tex->textures.end(), textures[elem.second].get());
+			if (it != tex->textures.end()) {
+				std::cout << "Material " << name << " contains texture " << elem.first << std::endl;
+				if (textureAssociator.count(elem.first) == 0) {
+					textureAssociator.insert({ elem.first, std::vector<std::string>{name} });
+				}
+				else {
+					textureAssociator.at(elem.first).push_back(name);
+				}
+			}
 		}
 		materials.emplace_back(tex);
 		materialMap.insert({ name, static_cast<int>(materials.size() - 1) });
@@ -142,6 +172,8 @@ private:
 
 	std::vector<std::unique_ptr<Texture>> textures = {};
 	std::vector<std::unique_ptr<Material>> materials = {};
+
+	std::map<std::string, std::vector<std::string>> textureAssociator{};
 };
 
 #endif
