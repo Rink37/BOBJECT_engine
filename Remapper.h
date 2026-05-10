@@ -300,175 +300,27 @@ public:
 		
 		column->addItem(outMap);
 		column->addItem(methodButtons);
-		
-		if (remapper->method == KUWAHARA) {
-			std::function<void(int)> kuwaharaSliderFunction = std::bind(&RemapUI::kuwaharaCallback, this, std::placeholders::_1);
-			std::function<void(float)> zeroCrossSliderFunction = std::bind(&RemapUI::zeroCrossCallback, this, std::placeholders::_1);
-			std::function<void(float)> sharpnessSliderFunction = std::bind(&RemapUI::sharpnessCallback, this, std::placeholders::_1);
-			std::function<void(int)> averagerSliderFunction = std::bind(&RemapUI::averagerCallback, this, std::placeholders::_1);
-			std::function<void(float)> gradientSliderFunction = std::bind(&RemapUI::gradientCallback, this, std::placeholders::_1);
-			std::function<void(int)> iterationSliderFunction = std::bind(&RemapUI::iterationCallback, this, std::placeholders::_1);
 
-			imageData searchSize = SEARCHSIZETEXT;
-			Material* searchSizeMat = newMaterial(&searchSize, "SearchSizeText");
+		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
-			imageData flatness = STROKEFLATNESSTEXT;
-			Material* flatnessMat = newMaterial(&flatness, "FlatnessText");
+		imageData cancel = CANCELBUTTON;
+		Material* cancelMat = newMaterial(&cancel, "CancelBtn");
 
-			imageData sharpness = EDGESHARPNESSTEXT;
-			Material* sharpnessMat = newMaterial(&sharpness, "SharpnessText");
+		imageData finish = FINISHBUTTON;
+		Material* finishMat = newMaterial(&finish, "FinishBtn");
 
-			imageData noiseRemoval = NOISEREMOVALTEXT;
-			Material* noiseMat = newMaterial(&noiseRemoval, "NoiseRemovalText");
+		Button* finishButton = new Button(finishMat, finishFunct);
+		Button* cancelButton = new Button(cancelMat, cancelFunct);
 
-			imageData flattenThresh = FLATTENTHRESHOLDTEXT;
-			Material* threshMat = newMaterial(&flattenThresh, "FlattenThresholdText");
-
-			Button* searchSizeBtn = new Button(searchSizeMat);
-			Button* flatnessBtn = new Button(flatnessMat);
-			Button* sharpnessBtn = new Button(sharpnessMat);
-			Button* noiseBtn = new Button(noiseMat);
-			Button* threshBtn = new Button(threshMat);
-
-			Arrangement* kuwaharaArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* zeroCrossArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* sharpnessArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* averagerArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* gradientArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-
-			Slider* kuwaharaKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
-			kuwaharaKernSlider->updateDisplay();
-			kuwaharaKernSlider->setSlideValues(remapper->minKuwaharaKernel, remapper->maxKuwaharaKernel, 15);
-			kuwaharaKernSlider->setIntCallback(kuwaharaSliderFunction, false);
-
-			Slider* zeroCrossSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
-			zeroCrossSlider->updateDisplay();
-			zeroCrossSlider->setSlideValues(0.5f, 2.0f, 0.58f);
-			zeroCrossSlider->setFloatCallback(zeroCrossSliderFunction, false);
-
-			Slider* sharpnessSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
-			sharpnessSlider->updateDisplay();
-			sharpnessSlider->setSlideValues(1.0f, 20.0f, 8.0f);
-			sharpnessSlider->setFloatCallback(sharpnessSliderFunction, false);
-
-			Slider* averagerKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
-			averagerKernSlider->updateDisplay();
-			averagerKernSlider->setSlideValues(remapper->minAveragerKernel, remapper->maxAveragerKernel, 15);
-			averagerKernSlider->setIntCallback(averagerSliderFunction, false);
-
-			Slider* gradientThreshSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
-			gradientThreshSlider->updateDisplay();
-			gradientThreshSlider->setSlideValues(remapper->minGradientThreshold, remapper->maxGradientThreshold, 0.06f);
-			gradientThreshSlider->setFloatCallback(gradientSliderFunction, false);
-
-			Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
-
-			imageData cancel = CANCELBUTTON;
-			Material* cancelMat = newMaterial(&cancel, "CancelBtn");
-
-			imageData finish = FINISHBUTTON;
-			Material* finishMat = newMaterial(&finish, "FinishBtn");
-
-			Button* finishButton = new Button(finishMat, finishFunct);
-			Button* cancelButton = new Button(cancelMat, cancelFunct);
-
-			endButtons->addItem(getPtr(cancelButton));
-			endButtons->addItem(getPtr(finishButton));
-
-			zeroCrossArranger->addItem(getPtr(noiseBtn));
-			zeroCrossArranger->addItem(getPtr(zeroCrossSlider));
-
-			kuwaharaArranger->addItem(getPtr(searchSizeBtn));
-			kuwaharaArranger->addItem(getPtr(kuwaharaKernSlider));
-
-			sharpnessArranger->addItem(getPtr(sharpnessBtn));
-			sharpnessArranger->addItem(getPtr(sharpnessSlider));
-
-			averagerArranger->addItem(getPtr(flatnessBtn));
-			averagerArranger->addItem(getPtr(averagerKernSlider));
-
-			gradientArranger->addItem(getPtr(threshBtn));
-			gradientArranger->addItem(getPtr(gradientThreshSlider));
-
-			column->addItem(getPtr(kuwaharaArranger));
-			column->addItem(getPtr(zeroCrossArranger));
-			column->addItem(getPtr(sharpnessArranger));
-			column->addItem(getPtr(averagerArranger));
-			column->addItem(getPtr(gradientArranger));
-			column->addItem(getPtr(endButtons));
-		}
-		else {
-			std::function<void(int)> kuwaharaSliderFunction = std::bind(&RemapUI::kuwaharaCallback, this, std::placeholders::_1);
-			std::function<void(float)> zeroCrossSliderFunction = std::bind(&RemapUI::zeroCrossCallback, this, std::placeholders::_1);
-			std::function<void(float)> sharpnessSliderFunction = std::bind(&RemapUI::sharpnessCallback, this, std::placeholders::_1);
-			std::function<void(int)> averagerSliderFunction = std::bind(&RemapUI::averagerCallback, this, std::placeholders::_1);
-			std::function<void(float)> gradientSliderFunction = std::bind(&RemapUI::gradientCallback, this, std::placeholders::_1);
-			std::function<void(int)> iterationSliderFunction = std::bind(&RemapUI::iterationCallback, this, std::placeholders::_1);
-
-			imageData searchSize = SEARCHSIZETEXT;
-			Material* searchSizeMat = newMaterial(&searchSize, "SearchSizeText");
-
-			imageData flatness = STROKEFLATNESSTEXT;
-			Material* flatnessMat = newMaterial(&flatness, "FlatnessText");
-
-			imageData sharpness = EDGESHARPNESSTEXT;
-			Material* sharpnessMat = newMaterial(&sharpness, "SharpnessText");
-
-			Button* searchSizeBtn = new Button(searchSizeMat);
-			Button* flatnessBtn = new Button(flatnessMat);
-			Button* threshBtn = new Button(sharpnessMat);
-
-			Arrangement* kuwaharaArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* averagerArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* gradientArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-
-			Slider* kuwaharaKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
-			kuwaharaKernSlider->updateDisplay();
-			kuwaharaKernSlider->setSlideValues(remapper->minIts, remapper->maxIts, 5);
-			kuwaharaKernSlider->setIntCallback(iterationSliderFunction, false);
-
-			Slider* averagerKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
-			averagerKernSlider->updateDisplay();
-			averagerKernSlider->setSlideValues(remapper->minAveragerKernel, remapper->maxAveragerKernel, 5);
-			averagerKernSlider->setIntCallback(averagerSliderFunction, false);
-
-			Slider* gradientThreshSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
-			gradientThreshSlider->updateDisplay();
-			gradientThreshSlider->setSlideValues(remapper->minGradientThreshold, remapper->maxGradientThreshold, 0.05f);
-			gradientThreshSlider->setFloatCallback(gradientSliderFunction, false);
-
-			Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
-
-			imageData cancel = CANCELBUTTON;
-			Material* cancelMat = newMaterial(&cancel, "CancelBtn");
-
-			imageData finish = FINISHBUTTON;
-			Material* finishMat = newMaterial(&finish, "FinishBtn");
-
-			Button* finishButton = new Button(finishMat, finishFunct);
-			Button* cancelButton = new Button(cancelMat, cancelFunct);
-
-			endButtons->addItem(getPtr(cancelButton));
-			endButtons->addItem(getPtr(finishButton));
-
-			kuwaharaArranger->addItem(getPtr(searchSizeBtn));
-			kuwaharaArranger->addItem(getPtr(kuwaharaKernSlider));
-
-			averagerArranger->addItem(getPtr(flatnessBtn));
-			averagerArranger->addItem(getPtr(averagerKernSlider));
-
-			gradientArranger->addItem(getPtr(threshBtn));
-			gradientArranger->addItem(getPtr(gradientThreshSlider));
-
-			column->addItem(getPtr(kuwaharaArranger));
-			column->addItem(getPtr(averagerArranger));
-			column->addItem(getPtr(gradientArranger));
-			column->addItem(getPtr(endButtons));
-		}
-
-		column->updateDisplay();
+		endButtons->addItem(getPtr(cancelButton));
+		endButtons->addItem(getPtr(finishButton));
 
 		canvas.push_back(getPtr(column));
+
+		createUI();
+
+		canvas[0]->addItem(getPtr(endButtons));
+		canvas[0]->updateDisplay();
 
 		//sConst->normalType = 0;
 		//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());

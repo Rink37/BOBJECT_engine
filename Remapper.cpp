@@ -402,6 +402,9 @@ void RemapUI::incrementMethod(UIItem*) {
 	remapper = new RemapBackend();
 	remapper->method = newMethod;
 	remapper->setup();
+	if (targetTex->textureFormat != VK_FORMAT_R8G8B8A8_UNORM) {
+		remapper->toggleNormalization();
+	}
 	fullRemap(refTex, targetTex);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	//sConst->normalType = 0;
@@ -428,6 +431,9 @@ void RemapUI::reduceMethod(UIItem*) {
 	remapper = new RemapBackend();
 	remapper->method = newMethod;
 	remapper->setup();
+	if (targetTex->textureFormat != VK_FORMAT_R8G8B8A8_UNORM) {
+		remapper->toggleNormalization();
+	}
 	fullRemap(refTex, targetTex);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	//sConst->normalType = 0;
