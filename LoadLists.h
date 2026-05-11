@@ -60,7 +60,7 @@ struct LoadList {
 		for (auto elem : textureMap) {
 			auto it = find(tex->textures.begin(), tex->textures.end(), textures[elem.second].get());
 			if (it != tex->textures.end()) {
-				std::cout << "Material " << name << " contains texture " << elem.first << std::endl;
+				//std::cout << "Material " << name << " contains texture " << elem.first << std::endl;
 				if (textureAssociator.count(elem.first) == 0) {
 					textureAssociator.insert({ elem.first, std::vector<std::string>{name} });
 				}
@@ -158,6 +158,17 @@ struct LoadList {
 	void listTextures(std::vector<std::string>& list) {
 		for (auto elem : textureMap) {
 			list.push_back(elem.first);
+		}
+	}
+
+	void listTexturesInMat(std::string matName, std::vector<std::string>& list) {
+		std::vector<Texture*> mTextures = getMaterial(matName)->textures;
+		for (auto elem : textureMap) {
+			Texture* tex = textures[elem.second].get();
+			auto it = find(mTextures.begin(), mTextures.end(), tex);
+			if (it != mTextures.end()) {
+				list.push_back(elem.first);
+			}
 		}
 	}
 

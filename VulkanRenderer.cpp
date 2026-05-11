@@ -386,6 +386,46 @@ public:
 		isSetup = true;
 	}
 
+	void setupEditMode(std::function<void(UIItem*)> callback, std::string MatName) {
+		finishedCallback = callback;
+
+		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		newMaterialName = MatName;
+		std::string shaderName = textureLL->getMaterial(newMaterialName)->shaderName;
+
+		UIItem* empty = getPtr(new spacer());
+		empty->text = shaderName;
+
+		totalArrangement->arrangeItems();
+
+		canvas.push_back(getPtr(totalArrangement));
+
+		std::vector<std::string> textureNames{};
+		textureLL->listTexturesInMat(newMaterialName, textureNames);
+
+		std::vector<std::string> texChannels = matTemplate->listChannels();
+		auto it = find(texChannels.begin(), texChannels.end(), std::string("UniformBufferObject"));
+		if (it != texChannels.end()) {
+			texChannels.erase(it);
+		}
+
+		for (std::string texName : textureNames) {
+			it = find(texChannels.begin(), texChannels.end(), texName);
+			if (it != texChannels.end()) {
+				int optionIndex = it - texChannels.begin();
+				autoIndices.push_back(optionIndex);
+			}
+			else {
+				autoIndices.push_back(-1);
+			}
+		}
+
+		createMatOptionsMenu(empty);
+
+		isSetup = true;
+	}
+
 	int clickIndex = 0;
 
 private:
@@ -401,6 +441,8 @@ private:
 	font* inFont = nullptr;
 
 	std::function<void(UIItem*)> finishedCallback = nullptr;
+
+	std::vector<int> autoIndices{};
 
 	void createMatOptionsMenu(UIItem* owner) {
 		if (canvas[0]->Items.size() > 1) {
@@ -439,7 +481,14 @@ private:
 		std::function<void(UIItem*)> updateMatTemplate = std::bind(&MaterialCreator::setTexCallback, this, std::placeholders::_1);
 		std::function<void(UIItem*)> exitCallback = std::bind(&MaterialCreator::exit, this, std::placeholders::_1);
 
+		int i = 0;
 		for (std::string channel : texChannels) {
+			int index = defaultIndex;
+
+			if (autoIndices.size() == texChannels.size()) {
+				index = (autoIndices[i] > -1) ? autoIndices[i] : defaultIndex;
+			}
+
 			TextBox* channelTextBox = new TextBox(inFont, 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 			channelTextBox->addText(channel);
 			canvas[0]->addItem(getPtr(channelTextBox));
@@ -447,10 +496,11 @@ private:
 			DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
 			materialSelect->addOptions(availableTextures);
 			materialSelect->setSelectCallback(updateMatTemplate);
-			materialSelect->setOptionIndex(defaultIndex);
+			materialSelect->setOptionIndex(index);
 			materialSelect->Name = channel;
 
 			canvas[0]->addItem(getPtr(materialSelect));
+			i++;
 		}
 		canvas[0]->addItem(getPtr(new Button(finishedMat, exitCallback)));
 		canvas[0]->arrangeItems();
@@ -465,8 +515,7 @@ private:
 
 	void exit(UIItem* owner) {
 		Material* mat = matTemplate->createMaterial();
-		//std::cout << "Created material!" << std::endl;
-		textureLL->getPtr(mat, newMaterialName);
+		textureLL->replacePtr(mat, newMaterialName);
 		owner->Name = newMaterialName;
 		owner->text = shaderName;
 		finishedCallback(owner);
@@ -578,6 +627,7 @@ private:
 	std::function<void(UIItem*)> finishedCallback = nullptr;
 
 	std::function<void(std::function<void(UIItem*)>)> openMaterialMenu = nullptr;
+	std::function<void(std::function<void(UIItem*)>)> openEditMaterialMenu = nullptr;
 	std::function<void(UIItem*)> closeMaterialMenu = nullptr;
 
 	std::function<void(UIItem*)> addTextureFunc = nullptr;
