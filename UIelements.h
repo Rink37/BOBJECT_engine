@@ -1524,8 +1524,8 @@ private:
 	}
 
 	void openOptions(UIItem* owner) {
-		float boxHeight = options.size() * selectedTextBox->characters[0]->characterHeight;
-		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx, posy - boxHeight / 2.0f - extenty * 2.0f, extentx, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		float boxHeight = options.size()* selectedTextBox->characters[0]->characterHeight;
+		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx, - posy - boxHeight / 2.0f - extenty * 2.0f, extentx, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		
 		std::function<void(UIItem*)> optionSelectFunct = std::bind(&DropdownMenu::optionSelect, this, std::placeholders::_1);
 
