@@ -1097,18 +1097,19 @@ public:
 		keyBinds.initCallbacks(engine->window);
 		mouseManager.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
-		sConst->setupSurfaceConstructor();
+		//sConst->setupSurfaceConstructor();
+		webcamTexture::get()->setup();
 		createCanvas();
-		if (sConst->webTex->webCam != nullptr) {
-			sConst->webTex->webCam->loadFilter();
+		if (webcamTexture::get()->webCam != nullptr) {
+			webcamTexture::get()->webCam->loadFilter();
 		}
-		std::function<void()> tomogFunct = bind(&Application::toggleTomogMenu, this);
+		//std::function<void()> tomogFunct = bind(&Application::toggleTomogMenu, this);
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
-		std::function<void()> drawUpdate = bind(&Application::updateDrawVariables, this);
-		sConst->setCallback(drawUpdate);
+		//std::function<void()> drawUpdate = bind(&Application::updateDrawVariables, this);
+		//sConst->setCallback(drawUpdate);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
-		keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
+		//keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
@@ -1129,7 +1130,7 @@ public:
 		updateColourScheme();
 		updateLightAzimuth(0.0f);
 		updateLightPolar(0.0f);
-		updateDrawVariables();
+		//updateDrawVariables();
 		mainLoop();
 		cleanup();
 		surfaceConstructor::destruct();
@@ -1142,7 +1143,7 @@ private:
 	LoadList TextureElements{};
 
 	Engine* engine = Engine::get();
-	surfaceConstructor* sConst = surfaceConstructor::get();
+	//surfaceConstructor* sConst = surfaceConstructor::get();
 
 	Camera camera;
 	Tomographer tomographer;
@@ -1153,7 +1154,7 @@ private:
 	RenderMenu renderMenu = RenderMenu(&UIElements);
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	TextureMenu textureMenu = TextureMenu(&UIElements, &TextureElements);
-	SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
+	//SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	RemapUI remapMenu = RemapUI(&UIElements, &TextureElements);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
 	MaterialCreator* mc = nullptr; 
@@ -1210,12 +1211,12 @@ private:
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
 
-	void reloadWebcamTex() {
-		sConst->reloadWebcamMat();
-		surfaceMenu.setDiffuse(sConst->currentDiffuse());
-		surfaceMenu.setNormal(sConst->currentNormal());
-		surfaceMenu.update();
-	}
+	//void reloadWebcamTex() {
+		//sConst->reloadWebcamMat();
+		//surfaceMenu.setDiffuse(sConst->currentDiffuse());
+		//surfaceMenu.setNormal(sConst->currentNormal());
+		//surfaceMenu.update();
+	//}
 
 	void colourChangeTest() {
 		primaryColour = glm::vec3(0.0f, 0.13f, 0.27f); 
@@ -1256,9 +1257,9 @@ private:
 
 	void createWebSettings(UIItem* owner) {
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishWebSettings, this, std::placeholders::_1);
-		std::function<void()> updateWebTex = std::bind(&Application::reloadWebcamTex, this);
+		//std::function<void()> updateWebTex = std::bind(&Application::reloadWebcamTex, this);
 
-		webSets.setup(finishSelf, updateWebTex);
+		webSets.setup(finishSelf, nullptr);
 		if (!webSets.isSetup) {
 			return;
 		}
@@ -1313,7 +1314,7 @@ private:
 		remapMenu.clickIndex = mouseManager.addClickListener(remapMenu.getClickCallback());
 		remapMenu.posIndex = mouseManager.addPositionListener(remapMenu.getPosCallback());
 
-		surfaceMenu.hide();
+		//surfaceMenu.hide();
 		
 		widgets.push_back(&remapMenu);
 
@@ -1335,7 +1336,7 @@ private:
 		mouseManager.removeClickListener(remapMenu.clickIndex);
 		mouseManager.removePositionListener(remapMenu.posIndex);
 
-		surfaceMenu.show();
+		//surfaceMenu.show();
 
 		widgets.erase(find(widgets.begin(), widgets.end(), &remapMenu));
 
@@ -1352,7 +1353,7 @@ private:
 		mouseManager.removeClickListener(remapMenu.clickIndex);
 		mouseManager.removePositionListener(remapMenu.posIndex);
 
-		surfaceMenu.show();
+		//surfaceMenu.show();
 
 		widgets.erase(find(widgets.begin(), widgets.end(), &remapMenu));
 
@@ -1387,22 +1388,22 @@ private:
 		session::get()->clearStudio();
 		
 		// Clear all studio material data
-		surfaceMenu.removeNormalMenu(owner);
-		sConst->clearSurface();
-		surfaceMenu.resetDiffuseTog(false);
-		if (sConst->normalAvailable) {
-			surfaceMenu.resetNormalTog(false);
-		}
-		sConst->normalAvailable = false;
-		surfaceMenu.setDiffuse(sConst->currentDiffuse());
+		//surfaceMenu.removeNormalMenu(owner);
+		//sConst->clearSurface();
+		//surfaceMenu.resetDiffuseTog(false);
+		//if (sConst->normalAvailable) {
+		//	surfaceMenu.resetNormalTog(false);
+		//}
+		//sConst->normalAvailable = false;
+		//surfaceMenu.setDiffuse(sConst->currentDiffuse());
 
-		if (sConst->alphaClipEnabled) {
-			sConst->renderPipeline = "AC_BF";
-		}
-		else {
-			sConst->renderPipeline = "BF";
-		}
-		sConst->updateSurfaceMat();
+		//if (sConst->alphaClipEnabled) {
+		//	sConst->renderPipeline = "AC_BF";
+		//}
+		//else {
+		//	sConst->renderPipeline = "BF";
+		//}
+		//sConst->updateSurfaceMat();
 	}
 
 	void createTexLoadMenu(std::function<void(UIItem*)> updateTexMenu) {
@@ -1502,7 +1503,7 @@ private:
 
 		for (string path : session::get()->currentStudio.modelPaths) {
 			StaticObject newObject(path);
-			newObject.mat = &sConst->surfaceMat;
+			//newObject.mat = &sConst->surfaceMat;
 			string objectName = path;
 			string del = "\\";
 			auto pos = objectName.find(del);
@@ -1529,32 +1530,32 @@ private:
 		if (session::get()->currentStudio.diffusePath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
 
-			sConst->diffuseIdx = 1;
-			surfaceMenu.setDiffuse(sConst->currentDiffuse());
-			surfaceMenu.resetDiffuseTog(true);
+			//sConst->diffuseIdx = 1;
+			//surfaceMenu.setDiffuse(sConst->currentDiffuse());
+			//surfaceMenu.resetDiffuseTog(true);
 		}
 		if (session::get()->currentStudio.OSPath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.OSPath, VK_FORMAT_R8G8B8A8_UNORM);
-			if (!sConst->normalAvailable) {
-				surfaceMenu.createNormalMenu(new UIItem);
-			}
-			sConst->normalType = 0;
-			sConst->loadNormal(loadedTexture);
-			surfaceMenu.setNormal(sConst->currentNormal());
-			surfaceMenu.resetNormalTog(true);
-			surfaceMenu.toggleNormalState(true);
+			//if (!sConst->normalAvailable) {
+			//	surfaceMenu.createNormalMenu(new UIItem);
+			//}
+			//sConst->normalType = 0;
+			//sConst->loadNormal(loadedTexture);
+			//surfaceMenu.setNormal(sConst->currentNormal());
+			//surfaceMenu.resetNormalTog(true);
+			//surfaceMenu.toggleNormalState(true);
 		}
 		if (session::get()->currentStudio.TSPath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.TSPath, VK_FORMAT_R8G8B8A8_UNORM);
-			if (!sConst->normalAvailable) {
-				surfaceMenu.createNormalMenu(new UIItem);
-			}
-			sConst->normalType = 1;
-			sConst->loadNormal(loadedTexture);
-			sConst->TSmatching = true;
-			surfaceMenu.setNormal(sConst->currentNormal());
-			surfaceMenu.resetNormalTog(true);
-			surfaceMenu.toggleNormalState(false);
+			//if (!sConst->normalAvailable) {
+			//	surfaceMenu.createNormalMenu(new UIItem);
+			//}
+			//sConst->normalType = 1;
+			//sConst->loadNormal(loadedTexture);
+			//sConst->TSmatching = true;
+			//surfaceMenu.setNormal(sConst->currentNormal());
+			//surfaceMenu.resetNormalTog(true);
+			//surfaceMenu.toggleNormalState(false);
 		}
 		if (webcamIndex != webcamTexture::get()->webCam->camIndex) {
 			webcamTexture::get()->webCam->switchWebcam(webcamIndex);
@@ -1566,11 +1567,11 @@ private:
 		webcamTexture::get()->webCam->loadFilter();
 		webcamTexture::get()->startFrameUpdate();
 
-		reloadWebcamTex();
+		//reloadWebcamTex();
 
-		reloadWebcamTex();
+		//reloadWebcamTex();
 
-		sConst->updateSurfaceMat();
+		//sConst->updateSurfaceMat();
 
 		updateVisibleObjects();
 	}
@@ -1612,9 +1613,9 @@ private:
 		mouseManager.addPositionListener(renderMenu.getPosCallback());
 		widgets.push_back(&renderMenu);
 
-		surfaceMenu.setup(sConst, &staticObjects, remapCallback);
-		mouseManager.addClickListener(surfaceMenu.getClickCallback());
-		widgets.push_back(&surfaceMenu);
+		//surfaceMenu.setup(sConst, &staticObjects, remapCallback);
+		//mouseManager.addClickListener(surfaceMenu.getClickCallback());
+		//widgets.push_back(&surfaceMenu);
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
@@ -1629,85 +1630,85 @@ private:
 		memcpy(engine->colourBufferMapped, &cso, sizeof(cso));
 	}
 
-	void toggleTomogMenu() {
-		if (!tomogActive && sConst->diffTex != nullptr) {
-			std::function<void(UIItem*)> toggleFunct = std::bind(&Application::toggleTomogMeshes, this, std::placeholders::_1);
-			std::function<void(UIItem*)> tomogExit = std::bind(&Application::exitTomogMenu, this, std::placeholders::_1);
+	//void toggleTomogMenu() {
+	//	if (!tomogActive && sConst->diffTex != nullptr) {
+	//		std::function<void(UIItem*)> toggleFunct = std::bind(&Application::toggleTomogMeshes, this, std::placeholders::_1);
+	//		std::function<void(UIItem*)> tomogExit = std::bind(&Application::exitTomogMenu, this, std::placeholders::_1);
+	//		
+	//		if (!tomogUI.isSetup) {
+	//			tomogUI.setup(sConst, toggleFunct, &mouseManager, tomogExit);
+	//		}
+	//		else {
+	//			tomogUI.show();
+	//		}
 			
-			if (!tomogUI.isSetup) {
-				tomogUI.setup(sConst, toggleFunct, &mouseManager, tomogExit);
-			}
-			else {
-				tomogUI.show();
-			}
+	//		tomographyPlane = new PlaneObject(sConst->diffTex->texWidth, sConst->diffTex->texHeight);
+	//		tomographyPlane->isVisible = true;
+	//		for (size_t i = 0; i != staticObjects.size(); i++) {
+	//			staticObjects[i].isVisible = false;
+	//		}
+	//		updateVisibleObjects();
+	//		objectMenu.hide();
+	//		surfaceMenu.hide();
 			
-			tomographyPlane = new PlaneObject(sConst->diffTex->texWidth, sConst->diffTex->texHeight);
-			tomographyPlane->isVisible = true;
-			for (size_t i = 0; i != staticObjects.size(); i++) {
-				staticObjects[i].isVisible = false;
-			}
-			updateVisibleObjects();
-			objectMenu.hide();
-			surfaceMenu.hide();
-			
-			tomogUI.clickIdx = mouseManager.addClickListener(tomogUI.getClickCallback());
-			widgets.push_back(&tomogUI);
+	//		tomogUI.clickIdx = mouseManager.addClickListener(tomogUI.getClickCallback());
+	//		widgets.push_back(&tomogUI);
 
-			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	//		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 
-			tomogActive = true;
-			updateDrawVariables();
-		}
-	}
+	//		tomogActive = true;
+	//		updateDrawVariables();
+	//	}
+	//}
 
-	void exitTomogMenu(UIItem* owner) {
-		if (!tomogActive) {
-			return;
-		}
-		vkQueueWaitIdle(engine->graphicsQueue);
+	//void exitTomogMenu(UIItem* owner) {
+	//	if (!tomogActive) {
+	//		return;
+	//	}
+	//	vkQueueWaitIdle(engine->graphicsQueue);
 		
-		tomographyPlane->mesh->cleanup();
-		delete tomographyPlane;
-		tomographyPlane = nullptr;
+	//	tomographyPlane->mesh->cleanup();
+	//	delete tomographyPlane;
+	//	tomographyPlane = nullptr;
 		
-		Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
-		Texture* tomogNorm = UIElements.findTexPtr("TomogNormTex");
-		if (tomogDiff != nullptr) {
-			sConst->loadDiffuse(tomogDiff->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0));
-			surfaceMenu.setDiffuse(sConst->currentDiffuse());
-		}
-		if (tomogNorm != nullptr) {
-			sConst->normalType = 1;
-			sConst->loadNormal(tomogNorm->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0));
-			if (!sConst->normalAvailable) {
-				surfaceMenu.createNormalMenu(owner);
-			}
-			sConst->normalType = 1;
-			surfaceMenu.setNormal(sConst->currentNormal());
-		}
-		tomogActive = false;
+	//	Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
+	//	Texture* tomogNorm = UIElements.findTexPtr("TomogNormTex");
+	//	if (tomogDiff != nullptr) {
+	//		sConst->loadDiffuse(tomogDiff->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0));
+	//		surfaceMenu.setDiffuse(sConst->currentDiffuse());
+	//	}
+	//	if (tomogNorm != nullptr) {
+	//		sConst->normalType = 1;
+	//		sConst->loadNormal(tomogNorm->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0));
+	//		if (!sConst->normalAvailable) {
+	//			surfaceMenu.createNormalMenu(owner);
+	//		}
+	//		sConst->normalType = 1;
+	//		surfaceMenu.setNormal(sConst->currentNormal());
+	//	}
+	//	tomogActive = false;
 
-		for (size_t i = 0; i != staticObjects.size(); i++) {
-			staticObjects[i].isVisible = true;
-		}
-		updateVisibleObjects();
+	//	for (size_t i = 0; i != staticObjects.size(); i++) {
+	//		staticObjects[i].isVisible = true;
+	//	}
+	//	updateVisibleObjects();
 		
-		objectMenu.show();
-		surfaceMenu.show();
+	//	objectMenu.show();
+	//	surfaceMenu.show();
 
-		mouseManager.removeClickListener(tomogUI.clickIdx);
+	//	mouseManager.removeClickListener(tomogUI.clickIdx);
 
-		if (find(widgets.begin(), widgets.end(), &tomogUI) != widgets.end()) {
-			widgets.erase(find(widgets.begin(), widgets.end(), &tomogUI));
+	//	if (find(widgets.begin(), widgets.end(), &tomogUI) != widgets.end()) {
+	//		widgets.erase(find(widgets.begin(), widgets.end(), &tomogUI));
 
-			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
-		}
+	//		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	//	}
 		
-		tomogUI.hide();
-		updateDrawVariables();
+	//	tomogUI.hide();
+	//	updateDrawVariables();
 
-	}
-
+	//}
+	
 	void toggleTomogMeshes(UIItem* owner) {
 		if (owner->activestate) {
 			tomographyPlane->isVisible = true;
@@ -1762,41 +1763,41 @@ private:
 	void setPipelineIndex(UIItem* owner) {
 		if (owner->Name == string("WebcamMat")) {
 			viewIndex = 0;
-			surfaceMenu.hide();
+			//surfaceMenu.hide();
 		}
 		else if (owner->Name == string("SurfaceMat")) {
 			viewIndex = 1;
-			surfaceMenu.show();
+			//surfaceMenu.show();
 		}
 		else if (owner->Name == string("Wireframe")) {
 			viewIndex = 2;
-			surfaceMenu.hide();
+			//surfaceMenu.hide();
 		}
-		updatePipelineIndex();
+		//updatePipelineIndex();
 	}
 
 	void toggleLighting(UIItem* owner) {
 		lit = owner->activestate;
-		updatePipelineIndex();
+		//updatePipelineIndex();
 	}
 
-	void updatePipelineIndex() {
-		if ((viewIndex == 0 || viewIndex == 1) && lit) {
-			engine->pipelineindex = currentPass->pipelineMap.at(sConst->renderPipeline);
-		}
-		else if (viewIndex != 2) {
-			if (sConst->alphaClipEnabled) {
-				engine->pipelineindex = currentPass->pipelineMap.at("AC_Flat");
-			}
-			else {
-				engine->pipelineindex = currentPass->pipelineMap.at("Flat");
-			}
-		}
-		else if (viewIndex == 2) {
-			engine->pipelineindex = currentPass->pipelineMap.at("W");
-		}
-		updateDrawVariables();
-	}
+	//void updatePipelineIndex() {
+	//	if ((viewIndex == 0 || viewIndex == 1) && lit) {
+	//		engine->pipelineindex = currentPass->pipelineMap.at(sConst->renderPipeline);
+	//	}
+	//	else if (viewIndex != 2) {
+	//		if (sConst->alphaClipEnabled) {
+	//			engine->pipelineindex = currentPass->pipelineMap.at("AC_Flat");
+	//		}
+	//		else {
+	//			engine->pipelineindex = currentPass->pipelineMap.at("Flat");
+	//		}
+	//	}
+	//	else if (viewIndex == 2) {
+	//		engine->pipelineindex = currentPass->pipelineMap.at("W");
+	//	}
+	//	updateDrawVariables();
+	//}
 
 	void loadStaticObject() {
 		string modelPath;
@@ -1815,7 +1816,7 @@ private:
 		pos = objectName.find(del);
 		objectName = objectName.substr(0, pos);
 		StaticObject newObject(modelPath);
-		newObject.mat = &sConst->surfaceMat;
+		//newObject.mat = &sConst->surfaceMat;
 		newObject.objectName = objectName;
 
 		std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
@@ -1859,7 +1860,7 @@ private:
 		renderImage.cleanup(Engine::get()->device);
 		renderGP.cleanup(Engine::get()->device);
 
-		sConst->cleanup();
+		//sConst->cleanup();
 		engine->cleanup();
 	}
 
@@ -1904,18 +1905,31 @@ private:
 		ubo.proj = glm::perspective(glm::radians(camera.fov), engine->swapChainExtent.width / (float)engine->swapChainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
-		if (surfaceMenu.isVisible) {
-			ubo.UVdistort[0] = 2 * surfaceMenu.diffuseView->UVextentx;
-			ubo.UVdistort[1] = (surfaceMenu.diffuseView->posx) - surfaceMenu.diffuseView->UVextentx;
-			ubo.UVdistort[2] = 2 * surfaceMenu.diffuseView->extenty;
-			ubo.UVdistort[3] = (surfaceMenu.diffuseView->posy) - surfaceMenu.diffuseView->extenty;
-		}
-		else if (remapMenu.isVisible && remapMenu.isSetup) {
+		if (remapMenu.isVisible && remapMenu.isSetup) {
 			ubo.UVdistort[0] = 2 * remapMenu.outMap->extentx;
 			ubo.UVdistort[1] = (remapMenu.outMap->posx) - remapMenu.outMap->extentx;
 			ubo.UVdistort[2] = 2 * remapMenu.outMap->extenty;
 			ubo.UVdistort[3] = (remapMenu.outMap->posy) - remapMenu.outMap->extenty;
 		}
+		else {
+			ubo.UVdistort[0] = 0;
+			ubo.UVdistort[1] = 0;
+			ubo.UVdistort[2] = 0;
+			ubo.UVdistort[3] = 0;
+		}
+
+		//if (surfaceMenu.isVisible) {
+		//	ubo.UVdistort[0] = 2 * surfaceMenu.diffuseView->UVextentx;
+		//	ubo.UVdistort[1] = (surfaceMenu.diffuseView->posx) - surfaceMenu.diffuseView->UVextentx;
+		//	ubo.UVdistort[2] = 2 * surfaceMenu.diffuseView->extenty;
+		//	ubo.UVdistort[3] = (surfaceMenu.diffuseView->posy) - surfaceMenu.diffuseView->extenty;
+		//}
+		//else if (remapMenu.isVisible && remapMenu.isSetup) {
+		//	ubo.UVdistort[0] = 2 * remapMenu.outMap->extentx;
+		//	ubo.UVdistort[1] = (remapMenu.outMap->posx) - remapMenu.outMap->extentx;
+		//	ubo.UVdistort[2] = 2 * remapMenu.outMap->extenty;
+		//	ubo.UVdistort[3] = (remapMenu.outMap->posy) - remapMenu.outMap->extenty;
+		//}
 
 		ubo.backgroundColour = backgroundColour;
 
@@ -1925,15 +1939,15 @@ private:
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
 
-	void updateDrawVariables() {
-		Material* activeSurfaceMat = &((lit) ? sConst->surfaceMat : sConst->unlitSurfaceMat);
-		drawMat = ((!tomogActive) ? activeSurfaceMat : &tomogUI.scannedMaterial);
-		drawMat = (viewIndex == 2) ? wireMat : drawMat;
-		renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
-		graphicsPipelineIndex = (viewIndex == 1 && lit) ? currentPass->pipelineMap.at(renderPipelineName) : engine->pipelineindex;
-		pipelineLayout = (viewIndex == 1 && lit) ? currentPass->pipelineLayouts[drawMat->pipelineLayoutIndex] : currentPass->pipelineLayouts[currentPass->layoutMap.at("1_0_")];
-		pipelineLayout = (viewIndex == 2) ? currentPass->pipelineLayouts[currentPass->layoutMap.at("1_")] : pipelineLayout;
-	}
+	//void updateDrawVariables() {
+	//	Material* activeSurfaceMat = &((lit) ? sConst->surfaceMat : sConst->unlitSurfaceMat);
+	//	drawMat = ((!tomogActive) ? activeSurfaceMat : &tomogUI.scannedMaterial);
+	//	drawMat = (viewIndex == 2) ? wireMat : drawMat;
+	//	renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
+	//	graphicsPipelineIndex = (viewIndex == 1 && lit) ? currentPass->pipelineMap.at(renderPipelineName) : engine->pipelineindex;
+	//	pipelineLayout = (viewIndex == 1 && lit) ? currentPass->pipelineLayouts[drawMat->pipelineLayoutIndex] : currentPass->pipelineLayouts[currentPass->layoutMap.at("1_0_")];
+	//	pipelineLayout = (viewIndex == 2) ? currentPass->pipelineLayouts[currentPass->layoutMap.at("1_")] : pipelineLayout;
+	//}
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, GraphicsPass* currentPass, uint32_t imageIndex) {
 		uint32_t currentFrame = engine->currentFrame;
