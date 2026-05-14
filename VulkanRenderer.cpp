@@ -404,8 +404,6 @@ public:
 		std::vector<std::string> textureNames{};
 		textureLL->listTexturesInMat(newMaterialName, textureNames);
 
-		matTemplate = new MaterialTemplate(shaderName, boundPass);
-
 		std::vector<std::string> texOptions{};
 		textureLL->listTextures(texOptions);
 
@@ -451,10 +449,11 @@ private:
 			canvas[0]->Items.erase(canvas[0]->Items.begin() + 1, canvas[0]->Items.end());
 		}
 
-		if (matTemplate == nullptr) {
-			shaderName = owner->text;
-			matTemplate = new MaterialTemplate(shaderName, boundPass);
+		shaderName = owner->text;
+		if (matTemplate != nullptr) {
+			delete matTemplate;
 		}
+		matTemplate = new MaterialTemplate(shaderName, boundPass);
 		std::vector<std::string> availableTextures{};
 		textureLL->listTextures(availableTextures);
 
@@ -469,6 +468,11 @@ private:
 		if (it != texChannels.end()) {
 			texChannels.erase(it);
 		}
+
+		for (std::string channel : texChannels) {
+			std::cout << channel << " ";
+		}
+		std::cout << std::endl;
 
 		imageData rb = RENDEREDBUTTON;
 		Material* renderedMat = newMaterial(&rb, "RenderBtn");
@@ -500,8 +504,6 @@ private:
 			materialSelect->setOptionIndex(index);
 			materialSelect->Name = channel;
 			materialSelect->execCallback();
-
-			std::cout << materialSelect->text << std::endl;
 
 			canvas[0]->addItem(getPtr(materialSelect));
 			i++;
@@ -563,12 +565,12 @@ public:
 		std::function<void(UIItem*)> newMatBtn = std::bind(&ObjectSettingsMenu::newMaterialMenu, this, std::placeholders::_1);
 		std::function<void(UIItem*)> editMatBtn = std::bind(&ObjectSettingsMenu::editMaterialMenu, this, std::placeholders::_1);
 
-		Button* settingsButton = new Button(settingsMat, editMatBtn);
+		settingsButton = getPtr(new Button(settingsMat, editMatBtn));
 		settingsButton->Name = obj->materialName;
 
 		materialSettingsArrangement->addItem(getPtr(matLabel));
 		materialSettingsArrangement->addItem(getPtr(new spacer()));
-		materialSettingsArrangement->addItem(getPtr(settingsButton));
+		materialSettingsArrangement->addItem(settingsButton);
 		materialSettingsArrangement->addItem(getPtr(new Button(plusMat, newMatBtn)));
 
 		totalArrangement->addItem(getPtr(materialSettingsArrangement));
@@ -633,6 +635,8 @@ private:
 
 	font* inFont = nullptr;
 
+	UIItem* settingsButton = nullptr;
+
 	std::function<void(UIItem*)> finishedCallback = nullptr;
 
 	std::function<void(std::function<void(UIItem*)>)> openMaterialMenu = nullptr;
@@ -649,6 +653,9 @@ private:
 	}
 
 	void editMaterialMenu(UIItem* owner) {
+		if (owner->Name == std::string("Webcam Material")) {
+			return;
+		}
 		std::function<void(UIItem*)> closeFnc  = std::bind(&ObjectSettingsMenu::exitMaterialMenu, this, std::placeholders::_1);
 		if (openEditMaterialMenu != nullptr) {
 			openEditMaterialMenu(closeFnc, owner->Name);
@@ -669,6 +676,7 @@ private:
 		obj->mat = textureLL->getMaterial(owner->text);
 		obj->shaderName = obj->mat->shaderName;
 		obj->materialName = owner->text;
+		settingsButton->Name = obj->materialName;
 	}
 
 	void createNormalMap(UIItem* owner) {

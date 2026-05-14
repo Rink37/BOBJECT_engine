@@ -257,7 +257,7 @@ public:
 		}
 		for (Material* mat : Normal) {
 			if (mat != Normal[0]) {
-				mat->cleanupDescriptor();
+				mat->cleanupDescriptor();\
 			}
 		}
 		unlitSurfaceMat.cleanupDescriptor();
