@@ -404,16 +404,15 @@ public:
 		std::vector<std::string> textureNames{};
 		textureLL->listTexturesInMat(newMaterialName, textureNames);
 
-		std::vector<std::string> texChannels = matTemplate->listChannels();
-		auto it = find(texChannels.begin(), texChannels.end(), std::string("UniformBufferObject"));
-		if (it != texChannels.end()) {
-			texChannels.erase(it);
-		}
+		matTemplate = new MaterialTemplate(shaderName, boundPass);
+
+		std::vector<std::string> texOptions{};
+		textureLL->listTextures(texOptions);
 
 		for (std::string texName : textureNames) {
-			it = find(texChannels.begin(), texChannels.end(), texName);
-			if (it != texChannels.end()) {
-				int optionIndex = it - texChannels.begin();
+			auto it = find(texOptions.begin(), texOptions.end(), texName);
+			if (it != texOptions.end()) {
+				int optionIndex = it - texOptions.begin();
 				autoIndices.push_back(optionIndex);
 			}
 			else {
@@ -452,8 +451,10 @@ private:
 			canvas[0]->Items.erase(canvas[0]->Items.begin() + 1, canvas[0]->Items.end());
 		}
 
-		shaderName = owner->text;
-		matTemplate = new MaterialTemplate(shaderName, boundPass);
+		if (matTemplate == nullptr) {
+			shaderName = owner->text;
+			matTemplate = new MaterialTemplate(shaderName, boundPass);
+		}
 		std::vector<std::string> availableTextures{};
 		textureLL->listTextures(availableTextures);
 
@@ -498,6 +499,9 @@ private:
 			materialSelect->setSelectCallback(updateMatTemplate);
 			materialSelect->setOptionIndex(index);
 			materialSelect->Name = channel;
+			materialSelect->execCallback();
+
+			std::cout << materialSelect->text << std::endl;
 
 			canvas[0]->addItem(getPtr(materialSelect));
 			i++;
@@ -524,7 +528,7 @@ private:
 
 class ObjectSettingsMenu : public Widget {
 public:
-	ObjectSettingsMenu(StaticObject* object, LoadList* assets, LoadList* textureAssets, std::function<void(std::function<void(UIItem*)>)> newMatFunc, std::function<void(UIItem*)> closeMatFunc, std::function<void(UIItem*)> closeFunc) {
+	ObjectSettingsMenu(StaticObject* object, LoadList* assets, LoadList* textureAssets, std::function<void(std::function<void(UIItem*)>)> newMatFunc, std::function<void(UIItem*)> closeMatFunc, std::function<void(UIItem*)> closeFunc, std::function<void(std::function<void(UIItem*)>, std::string)> editMatFunc) {
 		loadList = assets;
 		textureLL = textureAssets;
 
@@ -532,6 +536,7 @@ public:
 
 		obj = object;
 
+		openEditMaterialMenu = editMatFunc;
 		openMaterialMenu = newMatFunc;
 		closeMaterialMenu = closeMatFunc;
 
@@ -556,10 +561,14 @@ public:
 		Material* plusMat = newMaterial(&pb, "PlusBtn");
 
 		std::function<void(UIItem*)> newMatBtn = std::bind(&ObjectSettingsMenu::newMaterialMenu, this, std::placeholders::_1);
+		std::function<void(UIItem*)> editMatBtn = std::bind(&ObjectSettingsMenu::editMaterialMenu, this, std::placeholders::_1);
+
+		Button* settingsButton = new Button(settingsMat, editMatBtn);
+		settingsButton->Name = obj->materialName;
 
 		materialSettingsArrangement->addItem(getPtr(matLabel));
 		materialSettingsArrangement->addItem(getPtr(new spacer()));
-		materialSettingsArrangement->addItem(getPtr(new Button(settingsMat)));
+		materialSettingsArrangement->addItem(getPtr(settingsButton));
 		materialSettingsArrangement->addItem(getPtr(new Button(plusMat, newMatBtn)));
 
 		totalArrangement->addItem(getPtr(materialSettingsArrangement));
@@ -627,7 +636,7 @@ private:
 	std::function<void(UIItem*)> finishedCallback = nullptr;
 
 	std::function<void(std::function<void(UIItem*)>)> openMaterialMenu = nullptr;
-	std::function<void(std::function<void(UIItem*)>)> openEditMaterialMenu = nullptr;
+	std::function<void(std::function<void(UIItem*)>, std::string)> openEditMaterialMenu = nullptr;
 	std::function<void(UIItem*)> closeMaterialMenu = nullptr;
 
 	std::function<void(UIItem*)> addTextureFunc = nullptr;
@@ -636,6 +645,13 @@ private:
 		std::function<void(UIItem*)> closeFnc = std::bind(&ObjectSettingsMenu::exitMaterialMenu, this, std::placeholders::_1);
 		if (openMaterialMenu != nullptr) {
 			openMaterialMenu(closeFnc);
+		}
+	}
+
+	void editMaterialMenu(UIItem* owner) {
+		std::function<void(UIItem*)> closeFnc  = std::bind(&ObjectSettingsMenu::exitMaterialMenu, this, std::placeholders::_1);
+		if (openEditMaterialMenu != nullptr) {
+			openEditMaterialMenu(closeFnc, owner->Name);
 		}
 	}
 
@@ -844,6 +860,7 @@ public:
 		loadOption->addOptions(loadOptions);
 		loadOption->setSelectCallback(std::bind(&TextureLoadMenu::setOptionCallback, this, std::placeholders::_1));
 		loadOption->setOptionIndex(0);
+		loadOption->execCallback();
 
 		mainArrangement->addItem(getPtr(loadOption));
 
@@ -1398,8 +1415,9 @@ private:
 
 	void openObjectSettingsMenu(UIItem* owner) {
 		StaticObject* activeObject = &staticObjects[stoi(owner->Name)];
+		std::function<void(std::function<void(UIItem*)>, std::string)> openEditMenu = std::bind(&Application::openEditSettingsMenu, this, std::placeholders::_1, std::placeholders::_2);
 		if (osm == nullptr) {
-			osm = new ObjectSettingsMenu(activeObject, &UIElements, &TextureElements, std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeObjectSettingsMenu, this, std::placeholders::_1));
+			osm = new ObjectSettingsMenu(activeObject, &UIElements, &TextureElements, std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeObjectSettingsMenu, this, std::placeholders::_1), openEditMenu);
 		}
 		
 		osm->setup(textureMenu.getAddTexCallback());
@@ -1425,6 +1443,16 @@ private:
 		}
 		osm->hide();
 		mc->setup(closeFnc);
+		mc->clickIndex = mouseManager.addClickListener(mc->getClickCallback());
+		widgets.push_back(mc);
+	}
+
+	void openEditSettingsMenu(std::function<void(UIItem*)> closeFnc, std::string matName) {
+		if (mc == nullptr) {
+			mc = new MaterialCreator("BF", currentPass, &UIElements, &TextureElements);
+		}
+		osm->hide();
+		mc->setupEditMode(closeFnc, matName);
 		mc->clickIndex = mouseManager.addClickListener(mc->getClickCallback());
 		widgets.push_back(mc);
 	}

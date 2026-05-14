@@ -1395,8 +1395,15 @@ public:
 		selectedTextBox->clearText();
 		selectedTextBox->addText(options[index]);
 		this->text = options[index];
+
 		arrangeItems();
 		updateDisplay();
+	}
+
+	void execCallback() {
+		if (selectCallback != nullptr) {
+			selectCallback(this);
+		}
 	}
 
 	void addOptions(std::vector<std::string> inOptions) {
@@ -1405,7 +1412,7 @@ public:
 
 	void addOption(std::string inOption) {
 		options.push_back(inOption);
-		setOptionIndex(options.size() - 1);
+		//setOptionIndex(options.size() - 1);
 	}
 
 	void setSelectCallback(std::function<void(UIItem*)> cFunct) {
