@@ -332,12 +332,11 @@ public:
 
 	void cleanup() {
 		for (fontMesh* mesh : characters) {
+			std::cout << "Cleaning " << static_cast<char>(mesh->unicodeCharacter) << std::endl;
 			mesh->cleanup();
 		}
 		characters.clear();
-		if (textFont != nullptr) {
-			textFont->cleanup();
-		}
+		textFont->cleanup();
 	}
 
 	bool isVisible = true;

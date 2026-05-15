@@ -7,7 +7,6 @@
 #include"Textures.h"
 #include"Materials.h"
 #include"Meshes.h"
-//#include"SurfaceConstructor.h"
 #include"StudioSession.h"
 #include"Tomography.h"
 #include"LoadLists.h"
@@ -62,10 +61,10 @@ public:
 
 		Material* panelMat = loadList->replacePtr(new Material(textureLL->getTexture(texName)), "Image view");
 		bool isWebcam = (texName == std::string("Webcam View"));
-		ImagePanel* newPanel = new ImagePanel(panelMat, isWebcam);
+		imagePanel = new ImagePanel(panelMat, isWebcam);
 
 		mainArrangement->addItem(getPtr(exitArrangement));
-		mainArrangement->addItem(getPtr(newPanel));
+		mainArrangement->addItem(getPtr(imagePanel));
 		if (texName != std::string("Webcam View")) {
 			mainArrangement->addItem(getPtr(remapArrangement));
 		}
@@ -76,9 +75,18 @@ public:
 		isSetup = true;
 	}
 
+	void getUVPos(glm::vec4& positions) {
+		positions[0] = 2 * imagePanel->UVextentx;
+		positions[1] = (imagePanel->posx) - imagePanel->UVextentx;
+		positions[2] = 2 * imagePanel->extenty;
+		positions[3] = (imagePanel->posy) - imagePanel->extenty;
+	}
+
 	int clickIndex = 0;
 private:
 	LoadList* textureLL = nullptr;
+
+	ImagePanel* imagePanel = nullptr;
 };
 
 class WebcamSettings : public Widget {
@@ -1995,6 +2003,9 @@ private:
 			ubo.UVdistort[1] = (remapMenu.outMap->posx) - remapMenu.outMap->extentx;
 			ubo.UVdistort[2] = 2 * remapMenu.outMap->extenty;
 			ubo.UVdistort[3] = (remapMenu.outMap->posy) - remapMenu.outMap->extenty;
+		}
+		else if (textureSettings.isVisible && textureSettings.isSetup) {
+			textureSettings.getUVPos(ubo.UVdistort);
 		}
 		else {
 			ubo.UVdistort[0] = 0;
