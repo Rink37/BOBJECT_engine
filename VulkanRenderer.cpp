@@ -957,6 +957,11 @@ public:
 		imageData sb = SETTINGSBUTTON;
 		settingsMat = newMaterial(&sb, "SettingsBtn");
 
+		imageData svm = SAVEBUTTON;
+		saveMat = newMaterial(&svm, "SaveBtn");
+
+		saveCallback = std::bind(&TextureMenu::saveTexture, this, std::placeholders::_1);
+
 		Arrangement* textArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		imageData lb = OPENBUTTON;
@@ -983,7 +988,12 @@ public:
 		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		objectName->addText(textureName);
 
+		Button* saveButton = new Button(saveMat, saveCallback);
+		saveButton->Name = textureName;
+
 		objButtons->addItem(getPtr(objectName));
+		objButtons->addItem(getPtr(new spacer()));
+		objButtons->addItem(getPtr(saveButton));
 		objButtons->arrangeItems();
 
 		TextureButtons->addItem(getPtr(objButtons));
@@ -1019,13 +1029,29 @@ private:
 		Button* settingsButton = new Button(settingsMat, modifyCallback);
 		settingsButton->Name = textureName;
 
+		Button* saveButton = new Button(saveMat, saveCallback);
+		saveButton->Name = textureName;
+
 		objButtons->addItem(getPtr(objectName));
 		objButtons->addItem(getPtr(new spacer()));
+		objButtons->addItem(getPtr(saveButton));
 		objButtons->addItem(getPtr(settingsButton));
 		objButtons->arrangeItems();
 
 		TextureButtons->addItem(getPtr(objButtons));
 		TextureButtons->arrangeItems();
+	}
+
+	void saveTexture(UIItem* owner) {
+		std::string textureName = owner->Name;
+
+		Texture* texToSave = textureLoadList->getTexture(textureName);
+		texToSave->getCVMat();
+		string saveName = winFile::SaveFileDialog();
+		if (saveName != string("fail")) {
+			imwrite(saveName, texToSave->texMat);
+		}
+		texToSave->destroyCVMat();
 	}
 
 	UIItem* TextureButtons = nullptr;
@@ -1034,8 +1060,10 @@ private:
 	font* objectFont = nullptr;
 
 	Material* settingsMat = nullptr;
+	Material* saveMat = nullptr;
 
 	std::function<void(UIItem*)> modifyCallback = nullptr;
+	std::function<void(UIItem*)> saveCallback = nullptr;
 };
 
 class WebcamMenu : public Widget {
