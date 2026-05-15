@@ -29,6 +29,58 @@ KeyManager keyBinds;
 std::vector<MouseManager*> MouseManager::_instances;
 MouseManager mouseManager;
 
+class TextureSettings : public Widget {
+public: 
+	TextureSettings(LoadList* assets, LoadList* textureAssets) {
+		loadList = assets;
+		textureLL = textureAssets;
+	}
+
+	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc) {
+		if (isSetup) {
+			return;
+		}
+		if (!textureLL->checkForTexture(texName)) {
+			std::cout << "Texture " << texName << " does not exist in this load list" << std::endl;
+			return;
+		}
+
+		imageData cb = CLOSEBUTTON;
+		Material* closeMat = newMaterial(&cb, "CloseBtn");
+
+		imageData sb = SETTINGSBUTTON;
+		Material* settingsMat = newMaterial(&sb, "SettingsBtn");
+
+		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
+		Arrangement* exitArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+		Arrangement* remapArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+		exitArrangement->addItem(getPtr(new spacer()));
+		exitArrangement->addItem(getPtr(new Button(closeMat, exitFnc)));
+
+		remapArrangement->addItem(getPtr(new spacer()));
+		remapArrangement->addItem(getPtr(new Button(settingsMat, remapFnc)));
+
+		Material* panelMat = loadList->replacePtr(new Material(textureLL->getTexture(texName)), "Image view");
+		bool isWebcam = (texName == std::string("Webcam View"));
+		ImagePanel* newPanel = new ImagePanel(panelMat, isWebcam);
+
+		mainArrangement->addItem(getPtr(exitArrangement));
+		mainArrangement->addItem(getPtr(newPanel));
+		if (texName != std::string("Webcam View")) {
+			mainArrangement->addItem(getPtr(remapArrangement));
+		}
+		mainArrangement->addItem(getPtr(new spacer()));
+		mainArrangement->arrangeItems();
+
+		canvas.push_back(getPtr(mainArrangement));
+		isSetup = true;
+	}
+
+	int clickIndex = 0;
+private:
+	LoadList* textureLL = nullptr;
+};
+
 class WebcamSettings : public Widget {
 public:
 	WebcamSettings(LoadList* assets) {
@@ -998,9 +1050,13 @@ public:
 		Button* saveButton = new Button(saveMat, saveCallback);
 		saveButton->Name = textureName;
 
+		Button* settingsButton = new Button(settingsMat, modifyCallback);
+		settingsButton->Name = textureName;
+
 		objButtons->addItem(getPtr(objectName));
 		objButtons->addItem(getPtr(new spacer()));
 		objButtons->addItem(getPtr(saveButton));
+		objButtons->addItem(getPtr(settingsButton));
 		objButtons->arrangeItems();
 
 		TextureButtons->addItem(getPtr(objButtons));
@@ -1177,7 +1233,6 @@ private:
 	LoadList TextureElements{};
 
 	Engine* engine = Engine::get();
-	//surfaceConstructor* sConst = surfaceConstructor::get();
 
 	Camera camera;
 	Tomographer tomographer;
@@ -1188,6 +1243,7 @@ private:
 	RenderMenu renderMenu = RenderMenu(&UIElements);
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	TextureMenu textureMenu = TextureMenu(&UIElements, &TextureElements);
+	TextureSettings textureSettings = TextureSettings(&UIElements, &TextureElements);
 	//SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	RemapUI remapMenu = RemapUI(&UIElements, &TextureElements);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
@@ -1247,13 +1303,6 @@ private:
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
 
-	//void reloadWebcamTex() {
-		//sConst->reloadWebcamMat();
-		//surfaceMenu.setDiffuse(sConst->currentDiffuse());
-		//surfaceMenu.setNormal(sConst->currentNormal());
-		//surfaceMenu.update();
-	//}
-
 	void colourChangeTest() {
 		primaryColour = glm::vec3(0.0f, 0.13f, 0.27f); 
 		secondaryColour = glm::vec3(0.0f, 0.55f, 0.32f);
@@ -1300,7 +1349,6 @@ private:
 
 	void createWebSettings(UIItem* owner) {
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishWebSettings, this, std::placeholders::_1);
-		//std::function<void()> updateWebTex = std::bind(&Application::reloadWebcamTex, this);
 
 		webSets.setup(finishSelf, nullptr);
 		if (!webSets.isSetup) {
@@ -1356,8 +1404,6 @@ private:
 		}
 		remapMenu.clickIndex = mouseManager.addClickListener(remapMenu.getClickCallback());
 		remapMenu.posIndex = mouseManager.addPositionListener(remapMenu.getPosCallback());
-
-		//surfaceMenu.hide();
 		
 		widgets.push_back(&remapMenu);
 
@@ -1367,19 +1413,14 @@ private:
 	void destroyRemapper(UIItem* owner) {
 		vkDeviceWaitIdle(Engine::get()->device);
 
-		//sConst->normalType = 0;
 		remapMenu.remapper->baseTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		remapMenu.remapper->baseTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		TextureElements.replacePtr(remapMenu.remapper->baseTarget->copyTexture(), remapMenu.targetTexName);
-		//sConst->loadNormal(remapMenu.remapper->baseTarget->copyTexture());
-		//surfaceMenu.setNormal(sConst->currentNormal());
 
 		remapMenu.cleanup();
 
 		mouseManager.removeClickListener(remapMenu.clickIndex);
 		mouseManager.removePositionListener(remapMenu.posIndex);
-
-		//surfaceMenu.show();
 
 		widgets.erase(find(widgets.begin(), widgets.end(), &remapMenu));
 
@@ -1388,15 +1429,10 @@ private:
 
 	void finishRemapper(UIItem* owner) {
 		TextureElements.replacePtr(remapMenu.remapper->filteredTarget->copyTexture(), remapMenu.targetTexName);
-		//sConst->normalType = 0;
-		//sConst->loadNormal(remapMenu.remapper->filteredTarget->copyTexture());
-		//surfaceMenu.setNormal(sConst->currentNormal());
 
 		remapMenu.cleanup();
 		mouseManager.removeClickListener(remapMenu.clickIndex);
 		mouseManager.removePositionListener(remapMenu.posIndex);
-
-		//surfaceMenu.show();
 
 		widgets.erase(find(widgets.begin(), widgets.end(), &remapMenu));
 
@@ -1466,6 +1502,22 @@ private:
 		mouseManager.removeClickListener(tlm.clickIndex);
 
 		widgets.erase(find(widgets.begin(), widgets.end(), &tlm));
+	}
+
+	void openTextureSettingsMenu(UIItem* owner) {
+		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1));
+
+		textureSettings.clickIndex = mouseManager.addClickListener(textureSettings.getClickCallback());
+
+		widgets.push_back(&textureSettings);
+	}
+
+	void closeTextureSettingsMenu(UIItem* owner) {
+		vkDeviceWaitIdle(Engine::get()->device);
+		textureSettings.cleanup();
+		mouseManager.removeClickListener(textureSettings.clickIndex);
+
+		widgets.erase(find(widgets.begin(), widgets.end(), &textureSettings));
 	}
 
 	void openObjectSettingsMenu(UIItem* owner) {
@@ -1547,7 +1599,6 @@ private:
 
 		for (string path : session::get()->currentStudio.modelPaths) {
 			StaticObject newObject(path);
-			//newObject.mat = &sConst->surfaceMat;
 			string objectName = path;
 			string del = "\\";
 			auto pos = objectName.find(del);
@@ -1627,9 +1678,8 @@ private:
 		std::function<void(UIItem*)> loadObjectFunct = std::bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
 		std::function<void(UIItem*)> loadSessionFunc = std::bind(&Application::loadSave, this, placeholders::_1);
 		std::function<void(UIItem*)> newSessionFunc = std::bind(&Application::newSession, this, placeholders::_1);
-		std::function<void(UIItem*)> remapCallback = nullptr;// std::bind(&Application::createRemapper, this, placeholders::_1);
 		std::function<void(UIItem*)> webcamSettings = std::bind(&Application::createWebSettings, this, placeholders::_1);
-		std::function<void(UIItem*)> texModify = std::bind(&Application::createRemapTexSelector, this, placeholders::_1);
+		std::function<void(UIItem*)> texModify = std::bind(&Application::openTextureSettingsMenu, this, placeholders::_1);
 
 		std::function<void(std::function<void(UIItem*)>)> openTexLoad = std::bind(&Application::createTexLoadMenu, this, placeholders::_1);
 
@@ -2038,7 +2088,6 @@ private:
 				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 			}
 		}
-		//}
 
 		vkCmdEndRenderPass(commandBuffer);
 
