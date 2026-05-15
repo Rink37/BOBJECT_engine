@@ -6,7 +6,7 @@
 #include"LoadLists.h"
 #include"UIelements.h"
 #include"BakedImages.h"
-#include"SurfaceConstructor.h"
+//#include"SurfaceConstructor.h"
 #include"InputManager.h"
 #include"WindowsFileManager.h"
 
@@ -199,11 +199,10 @@ public:
 		loadList = assets;
 	}
 
-	void setup(surfaceConstructor* sConst, std::function<void(UIItem*)> toggleFunction, MouseManager* mm, std::function<void(UIItem*)> finishTomog) {
+	void setup(std::function<void(UIItem*)> toggleFunction, MouseManager* mm, std::function<void(UIItem*)> finishTomog) {
 		if (isSetup) {
 			return;
 		}
-		surface = sConst;
 		mouseManager = mm;
 
 		imageData OpenButton = OPENBUTTON;
@@ -269,9 +268,9 @@ public:
 		column->addItem(getPtr(buttons));
 		column->updateDisplay();
 
-		baseDiffuse = loadList->getPtr(sConst->diffTex->copyImage(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1), "TomogDiffTex");
-		baseDiffuse->textureImageView = baseDiffuse->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		baseDiffuse->getCVMat();
+		//baseDiffuse = loadList->getPtr(sConst->diffTex->copyImage(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1), "TomogDiffTex");
+		//baseDiffuse->textureImageView = baseDiffuse->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		//baseDiffuse->getCVMat();
 
 		tomographer.setLoadList(loadList);
 		tomographer.alignTemplate = baseDiffuse->texMat.clone();
@@ -331,7 +330,6 @@ public:
 private:
 	Tomographer tomographer;
 	TomographyLoad* tomogLoadMenu = nullptr;
-	surfaceConstructor* surface = nullptr;
 
 	MouseManager* mouseManager = nullptr;
 

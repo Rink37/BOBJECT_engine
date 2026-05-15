@@ -7,7 +7,7 @@
 #include"Textures.h"
 #include"Materials.h"
 #include"Meshes.h"
-#include"SurfaceConstructor.h"
+//#include"SurfaceConstructor.h"
 #include"StudioSession.h"
 #include"Tomography.h"
 #include"LoadLists.h"
@@ -1223,7 +1223,6 @@ public:
 		//updateDrawVariables();
 		mainLoop();
 		cleanup();
-		surfaceConstructor::destruct();
 		webcamTexture::destruct();
 		Engine::destruct();
 	}
@@ -1513,6 +1512,9 @@ private:
 	}
 
 	void closeTextureSettingsMenu(UIItem* owner) {
+		if (!textureSettings.isSetup){
+			return;
+		}
 		vkDeviceWaitIdle(Engine::get()->device);
 		textureSettings.cleanup();
 		mouseManager.removeClickListener(textureSettings.clickIndex);
@@ -1853,12 +1855,30 @@ private:
 	void setPipelineIndex(UIItem* owner) {
 		if (owner->Name == string("WebcamMat")) {
 			viewIndex = 0;
+			objectMenu.hide();
+			textureMenu.hide();
+			
+			closeTextureSettingsMenu(owner);
+			
+			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1));
+
+			textureSettings.clickIndex = mouseManager.addClickListener(textureSettings.getClickCallback());
+
+			widgets.push_back(&textureSettings);
 		}
 		else if (owner->Name == string("SurfaceMat")) {
 			viewIndex = 1;
+			objectMenu.show();
+			textureMenu.show();
+
+			closeTextureSettingsMenu(owner);
 		}
 		else if (owner->Name == string("Wireframe")) {
 			viewIndex = 2;
+			objectMenu.show();
+			textureMenu.show();
+
+			closeTextureSettingsMenu(owner);
 		}
 	}
 
@@ -2102,7 +2122,7 @@ private:
 };
 
 session* session::sessionInstance = nullptr;
-surfaceConstructor* surfaceConstructor::sinstance = nullptr;
+//surfaceConstructor* surfaceConstructor::sinstance = nullptr;
 webcamTexture* webcamTexture::winstance = nullptr;
 Engine* Engine::enginstance = nullptr;
 
