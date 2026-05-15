@@ -275,8 +275,6 @@ public:
 
 	std::vector<VkCommandBuffer> commandBuffers = {};
 
-	std::vector<VkFramebuffer> swapChainFramebuffers = {};
-
 	VkExtent2D swapChainExtent = {};
 
 	VkSampler textureSampler = nullptr;
@@ -286,8 +284,6 @@ public:
 
 	std::vector<VkBuffer> uniformBuffers = {};
 	VkBuffer colourBuffer = nullptr;
-
-	std::map<std::string, int> PipelineMap = {};
 
 	bool framebufferResized = false;
 
@@ -363,10 +359,6 @@ private:
 	VkDeviceMemory depthImageMemory = nullptr;
 	VkImageView depthImageView = nullptr;
 
-	VkImage colourImage = nullptr;
-	VkDeviceMemory colourImageMemory = nullptr;
-	VkImageView colourImageView = nullptr;
-
 	static void framebufferResizeCallback(GLFWwindow*, int, int);
 
 	bool checkValidationLayerSupport();
@@ -381,9 +373,7 @@ private:
 	void createGraphicsPipelines();
 	void createCommandPool();
 	void createComputeCommandPool();
-	void createColourResources();
 	void createDepthResources();
-	void createFramebuffers();
 	void createTextureSampler();
 	void createUniformBuffers();
 	void createColourBuffer();

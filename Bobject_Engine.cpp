@@ -660,41 +660,10 @@ void Engine::createCommandPool() {
 	}
 }
 
-void Engine::createColourResources() {
-	VkFormat colourFormat = swapChainImageFormat;
-
-	createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, colourFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colourImage, colourImageMemory);
-	colourImageView = createImageView(colourImage, colourFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-}
-
 void Engine::createDepthResources() {
 	VkFormat depthFormat = findDepthFormat();
 	createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
 	depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-}
-
-void Engine::createFramebuffers() {
-	swapChainFramebuffers.resize(swapChainImageViews.size());
-	for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-		array<VkImageView, 3> attachments = {
-			colourImageView,
-			depthImageView,
-			swapChainImageViews[i]
-		};
-
-		VkFramebufferCreateInfo framebufferInfo{};
-		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = defaultPass.renderPass;
-		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		framebufferInfo.pAttachments = attachments.data();
-		framebufferInfo.width = swapChainExtent.width;
-		framebufferInfo.height = swapChainExtent.height;
-		framebufferInfo.layers = 1;
-
-		if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
-			throw runtime_error("failed to create framebuffer!");
-		}
-	}
 }
 
 void Engine::createTextureSampler() {
@@ -803,9 +772,7 @@ void Engine::initVulkan() {
 	createImageViews();
 	createRenderPass(defaultPass.renderPass, swapChainImageFormat, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 	createGraphicsPipelines();
-	createColourResources();
 	createDepthResources();
-	createFramebuffers();
 	createTextureSampler();
 	createUniformBuffers();
 	createColourBuffer();
@@ -867,17 +834,10 @@ vector<const char*> Engine::getRequiredExtensions() {
 }
 
 void Engine::cleanupSwapChain() {
-	vkDestroyImageView(device, colourImageView, nullptr);
-	vkDestroyImage(device, colourImage, nullptr);
-	vkFreeMemory(device, colourImageMemory, nullptr);
 
 	vkDestroyImageView(device, depthImageView, nullptr);
 	vkDestroyImage(device, depthImage, nullptr);
 	vkFreeMemory(device, depthImageMemory, nullptr);
-
-	for (auto framebuffer : swapChainFramebuffers) {
-		vkDestroyFramebuffer(device, framebuffer, nullptr);
-	}
 
 	for (auto imageView : swapChainImageViews) {
 		vkDestroyImageView(device, imageView, nullptr);
@@ -1183,9 +1143,7 @@ void Engine::recreateSwapChain() {
 
 	createSwapChain();
 	createImageViews();
-	createColourResources();
 	createDepthResources();
-	createFramebuffers();
 }
 
 void Engine::recreateDrawImage(drawImage* image) {

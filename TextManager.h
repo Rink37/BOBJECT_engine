@@ -20,7 +20,7 @@ public:
 
 	void cleanup() {
 		if (!cleaned){
-			std::cout << "Cleaning up font" << std::endl;
+			//std::cout << "Cleaning up font" << std::endl;
 			fontAtlas->cleanup();
 			fontMat->cleanupDescriptor();
 			cleaned = true;

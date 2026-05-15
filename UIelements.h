@@ -332,7 +332,7 @@ public:
 
 	void cleanup() {
 		for (fontMesh* mesh : characters) {
-			std::cout << "Cleaning " << static_cast<char>(mesh->unicodeCharacter) << std::endl;
+			//std::cout << "Cleaning " << static_cast<char>(mesh->unicodeCharacter) << std::endl;
 			mesh->cleanup();
 		}
 		characters.clear();

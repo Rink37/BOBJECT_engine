@@ -1236,7 +1236,7 @@ public:
 	}
 private:
 	LoadList UIElements{};
-	LoadList ObjectElements{};
+	//LoadList ObjectElements{};
 	LoadList TextureElements{};
 
 	Engine* engine = Engine::get();
@@ -1263,6 +1263,7 @@ private:
 	Material* wireMat = nullptr;
 
 	vector<Widget*> widgets;
+	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, mc, osm, &rts, &tlm };
 
 	drawImage renderImage;
 	GraphicsPass renderGP;
@@ -1936,19 +1937,16 @@ private:
 			tomographyPlane->mesh->cleanup();
 		}
 
-		wireMat->cleanup();
+		//wireMat->cleanup();
 
 		UIElements.empty();
-		ObjectElements.empty();
-
+		//ObjectElements.empty();
 		TextureElements.empty();
-
-		if (find(widgets.begin(), widgets.end(), &tomogUI) == widgets.end()) {
-			tomogUI.cleanup();
-		}
 		
-		for (size_t i = 0; i != widgets.size(); i++) {
-			widgets[i]->cleanup();
+		for (size_t i = 0; i != allWidgets.size(); i++) {
+			if (allWidgets[i] != nullptr) {
+				allWidgets[i]->cleanup();
+			}
 		}
 
 		renderImage.cleanup(Engine::get()->device);
@@ -2013,19 +2011,6 @@ private:
 			ubo.UVdistort[2] = 0;
 			ubo.UVdistort[3] = 0;
 		}
-
-		//if (surfaceMenu.isVisible) {
-		//	ubo.UVdistort[0] = 2 * surfaceMenu.diffuseView->UVextentx;
-		//	ubo.UVdistort[1] = (surfaceMenu.diffuseView->posx) - surfaceMenu.diffuseView->UVextentx;
-		//	ubo.UVdistort[2] = 2 * surfaceMenu.diffuseView->extenty;
-		//	ubo.UVdistort[3] = (surfaceMenu.diffuseView->posy) - surfaceMenu.diffuseView->extenty;
-		//}
-		//else if (remapMenu.isVisible && remapMenu.isSetup) {
-		//	ubo.UVdistort[0] = 2 * remapMenu.outMap->extentx;
-		//	ubo.UVdistort[1] = (remapMenu.outMap->posx) - remapMenu.outMap->extentx;
-		//	ubo.UVdistort[2] = 2 * remapMenu.outMap->extenty;
-		//	ubo.UVdistort[3] = (remapMenu.outMap->posy) - remapMenu.outMap->extenty;
-		//}
 
 		ubo.backgroundColour = backgroundColour;
 
@@ -2093,11 +2078,9 @@ private:
 		else {
 			std::string shaderName = "Flat";
 			if (viewIndex == 0) {
-				//mat = webcamMat;
 				shaderName = "Flat";
 			}
 			else if (viewIndex == 2) {
-				//mat = wireMat;
 				shaderName = "W";
 			}
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(shaderName)]);
@@ -2133,7 +2116,6 @@ private:
 };
 
 session* session::sessionInstance = nullptr;
-//surfaceConstructor* surfaceConstructor::sinstance = nullptr;
 webcamTexture* webcamTexture::winstance = nullptr;
 Engine* Engine::enginstance = nullptr;
 

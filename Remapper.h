@@ -323,9 +323,6 @@ public:
 
 		canvas[0]->addItem(getPtr(endButtons));
 		canvas[0]->updateDisplay();
-
-		//sConst->normalType = 0;
-		//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 		
 		textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 
@@ -333,9 +330,11 @@ public:
 	}
 
 	void cleanupSubClasses() {
-		remapper->cleanup();
-		delete remapper;
-		remapper = nullptr;
+		if (remapper != nullptr) {
+			remapper->cleanup();
+			delete remapper;
+			remapper = nullptr;
+		}
 	}
 
 	int priorityLayer = 100;
