@@ -362,7 +362,11 @@ public:
 		int optionIndex = 0;
 
 		std::vector<std::string> materialOptions{};
+		std::vector<std::string> invalidMatOptions = {"UI", "UIGray", "UIText", "UV", "W"};
 		for (auto elem : boundPass->pipelineMap) {
+			if (find(invalidMatOptions.begin(), invalidMatOptions.end(), elem.first) != invalidMatOptions.end()) {
+				continue;
+			}
 			if (elem.first == shaderName) {
 				optionIndex = index;
 			}
