@@ -192,7 +192,7 @@ public:
 		
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-		font* newFont = new font();
+		font* newFont = textureLL->getFont();
 
 		TextBox* targetText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		targetText->addText(std::string("Remapping ") + targetTextureName);

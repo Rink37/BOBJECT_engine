@@ -380,7 +380,7 @@ public:
 		
 		canvas.push_back(getPtr(buttons));
 
-		font* testFont = new font();
+		//font* testFont = new font();
 		//TextBox* testTextBox = new TextBox(testFont, 0.0f, 0.0f, 0.3f, 0.2f, 24, ARRANGE_FILL, ARRANGE_FILL);
 		//testTextBox->addText("\tThis line should be separate!\n\n\tLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vestibulum aliquet ligula vel dictum. Praesent scelerisque orci at tincidunt placerat. Aliquam et blandit nulla. Nullam consequat ligula vitae massa luctus, et tincidunt felis dictum. Morbi mattis dapibus ante, vitae eleifend ipsum rutrum vitae. Proin in mauris eget metus mattis interdum vel eget nisi. Nulla porta sapien id eros malesuada laoreet. Integer et rhoncus magna, sed ullamcorper elit. Quisque ut massa ut nibh venenatis ultrices ac id tortor. Sed mattis, massa at vestibulum tincidunt, arcu diam vestibulum libero, vel lacinia tortor sapien quis sem. Proin scelerisque pharetra odio, quis congue turpis. Proin arcu leo, blandit quis ex vitae, posuere sollicitudin turpis. Duis ullamcorper sodales dui ac posuere. Pellentesque nibh felis, finibus in elit sed, iaculis fringilla est.");
 		//canvas.push_back(getPtr(testTextBox));
@@ -401,13 +401,17 @@ public:
 		loadList = assets;
 		textureLL = textureAssets;
 
-		inFont = new font();
 		shaderName = sName;
 		boundPass = bPass;
 		matTemplate = new MaterialTemplate(shaderName, boundPass);
 	}
 
 	void setup(std::function<void(UIItem*)> callback) {
+		if (isSetup) {
+			return;
+		}
+		inFont = loadList->getFont();
+		
 		finishedCallback = callback;
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
@@ -451,6 +455,9 @@ public:
 	}
 
 	void setupEditMode(std::function<void(UIItem*)> callback, std::string MatName) {
+		if (isSetup) {
+			return;
+		}
 		finishedCallback = callback;
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
@@ -600,8 +607,6 @@ public:
 		loadList = assets;
 		textureLL = textureAssets;
 
-		inFont = new font();
-
 		obj = object;
 
 		openEditMaterialMenu = editMatFunc;
@@ -612,6 +617,11 @@ public:
 	}
 
 	void setup(std::function<void(UIItem*)> addTex) {
+		if (isSetup) {
+			return;
+		}
+		
+		inFont = loadList->getFont();
 
 		addTextureFunc = addTex;
 
@@ -810,7 +820,7 @@ public:
 		imageData lb = OPENBUTTON;
 		Material* loadMat = newMaterial(&lb, "OpenBtn");
 
-		font* newFont = new font();
+		font* newFont = loadList->getFont();
 
 		TextBox* menuText = new TextBox(newFont, 0.0f, 0.0f, 3.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
 		menuText->addText("MESHES");
@@ -841,7 +851,7 @@ public:
 
 		ObjectMap.insert({ objectButton->Name, ObjectButtons->Items.size() - 1 });
 
-		font* objectFont = new font();
+		font* objectFont = loadList->getFont();
 		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 3.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		objectName->addText(nameString);
 
@@ -914,7 +924,7 @@ public:
 
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-		font* newFont = new font();
+		font* newFont = loadList->getFont();
 		TextBox* TexLoadLabel = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		TexLoadLabel->addText(std::string("Loading ") + textureName);
 
@@ -1007,6 +1017,8 @@ public:
 			return;
 		}
 
+		objectFont = loadList->getFont();
+
 		modifyCallback = modCallback;
 		loadTextureCallback = loadCallback;
 
@@ -1034,8 +1046,6 @@ public:
 		imageData lb = OPENBUTTON;
 		Material* loadMat = newMaterial(&lb, "OpenBtn");
 
-		objectFont = new font();
-
 		TextBox* menuText = new TextBox(objectFont, 0.0f, 0.0f, 4.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
 		menuText->addText("TEXTURES");
 		textArrangement->addItem(getPtr(menuText));
@@ -1050,7 +1060,7 @@ public:
 
 		std::string textureName = "Webcam View";
 
-		textureLoadList->getPtr(webcamTexture::get(), textureName);
+		//textureLoadList->getPtr(webcamTexture::get(), textureName);
 		
 		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		objectName->addText(textureName);
@@ -1228,15 +1238,13 @@ public:
 		updateColourScheme();
 		updateLightAzimuth(0.0f);
 		updateLightPolar(0.0f);
-		//updateDrawVariables();
 		mainLoop();
-		cleanup();
 		webcamTexture::destruct();
+		cleanup();
 		Engine::destruct();
 	}
 private:
 	LoadList UIElements{};
-	//LoadList ObjectElements{};
 	LoadList TextureElements{};
 
 	Engine* engine = Engine::get();
@@ -1251,7 +1259,6 @@ private:
 	ObjectMenu objectMenu = ObjectMenu(&UIElements);
 	TextureMenu textureMenu = TextureMenu(&UIElements, &TextureElements);
 	TextureSettings textureSettings = TextureSettings(&UIElements, &TextureElements);
-	//SurfaceMenu surfaceMenu = SurfaceMenu(&UIElements);
 	RemapUI remapMenu = RemapUI(&UIElements, &TextureElements);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
 	MaterialCreator* mc = nullptr; 
@@ -1937,10 +1944,7 @@ private:
 			tomographyPlane->mesh->cleanup();
 		}
 
-		//wireMat->cleanup();
-
 		UIElements.empty();
-		//ObjectElements.empty();
 		TextureElements.empty();
 		
 		for (size_t i = 0; i != allWidgets.size(); i++) {
@@ -2017,7 +2021,7 @@ private:
 		ubo.lightPosition = lightPos;
 		ubo.viewPosition = camera.pos;
 
-		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
+		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); 
 	} 
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, GraphicsPass* currentPass, uint32_t imageIndex) {
@@ -2053,18 +2057,10 @@ private:
 			widgets[i]->drawText(commandBuffer, currentFrame);
 		}
 
-		//if (use_sConst) {
-		//	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[graphicsPipelineIndex]);
 
-		//	for (uint32_t i : visibleObjects) {
-		//		engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, pipelineLayout, drawMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-		//	}
-
-		//	if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
-		//		engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));
-		//	}
+		//if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
+		//	engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));
 		//}
-		//else {
 
 		if (viewIndex == 1 && lit) {
 			for (auto elem : objectPipelines) {

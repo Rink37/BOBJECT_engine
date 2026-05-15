@@ -3,7 +3,7 @@
 #include"include/coolvetica_sdf.h"
 
 font::font() {
-	std::cout << "New font created" << std::endl;
+	//std::cout << "New font created" << std::endl;
 	imageData fontData = COOLVETICA_SDF;
 	fontAtlas = new imageTexture(&fontData);
 	fontMat = new Material(fontAtlas);
@@ -86,7 +86,7 @@ void fontMesh::createVertexBuffer() {
 	Engine::get()->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBuffer, vertexBufferMemory);
 
 	Engine::get()->copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
+	
 	vkMapMemory(Engine::get()->device, vertexBufferMemory, 0, bufferSize, 0, &vBuffer);
 
 	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);

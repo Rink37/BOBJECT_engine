@@ -3,6 +3,7 @@
 
 #include"Textures.h"
 #include"Materials.h"
+#include"TextManager.h"
 
 struct LoadList {
 	Texture* getPtr(Texture* tex, std::string name) {
@@ -153,6 +154,11 @@ struct LoadList {
 
 		textureMap.clear();
 		materialMap.clear();
+
+		if (LLFont != nullptr) {
+			LLFont->cleanup();
+			delete LLFont;
+		}
 	}
 
 	void listTextures(std::vector<std::string>& list) {
@@ -178,6 +184,13 @@ struct LoadList {
 		}
 	}
 
+	font* getFont() {
+		if (LLFont == nullptr) {
+			LLFont = new font();
+		}
+		return LLFont;
+	}
+
 private:
 	std::map<std::string, int> textureMap = {};
 	std::map<std::string, int> materialMap = {};
@@ -186,6 +199,8 @@ private:
 	std::vector<std::unique_ptr<Material>> materials = {};
 
 	std::map<std::string, std::vector<std::string>> textureAssociator{};
+
+	font* LLFont = nullptr;
 };
 
 #endif
