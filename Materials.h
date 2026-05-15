@@ -17,11 +17,11 @@ public:
 
 	Material(std::vector<Texture*> inTextures, std::string targetShader, GraphicsPass* graphicsPass) {
 		textures = inTextures;
-		if (textures[0]->textureFormat == VK_FORMAT_R8_UNORM) {
-			isUIMat = true;
+		if (textures.size() > 0) {
+			if (textures[0]->textureFormat == VK_FORMAT_R8_UNORM) {
+				isUIMat = true;
+			}
 		}
-		std::cout << textures.size() << std::endl;
-		std::cout << targetShader << std::endl;
 		createMaterial(targetShader, graphicsPass);
 	}
 
@@ -147,8 +147,10 @@ public:
 			if (IOval.type == 0) {
 				textureMap.insert({ IOval.name, nullptr });
 				textureOrder.push_back(IOval.name);
+				std::cout << IOval.name << std::endl;
 			}
 		}
+
 	}
 
 	std::vector<std::string> listChannels() const {
@@ -176,11 +178,14 @@ public:
 			throw std::runtime_error("Failed to create new material; insufficient textures available");
 		}
 		std::vector<Texture*> materialTextures{};
-		for (std::string channel : textureOrder) {
-			std::cout << channel << std::endl;
-			materialTextures.push_back(textureMap.at(channel));
-			std::cout << textureMap.at(channel) << std::endl;
+		if (textureOrder.size() > 0) {
+			for (std::string channel : textureOrder) {
+				std::cout << channel << std::endl;
+				materialTextures.push_back(textureMap.at(channel));
+				std::cout << textureMap.at(channel) << std::endl;
+			}
 		}
+
 		Material* newMat = new Material(materialTextures, shaderName, boundPass);
 		return newMat;
 	}

@@ -1151,13 +1151,12 @@ public:
 		renderImage = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, renderGP.renderPass);
 		Engine::get()->createGraphicsPipelines(renderGP);
 
-		Material* webcamMat = new Material(webcamTexture::get());
-		TextureElements.getPtr(webcamMat, "Webcam Material");
+		webcamMat = TextureElements.getPtr(new Material(webcamTexture::get()) , "Webcam Material");
+		MaterialTemplate wireMatTemplate(std::string("W"), &renderGP);
+		wireMatTemplate.listChannels();
+		wireMat = UIElements.getPtr(wireMatTemplate.createMaterial(), "Wire Material");
 
 		currentPass = &renderGP;
-
-		wireMat = new Material();
-		wireMat->init();
 
 		updateColourScheme();
 		updateLightAzimuth(0.0f);
@@ -1194,6 +1193,9 @@ private:
 	RemapTexSelector rts = RemapTexSelector(&UIElements, &TextureElements);
 	TextureLoadMenu tlm = TextureLoadMenu(&UIElements, &TextureElements);
 
+	Material* webcamMat = nullptr;
+	Material* wireMat = nullptr;
+
 	vector<Widget*> widgets;
 
 	drawImage renderImage;
@@ -1201,8 +1203,6 @@ private:
 	GraphicsPass* currentPass = nullptr;
 
 	StaticObject* currentObject = nullptr;
-
-	Material* wireMat = nullptr;
 
 	bool use_sConst = false;
 
@@ -1442,6 +1442,9 @@ private:
 		std::function<void(UIItem*)> exitCallback = std::bind(&Application::exitTexLoadMenu, this, std::placeholders::_1);
 		
 		tlm.setup(updateTexMenu, exitCallback);
+		if (!tlm.isSetup) {
+			return;
+		}
 		tlm.clickIndex = mouseManager.addClickListener(tlm.getClickCallback());
 		widgets.push_back(&tlm);
 	}
@@ -1499,10 +1502,6 @@ private:
 	}
 
 	void closeSettingsMenu(UIItem* owner) {
-		//currentObject->mat = TextureElements.getMaterial(owner->Name);
-		//currentObject->shaderName = owner->text;
-
-		//std::cout << currentObject->shaderName << std::endl;
 
 		vkDeviceWaitIdle(Engine::get()->device);
 		mc->cleanup();
@@ -1644,10 +1643,6 @@ private:
 		mouseManager.addClickListener(renderMenu.getClickCallback());
 		mouseManager.addPositionListener(renderMenu.getPosCallback());
 		widgets.push_back(&renderMenu);
-
-		//surfaceMenu.setup(sConst, &staticObjects, remapCallback);
-		//mouseManager.addClickListener(surfaceMenu.getClickCallback());
-		//widgets.push_back(&surfaceMenu);
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
@@ -2014,23 +2009,33 @@ private:
 			widgets[i]->drawText(commandBuffer, currentFrame);
 		}
 
-		if (use_sConst) {
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[graphicsPipelineIndex]);
+		//if (use_sConst) {
+		//	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[graphicsPipelineIndex]);
 
-			for (uint32_t i : visibleObjects) {
-				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, pipelineLayout, drawMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
-			}
+		//	for (uint32_t i : visibleObjects) {
+		//		engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, pipelineLayout, drawMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+		//	}
 
-			if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
-				engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));
+		//	if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
+		//		engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));
+		//	}
+		//}
+		//else {
+		for (uint32_t i : visibleObjects) {
+			Material* mat = staticObjects[i].mat;
+			std::string shaderName = staticObjects[i].shaderName;
+			if (viewIndex == 0) {
+				mat = webcamMat;
+				shaderName = "Flat";
 			}
-		}
-		else {
-			for (uint32_t i : visibleObjects) {
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(staticObjects[i].shaderName)]);
-				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, staticObjects[i].mat->pipelineLayout, staticObjects[i].mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+			else if (viewIndex == 2) {
+				mat = wireMat;
+				shaderName = "W";
 			}
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(shaderName)]);
+			engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 		}
+		//}
 
 		vkCmdEndRenderPass(commandBuffer);
 
