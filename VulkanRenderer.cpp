@@ -1218,6 +1218,7 @@ private:
 
 	vector<StaticObject> staticObjects = {};
 	PlaneObject* tomographyPlane = nullptr;
+	std::map<std::string, std::vector<uint32_t>> objectPipelines{};
 	vector<uint32_t> visibleObjects = {};
 
 	bool lit = true;
@@ -1263,9 +1264,16 @@ private:
 
 	void updateVisibleObjects() {
 		visibleObjects.clear();
-		for (int32_t i = 0; i != staticObjects.size(); i++) {
+		objectPipelines.clear();
+		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			if (staticObjects[i].isVisible) {
 				visibleObjects.push_back(i);
+				if (objectPipelines.count(staticObjects[i].shaderName) == 0) {
+					objectPipelines.insert({ staticObjects[i].shaderName, std::vector<uint32_t>{i} });
+				}
+				else {
+					objectPipelines.at(staticObjects[i].shaderName).push_back(i);
+				}
 			}
 		}
 	}
@@ -1512,6 +1520,8 @@ private:
 
 		osm->show();
 
+		updateVisibleObjects();
+
 		widgets.erase(find(widgets.begin(), widgets.end(), mc));
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
@@ -1634,9 +1644,9 @@ private:
 		mouseManager.addClickListener(textureMenu.getClickCallback());
 		widgets.push_back(&textureMenu);
 
-		saveMenu.setup(loadSessionFunc, newSessionFunc);
-		mouseManager.addClickListener(saveMenu.getClickCallback());
-		widgets.push_back(&saveMenu);
+		//saveMenu.setup(loadSessionFunc, newSessionFunc);
+		//mouseManager.addClickListener(saveMenu.getClickCallback());
+		//widgets.push_back(&saveMenu);
 
 		webcamMenu.setup(lightingFunction, webcamSettings);
 		mouseManager.addClickListener(webcamMenu.getClickCallback());
@@ -1793,41 +1803,18 @@ private:
 	void setPipelineIndex(UIItem* owner) {
 		if (owner->Name == string("WebcamMat")) {
 			viewIndex = 0;
-			//surfaceMenu.hide();
 		}
 		else if (owner->Name == string("SurfaceMat")) {
 			viewIndex = 1;
-			//surfaceMenu.show();
 		}
 		else if (owner->Name == string("Wireframe")) {
 			viewIndex = 2;
-			//surfaceMenu.hide();
 		}
-		//updatePipelineIndex();
 	}
 
 	void toggleLighting(UIItem* owner) {
 		lit = owner->activestate;
-		//updatePipelineIndex();
 	}
-
-	//void updatePipelineIndex() {
-	//	if ((viewIndex == 0 || viewIndex == 1) && lit) {
-	//		engine->pipelineindex = currentPass->pipelineMap.at(sConst->renderPipeline);
-	//	}
-	//	else if (viewIndex != 2) {
-	//		if (sConst->alphaClipEnabled) {
-	//			engine->pipelineindex = currentPass->pipelineMap.at("AC_Flat");
-	//		}
-	//		else {
-	//			engine->pipelineindex = currentPass->pipelineMap.at("Flat");
-	//		}
-	//	}
-	//	else if (viewIndex == 2) {
-	//		engine->pipelineindex = currentPass->pipelineMap.at("W");
-	//	}
-	//	updateDrawVariables();
-	//}
 
 	void loadStaticObject() {
 		string modelPath;
@@ -1846,7 +1833,6 @@ private:
 		pos = objectName.find(del);
 		objectName = objectName.substr(0, pos);
 		StaticObject newObject(modelPath);
-		//newObject.mat = &sConst->surfaceMat;
 		newObject.objectName = objectName;
 
 		std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
@@ -1890,7 +1876,6 @@ private:
 		renderImage.cleanup(Engine::get()->device);
 		renderGP.cleanup(Engine::get()->device);
 
-		//sConst->cleanup();
 		engine->cleanup();
 	}
 
@@ -1969,16 +1954,6 @@ private:
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // uniformBuffersMapped is an array of pointers to each uniform buffer 
 	} 
 
-	//void updateDrawVariables() {
-	//	Material* activeSurfaceMat = &((lit) ? sConst->surfaceMat : sConst->unlitSurfaceMat);
-	//	drawMat = ((!tomogActive) ? activeSurfaceMat : &tomogUI.scannedMaterial);
-	//	drawMat = (viewIndex == 2) ? wireMat : drawMat;
-	//	renderPipelineName = (!tomogActive) ? sConst->renderPipeline : tomogUI.renderPipeline;
-	//	graphicsPipelineIndex = (viewIndex == 1 && lit) ? currentPass->pipelineMap.at(renderPipelineName) : engine->pipelineindex;
-	//	pipelineLayout = (viewIndex == 1 && lit) ? currentPass->pipelineLayouts[drawMat->pipelineLayoutIndex] : currentPass->pipelineLayouts[currentPass->layoutMap.at("1_0_")];
-	//	pipelineLayout = (viewIndex == 2) ? currentPass->pipelineLayouts[currentPass->layoutMap.at("1_")] : pipelineLayout;
-	//}
-
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, GraphicsPass* currentPass, uint32_t imageIndex) {
 		uint32_t currentFrame = engine->currentFrame;
 
@@ -1987,7 +1962,7 @@ private:
 		if (showWireframe) {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UV")]);
 
-			for (uint32_t i : visibleObjects) {
+			for (uint32_t i = 0; i != staticObjects.size(); i++) {
 				if (staticObjects[i].isWireframeVisible) {
 					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, currentPass->pipelineLayouts[currentPass->layoutMap.at("1_")], wireMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 				}
@@ -2024,19 +1999,44 @@ private:
 		//	}
 		//}
 		//else {
-		for (uint32_t i : visibleObjects) {
-			Material* mat = (lit)?staticObjects[i].mat:staticObjects[i].unlitMat;
-			std::string shaderName = (lit)?staticObjects[i].shaderName:"Flat";
+
+		if (viewIndex == 1 && lit) {
+			for (auto elem : objectPipelines) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(elem.first)]);
+				for (uint32_t i : elem.second) {
+					Material* mat = staticObjects[i].mat;
+					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+				}
+			}
+		}
+		else {
+			std::string shaderName = "Flat";
 			if (viewIndex == 0) {
-				mat = webcamMat;
+				//mat = webcamMat;
 				shaderName = "Flat";
 			}
 			else if (viewIndex == 2) {
-				mat = wireMat;
+				//mat = wireMat;
 				shaderName = "W";
 			}
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(shaderName)]);
-			engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+			for (uint32_t i : visibleObjects) {
+				Material* mat = nullptr;
+				
+				switch (viewIndex) {
+				case (0):
+					mat = webcamMat;
+					break;
+				case (2):
+					mat = wireMat;
+					break;
+				default:
+					mat = staticObjects[i].unlitMat;
+					break;
+				}
+				
+				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+			}
 		}
 		//}
 
