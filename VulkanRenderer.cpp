@@ -525,7 +525,9 @@ private:
 
 	void exit(UIItem* owner) {
 		Material* mat = matTemplate->createMaterial();
+		Material* flatMat = matTemplate->createFlatMaterial();
 		textureLL->replacePtr(mat, newMaterialName);
+		textureLL->replacePtr(mat, newMaterialName + "_flat");
 		owner->Name = newMaterialName;
 		owner->text = shaderName;
 		finishedCallback(owner);
@@ -668,6 +670,7 @@ private:
 
 	void exitMaterialMenu(UIItem* owner) {
 		obj->mat = textureLL->getMaterial(owner->Name);
+		obj->unlitMat = textureLL->getMaterial(owner->Name + "_flat");
 		obj->shaderName = owner->text;
 		obj->materialName = owner->Name;
 		matSelPtr->addOption(obj->materialName);
@@ -2022,8 +2025,8 @@ private:
 		//}
 		//else {
 		for (uint32_t i : visibleObjects) {
-			Material* mat = staticObjects[i].mat;
-			std::string shaderName = staticObjects[i].shaderName;
+			Material* mat = (lit)?staticObjects[i].mat:staticObjects[i].unlitMat;
+			std::string shaderName = (lit)?staticObjects[i].shaderName:"Flat";
 			if (viewIndex == 0) {
 				mat = webcamMat;
 				shaderName = "Flat";

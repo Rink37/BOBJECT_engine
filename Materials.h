@@ -150,7 +150,6 @@ public:
 				std::cout << IOval.name << std::endl;
 			}
 		}
-
 	}
 
 	std::vector<std::string> listChannels() const {
@@ -180,14 +179,23 @@ public:
 		std::vector<Texture*> materialTextures{};
 		if (textureOrder.size() > 0) {
 			for (std::string channel : textureOrder) {
-				std::cout << channel << std::endl;
 				materialTextures.push_back(textureMap.at(channel));
-				std::cout << textureMap.at(channel) << std::endl;
 			}
 		}
 
 		Material* newMat = new Material(materialTextures, shaderName, boundPass);
 		return newMat;
+	}
+
+	Material* createFlatMaterial() {
+		std::vector<Texture*> materialTextures{};
+		if (textureOrder.size() > 0) {
+			for (std::string channel : textureOrder) {
+				materialTextures.push_back(textureMap.at(channel));
+			}
+		}
+		Material* flatMat = new Material(materialTextures, "Flat", boundPass);
+		return flatMat;
 	}
 
 	Material* updateMaterial(Material* mat) {

@@ -90,6 +90,7 @@ public:
 	bool isWireframeVisible = true;
 	StaticMesh* mesh = nullptr;
 	Material* mat = nullptr;
+	Material* unlitMat = nullptr;
 
 	std::string objectName = "";
 	std::string materialName = "Webcam Material";
