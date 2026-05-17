@@ -185,8 +185,9 @@ public:
 	Engine& operator=(const webcamTexture&) = delete;
 	
 	static void destruct() {
-		delete winstance;
-		winstance = nullptr;
+		winstance->cleanup();
+		//delete winstance;
+		//winstance = nullptr;
 	}
 
 	Webcam *webCam = nullptr;

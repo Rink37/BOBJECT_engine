@@ -44,6 +44,8 @@ public:
 			return;
 		}
 
+		imageName = texName;
+
 		imageData cb = CLOSEBUTTON;
 		Material* closeMat = newMaterial(&cb, "CloseBtn");
 
@@ -82,11 +84,19 @@ public:
 		positions[3] = (imagePanel->posy) - imagePanel->extenty;
 	}
 
+	void updateWebcamTex() {
+		if (imageName == std::string("Webcam View")) {
+			imagePanel->image->mat[0] = loadList->replacePtr(new Material(textureLL->getTexture("Webcam View")), "Image View");
+		}
+	}
+
 	int clickIndex = 0;
 private:
 	LoadList* textureLL = nullptr;
 
 	ImagePanel* imagePanel = nullptr;
+
+	std::string imageName = "";
 };
 
 class WebcamSettings : public Widget {
@@ -1206,17 +1216,16 @@ public:
 		keyBinds.initCallbacks(engine->window);
 		mouseManager.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
-		//sConst->setupSurfaceConstructor();
 		webcamTexture::get()->setup();
 		createCanvas();
 		if (webcamTexture::get()->webCam != nullptr) {
 			webcamTexture::get()->webCam->loadFilter();
 		}
+		TextureElements.getPtr(webcamTexture::get(), "Webcam View");
 		//std::function<void()> tomogFunct = bind(&Application::toggleTomogMenu, this);
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
 		//std::function<void()> drawUpdate = bind(&Application::updateDrawVariables, this);
-		//sConst->setCallback(drawUpdate);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		//keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
@@ -1364,8 +1373,9 @@ private:
 
 	void createWebSettings(UIItem* owner) {
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishWebSettings, this, std::placeholders::_1);
+		std::function<void()> updateTexView = std::bind(&Application::updateTextureSettingsMenu, this);
 
-		webSets.setup(finishSelf, nullptr);
+		webSets.setup(finishSelf, updateTexView);
 		if (!webSets.isSetup) {
 			return;
 		}
@@ -1525,6 +1535,14 @@ private:
 		textureSettings.clickIndex = mouseManager.addClickListener(textureSettings.getClickCallback());
 
 		widgets.push_back(&textureSettings);
+	}
+
+	void updateTextureSettingsMenu() {
+		vkDeviceWaitIdle(Engine::get()->device);
+		TextureElements.getMaterial("Webcam Material")->cleanupDescriptor();
+		TextureElements.getMaterial("Webcam Material")->init(webcamTexture::get());
+		textureSettings.updateWebcamTex();
+		textureSettings.update();
 	}
 
 	void closeTextureSettingsMenu(UIItem* owner) {

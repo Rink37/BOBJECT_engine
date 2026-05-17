@@ -697,7 +697,7 @@ void webcamTexture::recreateWebcamImage() {
 	createWebcamTextureImageView();
 	frameUpdate.get();
 	frameUpdate = std::async(std::launch::async, &webcamTexture::fetchFrame, this);
-	std::cout << "New frame update started " << std::endl;
+	//std::cout << "New frame update started " << std::endl;
 }
 
 void webcamTexture::createWebcamTextureImageView() {
