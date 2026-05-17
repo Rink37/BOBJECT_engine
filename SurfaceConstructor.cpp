@@ -65,6 +65,7 @@ void surfaceConstructor::transitionToTS(Mesh* inputMesh) {
 }
 
 void surfaceConstructor::transitionToOS(Mesh* inputMesh) {
+	
 	NormalGen generator(loadList);
 	generator.copyTSImage(TSNormTex);
 	generator.setupOSConverter();

@@ -336,7 +336,7 @@ public:
 			mesh->cleanup();
 		}
 		characters.clear();
-		textFont->cleanup();
+		//textFont->cleanup();
 	}
 
 	bool isVisible = true;
