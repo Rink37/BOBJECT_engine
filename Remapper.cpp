@@ -99,6 +99,7 @@ void RemapBackend::createReferenceMaps(Texture* refTex, Texture* targetTex) {
 
 		filteredTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		filteredTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		break;
 	case (ITERATIVE_COORDMAP):
 		baseRef = refTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
@@ -169,6 +170,7 @@ void RemapBackend::createReferenceMaps(Texture* refTex, Texture* targetTex) {
 
 		filteredTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		filteredTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		break;
 	}
 }
@@ -221,6 +223,7 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 
 		filteredTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		filteredTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		break;
 	case (ITERATIVE_COORDMAP):
 		Engine::get()->endSingleTimeComputeCommand(commandBuffer);
@@ -264,6 +267,7 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 		}
 		filteredTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		filteredTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		break;
 	}
 }
@@ -317,8 +321,6 @@ void RemapUI::kuwaharaCallback(int kern) {
 	remapper->performRemap(commandBuffer);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	//sConst->normalType = 0;
-	//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 }
 
 void RemapUI::zeroCrossCallback(float zeroCross) {
@@ -328,8 +330,6 @@ void RemapUI::zeroCrossCallback(float zeroCross) {
 	remapper->performRemap(commandBuffer);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	//sConst->normalType = 0;
-	//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 }
 
 void RemapUI::sharpnessCallback(float sharpness) {
@@ -339,8 +339,6 @@ void RemapUI::sharpnessCallback(float sharpness) {
 	remapper->performRemap(commandBuffer);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	//sConst->normalType = 0;
-	//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 }
 void RemapUI::hardnessCallback(float hardness) {
 	remapper->setKuwaharaHardness(hardness);
@@ -349,8 +347,6 @@ void RemapUI::hardnessCallback(float hardness) {
 	remapper->performRemap(commandBuffer);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	//sConst->normalType = 0;
-	//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 }
 
 void RemapUI::averagerCallback(int kern) {
@@ -360,8 +356,6 @@ void RemapUI::averagerCallback(int kern) {
 	remapper->performRemap(commandBuffer);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	//sConst->normalType = 0;
-	//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 }
 
 void RemapUI::gradientCallback(float thresh) {
@@ -371,8 +365,6 @@ void RemapUI::gradientCallback(float thresh) {
 	remapper->performRemap(commandBuffer);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	//sConst->normalType = 0;
-	//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 }
 
 void RemapUI::iterationCallback(int count) {
@@ -382,8 +374,6 @@ void RemapUI::iterationCallback(int count) {
 	remapper->performRemap(commandBuffer);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	//sConst->normalType = 0;
-	//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 };
 
 void RemapUI::toggleNormalization(UIItem* owner) {
@@ -393,17 +383,13 @@ void RemapUI::toggleNormalization(UIItem* owner) {
 	remapper->performRemap(commandBuffer);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	//sConst->normalType = 0;
-	//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 };
 
 void RemapUI::incrementMethod(UIItem*) {
 	uint32_t newMethod = remapper->method + 1;
 	newMethod %= METHODCOUNT;
-	//sConst->normalType = 0;
 	remapper->baseTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	remapper->baseTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	//sConst->loadNormal(remapper->baseOSNormal->copyTexture());
 	textureLL->replacePtr(remapper->baseTarget->copyTexture(), targetTexName);
 	remapper->cleanup();
 	delete remapper;
@@ -417,8 +403,6 @@ void RemapUI::incrementMethod(UIItem*) {
 	fullRemap(refTex, targetTex);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	//sConst->normalType = 0;
-	//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 	UIItem* endButtons = canvas[0]->Items[canvas[0]->Items.size() - 1];
 	for (int i = 2; i != canvas[0]->Items.size()-1; i++) {
 		canvas[0]->Items[i]->cleanup();
@@ -431,10 +415,8 @@ void RemapUI::incrementMethod(UIItem*) {
 
 void RemapUI::reduceMethod(UIItem*) {
 	uint32_t newMethod = (remapper->method >= 1)?remapper->method - 1 : METHODCOUNT - 1;
-	//sConst->normalType = 0;
 	remapper->baseTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	remapper->baseTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	//sConst->loadNormal(remapper->baseOSNormal->copyTexture());
 	textureLL->replacePtr(remapper->baseTarget->copyTexture(), targetTexName);
 	remapper->cleanup();
 	delete remapper;
@@ -448,8 +430,6 @@ void RemapUI::reduceMethod(UIItem*) {
 	fullRemap(refTex, targetTex);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	//sConst->normalType = 0;
-	//sConst->loadNormal(remapper->filteredOSNormal->copyTexture());
 	UIItem* endButtons = canvas[0]->Items[canvas[0]->Items.size() - 1];
 	for (int i = 2; i != canvas[0]->Items.size() - 1; i++) {
 		canvas[0]->Items[i]->cleanup();

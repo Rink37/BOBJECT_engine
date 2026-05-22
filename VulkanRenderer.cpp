@@ -59,7 +59,9 @@ public:
 		exitArrangement->addItem(getPtr(new Button(closeMat, exitFnc)));
 
 		remapArrangement->addItem(getPtr(new spacer()));
-		remapArrangement->addItem(getPtr(new Button(settingsMat, remapFnc)));
+		Button* remapBtn = new Button(settingsMat, remapFnc);
+		remapBtn->Name = texName;
+		remapArrangement->addItem(getPtr(remapBtn));
 
 		Material* panelMat = loadList->replacePtr(new Material(textureLL->getTexture(texName)), "Image view");
 		bool isWebcam = (texName == std::string("Webcam View"));
@@ -612,9 +614,9 @@ private:
 		if (finishedCallback != nullptr) {
 			finishedCallback(owner);
 		}
-		else {
-			std::cout << "No finished callback found" << std::endl;
-		}
+		//else {
+		//	std::cout << "No finished callback found" << std::endl;
+		//}
 	}
 };
 
@@ -1530,6 +1532,10 @@ private:
 
 		vkDeviceWaitIdle(Engine::get()->device);
 		rts.cleanup();
+		UIItem* newItem = new spacer();
+		closeTextureSettingsMenu(newItem);
+		newItem->cleanup();
+		delete newItem;
 		widgets.erase(find(widgets.begin(), widgets.end(), &rts));
 
 		remapMenu.setup(refTexture, targetTexture, destroySelf, finishSelf); 
@@ -1549,12 +1555,17 @@ private:
 
 		remapMenu.remapper->baseTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		remapMenu.remapper->baseTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		TextureElements.replacePtr(remapMenu.remapper->baseTarget->copyTexture(), remapMenu.targetTexName);
-
-		remapMenu.cleanup();
-
+		
+		std::string outName = remapMenu.targetTexName;
+		TextureElements.replacePtr(remapMenu.remapper->baseTarget->copyTexture(), outName);
+		owner->Name = outName;
+		
 		mouseManager.removeClickListener(remapMenu.clickIndex);
 		mouseManager.removePositionListener(remapMenu.posIndex);
+		
+		openTextureSettingsMenu(owner);
+
+		remapMenu.cleanup();
 
 		widgets.erase(find(widgets.begin(), widgets.end(), &remapMenu));
 
@@ -1562,11 +1573,18 @@ private:
 	}
 
 	void finishRemapper(UIItem* owner) {
+		vkDeviceWaitIdle(Engine::get()->device);
+		
+		std::string outName = remapMenu.targetTexName;
 		TextureElements.replacePtr(remapMenu.remapper->filteredTarget->copyTexture(), remapMenu.targetTexName);
-
-		remapMenu.cleanup();
+		owner->Name = outName;
+		
 		mouseManager.removeClickListener(remapMenu.clickIndex);
 		mouseManager.removePositionListener(remapMenu.posIndex);
+		
+		openTextureSettingsMenu(owner);
+
+		remapMenu.cleanup();
 
 		widgets.erase(find(widgets.begin(), widgets.end(), &remapMenu));
 
