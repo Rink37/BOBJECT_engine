@@ -1493,9 +1493,10 @@ public:
 		}
 	}
 
+	std::vector<std::string> options{};
+
 private:
 	TextBox* selectedTextBox = nullptr;
-	std::vector<std::string> options{};
 
 	Arrangement* optionsArrangement = nullptr;
 	font* textFont = nullptr;

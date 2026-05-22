@@ -796,7 +796,16 @@ private:
 		obj->unlitMat = textureLL->getMaterial(owner->Name + "_flat");
 		obj->shaderName = owner->text;
 		obj->materialName = owner->Name;
-		matSelPtr->addOption(obj->materialName);
+
+		std::vector<std::string> options = static_cast<DropdownMenu*>(matSelPtr)->options;
+
+		if (find(options.begin(), options.end(), obj->materialName) == options.end()) {
+			matSelPtr->addOption(obj->materialName);
+			matSelPtr->addOption(obj->materialName + "_flat");
+		}
+		std::vector<std::string> existingMaterials{};
+		textureLL->listMaterials(existingMaterials);
+		matSelPtr->setOptionIndex(existingMaterials.size() - 2);
 		if (closeMaterialMenu != nullptr) {
 			closeMaterialMenu(owner);
 		}
