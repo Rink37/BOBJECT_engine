@@ -614,9 +614,6 @@ private:
 		if (finishedCallback != nullptr) {
 			finishedCallback(owner);
 		}
-		//else {
-		//	std::cout << "No finished callback found" << std::endl;
-		//}
 	}
 };
 
@@ -1180,8 +1177,6 @@ public:
 		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		std::string textureName = "Webcam View";
-
-		//textureLoadList->getPtr(webcamTexture::get(), textureName);
 		
 		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		objectName->addText(textureName);
@@ -1684,11 +1679,7 @@ private:
 	}
 
 	void openObjectSettingsMenu(UIItem* owner) {
-		//StaticObject* activeObject = &staticObjects[stoi(owner->Name)];
 		std::function<void(std::function<void(UIItem*)>, std::string)> openEditMenu = std::bind(&Application::openEditSettingsMenu, this, std::placeholders::_1, std::placeholders::_2);
-		//if (osm == nullptr) {
-		//	osm.setup(&staticObjects[stoi(owner->Name)], &UIElements, &TextureElements, std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeObjectSettingsMenu, this, std::placeholders::_1), openEditMenu);
-		//}
 		
 		osm.setup(&staticObjects[stoi(owner->Name)], textureMenu.getAddTexCallback(), std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeObjectSettingsMenu, this, std::placeholders::_1), openEditMenu);
 		osm.clickIndex = mouseManager.addClickListener(osm.getClickCallback());
@@ -1732,6 +1723,7 @@ private:
 		mouseManager.removeClickListener(mc->clickIndex);
 
 		osm.show();
+		osm.update();
 
 		updateVisibleObjects();
 
