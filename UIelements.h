@@ -168,6 +168,12 @@ struct UIItem {
 		}
 	};
 
+	virtual void getText(std::vector<UIItem*>& textboxes) {
+		if (isText()) {
+			textboxes.push_back(this);
+		}
+	}
+
 	virtual bool isInArea(double x, double y) {
 		bool result = false;
 		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
@@ -195,6 +201,10 @@ struct UIItem {
 	}
 
 	virtual bool isArrangement() {
+		return false;
+	}
+
+	virtual bool isText() {
 		return false;
 	}
 
@@ -231,9 +241,15 @@ struct UIItem {
 		getImages(images, true);
 		getImages(images, false);
 
+		std::vector<UIItem*> textboxes;
+		getText(textboxes);
+
 		for (UIImage* image : images) {
 			image->cleanup();
 			image = nullptr;
+		}
+		for (UIItem* textbox : textboxes) {
+			textbox->cleanup();
 		}
 	}
 
@@ -261,6 +277,10 @@ public:
 	void calculateScreenPosition();
 
 	bool isArrangement() {
+		return true;
+	}
+
+	bool isText() {
 		return true;
 	}
 
@@ -336,7 +356,6 @@ public:
 			mesh->cleanup();
 		}
 		characters.clear();
-		//textFont->cleanup();
 	}
 
 	bool isVisible = true;
@@ -755,6 +774,16 @@ public:
 		}
 	};
 
+	void getText(std::vector<UIItem*>& textboxes) {
+		for (size_t i = 0; i != Items.size(); i++) {
+			std::vector<UIItem*> subitems;
+			Items[i]->getText(subitems);
+			for (size_t j = 0; j != subitems.size(); j++) {
+				textboxes.push_back(subitems[j]);
+			}
+		}
+	}
+
 	void setVisibility(bool vis) {
 		for (UIItem* item : Items) {
 			item->setVisibility(vis);
@@ -855,6 +884,16 @@ public:
 			}
 		}
 	};
+
+	void getText(std::vector<UIItem*>& textboxes) {
+		for (size_t i = 0; i != Items.size(); i++) {
+			std::vector<UIItem*> subitems;
+			Items[i]->getText(subitems);
+			for (size_t j = 0; j != subitems.size(); j++) {
+				textboxes.push_back(subitems[j]);
+			}
+		}
+	}
 
 	void setVisibility(bool vis) {
 		for (UIItem* item : Items) {
@@ -1488,6 +1527,8 @@ public:
 	};
 
 	void cleanup() {
+		//std::cout << "Cleaning up a dropdown menu" << std::endl;
+		//Items[0]->cleanup();
 		for (UIItem* item : Items) {
 			item->cleanup();
 		}

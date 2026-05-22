@@ -798,11 +798,11 @@ private:
 		obj->materialName = owner->Name;
 
 		std::vector<std::string> options = static_cast<DropdownMenu*>(matSelPtr)->options;
-
 		if (find(options.begin(), options.end(), obj->materialName) == options.end()) {
 			matSelPtr->addOption(obj->materialName);
 			matSelPtr->addOption(obj->materialName + "_flat");
 		}
+
 		std::vector<std::string> existingMaterials{};
 		textureLL->listMaterials(existingMaterials);
 		matSelPtr->setOptionIndex(existingMaterials.size() - 2);
