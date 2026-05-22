@@ -392,17 +392,6 @@ public:
 		
 		canvas.push_back(getPtr(buttons));
 
-		//font* testFont = new font();
-		//TextBox* testTextBox = new TextBox(testFont, 0.0f, 0.0f, 0.3f, 0.2f, 24, ARRANGE_FILL, ARRANGE_FILL);
-		//testTextBox->addText("\tThis line should be separate!\n\n\tLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vestibulum aliquet ligula vel dictum. Praesent scelerisque orci at tincidunt placerat. Aliquam et blandit nulla. Nullam consequat ligula vitae massa luctus, et tincidunt felis dictum. Morbi mattis dapibus ante, vitae eleifend ipsum rutrum vitae. Proin in mauris eget metus mattis interdum vel eget nisi. Nulla porta sapien id eros malesuada laoreet. Integer et rhoncus magna, sed ullamcorper elit. Quisque ut massa ut nibh venenatis ultrices ac id tortor. Sed mattis, massa at vestibulum tincidunt, arcu diam vestibulum libero, vel lacinia tortor sapien quis sem. Proin scelerisque pharetra odio, quis congue turpis. Proin arcu leo, blandit quis ex vitae, posuere sollicitudin turpis. Duis ullamcorper sodales dui ac posuere. Pellentesque nibh felis, finibus in elit sed, iaculis fringilla est.");
-		//canvas.push_back(getPtr(testTextBox));
-
-		//DropdownMenu* testMenu = new DropdownMenu(0.0f, 0.0f, 0.3f, 0.05f, renderedMat, visibleMat, testFont);
-		//testMenu->addOptions(std::vector<std::string>{"Hello", "World!", "This", "Is", "A", "Test"});
-		//testMenu->setOptionIndex(1);
-		
-		//canvas.push_back(getPtr(testMenu));
-
 		isSetup = true;
 	}
 };
@@ -553,11 +542,6 @@ private:
 		if (it != texChannels.end()) {
 			texChannels.erase(it);
 		}
-
-		//for (std::string channel : texChannels) {
-		//	std::cout << channel << " ";
-		//}
-		//std::cout << std::endl;
 
 		imageData rb = RENDEREDBUTTON;
 		Material* renderedMat = newMaterial(&rb, "RenderBtn");
@@ -1179,9 +1163,17 @@ public:
 		textArrangement->addItem(getPtr(new spacer()));
 		textArrangement->addItem(getPtr(new Button(loadMat, loadTexFunct)));
 
+		Arrangement* tomogArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		TextBox* tomogMenuText = new TextBox(objectFont, 0.0f, 0.0f, 6.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		tomogMenuText->addText("Extract from painting:");
+		tomogArrangement->addItem(getPtr(tomogMenuText));
+		tomogArrangement->addItem(getPtr(new spacer()));
+		tomogArrangement->addItem(getPtr(new Button(settingsMat)));
+
 		TextureButtons = getPtr(new Arrangement(ORIENT_VERTICAL, -0.9f, -0.5625f, 0.2f, 0.4375f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS));
 
 		TextureButtons->addItem(getPtr(textArrangement));
+		TextureButtons->addItem(getPtr(tomogArrangement));
 		
 		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -1376,7 +1368,7 @@ private:
 	Camera camera;
 	Tomographer tomographer;
 
-	TomographyMenu tomogUI = TomographyMenu(&UIElements);
+	TomographyMenu tomogUI = TomographyMenu(&UIElements, &TextureElements);
 	SaveMenu saveMenu = SaveMenu(&UIElements);
 	WebcamMenu webcamMenu = WebcamMenu(&UIElements);
 	RenderMenu renderMenu = RenderMenu(&UIElements);

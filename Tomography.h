@@ -192,10 +192,96 @@ private:
 	}
 };
 
+class TomogRefPicker : public Widget {
+public:
+	TomogRefPicker(LoadList* assets, LoadList* texLL) {
+		loadList = assets;
+		textureLL = texLL;
+	}
+
+	void setup(std::function<void(UIItem*)> finish, std::function<void(UIItem*)> cancel) {
+		if (isSetup) {
+			return;
+		}
+
+		finishCallback = finish;
+		cancelCallback = cancel;
+
+		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		imageData rb = RENDEREDBUTTON;
+		Material* renderedMat = newMaterial(&rb, "RenderBtn");
+
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+
+		int optionIndex = 0;
+
+		std::vector<std::string> textureOptions{};
+		textureLL->listTextures(textureOptions);
+
+		DropdownMenu* texSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, textureLL->getFont());
+		texSelect->addOptions(textureOptions);
+		texSelect->setSelectCallback(std::bind(&TomogRefPicker::setTexName, this, std::placeholders::_1));
+		texSelect->setOptionIndex(optionIndex);
+
+		TextBox* mainText = new TextBox(textureLL->getFont(), 0.0f, 0.0f, 8.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
+		mainText->addText("Select a reference texture:");
+
+		totalArrangement->addItem(getPtr(mainText));
+		totalArrangement->addItem(getPtr(texSelect));
+
+		imageData fb = FINISHBUTTON;
+		Material* finishMat = newMaterial(&fb, "FinishBtn");
+
+		imageData fb = CANCELBUTTON;
+		Material* cancelMat = newMaterial(&fb, "CancelBtn");
+
+		Arrangement* finishArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		finishArrangement->addItem(getPtr(new Button(cancelMat, std::bind(&TomogRefPicker::cancel, this, std::placeholders::_1))));
+		finishArrangement->addItem(getPtr(new spacer()));
+		finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&TomogRefPicker::finish, this, std::placeholders::_1))));
+
+		totalArrangement->addItem(getPtr(finishArrangement));
+		totalArrangement->arrangeItems();
+
+		canvas.push_back(getPtr(totalArrangement));
+		isSetup = true;
+	}
+
+	int clickIndex = 0;
+private:
+	LoadList* textureLL = nullptr;
+
+	std::string textureName = "";
+
+	std::function<void(UIItem*)> finishCallback = nullptr;
+	std::function<void(UIItem*)> cancelCallback = nullptr;
+
+	void setTexName(UIItem* owner) {
+		textureName = owner->text;
+	}
+
+	void finish(UIItem* owner) {
+		owner->Name = textureName;
+		if (finishCallback != nullptr) {
+			finishCallback(owner);
+		}
+	}
+
+	void cancel(UIItem* owner) {
+		if (cancelCallback != nullptr) {
+			cancelCallback(owner);
+		}
+	}
+};
+
+
 class TomographyMenu : public Widget {
 public:
-	TomographyMenu(LoadList* assets) {
+	TomographyMenu(LoadList* assets, LoadList* texAssets) {
 		loadList = assets;
+		textureLL = texAssets;
 	}
 
 	void setup(std::function<void(UIItem*)> toggleFunction, MouseManager* mm, std::function<void(UIItem*)> finishTomog) {
@@ -329,6 +415,8 @@ public:
 private:
 	Tomographer tomographer;
 	TomographyLoad* tomogLoadMenu = nullptr;
+
+	LoadList* textureLL = nullptr;
 
 	MouseManager* mouseManager = nullptr;
 
