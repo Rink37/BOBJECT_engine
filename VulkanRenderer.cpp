@@ -468,6 +468,8 @@ public:
 		if (isSetup) {
 			return;
 		}
+		inFont = loadList->getFont();
+
 		finishedCallback = callback;
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
@@ -550,10 +552,10 @@ private:
 			texChannels.erase(it);
 		}
 
-		for (std::string channel : texChannels) {
-			std::cout << channel << " ";
-		}
-		std::cout << std::endl;
+		//for (std::string channel : texChannels) {
+		//	std::cout << channel << " ";
+		//}
+		//std::cout << std::endl;
 
 		imageData rb = RENDEREDBUTTON;
 		Material* renderedMat = newMaterial(&rb, "RenderBtn");
@@ -604,10 +606,15 @@ private:
 		Material* mat = matTemplate->createMaterial();
 		Material* flatMat = matTemplate->createFlatMaterial();
 		textureLL->replacePtr(mat, newMaterialName);
-		textureLL->replacePtr(mat, newMaterialName + "_flat");
+		textureLL->replacePtr(flatMat, newMaterialName + "_flat");
 		owner->Name = newMaterialName;
 		owner->text = shaderName;
-		finishedCallback(owner);
+		if (finishedCallback != nullptr) {
+			finishedCallback(owner);
+		}
+		else {
+			std::cout << "No finished callback found" << std::endl;
+		}
 	}
 };
 
