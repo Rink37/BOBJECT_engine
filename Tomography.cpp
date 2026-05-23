@@ -392,7 +392,7 @@ static bool match_template(Mat src, Mat* target, Size outdims, float& rotation) 
 		std::cout << rotatedPoint << std::endl;
 
 		rotation -= (std::atan2f(rotatedPoint.y, rotatedPoint.x) - std::atan2f(-1.0f, 0.0f)) * 180.0f / 3.1415926f;
-		std::cout << rotation << std::endl;
+		//std::cout << rotation << std::endl;
 
 		cv::Mat matched;
 
@@ -403,336 +403,6 @@ static bool match_template(Mat src, Mat* target, Size outdims, float& rotation) 
 		return true;
 	}
 	return false;
-}
-
-
-static void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchRequired) {
-
-	int defaultHeight = src.rows;
-	int defaultWidth = src.cols;
-	int stepsPerIter = 16;
-	if (!sizeMatchRequired) {
-		stepsPerIter = 1;
-	}
-	int rotationsPerIter = 8;
-
-	bool vertical = (target->rows >= target->cols);
-
-	int index = 0;
-	float rotation = 0.0f;
-	int secondIndex = 0;
-	float correlation = 0.0f;
-	float imgCorrelation = 0.0f;
-	float secondCorrelation = 0.0f;
-
-	int targetHeight = target->rows;
-	int targetWidth = target->cols;
-	int defaultDim = sqrtf(targetHeight * targetHeight + targetWidth * targetWidth);
-
-	Point matchedLoc;
-
-	int resizeHeight = 0;
-	int resizeWidth = 0;
-	if (vertical) {
-		resizeHeight = max(defaultHeight, targetHeight);
-		resizeWidth = resizeHeight * static_cast<float>(defaultWidth) / static_cast<float>(defaultHeight);
-	}
-	else {
-		resizeWidth = max(defaultWidth, targetWidth);
-		resizeHeight = resizeWidth * static_cast<float>(defaultHeight) / static_cast<float>(defaultWidth);
-	}
-
-	int srcResizeDim = sqrtf(resizeHeight*resizeHeight + resizeWidth * resizeWidth);
-	Point src_imageCenter = Point(static_cast<float>(src.cols - 1) / 2.0f, static_cast<float>(src.rows - 1) / 2.0f);
-	Point src_resultCenter = Point(static_cast<float>(srcResizeDim - 1) / 2.0f, static_cast<float>(srcResizeDim - 1) / 2.0f);
-
-	int src_tx = static_cast<int>(src_resultCenter.x - src_imageCenter.x);
-	int src_ty = static_cast<int>(src_resultCenter.y - src_imageCenter.y);
-	//std::cout << Point(src_tx, src_ty) << std::endl;
-
-	cv::Mat src_translation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, src_tx, 0, 1, src_ty);
-
-	cv::Mat srcPadded;
-	cv::warpAffine(src, srcPadded, src_translation_matrix, Size(srcResizeDim, srcResizeDim));
-
-	cv::Mat srcSobel;
-	cv::GaussianBlur(srcPadded, srcSobel, Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
-	cv::cvtColor(srcSobel, srcSobel, cv::COLOR_BGR2GRAY);
-
-	Mat grad_x, grad_y;
-	cv::Sobel(srcSobel, grad_x, CV_16S, 1, 0);
-	cv::Sobel(srcSobel, grad_y, CV_16S, 0, 1);
-	cv::convertScaleAbs(grad_x, grad_x);
-	cv::convertScaleAbs(grad_y, grad_y);
-	cv::addWeighted(grad_x, 0.5, grad_y, 0.5, 0, srcSobel);
-
-	double thresh = 0.1;
-	double edgeThresh = 0.2;
-	double min, max;
-	Point minLoc, maxLoc;
-	minMaxLoc(srcSobel, &min, &max, &minLoc, &maxLoc);
-
-	cv::Mat srcSobelMin;
-	cv::threshold(srcSobel, srcSobelMin, thresh*max, 255.0, cv::THRESH_TRUNC);
-	cv::subtract(srcSobel, srcSobelMin, srcSobel);
-
-	cv::Mat matched;
-
-	float rotateAngle = -10.0f;
-	Point intersection = Point(-1.0f, -1.0f);
-	float intersectionScale = 0.0f;
-	int cornerType = -1;
-
-	float rescaleFac = 1.0f;
-
-	for (int i = 0; i != stepsPerIter; i++) {
-
-		int iterDim = defaultDim * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
-		int iterHeight = targetHeight * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
-		int iterWidth = targetWidth * (1.5-static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
-
-		if (stepsPerIter == 1) {
-			iterDim = defaultDim;
-			iterHeight = targetHeight;
-			iterWidth = targetWidth;
-			//std::cout << iterHeight << " " << iterWidth << std::endl;
-		}
-
-		Mat downscaled;
-
-		cv::resize(*target, downscaled, Size(iterWidth, iterHeight));
-		
-		cv::GaussianBlur(downscaled, downscaled, Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
-		cv::cvtColor(downscaled, downscaled, cv::COLOR_BGR2GRAY);
-
-		cv::Sobel(downscaled, grad_x, CV_16S, 1, 0);
-		cv::Sobel(downscaled, grad_y, CV_16S, 0, 1);
-		cv::convertScaleAbs(grad_x, grad_x);
-		cv::convertScaleAbs(grad_y, grad_y);
-		cv::addWeighted(grad_x, 0.5, grad_y, 0.5, 0, downscaled);
-
-		cv::Mat threshDownscaled = downscaled.clone();
-
-		minMaxLoc(downscaled, &min, &max, &minLoc, &maxLoc);
-
-		cv::Mat downscaledMin;
-		cv::threshold(downscaled, downscaledMin, thresh * max, 255.0, cv::THRESH_TRUNC);
-		cv::subtract(downscaled, downscaledMin, downscaled);
-
-		cv::Mat threshDownscaledMin;
-		cv::threshold(threshDownscaled, threshDownscaledMin, edgeThresh * max, 255.0, cv::THRESH_TRUNC);
-		cv::subtract(threshDownscaled, threshDownscaledMin, threshDownscaled);
-
-		if (rotateAngle == -10.0f) {
-			vector<Vec4i> lines;
-			int largestLines[2] = { 0, 0 };
-			HoughLinesP(threshDownscaled, lines, 1, CV_PI / 180, 50, 50, 10);
-
-			std::sort(lines.begin(), lines.end(), [](Vec4i a, Vec4i b) {return lineLength(a) > lineLength(b); });
-			largestLines[0] = 0;
-			for (size_t i = 0; i < 5; i++)
-			{
-				Vec4i l = lines[i];
-				float angle = angleBetweenLines(l, lines[0]);
-				if (angle > 45.0f) {
-					largestLines[1] = i;
-					break;
-				}
-			}
-
-			if (largestLines[0] != largestLines[1] && 87.5f < angleBetweenLines(lines[largestLines[0]], lines[largestLines[1]]) < 92.5f) {
-				float rotateAngle1 = angleBetweenLines(lines[largestLines[0]], Vec4i(0, 0, 0, 10));
-				float rotateAngle2 = angleBetweenLines(lines[largestLines[1]], Vec4i(0, 0, 0, 10));
-				if (rotateAngle1 > 90.0f && rotateAngle2 <= 90.0f) {
-					rotateAngle1 = 180.0f - rotateAngle1;
-					rotateAngle2 = 90.0f - rotateAngle2;
-				}
-				else if (rotateAngle2 > 90.0f && rotateAngle1 <= 90.0f) {
-					rotateAngle2 = 180.0f - rotateAngle2;
-					rotateAngle1 = 90.0f - rotateAngle1;
-				}
-				else if (rotateAngle1 < 90.0f && rotateAngle2 >= 90.0f) {
-					rotateAngle2 = 90.0f - rotateAngle2;
-				}
-				else if (rotateAngle2 < 90.0f && rotateAngle2 >= 90.0f) {
-					rotateAngle1 = 90.0f - rotateAngle1;
-				}
-				rotateAngle = (rotateAngle1 + rotateAngle2) / 2;
-				rotationsPerIter = 4;
-				Vec4i l1 = lines[largestLines[0]];
-				Vec4i l2 = lines[largestLines[1]];
-				intersection = intersectionOfLines(l1, l2);
-				if (intersection != Point(-1.0f, -1.0f)) {
-					//std::cout << "Corner found" << std::endl;
-
-					if (sizeMatchRequired) {
-						float maxDist = estMaxDist(intersection, Size(iterWidth, iterHeight), rotateAngle);
-						rescaleFac = static_cast<float>(std::max(src.rows, src.cols)) / maxDist;
-						rescaleFac = (rescaleFac > 1.0f) ? 1.0f : rescaleFac;
-						iterDim = defaultDim * (1.5 - static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
-						iterHeight = targetHeight * (1.5 - static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
-						iterWidth = targetWidth * (1.5 - static_cast<float>(i + 1) / static_cast<float>(stepsPerIter)) * 0.6667f * rescaleFac;
-					}		
-
-					rotateLines(l1, l2, rotateAngle, intersection);
-					cornerType = findCornerType(l1, l2, intersection);
-
-					intersection *= rescaleFac;
-					cv::resize(downscaled, downscaled, Size(iterWidth, iterHeight));
-					intersectionScale = static_cast<float>(iterDim);
-				}
-			}
-		}
-
-		Point imageCenter = Point(static_cast<float>(iterWidth - 1) / 2.0f, static_cast<float>(iterHeight - 1) / 2.0f);
-		Point resultCenter = Point(static_cast<float>(iterDim - 1) / 2.0f, static_cast<float>(iterDim - 1) / 2.0f);
-
-		Point currentIntersection = intersection * static_cast<float>(iterDim) / intersectionScale;
-		Point transformedIntersection = currentIntersection;
-
-		switch (cornerType) {
-		case(-1):
-			break;
-		default:
-			iterDim = srcResizeDim;
-			resultCenter = Point(static_cast<float>(iterDim - 1) / 2.0f, static_cast<float>(iterDim - 1) / 2.0f);
-			break;
-		}
-
-		int tx = static_cast<int>(resultCenter.x - imageCenter.x);
-		int ty = static_cast<int>(resultCenter.y - imageCenter.y);
-
-		transformedIntersection = Point(transformedIntersection.x + tx, transformedIntersection.y + ty);
-
-		cv::Mat translation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, tx, 0, 1, ty);
-
-		cv::warpAffine(downscaled, downscaled, translation_matrix, Size(iterDim, iterDim));
-
-		cv::Mat evenSmaller;
-
-		if (rotateAngle >= 0.0f) {
-			cv::Mat rotation_matrix = cv::getRotationMatrix2D(resultCenter, rotateAngle, 1);
-
-			transformedIntersection = rotate(transformedIntersection - resultCenter, rotateAngle) + resultCenter;
-
-			cv::warpAffine(downscaled, downscaled, rotation_matrix, Size(iterDim, iterDim));
-		}
-
-		vector<float> corrs = {};
-
-		for (int j = 0; j != rotationsPerIter; j++) {
-			
-			//std::cout << static_cast<float>(i*rotationsPerIter + j) / static_cast<float>(stepsPerIter * rotationsPerIter) << std::endl;
-			
-			float rotAngle = 360.0f * static_cast<float>(j) / static_cast<float>(rotationsPerIter);
-
-			cv::Mat rotation_matrix = cv::getRotationMatrix2D(resultCenter, rotAngle, 1);
-
-			int c_tx = 0;
-			int c_ty = 0;
-			
-			cv::Mat translated;
-			cv::warpAffine(downscaled, translated, rotation_matrix, Size(iterDim, iterDim));
-
-			if (cornerType != -1) {
-				int rotatedCornerType = (cornerType - j) % 4;
-				if (rotatedCornerType < 0) {
-					rotatedCornerType = 4 + rotatedCornerType;
-				}
-
-				Point rotatedIntersection = rotate(transformedIntersection - resultCenter, rotAngle) + resultCenter;
-
-				Point currentCorner = getCurrentCorner(rotatedCornerType, resultCenter, defaultWidth, defaultHeight);
-
-				c_tx = currentCorner.x - rotatedIntersection.x;
-				c_ty = currentCorner.y - rotatedIntersection.y;
-
-				cv::Mat corner_translation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, c_tx, 0, 1, c_ty);
-				cv::warpAffine(translated, translated, corner_translation_matrix, Size(iterDim, iterDim));
-			}
-
-			Mat res;
-			int result_cols = srcSobel.cols - translated.cols + 1;
-			int result_rows = srcSobel.rows - translated.rows + 1;
-
-			res.create(result_rows, result_cols, CV_32FC1);
-
-			matchTemplate(srcSobel, translated, res, TM_CCORR_NORMED);
-
-			minMaxLoc(res, &min, &max, &minLoc, &maxLoc);
-
-			float maxCorr = max;
-
-			corrs.push_back(maxCorr);
-
-			if (maxCorr > correlation) {
-				Mat currentMatch;
-				cv::resize(*target, currentMatch, Size(iterWidth, iterHeight));
-				cv::warpAffine(currentMatch, currentMatch, translation_matrix, Size(iterDim, iterDim));
-				if (rotateAngle >= 0.0f) {
-					cv::warpAffine(currentMatch, currentMatch, cv::getRotationMatrix2D(resultCenter, rotateAngle, 1), Size(iterDim, iterDim));
-				}
-				cv::warpAffine(currentMatch, currentMatch, rotation_matrix, Size(iterDim, iterDim));
-
-				if (cornerType != -1) {
-					cv::Mat corner_translation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, c_tx, 0, 1, c_ty);
-					cv::warpAffine(currentMatch, currentMatch, corner_translation_matrix, Size(iterDim, iterDim));
-				}
-
-				cv::Mat backtranslation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, maxLoc.x - src_tx, 0, 1, maxLoc.y - src_ty);
-				cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
-
-				float rot = 0.0f;
-
-				bool success = match_template(src, &currentMatch, src.size(), rot);
-				if (success) {
-					finalRot = rotateAngle + rotAngle;
-					matched = currentMatch.clone();
-
-					break;
-				}
-
-				matchTemplate(srcPadded, currentMatch, res, TM_CCORR_NORMED);
-
-				minMaxLoc(res, &min, &max, &minLoc, &maxLoc);
-
-				float maxImgCorr = max;
-
-				if (maxImgCorr > imgCorrelation) {
-					backtranslation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, maxLoc.x - src_tx, 0, 1, maxLoc.y - src_ty);
-					cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
-					
-					bool success = match_template(src, &currentMatch, src.size(), rot);
-					if (success) {
-						finalRot = rotateAngle + rotAngle;
-						matched = currentMatch.clone();
-
-						break;
-					}
-				}
-			}
-		}
-
-		float avgCorr = 0.0f;
-		for (float c : corrs) {
-			avgCorr += c;
-		}
-		avgCorr /= static_cast<float>(corrs.size());
-
-		if (avgCorr < correlation / 2) {
-			if (matched.empty()) {
-				matched = Mat(Size(defaultWidth, defaultHeight), CV_8UC3, Scalar(0, 0, 0));
-			}
-			*target = matched.clone();
-			return;
-		}
-	}
-
-	if (matched.empty()) {
-		matched = Mat(Size(defaultWidth, defaultHeight), CV_8UC3, Scalar(0,0,0));
-	}
-
-	*target = matched.clone();
 }
 
 static void calculateVector(vector<float>& lightVec, float phi, float theta) {
@@ -910,6 +580,7 @@ static vector<vector<float>> constructTomogMatrix(vector<int> indexes, vector<ve
 
 	vector<vector<float>> tomogMatrix;
 	matrixTranspose(transformationD, tomogMatrix);
+	// tomogMatrix = 3 x reducedD.size() matrix
 
 	return tomogMatrix;
 }
@@ -1007,7 +678,7 @@ static Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the no
 
 			if (normalLength != 0.0f) {
 				for (int i = 0; i != 3; i++) {
-					normalPixel[i] = static_cast<uint8_t>(((normalVector[i] / normalLength) - 1.0) /-2.0 * 255.0);
+					normalPixel[i] = static_cast<uint8_t>(((normalVector[i] / normalLength) - 1.0f) / -2.0f * 255.0f);
 				}
 			}
 			
@@ -1108,7 +779,7 @@ static std::vector<Mat> calculate_norm_diff(std::vector<TomogItem*> items) {
 	for (size_t i = 0; i != items.size(); i++) {
 		if (items[i]->correctedImage != nullptr && items[i]->lightDirection != std::vector<float>{0.0f, 0.0f, 0.0f}) {
 			images.push_back(items[i]->correctedImage);
-			std::cout << items[i]->lightDirection[0] << " " << items[i]->lightDirection[1] << " " << items[i]->lightDirection[0] << std::endl;
+			//std::cout << items[i]->lightDirection[0] << " " << items[i]->lightDirection[1] << " " << items[i]->lightDirection[0] << std::endl;
 			D.push_back(items[i]->lightDirection);
 		}
 	}
@@ -1245,15 +916,13 @@ void Tomographer::align(int index) {
 
 	Mat scaledAlign = alignTemplate.clone();
 	Size dims = scaledAlign.size();
-	std::cout << dims << std::endl;
+	//std::cout << dims << std::endl;
 	if (false) {
 		int height = 2048;
 		dims = Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height);
 		resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
 	}
 	
-	//match_partial(scaledAlign, &image, item->rotation, !equalRes);
-
 	match_template(scaledAlign, &image, dims, item->rotation);
 
 	item->correctedImage = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), item->name + "Matched");
