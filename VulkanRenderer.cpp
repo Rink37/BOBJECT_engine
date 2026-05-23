@@ -1123,7 +1123,7 @@ public:
 		textureLoadList = textureLL;
 	}
 
-	void setup(std::function<void(UIItem*)> modCallback, std::function<void(std::function<void(UIItem*)>)> loadCallback) {
+	void setup(std::function<void(UIItem*)> modCallback, std::function<void(std::function<void(UIItem*)>)> loadCallback, std::function<void(UIItem*)> tomogCallback) {
 		if (isSetup) {
 			return;
 		}
@@ -1168,7 +1168,7 @@ public:
 		tomogMenuText->addText("Extract from painting:");
 		tomogArrangement->addItem(getPtr(tomogMenuText));
 		tomogArrangement->addItem(getPtr(new spacer()));
-		tomogArrangement->addItem(getPtr(new Button(settingsMat)));
+		tomogArrangement->addItem(getPtr(new Button(settingsMat, tomogCallback)));
 
 		TextureButtons = getPtr(new Arrangement(ORIENT_VERTICAL, -0.9f, -0.5625f, 0.2f, 0.4375f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS));
 
@@ -1381,12 +1381,13 @@ private:
 	ObjectSettingsMenu osm = ObjectSettingsMenu(&UIElements, &TextureElements);
 	RemapTexSelector rts = RemapTexSelector(&UIElements, &TextureElements);
 	TextureLoadMenu tlm = TextureLoadMenu(&UIElements, &TextureElements);
+	TomogRefPicker tomogPicker = TomogRefPicker(&UIElements, &TextureElements);
 
 	Material* webcamMat = nullptr;
 	Material* wireMat = nullptr;
 
 	vector<Widget*> widgets;
-	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, mc, &osm, &rts, &tlm };
+	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, mc, &osm, &rts, &tlm, &tomogPicker};
 
 	drawImage renderImage;
 	GraphicsPass renderGP;
@@ -1834,6 +1835,7 @@ private:
 		std::function<void(UIItem*)> newSessionFunc = std::bind(&Application::newSession, this, placeholders::_1);
 		std::function<void(UIItem*)> webcamSettings = std::bind(&Application::createWebSettings, this, placeholders::_1);
 		std::function<void(UIItem*)> texModify = std::bind(&Application::openTextureSettingsMenu, this, placeholders::_1);
+		std::function<void(UIItem*)> tomogCallback = std::bind(&Application::createTomogSelector, this, placeholders::_1);
 
 		std::function<void(std::function<void(UIItem*)>)> openTexLoad = std::bind(&Application::createTexLoadMenu, this, placeholders::_1);
 
@@ -1844,7 +1846,7 @@ private:
 		mouseManager.addClickListener(objectMenu.getClickCallback());
 		widgets.push_back(&objectMenu);
 
-		textureMenu.setup(texModify, openTexLoad);
+		textureMenu.setup(texModify, openTexLoad, tomogCallback);
 		mouseManager.addClickListener(textureMenu.getClickCallback());
 		widgets.push_back(&textureMenu);
 
@@ -1872,6 +1874,35 @@ private:
 		cso.Tertiary = tertiaryColour;
 
 		memcpy(engine->colourBufferMapped, &cso, sizeof(cso));
+	}
+
+	void createTomogSelector(UIItem* owner) {
+		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::exitTomogSelector, this, std::placeholders::_1);
+		std::function<void(UIItem*)> finishFunc = std::bind(&Application::openTomogMenu, this, std::placeholders::_1);
+		
+		tomogPicker.setup(finishFunc, cancelFunc);
+
+		tomogPicker.clickIndex = mouseManager.addClickListener(tomogPicker.getClickCallback());
+		widgets.push_back(&tomogPicker);
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	}
+
+	void exitTomogSelector(UIItem* owner) {
+		vkDeviceWaitIdle(Engine::get()->device);
+
+		mouseManager.removeClickListener(tomogPicker.clickIndex);
+		tomogPicker.cleanup();
+
+		widgets.erase(find(widgets.begin(), widgets.end(), &tomogPicker));
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	}
+
+	void openTomogMenu(UIItem* owner) {
+		std::cout << owner->Name << std::endl;
+		
+		exitTomogSelector(owner);
 	}
 
 	//void toggleTomogMenu() {

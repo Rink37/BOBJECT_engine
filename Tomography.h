@@ -207,7 +207,7 @@ public:
 		finishCallback = finish;
 		cancelCallback = cancel;
 
-		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.35f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		imageData rb = RENDEREDBUTTON;
 		Material* renderedMat = newMaterial(&rb, "RenderBtn");
@@ -220,12 +220,12 @@ public:
 		std::vector<std::string> textureOptions{};
 		textureLL->listTextures(textureOptions);
 
-		DropdownMenu* texSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, textureLL->getFont());
+		DropdownMenu* texSelect = new DropdownMenu(0.0f, 0.0f, 1.0f, 1.0f / 9.0f, renderedMat, visibleMat, textureLL->getFont());
 		texSelect->addOptions(textureOptions);
 		texSelect->setSelectCallback(std::bind(&TomogRefPicker::setTexName, this, std::placeholders::_1));
 		texSelect->setOptionIndex(optionIndex);
 
-		TextBox* mainText = new TextBox(textureLL->getFont(), 0.0f, 0.0f, 8.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
+		TextBox* mainText = new TextBox(textureLL->getFont(), 0.0f, 0.0f, 1.0f, 1.0f / 9.0f, 24, ARRANGE_START, ARRANGE_CENTER);
 		mainText->addText("Select a reference texture:");
 
 		totalArrangement->addItem(getPtr(mainText));
@@ -234,10 +234,10 @@ public:
 		imageData fb = FINISHBUTTON;
 		Material* finishMat = newMaterial(&fb, "FinishBtn");
 
-		imageData fb = CANCELBUTTON;
-		Material* cancelMat = newMaterial(&fb, "CancelBtn");
+		imageData cb = CANCELBUTTON;
+		Material* cancelMat = newMaterial(&cb, "CancelBtn");
 
-		Arrangement* finishArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 1.0f / 9.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		finishArrangement->addItem(getPtr(new Button(cancelMat, std::bind(&TomogRefPicker::cancel, this, std::placeholders::_1))));
 		finishArrangement->addItem(getPtr(new spacer()));
 		finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&TomogRefPicker::finish, this, std::placeholders::_1))));
