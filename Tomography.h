@@ -458,7 +458,7 @@ private:
 		grid->addItem(getPtr(loadedUI));
 		grid->updateDisplay();
 		UIItem* ref = grid->Items[grid->Items.size() - 1];
-		std::cout << ref->posx << " " << ref->posy << std::endl;
+		//std::cout << ref->posx << " " << ref->posy << std::endl;
 		deleteButton->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
 		deleteButton->updateDisplay();
 		canvas.push_back(getPtr(deleteButton));

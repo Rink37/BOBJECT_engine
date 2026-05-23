@@ -1916,14 +1916,14 @@ private:
 		}
 		updateVisibleObjects();
 
+		exitTomogSelector(owner);
+
 		tomogUI.clickIdx = mouseManager.addClickListener(tomogUI.getClickCallback());
 		widgets.push_back(&tomogUI);
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 
 		tomogActive = true;
-
-		exitTomogSelector(owner);
 	}
 
 	//void toggleTomogMenu() {
@@ -1976,6 +1976,8 @@ private:
 
 		std::function<void(UIItem*)> addTex = textureMenu.getAddTexCallback();
 
+		std::cout << "Adding items to texture menu" << std::endl;
+
 		UIItem* tempItem = new spacer;
 		tempItem->Name = "TomogDiffTex";
 		addTex(tempItem);
@@ -2000,25 +2002,22 @@ private:
 	//	}
 		tomogActive = false;
 
+		std::cout << "Showing visible objects" << std::endl;
 		for (size_t i = 0; i != staticObjects.size(); i++) {
 			staticObjects[i].isVisible = true;
 		}
 		updateVisibleObjects();
-		
-	//	objectMenu.show();
-	//	surfaceMenu.show();
 
+		std::cout << "Removing click listener" << std::endl;
 		mouseManager.removeClickListener(tomogUI.clickIdx);
 
+		std::cout << "Cleaning up tomograpy UI" << std::endl;
+		tomogUI.cleanup();
 		if (find(widgets.begin(), widgets.end(), &tomogUI) != widgets.end()) {
 			widgets.erase(find(widgets.begin(), widgets.end(), &tomogUI));
 
 			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 		}
-		
-		tomogUI.cleanup();
-	//	updateDrawVariables();
-
 	}
 	
 	void toggleTomogMeshes(UIItem* owner) {
@@ -2028,7 +2027,6 @@ private:
 				staticObjects[i].isVisible = false;
 			}
 			updateVisibleObjects();
-			//objectMenu.hide();
 		}
 		else {
 			tomographyPlane->isVisible = false;
@@ -2036,7 +2034,6 @@ private:
 				staticObjects[i].isVisible = true;
 			}
 			updateVisibleObjects();
-			//objectMenu.show();
 		}
 	}
 
