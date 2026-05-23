@@ -458,7 +458,8 @@ private:
 		grid->addItem(getPtr(loadedUI));
 		grid->updateDisplay();
 		UIItem* ref = grid->Items[grid->Items.size() - 1];
-		deleteButton->update(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
+		std::cout << ref->posx << " " << ref->posy << std::endl;
+		deleteButton->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
 		deleteButton->updateDisplay();
 		canvas.push_back(getPtr(deleteButton));
 		tomographer.add_lightVector(azimuth, polar, activeImageCount-1);
@@ -496,7 +497,7 @@ private:
 		for (size_t i = 1; i != canvas.size(); i++) {
 			int currentIndex = std::stoi(canvas[i]->Name);
 			UIItem* ref = grid->Items[currentIndex];
-			canvas[i]->update(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
+			canvas[i]->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
 			canvas[i]->updateDisplay();
 		}
 	}
@@ -539,7 +540,7 @@ private:
 		else if (generateNormal && generateDiffuse) {
 			tomographer.calculate_NormAndDiff();
 			normalAvailable = true;
-			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogRefTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"));
+			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogDiffTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"));
 			renderPipeline = "TS_BF";
 		}
 		else {

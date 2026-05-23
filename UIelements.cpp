@@ -665,7 +665,7 @@ void Grid::arrangeItems() {
 	int index = 1;
 
 	for (size_t i = 0; i != Items.size(); i++) {
-		Items[i]->update(0.0f, 0.0f, 1.0f, 1.0f);
+		Items[i]->updateArrangedPosition(0.0f, 0.0f, 1.0f, 1.0f);
 		if (subArrangement->checkForSpace(Items[i])) {
 			subArrangement->addItem(Items[i]);
 		}

@@ -1218,7 +1218,7 @@ private:
 
 	void addTexture(UIItem* owner) {
 		std::string textureName = owner->Name;
-		
+
 		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
@@ -1967,9 +1967,25 @@ private:
 		delete tomographyPlane;
 		tomographyPlane = nullptr;
 		
-	//	Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
-	//	Texture* tomogNorm = UIElements.findTexPtr("TomogNormTex");
-	//	if (tomogDiff != nullptr) {
+		Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
+		Texture* tomogNorm = UIElements.findTexPtr("TomogNormTex");
+
+		TextureElements.getPtr(tomogDiff, "TomogDiffTex");
+		TextureElements.getPtr(tomogNorm, "TomogNormTex");
+
+
+		std::function<void(UIItem*)> addTex = textureMenu.getAddTexCallback();
+
+		UIItem* tempItem = new spacer;
+		tempItem->Name = "TomogDiffTex";
+		addTex(tempItem);
+		tempItem->Name = "TomogNormTex";
+		addTex(tempItem);
+		tempItem->cleanup();
+		delete tempItem;
+	//	
+	// 
+	//  if (tomogDiff != nullptr) {
 	//		sConst->loadDiffuse(tomogDiff->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0));
 	//		surfaceMenu.setDiffuse(sConst->currentDiffuse());
 	//	}
