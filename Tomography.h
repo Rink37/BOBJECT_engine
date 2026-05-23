@@ -86,7 +86,7 @@ public:
 
 		outMat = loadedMat;
 
-		ImagePanel* loadedUI = new ImagePanel(loadedMat, false);
+		UIItem* loadedUI = getPtr(new ImagePanel(loadedMat, false));
 		loadedUI->update(0.0f, 0.0f, 0.4f, 0.4f);
 		loadedUI->updateDisplay();
 
@@ -113,8 +113,9 @@ public:
 		buttons->addItem(getPtr(cancelButton));
 		buttons->addItem(getPtr(updateButton));
 
-		imageArrangement->addItem(getPtr(loadedUI));
+		imageArrangement->addItem(loadedUI);
 		imageArrangement->addItem(getPtr(polarSlider));
+		imageArrangement->arrangeItems();
 
 		column->addItem(getPtr(imageArrangement));
 		column->addItem(getPtr(buttons));
@@ -144,6 +145,7 @@ public:
 		canvas[0]->Items[0]->Items[0] = getPtr(new ImagePanel(loadedMat, false));
 		canvas[0]->Items[0]->Items[0]->update(0.0f, 0.0f, 0.4f, 0.4f);
 		canvas[0]->Items[0]->Items[0]->updateDisplay();
+		canvas[0]->Items[0]->arrangeItems();
 		canvas[0]->Items[1]->Items[1]->cleanup();
 		canvas[0]->Items[1]->Items.erase(canvas[0]->Items[1]->Items.begin() + 1);
 		
@@ -156,11 +158,16 @@ public:
 
 		customUpdate();
 		update();
-		lightDirection->update(canvas[0]->Items[0]->Items[0]->posx, canvas[0]->Items[0]->Items[0]->posy, canvas[0]->Items[0]->Items[0]->extentx, canvas[0]->Items[0]->Items[0]->extentx * canvas[0]->Items[0]->Items[0]->sqAxisRatio);
+
+		std::cout << azimuth << std::endl;
+
+		lightDirection->updateArrangedPosition(canvas[0]->Items[0]->Items[0]->posx, canvas[0]->Items[0]->Items[0]->posy, canvas[0]->Items[0]->Items[0]->extentx, canvas[0]->Items[0]->Items[0]->extentx * canvas[0]->Items[0]->Items[0]->sqAxisRatio);
 		lightDirection->setSlideValues(0.0f, 360.0f, lightDirection->getValue() - angle);
 		lightDirection->updateDisplay();
 
 		setAzimuth(lightDirection->getValue());
+
+		std::cout << azimuth << std::endl;
 	}
 
 private:
@@ -174,6 +181,8 @@ private:
 	void setAzimuth(float az) {
 		az = 90.0f - az;
 		azimuth = (az < 0) ? az + 360.0f : az;
+
+		std::cout << azimuth << std::endl;
 	}
 
 	void setPolar(float pol) {

@@ -1372,6 +1372,25 @@ public:
 		this->sqAxisRatio = ysize / xsize;
 	};
 
+	void updateArrangedPosition(float x, float y, float xsize, float ysize) {
+		this->posx = x;
+		this->posy = y;
+		this->anchorx = x;
+		this->anchory = y;
+
+		ysize *= W / H;
+
+		this->extentx = xsize;
+		this->extenty = ysize;
+
+		this->a = (xsize > ysize) ? xsize : ysize;
+		this->b = (xsize > ysize) ? ysize : xsize;
+
+		this->e = sqrtf(1 - (b / a) * (b / a));
+
+		this->sqAxisRatio = ysize / xsize;
+	};
+
 private:
 	float minValue = 0.0f;
 	float maxValue = 1.0f;

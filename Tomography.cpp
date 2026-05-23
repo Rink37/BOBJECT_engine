@@ -327,7 +327,7 @@ static Point getCurrentCorner(int cornerType, Point center, int width, int heigh
 	return currentCorner;
 }
 
-static bool match_template(Mat src, Mat* target, Size outdims) {
+static bool match_template(Mat src, Mat* target, Size outdims, float& rotation) {
 	Mat srcGray, targetGray;
 
 	vector<Point2f> srcPoints, matchPoints;
@@ -358,10 +358,12 @@ static bool match_template(Mat src, Mat* target, Size outdims) {
 	const int numGoodMatches = matches.size() * GOOD_MATCH_PERCENT;
 	matches.erase(matches.begin() + numGoodMatches, matches.end());
 
-	Mat imMatches;
-	drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
+	//Mat imMatches;
+	//drawMatches(srcGray, keypoints1, targetGray, keypoints2, matches, imMatches);
+	//cv::imshow("Matches", imMatches);
+	//cv::waitKey(0);
 
-	int minDistance = min(srcGray.size().width, srcGray.size().height) / 10;
+	int minDistance = 50000; //min(srcGray.size().width, srcGray.size().height) / 10;
 
 	for (size_t i = 0; i < matches.size(); i++) {
 		if (norm(keypoints1[matches[i].queryIdx].pt - keypoints2[matches[i].trainIdx].pt) < minDistance) {
@@ -375,7 +377,22 @@ static bool match_template(Mat src, Mat* target, Size outdims) {
 		matchPoints[i] = Point2f(matchPoints[i].x * target->cols / targetGray.cols, matchPoints[i].y * target->rows / targetGray.rows);
 	}
 	if (srcPoints.size() > 150) {
+		Point2f rotatePoint(0.0f, -1.0f);
+		Mat_<float> pm(2, 1);
+		pm << rotatePoint.x, rotatePoint.y;
+		
 		cv::Mat h = cv::estimateAffine2D(matchPoints, srcPoints);
+
+		cv::Mat_<float> hRot(2, 2);
+		hRot = h(Rect(0.0f, 0.0f, 2, 2));
+
+		pm = hRot * pm;
+
+		Point2f rotatedPoint(pm(0), pm(1));
+		std::cout << rotatedPoint << std::endl;
+
+		rotation -= (std::atan2f(rotatedPoint.y, rotatedPoint.x) - std::atan2f(-1.0f, 0.0f)) * 180.0f / 3.1415926f;
+		std::cout << rotation << std::endl;
 
 		cv::Mat matched;
 
@@ -665,7 +682,9 @@ static void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchR
 				cv::Mat backtranslation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, maxLoc.x - src_tx, 0, 1, maxLoc.y - src_ty);
 				cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
 
-				bool success = match_template(src, &currentMatch, src.size());
+				float rot = 0.0f;
+
+				bool success = match_template(src, &currentMatch, src.size(), rot);
 				if (success) {
 					finalRot = rotateAngle + rotAngle;
 					matched = currentMatch.clone();
@@ -683,7 +702,7 @@ static void match_partial(Mat src, Mat* target, float& finalRot, bool sizeMatchR
 					backtranslation_matrix = (cv::Mat_<double>(2, 3) << 1, 0, maxLoc.x - src_tx, 0, 1, maxLoc.y - src_ty);
 					cv::warpAffine(currentMatch, currentMatch, backtranslation_matrix, Size(defaultWidth, defaultHeight));
 					
-					bool success = match_template(src, &currentMatch, src.size());
+					bool success = match_template(src, &currentMatch, src.size(), rot);
 					if (success) {
 						finalRot = rotateAngle + rotAngle;
 						matched = currentMatch.clone();
@@ -1233,7 +1252,9 @@ void Tomographer::align(int index) {
 		resize(scaledAlign, scaledAlign, Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height));
 	}
 	
-	match_partial(scaledAlign, &image, item->rotation, !equalRes);
+	//match_partial(scaledAlign, &image, item->rotation, !equalRes);
+
+	match_template(scaledAlign, &image, dims, item->rotation);
 
 	item->correctedImage = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), item->name + "Matched");
 	item->correctedImage->getCVMat();
