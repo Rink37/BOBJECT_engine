@@ -284,7 +284,7 @@ public:
 		textureLL = texAssets;
 	}
 
-	void setup(std::function<void(UIItem*)> toggleFunction, MouseManager* mm, std::function<void(UIItem*)> finishTomog) {
+	void setup(std::string texName, std::function<void(UIItem*)> toggleFunction, std::function<void(UIItem*)> finishTomog, MouseManager* mm) {
 		if (isSetup) {
 			return;
 		}
@@ -320,7 +320,7 @@ public:
 		imageData rb = RENDEREDBUTTON;
 		Material* renderedMat = newMaterial(&rb, "RenderBtn");
 
-		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, -1.0f, 0.875f, 0.3f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, -1.0f, 0.75f, 0.3f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.1f, 0.01f);
 		Arrangement* loadButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.1f, 0.01f, ARRANGE_START);
@@ -353,9 +353,9 @@ public:
 		column->addItem(getPtr(buttons));
 		column->updateDisplay();
 
-		//baseDiffuse = loadList->getPtr(sConst->diffTex->copyImage(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1), "TomogDiffTex");
-		//baseDiffuse->textureImageView = baseDiffuse->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		//baseDiffuse->getCVMat();
+		baseDiffuse = loadList->getPtr(textureLL->getTexture(texName)->copyImage(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1), "TomogRefTex");
+		baseDiffuse->textureImageView = baseDiffuse->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		baseDiffuse->getCVMat();
 
 		tomographer.setLoadList(loadList);
 		tomographer.alignTemplate = baseDiffuse->texMat.clone();
@@ -539,7 +539,7 @@ private:
 		else if (generateNormal && generateDiffuse) {
 			tomographer.calculate_NormAndDiff();
 			normalAvailable = true;
-			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogDiffTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"));
+			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogRefTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"));
 			renderPipeline = "TS_BF";
 		}
 		else {
