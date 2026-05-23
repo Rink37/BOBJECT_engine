@@ -389,7 +389,7 @@ static bool match_template(Mat src, Mat* target, Size outdims, float& rotation) 
 		pm = hRot * pm;
 
 		Point2f rotatedPoint(pm(0), pm(1));
-		std::cout << rotatedPoint << std::endl;
+		//std::cout << rotatedPoint << std::endl;
 
 		rotation -= (std::atan2f(rotatedPoint.y, rotatedPoint.x) - std::atan2f(-1.0f, 0.0f)) * 180.0f / 3.1415926f;
 		//std::cout << rotation << std::endl;
@@ -625,7 +625,7 @@ static Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the no
 	Mat normal = images[0]->texMat.clone();
 	normal = Scalar(0, 0, 0);
 
-	map <string, vector<vector<float>>> tomogMatrices;
+	unordered_map <string, vector<vector<float>>> tomogMatrices;
 
 	vector<Mat> grayImages;
 
@@ -656,7 +656,7 @@ static Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the no
 				continue;
 			}
 
-			if (tomogMatrices.find(keyName) == tomogMatrices.end()) {
+			if (tomogMatrices.count(keyName) == 0) {
 				tomogMatrices.insert({ keyName, constructTomogMatrix(validIndexes, D) });
 			}
 			
@@ -686,6 +686,12 @@ static Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the no
 
 		}
 	}
+
+	int matrixCount = 0;
+	for (auto elem : tomogMatrices) {
+		matrixCount++;
+	}
+	std::cout << matrixCount << std::endl;
 
 	cvtColor(normal, normal, COLOR_RGB2BGR);
 
@@ -818,13 +824,12 @@ static std::vector<Mat> calculate_norm_diff(std::vector<TomogItem*> items) {
 				}
 			}
 			if (validIndexes.size() == 0) {
-				//std::cout << "No valid indexes" << std::endl;
 				normal.at<Vec3b>(x, y) = Vec3b(127, 127, 255);
 				diffuse.at<Vec3b>(x, y) = images[0]->texMat.at<Vec3b>(x, y);
 				continue;
 			}
 
-			if (tomogMatrices.find(keyName) == tomogMatrices.end()) {
+			if (tomogMatrices.count(keyName) == 0) {
 				tomogMatrices.insert({ keyName, constructTomogMatrix(validIndexes, D) });
 			}
 
@@ -916,7 +921,6 @@ void Tomographer::align(int index) {
 
 	Mat scaledAlign = alignTemplate.clone();
 	Size dims = scaledAlign.size();
-	//std::cout << dims << std::endl;
 	if (false) {
 		int height = 2048;
 		dims = Size(height * static_cast<float>(scaledAlign.cols) / static_cast<float>(scaledAlign.rows), height);

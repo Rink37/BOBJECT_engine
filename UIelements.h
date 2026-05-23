@@ -1089,6 +1089,9 @@ public:
 
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
 		if (isInArea(mouseX, mouseY) && eventType == LMB_PRESS) {
+			//std::cout << "Slider has been clicked on" << std::endl;
+			//std::cout << posx << " " << posy << std::endl;
+			//std::cout << extentx << " " << extenty << std::endl;
 			isHeld = true;
 			return true;
 		}

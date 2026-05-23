@@ -269,7 +269,20 @@ private:
 	}
 
 	void revertAspectRatio(UIItem* owner) {
-		std::cout << "Revert aspect ratio function called" << std::endl;
+		//std::cout << "Revert aspect ratio function called" << std::endl;
+		cv::Mat testFrame = webcamTexture::get()->webCam->getTestFrame();
+		float aspectRatio = static_cast<float>(testFrame.size().width) / static_cast<float>(testFrame.size().height);
+		//std::cout << aspectRatio << std::endl;
+		webcamTexture::get()->webCam->updateAspectRatio(aspectRatio);
+		webcamTexture::get()->recreateWebcamImage();
+		webcamView->image->mat[0]->cleanupDescriptor();
+		webcamView->image->mat[0] = new Material(webcamTexture::get());
+		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
+		reload();
+		update();
+
+		reload();
+		update();
 	}
 
 	void updateAspectRatio(float newRatio) {

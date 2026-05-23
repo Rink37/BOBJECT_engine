@@ -17,6 +17,12 @@ public:
 		webcamFrame.release();
 	}
 
+	cv::Mat getTestFrame() {
+		cv::Mat ret;
+		cap >> ret;
+		return ret;
+	}
+
 	void updateAspectRatio(float);
 
 	void setRotation(bool);

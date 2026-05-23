@@ -702,6 +702,8 @@ void Slider::calculateScreenPosition() {
 	case (ORIENT_HORIZONTAL):
 		this->windowPositions[0] = ((((posx - extentx) + (2 * extentx * slideValue) - sliderWidth) / 2.0f) + 0.5f) * W; // left position
 		this->windowPositions[1] = ((((posx - extentx) + (2 * extentx * slideValue) + sliderWidth) / 2.0f) + 0.5f) * W; // right position
+		this->windowPositions[0] = (this->windowPositions[0] < ((posx - extentx) * 0.5f + 0.5f) * W) ? ((posx - extentx) * 0.5f + 0.5f) * W : this->windowPositions[0];
+		this->windowPositions[1] = (this->windowPositions[1] > ((posx + extentx) * 0.5f + 0.5f) * W) ? ((posx + extentx) * 0.5f + 0.5f) * W : this->windowPositions[1];
 		this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H; // top position
 		this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom position
 
@@ -723,6 +725,8 @@ void Slider::calculateScreenPosition() {
 	default:
 		this->windowPositions[0] = ((((posx - extentx) + (2 * extentx * slideValue) - sliderWidth) / 2.0f) + 0.5f) * W; // left position
 		this->windowPositions[1] = ((((posx - extentx) + (2 * extentx * slideValue) + sliderWidth) / 2.0f) + 0.5f) * W; // right position
+		this->windowPositions[0] = (this->windowPositions[0] < ((posx - extentx) * 0.5f + 0.5f) * W) ? ((posx - extentx) * 0.5f + 0.5f) * W : this->windowPositions[0];
+		this->windowPositions[1] = (this->windowPositions[1] > ((posx + extentx) * 0.5f + 0.5f) * W) ? ((posx + extentx) * 0.5f + 0.5f) * W : this->windowPositions[1];
 		this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H; // top position
 		this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom position
 
