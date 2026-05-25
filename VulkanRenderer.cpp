@@ -44,6 +44,8 @@ public:
 			return;
 		}
 
+		Texture* tex = textureLL->getTexture(texName);
+
 		imageName = texName;
 
 		imageData cb = CLOSEBUTTON;
@@ -61,9 +63,30 @@ public:
 		remapArrangement->addItem(getPtr(new spacer()));
 		Button* remapBtn = new Button(settingsMat, remapFnc);
 		remapBtn->Name = texName;
+		if (tex->isNormal) {
+			if (tex->normalType) {
+				imageData tsb = TANGENTSPACE;
+				Material* tsMat = newMaterial(&tsb, "TSBtn");
+
+				Button* normalType = new Button(tsMat);
+				normalType->Name = texName;
+
+				remapArrangement->addItem(getPtr(normalType));
+			}
+			else {
+				imageData osb = OSBUTTON;
+				Material* osMat = newMaterial(&osb, "OSBtn");
+
+				Button* normalType = new Button(osMat);
+				normalType->Name = texName;
+
+				remapArrangement->addItem(getPtr(normalType));
+			}
+		}
+		
 		remapArrangement->addItem(getPtr(remapBtn));
 
-		Material* panelMat = loadList->replacePtr(new Material(textureLL->getTexture(texName)), "Image view");
+		Material* panelMat = loadList->replacePtr(new Material(tex), "Image view");
 		bool isWebcam = (texName == std::string("Webcam View"));
 		imagePanel = new ImagePanel(panelMat, isWebcam);
 
@@ -1144,12 +1167,12 @@ private:
 			loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
 			loadedTexture->isNormal = true;
 			normalType = !normalTypeToggle->activestate;
-			//if (normalType) {
-			//	std::cout << "TS" << std::endl;
-			//}
-			//else {
-			//	std::cout << "OS" << std::endl;
-			//}
+			if (normalType) {
+				std::cout << "TS" << std::endl;
+			}
+			else {
+				std::cout << "OS" << std::endl;
+			}
 			loadedTexture->normalType = normalType;
 		}
 		else {
