@@ -729,26 +729,6 @@ public:
 		genNormArrangement->addItem(getPtr(genNormText));
 		genNormArrangement->addItem(getPtr(new spacer()));
 		genNormArrangement->addItem(getPtr(new Button(plusMat, std::bind(&ObjectSettingsMenu::createNormalMap, this, std::placeholders::_1))));
-		
-		//if (textureLL->findTexPtr(OSNormName) || textureLL->findTexPtr(TSNormName)) {
-		//	Arrangement* switchNormArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-		//	DropdownMenu* normSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
-		//	std::vector<std::string> normNames{};
-		//	if (textureLL->findTexPtr(OSNormName)) {
-		//		normNames.push_back(OSNormName);
-		//	}
-		//	if (textureLL->findTexPtr(TSNormName)) {
-		//		normNames.push_back(TSNormName);
-		//	}
-		//	normSelect->addOptions(normNames);
-		//	normSelect->setOptionIndex(0);
-		//	normSelect->setSelectCallback(std::bind(&ObjectSettingsMenu::selectNormType, this, std::placeholders::_1));
-
-		//	switchNormArrangement->addItem(getPtr(normSelect));
-		//	switchNormArrangement->addItem(getPtr(new Button(settingsMat, std::bind(&ObjectSettingsMenu::changeNormalMapType, this, std::placeholders::_1))));
-
-		//	totalArrangement->addItem(getPtr(switchNormArrangement));
-		//}
 
 		totalArrangement->addItem(getPtr(genNormArrangement));
 
@@ -880,76 +860,6 @@ private:
 		EdgeFillImg->cleanup();
 		OS_EdgeFill.cleanup();
 	}
-
-	//void changeNormalMapType(UIItem* owner) {
-	//	std::string normalName = "";
-	//	std::string outNormalName = "";
-
-	//	switch (normalType) {
-	//	case (0):
-	//		normalName = OSNormName;
-	//		outNormalName = TSNormName;
-	//		break;
-	//	case (1):
-	//		normalName = TSNormName;
-	//		outNormalName = OSNormName;
-	//		break;
-	//	default:
-	//		break;
-	//	}
-
-	//	Texture* norm = textureLL->getTexture(normalName);
-	//	Texture* res = nullptr;
-
-	//	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-	//	NormalGen generator(loadList);
-	//	switch (normalType) {
-	//	case (0):
-	//		generator.copyOSImage(norm);
-	//		generator.setupTSConverter();
-	//		commandBuffer = generator.convertOStoTS(commandBuffer, obj->mesh);
-	//		res = generator.tangentSpaceMap.colour;
-	//		break;
-	//	case (1):
-	//		generator.copyTSImage(norm);
-	//		generator.setupOSConverter();
-	//		commandBuffer = generator.convertTStoOS(commandBuffer, obj->mesh);
-	//		res = generator.objectSpaceMap.colour;
-	//		break;
-	//	default:
-	//		Engine::get()->endSingleTimeCommands(commandBuffer);
-	//		return;
-	//	}
-	//	Engine::get()->endSingleTimeCommands(commandBuffer);
-
-	//	Texture* outNorm = res->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
-	//		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	//		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-	//		VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
-
-	//	outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-
-	//	outNorm->isNormal = true;
-	//	outNorm->normalType = !norm->normalType;
-
-	//	if (addTextureFunc != nullptr && !textureLL->checkForTexture(outNormalName)) {
-	//		owner->Name = outNormalName;
-	//		addTextureFunc(owner);
-	//	}
-		
-	//	textureLL->replacePtr(outNorm, outNormalName);
-
-	//	switch (normalType) {
-	//	case (0):
-	//		generator.cleanupTS();
-	//		break;
-	//	case (1):
-	//		generator.cleanupOS();
-	//		break;
-	//	default:
-	//		return;
-	//	}
-	//}
 };
 
 class ObjectMenu : public Widget {
@@ -1077,6 +987,9 @@ public:
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		
+		imageData ub = UNRENDEREDBUTTON;
+		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
+
 		imageData rb = RENDEREDBUTTON;
 		Material* renderedMat = newMaterial(&rb, "RenderBtn");
 
@@ -1086,18 +999,27 @@ public:
 		imageData fb = FINISHBUTTON;
 		Material* finishMat = newMaterial(&fb, "FinishBtn");
 
-		DropdownMenu* objectSelector = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getFont());
+		DropdownMenu* objectSelector = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getFont());
 		objectSelector->addOptions(objects);
 		objectSelector->setSelectCallback(std::bind(&SpaceTransitionMenu::setObjName, this, std::placeholders::_1));
 		objectSelector->setOptionIndex(0);
 
 		objectName = objects[0];
 
+		Arrangement* replaceArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		TextBox* replaceText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		replaceText->addText("In place?");
+		replaceArrangement->addItem(getPtr(replaceText));
+
+		overwriteToggle = getPtr(new Checkbox(visibleMat, invisibleMat));
+		replaceArrangement->addItem(overwriteToggle);
+		
 		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		finishArrangement->addItem(getPtr(new spacer));
 		finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&SpaceTransitionMenu::exit, this, std::placeholders::_1))));
 
 		totalArrangement->addItem(getPtr(objectSelector));
+		totalArrangement->addItem(getPtr(replaceArrangement));
 		totalArrangement->addItem(getPtr(finishArrangement));
 
 		totalArrangement->arrangeItems();
@@ -1110,6 +1032,8 @@ public:
 	int clickIndex = 0;
 private:
 	LoadList* textureLL = nullptr;
+
+	UIItem* overwriteToggle = nullptr;
 
 	std::string texName = "";
 	std::string objectName = "";
@@ -1138,6 +1062,8 @@ private:
 			return;
 		}
 
+		overwrite = overwriteToggle->activestate;
+
 		Texture* norm = textureLL->getTexture(texName);
 		outNormalName = "";
 
@@ -1146,10 +1072,10 @@ private:
 		}
 		else {
 			if (norm->normalType) {
-				outNormalName = texName + "_TS";
+				outNormalName = texName + "_OS";
 			}
 			else {
-				outNormalName = texName + "_OS";
+				outNormalName = texName + "_TS";
 			}
 		}
 		
