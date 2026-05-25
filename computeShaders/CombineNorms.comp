@@ -17,16 +17,31 @@ void main(){
 	vec3 baseNorm = imageLoad(baseOSNorm, pixelCoords).rgb;
 	vec3 layerNorm = imageLoad(layerOSNorm, pixelCoords).rgb;
 
-	vec4 pixel = vec4(1.0);
+	vec4 pixel = vec4(0.0, 0.0, 0.0, 1.0);
 
 	if (refNorm == vec3(0.0, 0.0, 0.0)){
-		imageStore(resultNorm, pixelCoords, pixel);
+		imageStore(baseNorm, pixelCoords, pixel);
 		return;
 	}
 
-	refNorm = normalize(refNorm * 2.0 - 1.0);
-	baseNorm = normalize(baseNorm * 2.0 - 1.0);
-	layerNorm = normalize(layerNorm * 2.0 - 1.0);
+	refNorm = refNorm * 2.0 - 1.0;
+	if (length(refNorm) == 0.0){
+		imageStore(baseNorm, pixelCoords, pixel);
+		return;
+	}
+	refNorm = normalize(refNorm);
+	baseNorm = baseNorm * 2.0 - 1.0;
+	if (length(baseNorm) == 0.0){
+		imageStore(baseNorm, pixelCoords, pixel);
+		return;
+	}
+	baseNorm = normalize(baseNorm);
+	layerNorm = layerNorm * 2.0 - 1.0;
+	if (length(layerNorm) == 0.0){
+		imageStore(baseNorm, pixelCoords, pixel);
+		return;
+	}
+	layerNorm = normalize(layerNorm);
 
 	vec3 b = cross(refNorm, baseNorm); // This vector is orthogonal to both the reference and base normal vectors
 	float angle = acos(dot(refNorm, baseNorm)); // The angle between the reference and base normal vectors
@@ -53,7 +68,12 @@ void main(){
 	float x_2 = sin(angle)/length(w);
 
 	vec3 rotatedLayerPerpB = length(layerPerpB) * (x_1 * layerPerpB + x_2 * w);
-	vec3 rotatedLayer = normalize(rotatedLayerPerpB + layerAlongB);
+	vec3 rotatedLayer = rotatedLayerPerpB + layerAlongB;
+	if (length(rotatedLayer) == 0.0){
+		imageStore(baseNorm, pixelCoords, pixel);
+		return;
+	}
+	rotatedLayer = normalize(rotatedLayer);
 
 	rotatedLayer *= 0.5;
 	rotatedLayer += 0.5;

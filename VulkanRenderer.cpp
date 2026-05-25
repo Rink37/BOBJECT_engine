@@ -18,6 +18,7 @@
 
 #include"include/OS_EdgeFill.h"
 #include"include/BakedImages.h"
+#include"include/CombineNorms.h"
 
 using namespace cv;
 using namespace std;
@@ -35,7 +36,7 @@ public:
 		textureLL = textureAssets;
 	}
 
-	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc) {
+	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc) {
 		if (isSetup) {
 			return;
 		}
@@ -64,6 +65,10 @@ public:
 		Button* remapBtn = new Button(settingsMat, remapFnc);
 		remapBtn->Name = texName;
 		if (tex->isNormal) {
+			Button* mapMixer = new Button(settingsMat, mixNormalsFnc);
+			mapMixer->Name = texName;
+			remapArrangement->addItem(getPtr(mapMixer));
+
 			if (tex->normalType) {
 				imageData tsb = TANGENTSPACE;
 				Material* tsMat = newMaterial(&tsb, "TSBtn");
@@ -964,6 +969,279 @@ private:
 
 };
 
+class NormalMixer : public Widget {
+public:
+	NormalMixer(LoadList* assets, LoadList* texLL) {
+		loadList = assets;
+		textureLL = texLL;
+	}
+
+	void setup(std::string tName, std::vector<std::string> objects, std::function<Mesh*(std::string)> getMeshFunc, std::function<void(UIItem*)> exitFunc) {
+		if (isSetup) {
+			return;
+		}
+
+		textureName = tName;
+
+		getMesh = getMeshFunc;
+		exitCallback = exitFunc;
+
+		std::vector<std::string> textures{};
+		textureLL->listTextures(textures);
+
+		auto it = find(textures.begin(), textures.end(), textureName);
+		if (it != textures.end()) {
+			textures.erase(it);
+		}
+
+		imageData ub = UNRENDEREDBUTTON;
+		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
+
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+
+		imageData fb = FINISHBUTTON;
+		Material* finishMat = newMaterial(&fb, "FinishBtn");
+
+		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		TextBox* topText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		topText->addText("Mixing " + textureName + " with:");
+
+		totalArrangement->addItem(getPtr(topText));
+
+		DropdownMenu* textureSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getFont());
+		textureSelect->addOptions(textures);
+		textureSelect->setOptionIndex(0);
+		textureSelect->setSelectCallback(std::bind(&NormalMixer::setMixTex, this, std::placeholders::_1));
+		mixTexName = textures[0];
+
+		totalArrangement->addItem(getPtr(textureSelect));
+
+		TextBox* midText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		midText->addText("Based on object:");
+
+		totalArrangement->addItem(getPtr(midText));
+
+		DropdownMenu* objSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getFont());
+		objSelect->addOptions(objects);
+		objSelect->setOptionIndex(0);
+		objSelect->setSelectCallback(std::bind(&NormalMixer::setObject, this, std::placeholders::_1));
+		objectName = objects[0];
+
+		totalArrangement->addItem(getPtr(objSelect));
+
+		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		finishArrangement->addItem(getPtr(new spacer()));
+		finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&NormalMixer::mixNorms, this, std::placeholders::_1))));
+
+		totalArrangement->addItem(getPtr(finishArrangement));
+		totalArrangement->arrangeItems();
+
+		canvas.push_back(getPtr(totalArrangement));
+
+		isSetup = true;
+	}
+
+	int clickIndex = 0;
+private:
+	LoadList* textureLL = nullptr;
+
+	std::string textureName = "";
+	std::string mixTexName = "";
+
+	std::string objectName = "";
+
+	std::vector<std::string> createdTextures{};
+
+	std::function<Mesh* (std::string)> getMesh = nullptr;
+	std::function<void(UIItem*)> exitCallback = nullptr;
+
+	void createRefNormal(std::string& texName) {
+		Mesh* mesh = getMesh(objectName);
+
+		NormalGen generator(textureLL);
+		generator.setupOSExtractor();
+		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+		commandBuffer = generator.drawOSMap(commandBuffer, mesh);
+		Engine::get()->endSingleTimeCommands(commandBuffer);
+
+		Texture* EdgeFillImg = generator.objectSpaceMap.colour->copyTexture(generator.objectSpaceMap.colour->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+		filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+		OS_EdgeFill.filterImage();
+		OS_EdgeFill.filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		OS_EdgeFill.filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+		Texture* OSNormTex = OS_EdgeFill.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
+
+		OSNormTex->textureImageView = OSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+		OSNormTex->isNormal = true;
+		OSNormTex->normalType = false;
+
+		uint8_t existsIndex = 0;
+		std::string modifiedOSNormName = "TempOSNorm";
+
+		while (textureLL->checkForTexture(modifiedOSNormName)) {
+			modifiedOSNormName = "TempOSNorm_" + to_string(existsIndex);
+			existsIndex++;
+		}
+		textureLL->getPtr(OSNormTex, modifiedOSNormName);
+
+		createdTextures.push_back(modifiedOSNormName);
+
+		generator.cleanupGenOS();
+		EdgeFillImg->cleanup();
+		OS_EdgeFill.cleanup();
+
+		texName = modifiedOSNormName;
+	}
+
+	void changeNormalMapType(std::string tName) {
+		if (getMesh == nullptr) {
+			return;
+		}
+
+		Texture* norm = textureLL->getTexture(tName);
+		std::string outNormalName = tName + "_OS";
+
+		Texture* res = nullptr;
+
+		Mesh* mesh = getMesh(objectName);
+
+		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+		NormalGen generator(loadList);
+
+		if (norm->normalType) {
+			generator.copyTSImage(norm);
+			generator.setupOSConverter();
+			commandBuffer = generator.convertTStoOS(commandBuffer, mesh);
+			res = generator.objectSpaceMap.colour;
+		}
+		else {
+			generator.copyOSImage(norm);
+			generator.setupTSConverter();
+			commandBuffer = generator.convertOStoTS(commandBuffer, mesh);
+			res = generator.tangentSpaceMap.colour;
+		}
+
+		Engine::get()->endSingleTimeCommands(commandBuffer);
+
+		Texture* outNorm = nullptr;
+
+		if (norm->normalType) {
+			outNorm = res->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
+
+			outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		} else {
+			Texture* EdgeFillImg = generator.objectSpaceMap.colour->copyTexture(generator.objectSpaceMap.colour->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+			filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+			OS_EdgeFill.filterImage();
+			OS_EdgeFill.filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			OS_EdgeFill.filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+			outNorm = OS_EdgeFill.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
+
+			outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+			OS_EdgeFill.cleanup();
+		}
+
+		outNorm->isNormal = true;
+		outNorm->normalType = !norm->normalType;
+
+		textureLL->replacePtr(outNorm, outNormalName);
+
+		createdTextures.push_back(outNormalName);
+
+		if (norm->normalType) {
+			generator.cleanupOS();
+		}
+		else {
+			generator.cleanupTS();
+		}
+	}
+
+	void setMixTex(UIItem* owner) {
+		mixTexName = owner->text;
+	}
+
+	void setObject(UIItem* owner) {
+		objectName = owner->text;
+	}
+
+	void mixNorms(UIItem* owner) {
+		std::cout << textureName << " " << mixTexName << std::endl;
+
+		Texture* baseNorm = textureLL->getTexture(textureName);
+		Texture* layerNorm = textureLL->getTexture(mixTexName);
+
+		bool resultNormalType = baseNorm->normalType;
+
+		if (!baseNorm->isNormal || !layerNorm->isNormal) {
+			return;
+		}
+		if (baseNorm->normalType) {
+			changeNormalMapType(textureName);
+			baseNorm = textureLL->getTexture(textureName + "_OS");
+		}
+		if (layerNorm->normalType) {
+			changeNormalMapType(mixTexName);
+			layerNorm = textureLL->getTexture(mixTexName + "_OS");
+		}
+
+		std::string refName = "";
+		createRefNormal(refName);
+
+		uint32_t width = baseNorm->texWidth;
+		uint32_t height = baseNorm->texHeight;
+
+		Texture* refNorm = textureLL->getTexture(refName);
+
+		filter normMixer(std::vector<Texture*>{refNorm->copyTexture(refNorm->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height),
+											   baseNorm->copyTexture(baseNorm->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height),
+											   layerNorm->copyTexture(layerNorm->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height)},
+											   new COMBINENORMSSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+		normMixer.filterImage();
+
+		Texture* mixedNorm = normMixer.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
+
+		mixedNorm->isNormal = true;
+		mixedNorm->normalType = resultNormalType;
+
+		mixedNorm->textureImageView = mixedNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+		textureLL->replacePtr(mixedNorm, textureName);
+
+		normMixer.cleanup();
+		for (std::string tName : createdTextures) {
+			textureLL->deleteTexture(tName);
+		}
+
+		if (resultNormalType) {
+			std::cout << "Attempting to change normal map type" << std::endl;
+			changeNormalMapType(textureName);
+		}
+
+		owner->Name = textureName;
+		if (exitCallback != nullptr) {
+			exitCallback(owner);
+		}
+	}
+};
+
 class SpaceTransitionMenu : public Widget {
 public:
 	SpaceTransitionMenu(LoadList* assets, LoadList* texLL) {
@@ -990,11 +1268,11 @@ public:
 		imageData ub = UNRENDEREDBUTTON;
 		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
 
-		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = newMaterial(&rb, "RenderBtn");
-
 		imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+
+		imageData rb = RENDEREDBUTTON;
+		Material* renderedMat = newMaterial(&rb, "RenderBtn");
 
 		imageData fb = FINISHBUTTON;
 		Material* finishMat = newMaterial(&fb, "FinishBtn");
@@ -1101,12 +1379,32 @@ private:
 
 		Engine::get()->endSingleTimeCommands(commandBuffer);
 
-		Texture* outNorm = res->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
+		Texture* outNorm = nullptr;
 
-		outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		if (norm->normalType) {
+			outNorm = res->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
+
+			outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		}
+		else {
+			Texture* EdgeFillImg = res->copyTexture(res->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+			filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+			OS_EdgeFill.filterImage();
+			OS_EdgeFill.filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			OS_EdgeFill.filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+			outNorm = OS_EdgeFill.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
+
+			outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+			OS_EdgeFill.cleanup();
+		}
 
 		outNorm->isNormal = true;
 		outNorm->normalType = !norm->normalType;
@@ -1529,12 +1827,13 @@ private:
 	TextureLoadMenu tlm = TextureLoadMenu(&UIElements, &TextureElements);
 	TomogRefPicker tomogPicker = TomogRefPicker(&UIElements, &TextureElements);
 	SpaceTransitionMenu stm = SpaceTransitionMenu(&UIElements, &TextureElements);
+	NormalMixer normalMixer = NormalMixer(&UIElements, &TextureElements);
 
 	Material* webcamMat = nullptr;
 	Material* wireMat = nullptr;
 
 	vector<Widget*> widgets;
-	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, mc, &osm, &rts, &tlm, &tomogPicker, &stm};
+	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, mc, &osm, &rts, &tlm, &tomogPicker, &stm, &normalMixer};
 
 	drawImage renderImage;
 	GraphicsPass renderGP;
@@ -1801,7 +2100,7 @@ private:
 	}
 
 	void openTextureSettingsMenu(UIItem* owner) {
-		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1));
+		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1));
 
 		textureSettings.clickIndex = mouseManager.addClickListener(textureSettings.getClickCallback());
 
@@ -2030,6 +2329,37 @@ private:
 		return staticObjects[objectMenu.ObjectMap.at(objName)].mesh;
 	}
 
+	void createNormalMixer(UIItem* owner) {
+		std::vector<std::string> objects{};
+		for (auto elem : objectMenu.ObjectMap) {
+			objects.push_back(elem.first);
+		}
+
+		std::string texName = owner->Name;
+		closeTextureSettingsMenu(owner);
+
+		std::function<Mesh* (std::string)> getMeshFnc = std::bind(&Application::getObj, this, std::placeholders::_1);
+
+		normalMixer.setup(texName, objects, getMeshFnc, std::bind(&Application::exitNormalMixer, this, std::placeholders::_1));
+		normalMixer.clickIndex = mouseManager.addClickListener(normalMixer.getClickCallback());
+		widgets.push_back(&normalMixer);
+	}
+
+	void exitNormalMixer(UIItem* owner) {
+		vkDeviceWaitIdle(Engine::get()->device);
+
+		UIItem* temp = new spacer;
+		temp->Name = owner->Name;
+		mouseManager.removeClickListener(normalMixer.clickIndex);
+		normalMixer.cleanup();
+
+		openTextureSettingsMenu(temp);
+		temp->cleanup();
+		delete temp;
+
+		widgets.erase(find(widgets.begin(), widgets.end(), &normalMixer));
+	}
+
 	void createSpaceTransitionMenu(UIItem* owner) {
 		std::vector<std::string> objects{};
 		for (auto elem : objectMenu.ObjectMap) {
@@ -2160,6 +2490,8 @@ private:
 		
 		Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
 		Texture* tomogNorm = UIElements.findTexPtr("TomogNormTex");
+		tomogNorm->isNormal = true;
+		tomogNorm->normalType = true;
 
 		TextureElements.getPtr(tomogDiff, "TomogDiffTex");
 		TextureElements.getPtr(tomogNorm, "TomogNormTex");
@@ -2268,7 +2600,7 @@ private:
 			
 			closeTextureSettingsMenu(owner);
 			
-			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr);
+			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr);
 
 			textureSettings.clickIndex = mouseManager.addClickListener(textureSettings.getClickCallback());
 
