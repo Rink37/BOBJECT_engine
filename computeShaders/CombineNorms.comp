@@ -1,0 +1,64 @@
+#version 450
+
+#define PI 3.1415926538
+#define HPI 1.5707963267
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout(binding = 0, rgba8) uniform readonly image2D referenceOSNorm; // The unmodified os normal map of the mesh
+layout(binding = 1, rgba8) uniform readonly image2D baseOSNorm; // The base normal which another normal map will be layered onto
+layout(binding = 2, rgba8) uniform readonly image2D layerOSNorm; // The normal which will be layered on top of the base normal
+layout(binding = 3, rgba8) uniform image2D resultNorm;
+
+void main(){
+	// This function combines two different OS normals by rotating the layer norm by the same rotation that would transform the mesh normals into the base normal
+
+	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+	vec3 refNorm = imageLoad(referenceOSNorm, pixelCoords).rgb;
+	vec3 baseNorm = imageLoad(baseOSNorm, pixelCoords).rgb;
+	vec3 layerNorm = imageLoad(layerOSNorm, pixelCoords).rgb;
+
+	vec4 pixel = vec4(1.0);
+
+	if (refNorm == vec3(0.0, 0.0, 0.0)){
+		imageStore(resultNorm, pixelCoords, pixel);
+		return;
+	}
+
+	refNorm = normalize(refNorm * 2.0 - 1.0);
+	baseNorm = normalize(baseNorm * 2.0 - 1.0);
+	layerNorm = normalize(layerNorm * 2.0 - 1.0);
+
+	vec3 b = cross(refNorm, baseNorm); // This vector is orthogonal to both the reference and base normal vectors
+	float angle = acos(dot(refNorm, baseNorm)); // The angle between the reference and base normal vectors
+
+	bool flipNorm = false;
+	if (angle > HPI){
+		angle -= PI;
+		flipNorm = true;
+	}
+
+	if (!flipNorm && refNorm == baseNorm){
+		angle = -angle;
+	} else if (flipNorm && refNorm == -baseNorm){
+		angle = -angle;
+	}
+
+	// The components of the layer norm along the vector orthogonal to both reference and base normal vectors
+	vec3 layerAlongB = (dot(b, layerNorm) / dot(b, b)) * b;
+	vec3 layerPerpB = layerNorm - layerAlongB;
+
+	vec3 w = cross(b, layerPerpB);
+
+	float x_1 = cos(angle)/length(layerPerpB);
+	float x_2 = sin(angle)/length(w);
+
+	vec3 rotatedLayerPerpB = length(layerPerpB) * (x_1 * layerPerpB + x_2 * w);
+	vec3 rotatedLayer = normalize(rotatedLayerPerpB + layerAlongB);
+
+	rotatedLayer *= 0.5;
+	rotatedLayer += 0.5;
+
+	pixel.rgb = rotatedLayer;
+
+	imageStore(resultNorm, pixelCoords, pixel);
+}

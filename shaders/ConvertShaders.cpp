@@ -269,6 +269,7 @@ int main(){
 	compileAndWriteShaders(basepath, string("RGB_2_YCbCr"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("CreateCoordMap"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("CoordMapRead"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("CombineNorms"), 0, outRoot);
 
 	basepath = rootPath+string("/shaders/");
 	compileAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);
