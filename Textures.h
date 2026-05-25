@@ -28,6 +28,9 @@ struct Texture {
 	VkMemoryPropertyFlags textureMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	uint32_t mipLevels = 0;
 
+	bool isNormal = false;
+	bool normalType = false; // false represents an OS normal, true represents a TS normal
+
 	bool hasStencilComponent(VkFormat);
 	void createImage(VkSampleCountFlagBits, VkMemoryPropertyFlags);
 	

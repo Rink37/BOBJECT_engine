@@ -836,10 +836,20 @@ private:
 		
 		OSNormTex->textureImageView = OSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-		textureLL->replacePtr(OSNormTex, OSNormName);
+		OSNormTex->isNormal = true;
+		OSNormTex->normalType = false;
+
+		uint8_t existsIndex = 0;
+		std::string modifiedOSNormName = OSNormName;
+
+		while (textureLL->checkForTexture(modifiedOSNormName)) {
+			modifiedOSNormName = OSNormName + '_' + to_string(existsIndex);
+			existsIndex++;
+		}
+		textureLL->getPtr(OSNormTex, modifiedOSNormName);
 
 		if (addTextureFunc != nullptr) {
-			owner->Name = OSNormName;
+			owner->Name = modifiedOSNormName;
 			addTextureFunc(owner);
 		}
 
@@ -895,6 +905,9 @@ private:
 			VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
 
 		outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+		outNorm->isNormal = true;
+		outNorm->normalType = !norm->normalType;
 
 		if (addTextureFunc != nullptr && !textureLL->checkForTexture(outNormalName)) {
 			owner->Name = outNormalName;
@@ -1065,6 +1078,15 @@ public:
 		imageData fb = FINISHBUTTON;
 		Material* finishedMat = newMaterial(&fb, "FinishBtn");
 
+		imageData osb = OSBUTTON;
+		Material* osMat = newMaterial(&osb, "OSBtn");
+
+		imageData tsb = TANGENTSPACE;
+		Material* tsMat = newMaterial(&tsb, "TSBtn");
+
+		normalTypeToggle = getPtr(new Checkbox(osMat, tsMat));
+		normalTypeToggle->setVisibility(false);
+
 		DropdownMenu* loadOption = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, newFont);
 		loadOption->addOptions(loadOptions);
 		loadOption->setSelectCallback(std::bind(&TextureLoadMenu::setOptionCallback, this, std::placeholders::_1));
@@ -1075,6 +1097,7 @@ public:
 
 		Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.0f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		finishButtons->addItem(getPtr(new spacer()));
+		finishButtons->addItem(normalTypeToggle);
 		finishButtons->addItem(getPtr(new Button(finishedMat, std::bind(&TextureLoadMenu::finishCallback, this, std::placeholders::_1))));
 
 		mainArrangement->addItem(getPtr(finishButtons));
@@ -1096,7 +1119,10 @@ private:
 	std::string textureName = "";
 	std::string fileName = "";
 
+	UIItem* normalTypeToggle = nullptr;
+
 	bool isNormalized = false;
+	bool normalType = false;
 
 	std::function<void(UIItem*)> updateTextureMenu = nullptr;
 	std::function<void(UIItem*)> exitCallback = nullptr; 
@@ -1104,9 +1130,11 @@ private:
 	void setOptionCallback(UIItem* owner) {
 		if (owner->text == std::string("Colour")) {
 			isNormalized = false;
+			normalTypeToggle->setVisibility(false);
 		}
 		else {
 			isNormalized = true;
+			normalTypeToggle->setVisibility(true);
 		}
 	}
 
@@ -1114,6 +1142,15 @@ private:
 		imageTexture* loadedTexture = nullptr;
 		if (isNormalized) {
 			loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
+			loadedTexture->isNormal = true;
+			normalType = !normalTypeToggle->activestate;
+			//if (normalType) {
+			//	std::cout << "TS" << std::endl;
+			//}
+			//else {
+			//	std::cout << "OS" << std::endl;
+			//}
+			loadedTexture->normalType = normalType;
 		}
 		else {
 			loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
