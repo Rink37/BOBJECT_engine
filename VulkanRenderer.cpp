@@ -35,7 +35,7 @@ public:
 		textureLL = textureAssets;
 	}
 
-	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc) {
+	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc) {
 		if (isSetup) {
 			return;
 		}
@@ -68,7 +68,7 @@ public:
 				imageData tsb = TANGENTSPACE;
 				Material* tsMat = newMaterial(&tsb, "TSBtn");
 
-				Button* normalType = new Button(tsMat);
+				Button* normalType = new Button(tsMat, transitionTypeFnc);
 				normalType->Name = texName;
 
 				remapArrangement->addItem(getPtr(normalType));
@@ -77,7 +77,7 @@ public:
 				imageData osb = OSBUTTON;
 				Material* osMat = newMaterial(&osb, "OSBtn");
 
-				Button* normalType = new Button(osMat);
+				Button* normalType = new Button(osMat, transitionTypeFnc);
 				normalType->Name = texName;
 
 				remapArrangement->addItem(getPtr(normalType));
@@ -730,25 +730,25 @@ public:
 		genNormArrangement->addItem(getPtr(new spacer()));
 		genNormArrangement->addItem(getPtr(new Button(plusMat, std::bind(&ObjectSettingsMenu::createNormalMap, this, std::placeholders::_1))));
 		
-		if (textureLL->findTexPtr(OSNormName) || textureLL->findTexPtr(TSNormName)) {
-			Arrangement* switchNormArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-			DropdownMenu* normSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
-			std::vector<std::string> normNames{};
-			if (textureLL->findTexPtr(OSNormName)) {
-				normNames.push_back(OSNormName);
-			}
-			if (textureLL->findTexPtr(TSNormName)) {
-				normNames.push_back(TSNormName);
-			}
-			normSelect->addOptions(normNames);
-			normSelect->setOptionIndex(0);
-			normSelect->setSelectCallback(std::bind(&ObjectSettingsMenu::selectNormType, this, std::placeholders::_1));
+		//if (textureLL->findTexPtr(OSNormName) || textureLL->findTexPtr(TSNormName)) {
+		//	Arrangement* switchNormArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		//	DropdownMenu* normSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
+		//	std::vector<std::string> normNames{};
+		//	if (textureLL->findTexPtr(OSNormName)) {
+		//		normNames.push_back(OSNormName);
+		//	}
+		//	if (textureLL->findTexPtr(TSNormName)) {
+		//		normNames.push_back(TSNormName);
+		//	}
+		//	normSelect->addOptions(normNames);
+		//	normSelect->setOptionIndex(0);
+		//	normSelect->setSelectCallback(std::bind(&ObjectSettingsMenu::selectNormType, this, std::placeholders::_1));
 
-			switchNormArrangement->addItem(getPtr(normSelect));
-			switchNormArrangement->addItem(getPtr(new Button(settingsMat, std::bind(&ObjectSettingsMenu::changeNormalMapType, this, std::placeholders::_1))));
+		//	switchNormArrangement->addItem(getPtr(normSelect));
+		//	switchNormArrangement->addItem(getPtr(new Button(settingsMat, std::bind(&ObjectSettingsMenu::changeNormalMapType, this, std::placeholders::_1))));
 
-			totalArrangement->addItem(getPtr(switchNormArrangement));
-		}
+		//	totalArrangement->addItem(getPtr(switchNormArrangement));
+		//}
 
 		totalArrangement->addItem(getPtr(genNormArrangement));
 
@@ -881,75 +881,75 @@ private:
 		OS_EdgeFill.cleanup();
 	}
 
-	void changeNormalMapType(UIItem* owner) {
-		std::string normalName = "";
-		std::string outNormalName = "";
+	//void changeNormalMapType(UIItem* owner) {
+	//	std::string normalName = "";
+	//	std::string outNormalName = "";
 
-		switch (normalType) {
-		case (0):
-			normalName = OSNormName;
-			outNormalName = TSNormName;
-			break;
-		case (1):
-			normalName = TSNormName;
-			outNormalName = OSNormName;
-			break;
-		default:
-			break;
-		}
+	//	switch (normalType) {
+	//	case (0):
+	//		normalName = OSNormName;
+	//		outNormalName = TSNormName;
+	//		break;
+	//	case (1):
+	//		normalName = TSNormName;
+	//		outNormalName = OSNormName;
+	//		break;
+	//	default:
+	//		break;
+	//	}
 
-		Texture* norm = textureLL->getTexture(normalName);
-		Texture* res = nullptr;
+	//	Texture* norm = textureLL->getTexture(normalName);
+	//	Texture* res = nullptr;
 
-		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-		NormalGen generator(loadList);
-		switch (normalType) {
-		case (0):
-			generator.copyOSImage(norm);
-			generator.setupTSConverter();
-			commandBuffer = generator.convertOStoTS(commandBuffer, obj->mesh);
-			res = generator.tangentSpaceMap.colour;
-			break;
-		case (1):
-			generator.copyTSImage(norm);
-			generator.setupOSConverter();
-			commandBuffer = generator.convertTStoOS(commandBuffer, obj->mesh);
-			res = generator.objectSpaceMap.colour;
-			break;
-		default:
-			Engine::get()->endSingleTimeCommands(commandBuffer);
-			return;
-		}
-		Engine::get()->endSingleTimeCommands(commandBuffer);
+	//	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+	//	NormalGen generator(loadList);
+	//	switch (normalType) {
+	//	case (0):
+	//		generator.copyOSImage(norm);
+	//		generator.setupTSConverter();
+	//		commandBuffer = generator.convertOStoTS(commandBuffer, obj->mesh);
+	//		res = generator.tangentSpaceMap.colour;
+	//		break;
+	//	case (1):
+	//		generator.copyTSImage(norm);
+	//		generator.setupOSConverter();
+	//		commandBuffer = generator.convertTStoOS(commandBuffer, obj->mesh);
+	//		res = generator.objectSpaceMap.colour;
+	//		break;
+	//	default:
+	//		Engine::get()->endSingleTimeCommands(commandBuffer);
+	//		return;
+	//	}
+	//	Engine::get()->endSingleTimeCommands(commandBuffer);
 
-		Texture* outNorm = res->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
+	//	Texture* outNorm = res->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+	//		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	//		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+	//		VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
 
-		outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	//	outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-		outNorm->isNormal = true;
-		outNorm->normalType = !norm->normalType;
+	//	outNorm->isNormal = true;
+	//	outNorm->normalType = !norm->normalType;
 
-		if (addTextureFunc != nullptr && !textureLL->checkForTexture(outNormalName)) {
-			owner->Name = outNormalName;
-			addTextureFunc(owner);
-		}
+	//	if (addTextureFunc != nullptr && !textureLL->checkForTexture(outNormalName)) {
+	//		owner->Name = outNormalName;
+	//		addTextureFunc(owner);
+	//	}
 		
-		textureLL->replacePtr(outNorm, outNormalName);
+	//	textureLL->replacePtr(outNorm, outNormalName);
 
-		switch (normalType) {
-		case (0):
-			generator.cleanupTS();
-			break;
-		case (1):
-			generator.cleanupOS();
-			break;
-		default:
-			return;
-		}
-	}
+	//	switch (normalType) {
+	//	case (0):
+	//		generator.cleanupTS();
+	//		break;
+	//	case (1):
+	//		generator.cleanupOS();
+	//		break;
+	//	default:
+	//		return;
+	//	}
+	//}
 };
 
 class ObjectMenu : public Widget {
@@ -1052,6 +1052,153 @@ private:
 	Material* wireframeMat = nullptr;
 	Material* settingsMat = nullptr;
 
+};
+
+class SpaceTransitionMenu : public Widget {
+public:
+	SpaceTransitionMenu(LoadList* assets, LoadList* texLL) {
+		loadList = assets;
+		textureLL = texLL;
+	}
+
+	void setup(std::string tName, std::vector<std::string> objects, std::function<void(UIItem*)> addTexFunc, std::function<Mesh*(std::string)> getMeshFunc, std::function<void(UIItem*)> exitFunc) {
+		if (isSetup || objects.size() == 0) {
+			return;
+		}
+		texName = tName;
+
+		addTextureFunc = addTexFunc;
+		getMesh = getMeshFunc;
+		exitCallback = exitFunc;
+
+		for (std::string objName : objects) {
+			std::cout << objName << std::endl;
+		}
+
+		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		
+		imageData rb = RENDEREDBUTTON;
+		Material* renderedMat = newMaterial(&rb, "RenderBtn");
+
+		imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+
+		imageData fb = FINISHBUTTON;
+		Material* finishMat = newMaterial(&fb, "FinishBtn");
+
+		DropdownMenu* objectSelector = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getFont());
+		objectSelector->addOptions(objects);
+		objectSelector->setSelectCallback(std::bind(&SpaceTransitionMenu::setObjName, this, std::placeholders::_1));
+		objectSelector->setOptionIndex(0);
+
+		objectName = objects[0];
+
+		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		finishArrangement->addItem(getPtr(new spacer));
+		finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&SpaceTransitionMenu::exit, this, std::placeholders::_1))));
+
+		totalArrangement->addItem(getPtr(objectSelector));
+		totalArrangement->addItem(getPtr(finishArrangement));
+
+		totalArrangement->arrangeItems();
+
+		canvas.push_back(getPtr(totalArrangement));
+
+		isSetup = true;
+	}
+
+	int clickIndex = 0;
+private:
+	LoadList* textureLL = nullptr;
+
+	std::string texName = "";
+	std::string objectName = "";
+	std::string outNormalName = "";
+
+	std::function<void(UIItem*)> addTextureFunc = nullptr;
+	std::function<void(UIItem*)> exitCallback = nullptr;
+	std::function<Mesh*(std::string)> getMesh = nullptr;
+
+	bool overwrite = true;
+
+	void setObjName(UIItem* owner) {
+		objectName = owner->text;
+	}
+
+	void exit(UIItem* owner) {
+		changeNormalMapType(owner);
+		owner->Name = outNormalName;
+		if (exitCallback != nullptr) {
+			exitCallback(owner);
+		}
+	}
+
+	void changeNormalMapType(UIItem* owner) {
+		if (getMesh == nullptr) {
+			return;
+		}
+
+		Texture* norm = textureLL->getTexture(texName);
+		outNormalName = "";
+
+		if (overwrite) {
+			outNormalName = texName;
+		}
+		else {
+			if (norm->normalType) {
+				outNormalName = texName + "_TS";
+			}
+			else {
+				outNormalName = texName + "_OS";
+			}
+		}
+		
+		Texture* res = nullptr;
+
+		Mesh* mesh = getMesh(objectName);
+
+		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+		NormalGen generator(loadList);
+		
+		if (norm->normalType) {
+			generator.copyTSImage(norm);
+			generator.setupOSConverter();
+			commandBuffer = generator.convertTStoOS(commandBuffer, mesh);
+			res = generator.objectSpaceMap.colour;
+		}
+		else {
+			generator.copyOSImage(norm);
+			generator.setupTSConverter();
+			commandBuffer = generator.convertOStoTS(commandBuffer, mesh);
+			res = generator.tangentSpaceMap.colour;
+		}
+
+		Engine::get()->endSingleTimeCommands(commandBuffer);
+
+		Texture* outNorm = res->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
+
+		outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+		outNorm->isNormal = true;
+		outNorm->normalType = !norm->normalType;
+
+		if (addTextureFunc != nullptr && !textureLL->checkForTexture(outNormalName)) {
+			owner->Name = outNormalName;
+			addTextureFunc(owner);
+		}
+
+		textureLL->replacePtr(outNorm, outNormalName);
+
+		if (norm->normalType) {
+			generator.cleanupOS();
+		}
+		else {
+			generator.cleanupTS();
+		}
+	}
 };
 
 class TextureLoadMenu : public Widget {
@@ -1455,12 +1602,13 @@ private:
 	RemapTexSelector rts = RemapTexSelector(&UIElements, &TextureElements);
 	TextureLoadMenu tlm = TextureLoadMenu(&UIElements, &TextureElements);
 	TomogRefPicker tomogPicker = TomogRefPicker(&UIElements, &TextureElements);
+	SpaceTransitionMenu stm = SpaceTransitionMenu(&UIElements, &TextureElements);
 
 	Material* webcamMat = nullptr;
 	Material* wireMat = nullptr;
 
 	vector<Widget*> widgets;
-	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, mc, &osm, &rts, &tlm, &tomogPicker};
+	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, mc, &osm, &rts, &tlm, &tomogPicker, &stm};
 
 	drawImage renderImage;
 	GraphicsPass renderGP;
@@ -1727,7 +1875,7 @@ private:
 	}
 
 	void openTextureSettingsMenu(UIItem* owner) {
-		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1));
+		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1));
 
 		textureSettings.clickIndex = mouseManager.addClickListener(textureSettings.getClickCallback());
 
@@ -1949,6 +2097,50 @@ private:
 		memcpy(engine->colourBufferMapped, &cso, sizeof(cso));
 	}
 
+	Mesh* getObj(std::string objName) {
+		if (objectMenu.ObjectMap.count(objName) == 0) {
+			return nullptr;
+		}
+		return staticObjects[objectMenu.ObjectMap.at(objName)].mesh;
+	}
+
+	void createSpaceTransitionMenu(UIItem* owner) {
+		std::vector<std::string> objects{};
+		for (auto elem : objectMenu.ObjectMap) {
+			objects.push_back(elem.first);
+		}
+
+		std::string texName = owner->Name;
+		closeTextureSettingsMenu(owner);
+
+		std::function<Mesh*(std::string)> getMeshFnc = std::bind(&Application::getObj, this, std::placeholders::_1);
+		std::function<void(UIItem*)> exitFnc = std::bind(&Application::exitSpaceTransitionMenu, this, std::placeholders::_1);
+
+		stm.setup(texName, objects, textureMenu.getAddTexCallback(), getMeshFnc, exitFnc);
+
+		stm.clickIndex = mouseManager.addClickListener(stm.getClickCallback());
+		widgets.push_back(&stm);
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	}
+
+	void exitSpaceTransitionMenu(UIItem* owner) {
+		vkDeviceWaitIdle(Engine::get()->device);
+		
+		UIItem* temp = new spacer;
+		temp->Name = owner->Name;
+		mouseManager.removeClickListener(stm.clickIndex);
+		stm.cleanup();
+
+		openTextureSettingsMenu(temp);
+		temp->cleanup();
+		delete temp;
+
+		widgets.erase(find(widgets.begin(), widgets.end(), &stm));
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	}
+
 	void createTomogSelector(UIItem* owner) {
 		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::exitTomogSelector, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishFunc = std::bind(&Application::openTomogMenu, this, std::placeholders::_1);
@@ -2150,7 +2342,7 @@ private:
 			
 			closeTextureSettingsMenu(owner);
 			
-			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1));
+			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr);
 
 			textureSettings.clickIndex = mouseManager.addClickListener(textureSettings.getClickCallback());
 

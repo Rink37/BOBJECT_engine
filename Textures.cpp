@@ -181,6 +181,8 @@ Texture* Texture::copyTexture(){
 	if (copy->mipLevels != 1) {
 		copy->generateMipmaps();
 	}
+	copy->isNormal = isNormal;
+	copy->normalType = normalType;
 	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	return copy;
 }
@@ -190,6 +192,8 @@ Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsag
 	if (copy->mipLevels != 1) {
 		copy->generateMipmaps();
 	}
+	copy->isNormal = isNormal;
+	copy->normalType = normalType;
 	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	return copy;
 }
@@ -199,6 +203,8 @@ Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsag
 	if (copy->mipLevels != 1) {
 		copy->generateMipmaps();
 	}
+	copy->isNormal = isNormal;
+	copy->normalType = normalType;
 	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	return copy;
 }
