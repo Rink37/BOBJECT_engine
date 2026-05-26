@@ -32,6 +32,7 @@ struct Mesh {
 	virtual void computeTangents() {};
 	void createIndexBuffer();
 
+	void createSeamMeshes(cv::Mat, SeamStrip&);
 	void findAdjacentStrips(cv::Mat);
 	void getStripChain(SeamStrip&, uint32_t, std::vector<std::array<uint32_t, 2>>&, std::vector<uint32_t>&);
 

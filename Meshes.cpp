@@ -154,6 +154,179 @@ void Mesh::getStripChain(SeamStrip& strip, uint32_t nodeIndex, std::vector<std::
 	}
 }
 
+void Mesh::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
+	float distance = 0.01f;
+
+	cv::Mat demoMatDupe = demoMat.clone();
+
+	// First we do the left hand mesh
+	// I'll start just by plotting points but later we can make this into an actual mesh
+
+	std::map<uint32_t, std::vector<glm::vec2>> L_out{};
+	std::map<uint32_t, std::vector<glm::vec2>> L_in{};
+
+	for (uint32_t i = 0; i != strip.leftIndices.size() - 1; i++) {
+		glm::vec2 texCoord_0 = vertices[strip.leftIndices[i]].texCoord;
+		glm::vec2 texCoord_1 = vertices[strip.leftIndices[i + 1]].texCoord;
+		float gradient = static_cast<float>(texCoord_1.y - texCoord_0.y) / static_cast<float>(texCoord_1.x - texCoord_0.x);
+		float invGradient = -1.0f / gradient;
+
+		glm::vec2 pointingVec = glm::vec2(1.0f, invGradient);
+		pointingVec /= glm::length(pointingVec);
+
+		if (L_out.count(i) == 0) {
+			L_out.insert({ i, std::vector<glm::vec2>{ -pointingVec* distance + texCoord_0} });
+		}
+		else {
+			L_out.at(i).push_back( -pointingVec * distance + texCoord_0);
+		}
+
+		if (L_out.count(i+1) == 0) {
+			L_out.insert({ i+1, std::vector<glm::vec2>{ -pointingVec* distance + texCoord_1} });
+		}
+		else {
+			L_out.at(i+1).push_back( -pointingVec * distance + texCoord_1);
+		}
+
+		if (L_in.count(i) == 0) {
+			L_in.insert({ i, std::vector<glm::vec2>{ pointingVec * distance + texCoord_0} });
+		}
+		else {
+			L_in.at(i).push_back(pointingVec * distance + texCoord_0);
+		}
+
+		if (L_in.count(i + 1) == 0) {
+			L_in.insert({ i + 1, std::vector<glm::vec2>{ pointingVec * distance + texCoord_1} });
+		}
+		else {
+			L_in.at(i + 1).push_back(pointingVec * distance + texCoord_1);
+		}
+	}
+
+	uint32_t width = demoMatDupe.size().width;
+	uint32_t height = demoMatDupe.size().height;
+
+	for (auto elem : L_out) {
+		cv::Point coord(0.0f, 0.0f);
+		if (elem.second.size() > 1) {
+			glm::vec2 avgPoint{ 0.0f, 0.0f };
+			for (glm::vec2 point : elem.second) {
+				avgPoint += point;
+			}
+			avgPoint /= elem.second.size();
+			coord.x = avgPoint.x * width;
+			coord.y = avgPoint.y * height;
+		}
+		else {
+			coord.x = elem.second[0].x * width;
+			coord.y = elem.second[0].y * height;
+		}
+		cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
+		cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
+	}
+
+	for (auto elem : L_in) {
+		cv::Point coord(0.0f, 0.0f);
+		if (elem.second.size() > 1) {
+			glm::vec2 avgPoint{ 0.0f, 0.0f };
+			for (glm::vec2 point : elem.second) {
+				avgPoint += point;
+			}
+			avgPoint /= elem.second.size();
+			coord.x = avgPoint.x * width;
+			coord.y = avgPoint.y * height;
+		}
+		else {
+			coord.x = elem.second[0].x * width;
+			coord.y = elem.second[0].y * height;
+		}
+		cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
+		cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
+	}
+
+	std::map<uint32_t, std::vector<glm::vec2>> R_out{};
+	std::map<uint32_t, std::vector<glm::vec2>> R_in{};
+
+	for (uint32_t i = 0; i != strip.rightIndices.size() - 1; i++) {
+		glm::vec2 texCoord_0 = vertices[strip.rightIndices[i]].texCoord;
+		glm::vec2 texCoord_1 = vertices[strip.rightIndices[i + 1]].texCoord;
+		float gradient = static_cast<float>(texCoord_1.y - texCoord_0.y) / static_cast<float>(texCoord_1.x - texCoord_0.x);
+		float invGradient = -1.0f / gradient;
+
+		glm::vec2 pointingVec = glm::vec2(1.0f, invGradient);
+		pointingVec /= glm::length(pointingVec);
+
+		if (R_out.count(i) == 0) {
+			R_out.insert({ i, std::vector<glm::vec2>{ -pointingVec * distance + texCoord_0} });
+		}
+		else {
+			R_out.at(i).push_back(-pointingVec * distance + texCoord_0);
+		}
+
+		if (R_out.count(i + 1) == 0) {
+			R_out.insert({ i + 1, std::vector<glm::vec2>{ -pointingVec * distance + texCoord_1} });
+		}
+		else {
+			R_out.at(i + 1).push_back(-pointingVec * distance + texCoord_1);
+		}
+
+		if (R_in.count(i) == 0) {
+			R_in.insert({ i, std::vector<glm::vec2>{ pointingVec* distance + texCoord_0} });
+		}
+		else {
+			R_in.at(i).push_back(pointingVec * distance + texCoord_0);
+		}
+
+		if (R_in.count(i + 1) == 0) {
+			R_in.insert({ i + 1, std::vector<glm::vec2>{ pointingVec* distance + texCoord_1} });
+		}
+		else {
+			R_in.at(i + 1).push_back(pointingVec * distance + texCoord_1);
+		}
+	}
+
+	for (auto elem : R_out) {
+		cv::Point coord(0.0f, 0.0f);
+		if (elem.second.size() > 1) {
+			glm::vec2 avgPoint{ 0.0f, 0.0f };
+			for (glm::vec2 point : elem.second) {
+				avgPoint += point;
+			}
+			avgPoint /= elem.second.size();
+			coord.x = avgPoint.x * width;
+			coord.y = avgPoint.y * height;
+		}
+		else {
+			coord.x = elem.second[0].x * width;
+			coord.y = elem.second[0].y * height;
+		}
+		cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
+		cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
+	}
+
+	for (auto elem : R_in) {
+		cv::Point coord(0.0f, 0.0f);
+		if (elem.second.size() > 1) {
+			glm::vec2 avgPoint{ 0.0f, 0.0f };
+			for (glm::vec2 point : elem.second) {
+				avgPoint += point;
+			}
+			avgPoint /= elem.second.size();
+			coord.x = avgPoint.x * width;
+			coord.y = avgPoint.y * height;
+		}
+		else {
+			coord.x = elem.second[0].x * width;
+			coord.y = elem.second[0].y * height;
+		}
+		cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
+		cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
+	}
+
+	cv::imshow("Tex coord points", demoMatDupe);
+	cv::waitKey(0);
+}
+
 void Mesh::findAdjacentStrips(cv::Mat demoMat) {
 	// This function aims to find the UV seams in a given model and then return two sets of vertex indices - the vertices corresponding to the pair of triangle strips on either side of each seam
 	// UV seams are denoted by any unique vertices which share the same position but have different UV coordinates
@@ -181,22 +354,25 @@ void Mesh::findAdjacentStrips(cv::Mat demoMat) {
 	uint32_t width = demoMat.size().width;
 	uint32_t height = demoMat.size().height;
 
+	cv::Mat cleanDemoMat = demoMat.clone();
+
 	while (seamVertexPairs.size() > 1) {
 		SeamStrip newSeamStrip;
 		std::vector<uint32_t> chainIndices{};
 		
 		getStripChain(newSeamStrip, 0, seamVertexPairs, chainIndices);
 
-		for (uint32_t i : newSeamStrip.leftIndices) {
-			cv::circle(demoMat, cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height), 10, cv::Scalar(255, 0, 0), -1);
+		createSeamMeshes(cleanDemoMat, newSeamStrip);
+
+		for (uint32_t j = 0; j != newSeamStrip.leftIndices.size(); j++) {
+			uint32_t i = newSeamStrip.leftIndices[j];
+			cv::circle(demoMat, cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height), 5, cv::Scalar(255 * static_cast<float>(j) / static_cast<float>(newSeamStrip.leftIndices.size()), 0, 0), -1);
 		}
 
-		for (uint32_t i : newSeamStrip.rightIndices) {
-			cv::circle(demoMat, cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height), 10, cv::Scalar(0, 255, 0), -1);
+		for (uint32_t j = 0; j != newSeamStrip.rightIndices.size(); j++) {
+			uint32_t i = newSeamStrip.rightIndices[j];
+			cv::circle(demoMat, cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height), 5, cv::Scalar(0, 255 * static_cast<float>(j) / static_cast<float>(newSeamStrip.rightIndices.size()), 0), -1);
 		}
-
-		cv::imshow("Seam checker", demoMat);
-		cv::waitKey(0);
 
 		sort(chainIndices.begin(), chainIndices.end());
 		uint32_t sub = 0;
@@ -208,6 +384,9 @@ void Mesh::findAdjacentStrips(cv::Mat demoMat) {
 
 		seamStrips.push_back(newSeamStrip);
 	}
+
+	cv::imshow("Seam checker", demoMat);
+	cv::waitKey(0);
 }
 
 const void Mesh::cleanup() {
