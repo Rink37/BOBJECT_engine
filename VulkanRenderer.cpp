@@ -1871,8 +1871,13 @@ private:
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
 
 	void testSeamPatcher() {
+		std::string fileName = winFile::OpenFileDialog();
+		if (fileName == string("fail")) {
+			return; // We will need to check if this menu has been setup after the setup function is called otherwise we will have some draw errors
+		}
+		cv::Mat testMat = cv::imread(fileName);
 		if (staticObjects.size() > 0) {
-			staticObjects[0].mesh->findAdjacentStrips();
+			staticObjects[0].mesh->findAdjacentStrips(testMat);
 		}
 	}
 

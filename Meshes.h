@@ -4,6 +4,11 @@
 #include"Bobject_Engine.h"
 #include"Materials.h"
 
+struct SeamStrip {
+	std::vector<uint32_t> leftIndices{};
+	std::vector<uint32_t> rightIndices{};
+};
+
 struct Mesh {
 	std::vector<Vertex> vertices;
 	
@@ -27,7 +32,8 @@ struct Mesh {
 	virtual void computeTangents() {};
 	void createIndexBuffer();
 
-	void findAdjacentStrips();
+	void findAdjacentStrips(cv::Mat);
+	void getStripChain(SeamStrip&, uint32_t, std::vector<std::array<uint32_t, 2>>&, std::vector<uint32_t>&);
 
 	const void cleanup();
 	bool cleaned = true;
