@@ -1606,6 +1606,7 @@ private:
 	}
 
 	void closeOptions(UIItem* owner) {
+		vkDeviceWaitIdle(Engine::get()->device);
 		if (optionsArrangement != nullptr) {
 			optionsArrangement->cleanup();
 			delete optionsArrangement;
