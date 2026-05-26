@@ -1858,6 +1858,9 @@ struct Widget {
 	int priorityLayer = 0; // Widgets are sorted in descending order, so smaller numbers will be checked later than higher ones
 						   // A widget can be placed above another simply by setting the priority of the "on-top" layer higher than the below one
 	bool isVisible = true;
+
+	size_t clickIndex = 0;
+	size_t posIndex = 0;
 private:
 	float windowPositions[4] = { 0.0f };
 	// Array of pointers which manages the actual structure of the UI

@@ -48,6 +48,128 @@ void Mesh::createIndexBuffer() {
 	vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
 }
 
+struct SeamStrip {
+	std::vector<uint32_t> leftIndices{};
+	std::vector<uint32_t> rightIndices{};
+};
+
+void Mesh::findAdjacentStrips() {
+	// This function aims to find the UV seams in a given model and then return two sets of vertex indices - the vertices corresponding to the pair of triangle strips on either side of each seam
+	// UV seams are denoted by any unique vertices which share the same position but have different UV coordinates
+	std::vector<std::array<uint32_t, 2>> seamVertexPairs{};
+	std::unordered_map<glm::vec3, uint32_t> uniquePositions{};
+	for (uint32_t i = 0; i != vertices.size(); i++) {
+		if (uniquePositions.count(vertices[i].pos) == 0) {
+			uniquePositions.insert({ vertices[i].pos, i });
+		}
+		else {
+			seamVertexPairs.push_back(std::array<uint32_t, 2>{uniquePositions.at(vertices[i].pos), i});
+		}
+	}
+
+	// We should now have a vector containing the indices of all pairs of vertices that mark the seams of the UV map
+	// The aim is now to separate individual seams and determine which side of the seam each vertex falls on i.e. we construct the chain of vertices on either side of each
+	// In the indices of the mesh vertices which correspond to triangles are arranged in triples; therefore if multiple seam vertices appear in the same set of three indices we know that these vertices are on the same side of a seam
+
+	std::cout << "Found " << seamVertexPairs.size() << " vertex pairs" << std::endl;
+
+	std::vector<SeamStrip> seamStrips{};
+
+	while (seamVertexPairs.size() > 1) {
+		
+		SeamStrip newSeamStrip;
+
+		std::array<uint32_t, 2> seamVert = seamVertexPairs[0];
+		
+		newSeamStrip.leftIndices.push_back(seamVert[0]);
+		newSeamStrip.rightIndices.push_back(seamVert[1]);
+		
+		std::vector<uint32_t> L_indexOccurrences{};
+		std::vector<uint32_t> R_indexOccurrences{};
+		auto L_it = find(indices.begin(), indices.end(), seamVert[0]);
+		auto R_it = find(indices.begin(), indices.end(), seamVert[1]);
+		while (L_it != indices.end()) {
+			L_indexOccurrences.push_back(L_it - indices.begin());
+			L_it = find(L_it+1, indices.end(), seamVert[0]);
+		}
+		while (R_it != indices.end()) {
+			R_indexOccurrences.push_back(R_it - indices.begin());
+			R_it = find(R_it+1, indices.end(), seamVert[1]);
+		}
+
+		std::vector<uint32_t>L_adjacentIndices{};
+		std::vector<uint32_t>R_adjacentIndices{};
+		for (uint32_t i = 0; i != L_indexOccurrences.size(); i++) {
+			uint32_t L_Index = L_indexOccurrences[i];
+			switch (L_Index % 3) {
+			case (0):
+				L_adjacentIndices.push_back(indices[L_Index + 1]);
+				L_adjacentIndices.push_back(indices[L_Index + 2]);
+				break;
+			case (1):
+				L_adjacentIndices.push_back(indices[L_Index - 1]);
+				L_adjacentIndices.push_back(indices[L_Index + 2]);
+				break;
+			case (2):
+				L_adjacentIndices.push_back(indices[L_Index - 2]);
+				L_adjacentIndices.push_back(indices[L_Index - 1]);
+				break;
+			default:
+				break;
+			}
+		}
+		for (uint32_t i = 0; i != R_indexOccurrences.size(); i++) {
+			uint32_t R_Index = R_indexOccurrences[i];
+			switch (R_Index % 3) {
+			case (0):
+				R_adjacentIndices.push_back(indices[R_Index + 1]);
+				R_adjacentIndices.push_back(indices[R_Index + 2]);
+				break;
+			case (1):
+				R_adjacentIndices.push_back(indices[R_Index - 1]);
+				R_adjacentIndices.push_back(indices[R_Index + 2]);
+				break;
+			case (2):
+				R_adjacentIndices.push_back(indices[R_Index - 2]);
+				R_adjacentIndices.push_back(indices[R_Index - 1]);
+				break;
+			default:
+				break;
+			}
+		}
+
+		std::vector<uint32_t> eraseIndices{ 0 };
+		for (uint32_t i = 1; i != seamVertexPairs.size(); i++) {
+			if (find(L_adjacentIndices.begin(), L_adjacentIndices.end(), seamVertexPairs[i][0]) != L_adjacentIndices.end() && find(R_adjacentIndices.begin(), R_adjacentIndices.end(), seamVertexPairs[i][1]) != R_adjacentIndices.end()) {
+				eraseIndices.push_back(i);
+				newSeamStrip.leftIndices.push_back(seamVertexPairs[i][0]);
+				newSeamStrip.rightIndices.push_back(seamVertexPairs[i][1]);
+			}
+			else if (find(L_adjacentIndices.begin(), L_adjacentIndices.end(), seamVertexPairs[i][1]) != L_adjacentIndices.end() && find(R_adjacentIndices.begin(), R_adjacentIndices.end(), seamVertexPairs[i][0]) != R_adjacentIndices.end()) {
+				eraseIndices.push_back(i);
+				newSeamStrip.leftIndices.push_back(seamVertexPairs[i][1]);
+				newSeamStrip.rightIndices.push_back(seamVertexPairs[i][0]);
+			}
+		}
+
+		for (uint32_t i : eraseIndices) {
+			seamVertexPairs.erase(seamVertexPairs.begin() + i);
+		}
+
+		for (uint32_t i : newSeamStrip.leftIndices) {
+			std::cout << i << "{" << vertices[i].texCoord.x << ", " << vertices[i].texCoord.y << "}, ";
+		}
+		std::cout << std::endl;
+
+		for (uint32_t i : newSeamStrip.rightIndices) {
+			std::cout << i << "{" << vertices[i].texCoord.x << ", " << vertices[i].texCoord.y << "}, ";
+		}
+		std::cout << std::endl;
+
+		//seamStrips.push_back(newSeamStrip);
+	}
+}
+
 const void Mesh::cleanup() {
 	if (cleaned) {
 		return;

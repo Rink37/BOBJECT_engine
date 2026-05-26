@@ -27,6 +27,8 @@ struct Mesh {
 	virtual void computeTangents() {};
 	void createIndexBuffer();
 
+	void findAdjacentStrips();
+
 	const void cleanup();
 	bool cleaned = true;
 };

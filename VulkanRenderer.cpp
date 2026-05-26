@@ -120,7 +120,6 @@ public:
 		}
 	}
 
-	int clickIndex = 0;
 private:
 	LoadList* textureLL = nullptr;
 
@@ -221,8 +220,6 @@ public:
 
 	std::function<void()> reload = nullptr;
 
-	size_t clickIndex = 0;
-	size_t posIndex = 0;
 	int priorityLayer = 100;
 
 	void cleanupSubClasses() {
@@ -297,10 +294,8 @@ private:
 	}
 
 	void revertAspectRatio(UIItem* owner) {
-		//std::cout << "Revert aspect ratio function called" << std::endl;
 		cv::Mat testFrame = webcamTexture::get()->webCam->getTestFrame();
 		float aspectRatio = static_cast<float>(testFrame.size().width) / static_cast<float>(testFrame.size().height);
-		//std::cout << aspectRatio << std::endl;
 		webcamTexture::get()->webCam->updateAspectRatio(aspectRatio);
 		webcamTexture::get()->recreateWebcamImage();
 		webcamView->image->mat[0]->cleanupDescriptor();
@@ -452,7 +447,7 @@ public:
 		boundPass = bPass;
 		matTemplate = new MaterialTemplate(shaderName, boundPass);
 
-		inFont = loadList->getFont();
+		font* inFont = loadList->getFont();
 		
 		finishedCallback = callback;
 
@@ -504,7 +499,7 @@ public:
 		boundPass = bPass;
 		matTemplate = new MaterialTemplate(shaderName, boundPass);
 
-		inFont = loadList->getFont();
+		font* inFont = loadList->getFont();
 
 		finishedCallback = callback;
 
@@ -542,8 +537,6 @@ public:
 		isSetup = true;
 	}
 
-	int clickIndex = 0;
-
 private:
 	MaterialTemplate* matTemplate = nullptr;
 
@@ -553,8 +546,6 @@ private:
 	std::string newMaterialName = "";
 
 	LoadList* textureLL = nullptr;
-
-	font* inFont = nullptr;
 
 	std::function<void(UIItem*)> finishedCallback = nullptr;
 
@@ -599,6 +590,8 @@ private:
 
 		std::function<void(UIItem*)> updateMatTemplate = std::bind(&MaterialCreator::setTexCallback, this, std::placeholders::_1);
 		std::function<void(UIItem*)> exitCallback = std::bind(&MaterialCreator::exit, this, std::placeholders::_1);
+
+		font* inFont = loadList->getFont();
 
 		int i = 0;
 		for (std::string channel : texChannels) {
@@ -669,7 +662,7 @@ public:
 
 		finishedCallback = closeFunc;
 		
-		inFont = loadList->getFont();
+		font* inFont = loadList->getFont();
 
 		addTextureFunc = addTex;
 
@@ -748,16 +741,12 @@ public:
 		isSetup = true;
 	}
 
-	int clickIndex = 0;
-
 private:
 	StaticObject* obj = nullptr;
 
 	LoadList* textureLL = nullptr;
 
 	UIItem* matSelPtr = nullptr;
-
-	font* inFont = nullptr;
 
 	UIItem* settingsButton = nullptr;
 
@@ -1047,7 +1036,6 @@ public:
 		isSetup = true;
 	}
 
-	int clickIndex = 0;
 private:
 	LoadList* textureLL = nullptr;
 
@@ -1310,7 +1298,6 @@ public:
 		isSetup = true;
 	}
 
-	int clickIndex = 0;
 private:
 	LoadList* textureLL = nullptr;
 
@@ -1509,7 +1496,6 @@ public:
 		isSetup = true;
 	}
 
-	int clickIndex = 0;
 private:
 	LoadList* textureLL = nullptr;
 
@@ -1776,12 +1762,12 @@ public:
 			webcamTexture::get()->webCam->loadFilter();
 		}
 		TextureElements.getPtr(webcamTexture::get(), "Webcam View");
-		//std::function<void()> tomogFunct = bind(&Application::toggleTomogMenu, this);
+		std::function<void()> testFunct = bind(&Application::testSeamPatcher, this);
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
 		//std::function<void()> drawUpdate = bind(&Application::updateDrawVariables, this);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
-		//keyBinds.addBinding(GLFW_KEY_T, tomogFunct, PRESS_EVENT);
+		keyBinds.addBinding(GLFW_KEY_T, testFunct, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
@@ -1883,6 +1869,12 @@ private:
 	glm::vec3 secondaryColour = glm::vec3(0.82f, 0.55f, 0.36f);
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
+
+	void testSeamPatcher() {
+		if (staticObjects.size() > 0) {
+			staticObjects[0].mesh->findAdjacentStrips();
+		}
+	}
 
 	void colourChangeTest() {
 		primaryColour = glm::vec3(0.0f, 0.13f, 0.27f); 
@@ -2143,14 +2135,9 @@ private:
 		mouseManager.removeClickListener(osm.clickIndex);
 
 		widgets.erase(find(widgets.begin(), widgets.end(), &osm));
-
-		//sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 
 	void openSettingsMenu(std::function<void(UIItem*)> closeFnc) {
-		//if (mc == nullptr) {
-		//	mc = new MaterialCreator("BF", currentPass, &UIElements, &TextureElements);
-		//}
 		osm.hide();
 		mc.setup("BF", currentPass, closeFnc);
 		mc.clickIndex = mouseManager.addClickListener(mc.getClickCallback());
@@ -2158,9 +2145,6 @@ private:
 	}
 
 	void openEditSettingsMenu(std::function<void(UIItem*)> closeFnc, std::string matName) {
-		//if (mc == nullptr) {
-		//	mc = new MaterialCreator("BF", currentPass, &UIElements, &TextureElements);
-		//}
 		osm.hide();
 		mc.setupEditMode("BF", currentPass, closeFnc, matName);
 		mc.clickIndex = mouseManager.addClickListener(mc.getClickCallback());
@@ -2181,9 +2165,6 @@ private:
 		widgets.erase(find(widgets.begin(), widgets.end(), &mc));
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
-
-		//mc = nullptr;
-		//use_sConst = false;
 	}
 	
 	void loadSave(UIItem* owner) {
