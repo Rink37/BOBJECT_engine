@@ -439,19 +439,19 @@ public:
 
 class MaterialCreator : public Widget {
 public:
-	MaterialCreator(std::string sName, GraphicsPass* bPass, LoadList* assets, LoadList* textureAssets) {
+	MaterialCreator(LoadList* assets, LoadList* textureAssets) {
 		loadList = assets;
 		textureLL = textureAssets;
-
-		shaderName = sName;
-		boundPass = bPass;
-		matTemplate = new MaterialTemplate(shaderName, boundPass);
 	}
 
-	void setup(std::function<void(UIItem*)> callback) {
+	void setup(std::string sName, GraphicsPass* bPass, std::function<void(UIItem*)> callback) {
 		if (isSetup) {
 			return;
 		}
+		shaderName = sName;
+		boundPass = bPass;
+		matTemplate = new MaterialTemplate(shaderName, boundPass);
+
 		inFont = loadList->getFont();
 		
 		finishedCallback = callback;
@@ -496,10 +496,14 @@ public:
 		isSetup = true;
 	}
 
-	void setupEditMode(std::function<void(UIItem*)> callback, std::string MatName) {
+	void setupEditMode(std::string sName, GraphicsPass* bPass, std::function<void(UIItem*)> callback, std::string MatName) {
 		if (isSetup) {
 			return;
 		}
+		shaderName = sName;
+		boundPass = bPass;
+		matTemplate = new MaterialTemplate(shaderName, boundPass);
+
 		inFont = loadList->getFont();
 
 		finishedCallback = callback;
@@ -1820,7 +1824,7 @@ private:
 	TextureSettings textureSettings = TextureSettings(&UIElements, &TextureElements);
 	RemapUI remapMenu = RemapUI(&UIElements, &TextureElements);
 	WebcamSettings webSets = WebcamSettings(&UIElements);
-	MaterialCreator* mc = nullptr; 
+	MaterialCreator mc = MaterialCreator(&UIElements, &TextureElements); 
 	ObjectSettingsMenu osm = ObjectSettingsMenu(&UIElements, &TextureElements);
 	RemapTexSelector rts = RemapTexSelector(&UIElements, &TextureElements);
 	TextureLoadMenu tlm = TextureLoadMenu(&UIElements, &TextureElements);
@@ -1832,7 +1836,7 @@ private:
 	Material* wireMat = nullptr;
 
 	vector<Widget*> widgets;
-	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, mc, &osm, &rts, &tlm, &tomogPicker, &stm, &normalMixer};
+	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, &mc, &osm, &rts, &tlm, &tomogPicker, &stm, &normalMixer};
 
 	drawImage renderImage;
 	GraphicsPass renderGP;
@@ -1840,7 +1844,7 @@ private:
 
 	StaticObject* currentObject = nullptr;
 
-	bool use_sConst = false;
+	//bool use_sConst = false;
 
 	bool mouseDown = false;
 	bool tomogActive = false;
@@ -2144,42 +2148,42 @@ private:
 	}
 
 	void openSettingsMenu(std::function<void(UIItem*)> closeFnc) {
-		if (mc == nullptr) {
-			mc = new MaterialCreator("BF", currentPass, &UIElements, &TextureElements);
-		}
+		//if (mc == nullptr) {
+		//	mc = new MaterialCreator("BF", currentPass, &UIElements, &TextureElements);
+		//}
 		osm.hide();
-		mc->setup(closeFnc);
-		mc->clickIndex = mouseManager.addClickListener(mc->getClickCallback());
-		widgets.push_back(mc);
+		mc.setup("BF", currentPass, closeFnc);
+		mc.clickIndex = mouseManager.addClickListener(mc.getClickCallback());
+		widgets.push_back(&mc);
 	}
 
 	void openEditSettingsMenu(std::function<void(UIItem*)> closeFnc, std::string matName) {
-		if (mc == nullptr) {
-			mc = new MaterialCreator("BF", currentPass, &UIElements, &TextureElements);
-		}
+		//if (mc == nullptr) {
+		//	mc = new MaterialCreator("BF", currentPass, &UIElements, &TextureElements);
+		//}
 		osm.hide();
-		mc->setupEditMode(closeFnc, matName);
-		mc->clickIndex = mouseManager.addClickListener(mc->getClickCallback());
-		widgets.push_back(mc);
+		mc.setupEditMode("BF", currentPass, closeFnc, matName);
+		mc.clickIndex = mouseManager.addClickListener(mc.getClickCallback());
+		widgets.push_back(&mc);
 	}
 
 	void closeSettingsMenu(UIItem* owner) {
 
 		vkDeviceWaitIdle(Engine::get()->device);
-		mc->cleanup();
-		mouseManager.removeClickListener(mc->clickIndex);
+		mc.cleanup();
+		mouseManager.removeClickListener(mc.clickIndex);
 
 		osm.show();
 		osm.update();
 
 		updateVisibleObjects();
 
-		widgets.erase(find(widgets.begin(), widgets.end(), mc));
+		widgets.erase(find(widgets.begin(), widgets.end(), &mc));
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 
-		mc = nullptr;
-		use_sConst = false;
+		//mc = nullptr;
+		//use_sConst = false;
 	}
 	
 	void loadSave(UIItem* owner) {
