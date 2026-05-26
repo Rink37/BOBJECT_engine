@@ -153,12 +153,12 @@ void compileAndWriteShaders(string basepath, string shadername, bool wireframe, 
 	try{
 		vertData = readFile(vertPath);
 		fragData = readFile(fragPath);
-		std:: cout << "Vert and frag found" << std::endl;
+		//std:: cout << "Vert and frag found" << std::endl;
 	} catch(std::runtime_error){
 	} 
 	try{
 		compData = readFile(compPath);
-		std::cout << "Comp found" << std::endl;
+		//std::cout << "Comp found" << std::endl;
 	} catch(std::runtime_error){
 	}
 
@@ -221,7 +221,7 @@ void compileAndWriteShaders(string basepath, string shadername, bool wireframe, 
 		out << readHelperFile(helperPath, shadername);
 		isHelperAvailable = true;
 	} catch(std::runtime_error){
-		std::cout << "No helper file found" << std::endl;
+		std::cout << "No helper file found for " << shadername << std::endl;
 	}
 	//out << string("};\n\n");
 	out << string("#endif\n\n");

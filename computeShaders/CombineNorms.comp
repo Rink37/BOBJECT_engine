@@ -17,46 +17,29 @@ void main(){
 	vec3 baseNorm = imageLoad(baseOSNorm, pixelCoords).rgb;
 	vec3 layerNorm = imageLoad(layerOSNorm, pixelCoords).rgb;
 
-	vec4 pixel = vec4(0.0, 0.0, 0.0, 1.0);
+	vec4 pixel = vec4(layerNorm, 1.0);
+
+	imageStore(resultNorm, pixelCoords, vec4(layerNorm, 1.0)); // Initially we just copy all of layer norm onto the result image
 
 	if (refNorm == vec3(0.0, 0.0, 0.0)){
-		imageStore(baseNorm, pixelCoords, pixel);
+		imageStore(resultNorm, pixelCoords, vec4(0.0, 0.0, 0.0, 1.0));
 		return;
 	}
 
 	refNorm = refNorm * 2.0 - 1.0;
-	if (length(refNorm) == 0.0){
-		imageStore(baseNorm, pixelCoords, pixel);
-		return;
-	}
-	refNorm = normalize(refNorm);
+	refNorm /= length(refNorm);
 	baseNorm = baseNorm * 2.0 - 1.0;
-	if (length(baseNorm) == 0.0){
-		imageStore(baseNorm, pixelCoords, pixel);
-		return;
-	}
-	baseNorm = normalize(baseNorm);
+	baseNorm /= length(baseNorm);
 	layerNorm = layerNorm * 2.0 - 1.0;
-	if (length(layerNorm) == 0.0){
-		imageStore(baseNorm, pixelCoords, pixel);
+	layerNorm /= length(layerNorm);
+
+	if (dot(refNorm, baseNorm) == 1.0){
+		// If the base and reference vectors are parallel then the result is just the layered vector
 		return;
 	}
-	layerNorm = normalize(layerNorm);
 
 	vec3 b = cross(refNorm, baseNorm); // This vector is orthogonal to both the reference and base normal vectors
 	float angle = acos(dot(refNorm, baseNorm)); // The angle between the reference and base normal vectors
-
-	bool flipNorm = false;
-	if (angle > HPI){
-		angle -= PI;
-		flipNorm = true;
-	}
-
-	if (!flipNorm && refNorm == baseNorm){
-		angle = -angle;
-	} else if (flipNorm && refNorm == -baseNorm){
-		angle = -angle;
-	}
 
 	// The components of the layer norm along the vector orthogonal to both reference and base normal vectors
 	vec3 layerAlongB = (dot(b, layerNorm) / dot(b, b)) * b;
@@ -64,21 +47,31 @@ void main(){
 
 	vec3 w = cross(b, layerPerpB);
 
+	if (length(w) == 0.0 || length(layerPerpB) == 0.0){
+		return;
+	}
+
 	float x_1 = cos(angle)/length(layerPerpB);
 	float x_2 = sin(angle)/length(w);
 
-	vec3 rotatedLayerPerpB = length(layerPerpB) * (x_1 * layerPerpB + x_2 * w);
-	vec3 rotatedLayer = rotatedLayerPerpB + layerAlongB;
-	if (length(rotatedLayer) == 0.0){
-		imageStore(baseNorm, pixelCoords, pixel);
+	if (isinf(x_1) || isinf(x_2)){
 		return;
 	}
-	rotatedLayer = normalize(rotatedLayer);
 
-	rotatedLayer *= 0.5;
-	rotatedLayer += 0.5;
+	vec3 rotatedLayerPerpB = length(layerPerpB) * (x_1 * layerPerpB + x_2 * w);
 
-	pixel.rgb = rotatedLayer;
+	vec3 rotatedLayer = rotatedLayerPerpB + layerAlongB;
+
+	vec3 mixedNorm = rotatedLayer / length(rotatedLayer);
+
+	mixedNorm *= 0.5;
+	mixedNorm += 0.5;
+
+	if (mixedNorm == vec3(0.0) || any(isinf(mixedNorm)) || any(isnan(mixedNorm))){
+		return;
+	}
+
+	pixel = vec4(mixedNorm, 1.0);
 
 	imageStore(resultNorm, pixelCoords, pixel);
 }
