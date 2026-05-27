@@ -613,44 +613,6 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		}
 	}
 
-	for (auto elem : L_out) {
-		cv::Point coord(0.0f, 0.0f);
-		if (elem.second.size() > 1) {
-			glm::vec2 avgPoint{ 0.0f, 0.0f };
-			for (glm::vec2 point : elem.second) {
-				avgPoint += point;
-			}
-			avgPoint /= elem.second.size();
-			coord.x = avgPoint.x * width;
-			coord.y = avgPoint.y * height;
-		}
-		else {
-			coord.x = elem.second[0].x * width;
-			coord.y = elem.second[0].y * height;
-		}
-		cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
-		cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
-	}
-
-	for (auto elem : L_in) {
-		cv::Point coord(0.0f, 0.0f);
-		if (elem.second.size() > 1) {
-			glm::vec2 avgPoint{ 0.0f, 0.0f };
-			for (glm::vec2 point : elem.second) {
-				avgPoint += point;
-			}
-			avgPoint /= elem.second.size();
-			coord.x = avgPoint.x * width;
-			coord.y = avgPoint.y * height;
-		}
-		else {
-			coord.x = elem.second[0].x * width;
-			coord.y = elem.second[0].y * height;
-		}
-		cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
-		cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
-	}
-
 	std::map<uint32_t, std::vector<glm::vec2>> R_out{};
 	std::map<uint32_t, std::vector<glm::vec2>> R_in{};
 
@@ -798,7 +760,13 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		}
 	}
 
-	for (auto elem : R_out) {
+	// Now we need to construct meshes for the seams based on our results
+	// Constructing the vertex positions is a simple matter of copying the positions; for each mesh we have two strips of vertices, one for the 'in' region and another for the 'out' region
+	// Both strips will share the vertices along the seam but it is easier to just create duplicates of these vertices so that both strips are separate
+	// The challenge is in setting the texture coordinates: they need to be the position of the vertices in the opposite mesh on the opposite region
+	// For example, the texture coordinates of the 'out' strip of the left mesh need to be the same as the positions of the 'in' strip of the right mesh
+
+	for (auto elem : L_out) {
 		cv::Point coord(0.0f, 0.0f);
 		if (elem.second.size() > 1) {
 			glm::vec2 avgPoint{ 0.0f, 0.0f };
@@ -813,9 +781,83 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 			coord.x = elem.second[0].x * width;
 			coord.y = elem.second[0].y * height;
 		}
-		cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
-		cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
+		cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
+		cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
+
+		Vertex L_out{};
+		L_out.pos = glm::vec3(coord.x/width, coord.y/height, 0.0f);
+		L_out.normal = glm::vec3(0.0f);
+		L_out.texCoord = glm::vec2(0.0f, 1.0f);
+		Vertex L_center{};
+		L_center.pos = glm::vec3(vertices[strip.leftIndices[elem.first]].texCoord.x, vertices[strip.leftIndices[elem.first]].texCoord.y, 0.0f);
+		L_center.normal = glm::vec3(0.0f);
+		L_center.texCoord = glm::vec2(0.0f);
+
+		strip.leftMesh.vertices.push_back(L_center);
+		strip.leftMesh.vertices.push_back(L_out);
+		strip.leftAlphaMesh.vertices.push_back(L_center);
+		strip.leftAlphaMesh.vertices.push_back(L_out);
+		
+		Vertex R_in{};
+		R_in.pos = glm::vec3(0.0f, 0.0f, 0.0f);
+		R_in.normal = glm::vec3(0.0f);
+		R_in.texCoord = glm::vec2(coord.x / width, coord.y / height);
+		
+		Vertex R_center{};
+		R_center.pos = glm::vec3(0.0f);
+		R_center.normal = glm::vec3(0.0f);
+		R_center.texCoord = glm::vec2(vertices[strip.leftIndices[elem.first]].texCoord.x, vertices[strip.leftIndices[elem.first]].texCoord.y);
+
+		strip.rightMesh.vertices.push_back(R_in);
+		strip.rightMesh.vertices.push_back(R_center);
 	}
+
+	for (auto elem : L_in) {
+		cv::Point coord(0.0f, 0.0f);
+		if (elem.second.size() > 1) {
+			glm::vec2 avgPoint{ 0.0f, 0.0f };
+			for (glm::vec2 point : elem.second) {
+				avgPoint += point;
+			}
+			avgPoint /= elem.second.size();
+			coord.x = avgPoint.x * width;
+			coord.y = avgPoint.y * height;
+		}
+		else {
+			coord.x = elem.second[0].x * width;
+			coord.y = elem.second[0].y * height;
+		}
+		cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
+		cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
+
+		Vertex L_in{};
+		L_in.pos = glm::vec3(coord.x / width, coord.y / height, 0.0f);
+		L_in.normal = glm::vec3(0.0f);
+		L_in.texCoord = glm::vec2(0.0f);
+		Vertex L_center{};
+		L_center.pos = glm::vec3(vertices[strip.leftIndices[elem.first]].texCoord.x, vertices[strip.leftIndices[elem.first]].texCoord.y, 0.0f);
+		L_center.normal = glm::vec3(0.0f);
+		L_center.texCoord = glm::vec2(0.0f);
+
+		strip.leftMesh.vertices.push_back(L_in);
+		strip.leftMesh.vertices.push_back(L_center);
+		strip.leftAlphaMesh.vertices.push_back(L_in);
+		strip.leftAlphaMesh.vertices.push_back(L_center);
+
+		Vertex R_center{};
+		R_center.pos = glm::vec3(0.0f);
+		R_center.normal = glm::vec3(0.0f);
+		R_center.texCoord = glm::vec2(vertices[strip.leftIndices[elem.first]].texCoord.x, vertices[strip.leftIndices[elem.first]].texCoord.y);
+		Vertex R_out{};
+		R_out.pos = glm::vec3(0.0f, 0.0f, 0.0f);
+		R_out.normal = glm::vec3(0.0f);
+		R_out.texCoord = glm::vec2(coord.x / width, coord.y / height);
+
+		strip.rightMesh.vertices.push_back(R_center);
+		strip.rightMesh.vertices.push_back(R_out);
+	}
+
+	uint32_t index = 0;
 
 	for (auto elem : R_in) {
 		cv::Point coord(0.0f, 0.0f);
@@ -834,10 +876,68 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		}
 		cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
 		cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
+
+		strip.rightMesh.vertices[index].pos = glm::vec3(coord.x / width, coord.y / height, 0.0f);
+		strip.leftMesh.vertices[index].texCoord = glm::vec2(coord.x / width, coord.y / height);
+		index++;
+		strip.rightMesh.vertices[index].pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
+		strip.leftMesh.vertices[index].texCoord = glm::vec2(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y);
+		index++;
+
+		Vertex R_in_Alpha{};
+		R_in_Alpha.pos = glm::vec3(coord.x / width, coord.y / height, 0.0f);
+		R_in_Alpha.normal = glm::vec3(0.0f);
+		R_in_Alpha.texCoord = glm::vec2(0.0f);
+		Vertex R_center_Alpha{};
+		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
+		R_center_Alpha.normal = glm::vec3(0.0f);
+		R_center_Alpha.texCoord = glm::vec2(0.0f);
+
+		strip.rightAlphaMesh.vertices.push_back(R_in_Alpha);
+		strip.rightAlphaMesh.vertices.push_back(R_center_Alpha);
+	}
+
+	for (auto elem : R_out) {
+		cv::Point coord(0.0f, 0.0f);
+		if (elem.second.size() > 1) {
+			glm::vec2 avgPoint{ 0.0f, 0.0f };
+			for (glm::vec2 point : elem.second) {
+				avgPoint += point;
+			}
+			avgPoint /= elem.second.size();
+			coord.x = avgPoint.x * width;
+			coord.y = avgPoint.y * height;
+		}
+		else {
+			coord.x = elem.second[0].x * width;
+			coord.y = elem.second[0].y * height;
+		}
+		cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
+		cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
+
+		strip.rightMesh.vertices[index].pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
+		strip.leftMesh.vertices[index].texCoord = glm::vec2(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y);
+		index++;
+		strip.rightMesh.vertices[index].pos = glm::vec3(coord.x / width, coord.y / height, 0.0f);
+		strip.leftMesh.vertices[index].texCoord = glm::vec2(coord.x / width, coord.y / height);
+		index++;
+
+		Vertex R_center_Alpha{};
+		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
+		R_center_Alpha.normal = glm::vec3(0.0f);
+		R_center_Alpha.texCoord = glm::vec2(0.0f);
+		Vertex R_out_Alpha{};
+		R_out_Alpha.pos = glm::vec3(coord.x / width, coord.y / height, 0.0f);
+		R_out_Alpha.normal = glm::vec3(0.0f);
+		R_out_Alpha.texCoord = glm::vec2(0.0f, 1.0f);
+
+		strip.rightAlphaMesh.vertices.push_back(R_center_Alpha);
+		strip.rightAlphaMesh.vertices.push_back(R_out_Alpha);
 	}
 
 	cv::imshow("Tex coord points", demoMatDupe);
 	cv::waitKey(0);
+
 }
 
 void SeamFixer::findAdjacentStrips(cv::Mat demoMat) {
@@ -862,9 +962,7 @@ void SeamFixer::findAdjacentStrips(cv::Mat demoMat) {
 	// The aim is now to separate individual seams and determine which side of the seam each vertex falls on i.e. we construct the chain of vertices on either side of each
 	// In the indices of the mesh vertices which correspond to triangles are arranged in triples; therefore if multiple seam vertices appear in the same set of three indices we know that these vertices are on the same side of a seam
 
-	std::cout << "Found " << seamVertexPairs.size() << " vertex pairs" << std::endl;
-
-	std::vector<SeamStrip> seamStrips{};
+	//std::cout << "Found " << seamVertexPairs.size() << " vertex pairs" << std::endl;
 
 	uint32_t width = demoMat.size().width;
 	uint32_t height = demoMat.size().height;

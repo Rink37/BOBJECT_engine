@@ -7,6 +7,12 @@
 struct SeamStrip {
 	std::vector<uint32_t> leftIndices{};
 	std::vector<uint32_t> rightIndices{};
+
+	Mesh leftMesh{};
+	Mesh leftAlphaMesh{};
+	
+	Mesh rightMesh{};
+	Mesh rightAlphaMesh{};
 };
 
 struct Mesh {
@@ -125,6 +131,8 @@ public:
 	void getStripChain(SeamStrip&, uint32_t, std::vector<std::array<uint32_t, 2>>&, std::vector<uint32_t>&);
 private:
 	Mesh* target = nullptr;
+
+	std::vector<SeamStrip> seamStrips{};
 };
 
 
