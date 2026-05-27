@@ -141,6 +141,18 @@ public:
 	void findAdjacentStrips(cv::Mat);
 	void getStripChain(SeamStrip&, uint32_t, std::vector<std::array<uint32_t, 2>>&, std::vector<uint32_t>&);
 
+	void alphaOverRight() {
+		drawRightMap();
+		drawRightAlpha();
+		alphaOverMap(true);
+	}
+
+	void alphaOverLeft() {
+		drawLeftMap();
+		drawLeftAlpha();
+		alphaOverMap(false);
+	}
+
 	void drawRightMap() {
 		prepMap(false, true);
 		prepareColourDescriptor(true);
@@ -214,6 +226,8 @@ private:
 	void createAlphaWritePipeline(bool);
 	VkCommandBuffer drawColourMap(VkCommandBuffer, bool);
 	VkCommandBuffer drawAlphaMap(VkCommandBuffer, bool);
+
+	void alphaOverMap(bool);
 };
 
 

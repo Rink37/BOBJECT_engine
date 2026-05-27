@@ -1,0 +1,4 @@
+IN 0 "baseImage"
+IN 0 "seamStrips"
+IN 0 "alpha"
+OUT 0 "resultImage"

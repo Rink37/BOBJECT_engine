@@ -2,9 +2,12 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include"tiny_obj_loader.h"
 
+#include"ImageProcessor.h"
 #include"include/ShaderDataType.h"
 #include"include/SeamFix_Colour.h"
 #include"include/SeamFix_Alpha.h"
+#include"include/AlphaOver.h"
+#include"WindowsFileManager.h"
 
 using namespace std;
 
@@ -1583,4 +1586,29 @@ VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, bool isRi
 	vkCmdEndRenderPass(commandbuffer);
 
 	return commandbuffer;
+}
+
+void SeamFixer::alphaOverMap(bool isRight) {
+	Texture* seamMap = (isRight) ? maps[1]->colour : maps[0]->colour;
+	Texture* seamAlpha = (isRight) ? alphaMaps[1]->colour : alphaMaps[0]->colour;
+	seamMap = seamMap->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+	seamAlpha = seamAlpha->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+	Texture* baseTex = imageTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+
+	filter alphaOver(std::vector<Texture*>{baseTex, seamMap, seamAlpha}, new ALPHAOVERSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+	alphaOver.filterImage();
+
+	Texture* res = alphaOver.filterTarget[0]->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+	res->getCVMat();
+
+	cv::imshow("Alpha over", res->texMat);
+	cv::waitKey(0);
+
+	alphaOver.cleanup();
+
+	std::string fileName = winFile::SaveFileDialog();
+	if (fileName == string("fail")) {
+		return; // We will need to check if this menu has been setup after the setup function is called otherwise we will have some draw errors
+	}
+	cv::imwrite(fileName, res->texMat);
 }
