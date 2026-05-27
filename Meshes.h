@@ -32,10 +32,6 @@ struct Mesh {
 	virtual void computeTangents() {};
 	void createIndexBuffer();
 
-	void createSeamMeshes(cv::Mat, SeamStrip&);
-	void findAdjacentStrips(cv::Mat);
-	void getStripChain(SeamStrip&, uint32_t, std::vector<std::array<uint32_t, 2>>&, std::vector<uint32_t>&);
-
 	const void cleanup();
 	bool cleaned = true;
 };
@@ -117,5 +113,19 @@ public:
 	PlaneMesh* mesh = nullptr;
 	Material* mat = nullptr;
 };
+
+class SeamFixer {
+public:
+	SeamFixer(Mesh* mesh) {
+		target = mesh;
+	}
+
+	void createSeamMeshes(cv::Mat, SeamStrip&);
+	void findAdjacentStrips(cv::Mat);
+	void getStripChain(SeamStrip&, uint32_t, std::vector<std::array<uint32_t, 2>>&, std::vector<uint32_t>&);
+private:
+	Mesh* target = nullptr;
+};
+
 
 #endif

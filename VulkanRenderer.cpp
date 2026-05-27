@@ -1876,8 +1876,11 @@ private:
 			return; // We will need to check if this menu has been setup after the setup function is called otherwise we will have some draw errors
 		}
 		cv::Mat testMat = cv::imread(fileName);
+
 		if (staticObjects.size() > 0) {
-			staticObjects[0].mesh->findAdjacentStrips(testMat);
+			SeamFixer testSeamFixer(staticObjects[0].mesh);
+
+			testSeamFixer.findAdjacentStrips(testMat);
 		}
 	}
 
