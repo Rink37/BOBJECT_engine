@@ -96,11 +96,11 @@ void Mesh::getStripChain(SeamStrip& strip, uint32_t nodeIndex, std::vector<std::
 		}
 	}
 
-	std::cout << "Local indices to " << seamVert[0] << ":" << std::endl;
-	for (uint32_t i : L_adjacentIndices) {
-		std::cout << i << " ";
-	}
-	std::cout << std::endl;
+	//std::cout << "Local indices to " << seamVert[0] << ":" << std::endl;
+	//for (uint32_t i : L_adjacentIndices) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << std::endl;
 
 	for (uint32_t i = 0; i != R_indexOccurrences.size(); i++) {
 		uint32_t R_Index = R_indexOccurrences[i];
@@ -122,11 +122,11 @@ void Mesh::getStripChain(SeamStrip& strip, uint32_t nodeIndex, std::vector<std::
 		}
 	}
 	
-	std::cout << "Local indices to " << seamVert[1] << ":" << std::endl;
-	for (uint32_t i : R_adjacentIndices) {
-		std::cout << i << " ";
-	}
-	std::cout << std::endl;
+	//std::cout << "Local indices to " << seamVert[1] << ":" << std::endl;
+	//for (uint32_t i : R_adjacentIndices) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << std::endl;
 
 
 	std::vector<uint32_t> chainIndices{};
@@ -158,6 +158,8 @@ void Mesh::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	float distance = 0.01f;
 
 	cv::Mat demoMatDupe = demoMat.clone();
+	uint32_t width = demoMatDupe.size().width;
+	uint32_t height = demoMatDupe.size().height;
 
 	// First we do the left hand mesh
 	// I'll start just by plotting points but later we can make this into an actual mesh
@@ -168,6 +170,84 @@ void Mesh::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	for (uint32_t i = 0; i != strip.leftIndices.size() - 1; i++) {
 		glm::vec2 texCoord_0 = vertices[strip.leftIndices[i]].texCoord;
 		glm::vec2 texCoord_1 = vertices[strip.leftIndices[i + 1]].texCoord;
+
+		std::vector<uint32_t> Occurences_0{};
+		std::vector<uint32_t> Occurences_1{};
+
+		auto it_0 = find(indices.begin(), indices.end(), strip.leftIndices[i]);
+		auto it_1 = find(indices.begin(), indices.end(), strip.leftIndices[i + 1]);
+		while (it_0 != indices.end()) {
+			Occurences_0.push_back(it_0 - indices.begin());
+			it_0 = find(it_0+1, indices.end(), strip.leftIndices[i]);
+		}
+		while (it_1 != indices.end()) {
+			Occurences_1.push_back(it_1 - indices.begin());
+			it_1 = find(it_1+1, indices.end(), strip.leftIndices[i+1]);
+		}
+
+		std::set<uint32_t> connectedIndices{};
+		for (uint32_t j : Occurences_0) {
+			switch (j % 3) {
+			case (0):
+				connectedIndices.insert(j + 1);
+				connectedIndices.insert(j + 2);
+				break;
+			case (1):
+				connectedIndices.insert(j - 1);
+				connectedIndices.insert(j + 1);
+				break;
+			case (2):
+				connectedIndices.insert(j - 2);
+				connectedIndices.insert(j - 1);
+				break;
+			default:
+				break;
+			}
+		}
+
+		for (uint32_t j : Occurences_1) {
+			switch (j % 3) {
+			case (0):
+				connectedIndices.insert(j + 1);
+				connectedIndices.insert(j + 2);
+				break;
+			case (1):
+				connectedIndices.insert(j - 1);
+				connectedIndices.insert(j + 1);
+				break;
+			case (2):
+				connectedIndices.insert(j - 2);
+				connectedIndices.insert(j - 1);
+				break;
+			default:
+				break;
+			}
+		}
+
+		glm::vec2 thirdCoord{ 0, 0 };
+
+		for (uint32_t j : Occurences_0) {
+			auto it = find(connectedIndices.begin(), connectedIndices.end(), j);
+			if (it != connectedIndices.end()) {
+				connectedIndices.erase(it);
+			}
+		}
+
+		for (uint32_t j : Occurences_1) {
+			auto it = find(connectedIndices.begin(), connectedIndices.end(), j);
+			if (it != connectedIndices.end()) {
+				connectedIndices.erase(it);
+			}
+		}
+
+		for (uint32_t j : connectedIndices) {
+			thirdCoord += vertices[indices[j]].texCoord;
+		}
+
+		thirdCoord /= connectedIndices.size();
+
+		cv::circle(demoMatDupe, cv::Point(thirdCoord.x * width, thirdCoord.y * height), 5, cv::Scalar(0, 0, 255), -1);
+
 		float gradient = static_cast<float>(texCoord_1.y - texCoord_0.y) / static_cast<float>(texCoord_1.x - texCoord_0.x);
 		float invGradient = -1.0f / gradient;
 
@@ -175,14 +255,14 @@ void Mesh::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		pointingVec /= glm::length(pointingVec);
 
 		if (L_out.count(i) == 0) {
-			L_out.insert({ i, std::vector<glm::vec2>{ -pointingVec* distance + texCoord_0} });
+			L_out.insert({ i, std::vector<glm::vec2>{ -pointingVec * distance + texCoord_0} });
 		}
 		else {
 			L_out.at(i).push_back( -pointingVec * distance + texCoord_0);
 		}
 
 		if (L_out.count(i+1) == 0) {
-			L_out.insert({ i+1, std::vector<glm::vec2>{ -pointingVec* distance + texCoord_1} });
+			L_out.insert({ i+1, std::vector<glm::vec2>{ -pointingVec * distance + texCoord_1} });
 		}
 		else {
 			L_out.at(i+1).push_back( -pointingVec * distance + texCoord_1);
@@ -202,9 +282,6 @@ void Mesh::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 			L_in.at(i + 1).push_back(pointingVec * distance + texCoord_1);
 		}
 	}
-
-	uint32_t width = demoMatDupe.size().width;
-	uint32_t height = demoMatDupe.size().height;
 
 	for (auto elem : L_out) {
 		cv::Point coord(0.0f, 0.0f);
@@ -271,14 +348,14 @@ void Mesh::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		}
 
 		if (R_in.count(i) == 0) {
-			R_in.insert({ i, std::vector<glm::vec2>{ pointingVec* distance + texCoord_0} });
+			R_in.insert({ i, std::vector<glm::vec2>{ pointingVec * distance + texCoord_0} });
 		}
 		else {
 			R_in.at(i).push_back(pointingVec * distance + texCoord_0);
 		}
 
 		if (R_in.count(i + 1) == 0) {
-			R_in.insert({ i + 1, std::vector<glm::vec2>{ pointingVec* distance + texCoord_1} });
+			R_in.insert({ i + 1, std::vector<glm::vec2>{ pointingVec * distance + texCoord_1} });
 		}
 		else {
 			R_in.at(i + 1).push_back(pointingVec * distance + texCoord_1);
