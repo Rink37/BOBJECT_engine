@@ -797,10 +797,12 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		L_center.normal = glm::vec3(0.0f);
 		L_center.texCoord = glm::vec2(0.0f);
 
-		strip.leftMesh.vertices.push_back(L_center);
 		strip.leftMesh.vertices.push_back(L_out);
-		strip.leftAlphaMesh.vertices.push_back(L_center);
+		strip.leftMesh.vertices.push_back(L_center);
+		
 		strip.leftAlphaMesh.vertices.push_back(L_out);
+		strip.leftAlphaMesh.vertices.push_back(L_center);
+		
 		
 		Vertex R_in{};
 		R_in.pos = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -843,10 +845,12 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		L_center.normal = glm::vec3(0.0f);
 		L_center.texCoord = glm::vec2(0.0f);
 
-		strip.leftMesh.vertices.push_back(L_in);
 		strip.leftMesh.vertices.push_back(L_center);
-		strip.leftAlphaMesh.vertices.push_back(L_in);
+		strip.leftMesh.vertices.push_back(L_in);
+		
 		strip.leftAlphaMesh.vertices.push_back(L_center);
+		strip.leftAlphaMesh.vertices.push_back(L_in);
+		
 
 		Vertex R_center{};
 		R_center.pos = glm::vec3(0.0f);
