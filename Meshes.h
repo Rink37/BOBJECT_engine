@@ -166,6 +166,30 @@ public:
 		cv::imshow("Drawn Map", leftMap.colour->texMat);
 		cv::waitKey(0);
 	}
+
+	void drawRightAlpha() {
+		prepMap(true, true);
+		createAlphaWritePipeline(true);
+		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+		commandBuffer = drawAlphaMap(commandBuffer, true);
+		Engine::get()->endSingleTimeCommands(commandBuffer);
+
+		rightAlpha.colour->getCVMat();
+		cv::imshow("Drawn Map", rightAlpha.colour->texMat);
+		cv::waitKey(0);
+	}
+
+	void drawLeftAlpha() {
+		prepMap(true, false);
+		createAlphaWritePipeline(false);
+		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+		commandBuffer = drawAlphaMap(commandBuffer, false);
+		Engine::get()->endSingleTimeCommands(commandBuffer);
+
+		leftAlpha.colour->getCVMat();
+		cv::imshow("Drawn Map", leftAlpha.colour->texMat);
+		cv::waitKey(0);
+	}
 private:
 	Mesh* target = nullptr;
 
@@ -187,7 +211,9 @@ private:
 	void prepMap(bool, bool);
 	void prepareColourDescriptor(bool);
 	void createTexWritePipeline(bool);
+	void createAlphaWritePipeline(bool);
 	VkCommandBuffer drawColourMap(VkCommandBuffer, bool);
+	VkCommandBuffer drawAlphaMap(VkCommandBuffer, bool);
 };
 
 

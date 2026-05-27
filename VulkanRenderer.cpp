@@ -1883,8 +1883,10 @@ private:
 			testSeamFixer.findAdjacentStrips(testMat);
 
 			testSeamFixer.drawRightMap();
+			testSeamFixer.drawRightAlpha();
 
 			testSeamFixer.drawLeftMap();
+			testSeamFixer.drawLeftAlpha();
 		}
 	}
 

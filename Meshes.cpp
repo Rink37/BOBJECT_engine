@@ -791,7 +791,7 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		Vertex L_out{};
 		L_out.pos = glm::vec3(coord.x, coord.y, 0.0f);
 		L_out.normal = glm::vec3(0.0f);
-		L_out.texCoord = glm::vec2(0.0f, 1.0f);
+		L_out.texCoord = glm::vec2(0.0f, 0.0f);
 		Vertex L_center{};
 		L_center.pos = glm::vec3(vertices[strip.leftIndices[elem.first]].texCoord.x, vertices[strip.leftIndices[elem.first]].texCoord.y, 0.0f);
 		L_center.normal = glm::vec3(0.0f);
@@ -839,7 +839,7 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		Vertex L_in{};
 		L_in.pos = glm::vec3(coord.x, coord.y, 0.0f);
 		L_in.normal = glm::vec3(0.0f);
-		L_in.texCoord = glm::vec2(0.0f);
+		L_in.texCoord = glm::vec2(0.0f, 1.0f);
 		Vertex L_center{};
 		L_center.pos = glm::vec3(vertices[strip.leftIndices[elem.first]].texCoord.x, vertices[strip.leftIndices[elem.first]].texCoord.y, 0.0f);
 		L_center.normal = glm::vec3(0.0f);
@@ -895,7 +895,7 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		Vertex R_in_Alpha{};
 		R_in_Alpha.pos = glm::vec3(coord.x, coord.y, 0.0f);
 		R_in_Alpha.normal = glm::vec3(0.0f);
-		R_in_Alpha.texCoord = glm::vec2(0.0f);
+		R_in_Alpha.texCoord = glm::vec2(0.0f, 1.0f);
 		Vertex R_center_Alpha{};
 		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
 		R_center_Alpha.normal = glm::vec3(0.0f);
@@ -937,7 +937,7 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		Vertex R_out_Alpha{};
 		R_out_Alpha.pos = glm::vec3(coord.x, coord.y, 0.0f);
 		R_out_Alpha.normal = glm::vec3(0.0f);
-		R_out_Alpha.texCoord = glm::vec2(0.0f, 1.0f);
+		R_out_Alpha.texCoord = glm::vec2(0.0f);
 
 		strip.rightAlphaMesh.vertices.push_back(R_center_Alpha);
 		strip.rightAlphaMesh.vertices.push_back(R_out_Alpha);
@@ -964,10 +964,6 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	strip.leftAlphaMesh.indices = stripIndices;
 	strip.rightMesh.indices = stripIndices;
 	strip.rightAlphaMesh.indices = stripIndices;
-
-	//std::cout << "Setting up meshes" << std::endl;
-	//std::cout << strip.leftMesh.vertices.size() << " " << strip.rightMesh.vertices.size() << " " << strip.leftAlphaMesh.vertices.size() << " " << strip.rightAlphaMesh.vertices.size() << std::endl;
-	//std::cout << strip.leftMesh.indices.size() << " " << strip.rightMesh.indices.size() << " " << strip.leftAlphaMesh.indices.size() << " " << strip.rightAlphaMesh.indices.size() << std::endl;
 
 	strip.leftMesh.setup();
 	strip.rightMesh.setup();
@@ -1326,6 +1322,129 @@ void SeamFixer::createTexWritePipeline(bool isRight) {
 	delete sD;
 }
 
+void SeamFixer::createAlphaWritePipeline(bool isRight) {
+	shaderData* sD = new SEAMFIX_ALPHASHADER;
+
+	OverlayMap* map = (isRight) ? alphaMaps[1] : alphaMaps[0];
+
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+	auto bindingDescription = Vertex::getBindingDescription();
+	auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
+	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	VkPipelineViewportStateCreateInfo viewportState{};
+	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportState.viewportCount = 1;
+	viewportState.scissorCount = 1;
+
+	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	VkPipelineMultisampleStateCreateInfo multisampling{};
+	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling.sampleShadingEnable = VK_TRUE;
+	multisampling.rasterizationSamples = msaaSamples;
+	multisampling.minSampleShading = .2f;
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+
+	VkPipelineColorBlendStateCreateInfo colorBlending{};
+	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlending.logicOpEnable = VK_FALSE;
+	colorBlending.logicOp = VK_LOGIC_OP_COPY;
+	colorBlending.attachmentCount = 1;
+	colorBlending.pAttachments = &colorBlendAttachment;
+	colorBlending.blendConstants[0] = 0.0f;
+	colorBlending.blendConstants[1] = 0.0f;
+	colorBlending.blendConstants[2] = 0.0f;
+	colorBlending.blendConstants[3] = 0.0f;
+
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 0;
+
+	if (vkCreatePipelineLayout(Engine::get()->device, &pipelineLayoutInfo, nullptr, &map->pipelineLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
+	auto VertShaderCode = *(sD->vertData);
+	auto FragShaderCode = *(sD->fragData);
+
+	VkShaderModule VertShaderModule = Engine::get()->createShaderModule(VertShaderCode);
+	VkShaderModule FragShaderModule = Engine::get()->createShaderModule(FragShaderCode);
+
+	VkPipelineShaderStageCreateInfo VertShaderStageInfo{};
+	VertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	VertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	VertShaderStageInfo.module = VertShaderModule;
+	VertShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo FragShaderStageInfo{};
+	FragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	FragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	FragShaderStageInfo.module = FragShaderModule;
+	FragShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo, FragShaderStageInfo };
+
+	VkPipelineRasterizationStateCreateInfo rasterizer{};
+	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer.depthClampEnable = VK_FALSE;
+	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizer.lineWidth = 1.0f;
+	rasterizer.cullMode = VK_CULL_MODE_NONE;
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	rasterizer.depthBiasEnable = VK_FALSE;
+
+	std::vector<VkDynamicState> dynamicStates = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
+	VkPipelineDynamicStateCreateInfo dynamicState{};
+	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+	dynamicState.pDynamicStates = dynamicStates.data();
+
+	VkGraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = ShaderStages;
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizer;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pDynamicState = &dynamicState;
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.layout = map->pipelineLayout;
+	pipelineInfo.renderPass = map->renderPass;
+	pipelineInfo.subpass = 0;
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+	if (vkCreateGraphicsPipelines(Engine::get()->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &map->pipeline) != VK_SUCCESS) {
+		throw runtime_error("failed to create graphics pipeline!");
+	}
+
+	vkDestroyShaderModule(Engine::get()->device, FragShaderModule, nullptr);
+	vkDestroyShaderModule(Engine::get()->device, VertShaderModule, nullptr);
+
+	delete sD;
+}
+
 VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, bool isRight) {
 
 	OverlayMap* map = (isRight) ? maps[1] : maps[0];
@@ -1385,6 +1504,68 @@ VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, bool isR
 			vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipelineLayout, 0, 1, &map->descriptorSet, 0, nullptr);
 			
 			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.leftMesh.indices.size()), 1, 0, 0, 0);
+		}
+	}
+	vkCmdEndRenderPass(commandbuffer);
+
+	return commandbuffer;
+}
+
+VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, bool isRight) {
+
+	OverlayMap* map = (isRight) ? alphaMaps[1] : alphaMaps[0];
+
+	VkClearValue clearValues[1] = {};
+	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+
+	VkRenderPassBeginInfo renderPassBeginInfo = {};
+	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBeginInfo.renderPass = map->renderPass;
+	renderPassBeginInfo.framebuffer = map->frameBuffer;
+	renderPassBeginInfo.renderArea.extent.width = map->colour->texWidth;
+	renderPassBeginInfo.renderArea.extent.height = map->colour->texHeight;
+	renderPassBeginInfo.clearValueCount = 1;
+	renderPassBeginInfo.pClearValues = clearValues;
+
+	vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(map->colour->texWidth);
+	viewport.height = static_cast<float>(map->colour->texHeight);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
+
+	VkRect2D scissor{};
+	scissor.offset = { 0,0 };
+	scissor.extent = { map->colour->texWidth, map->colour->texHeight };
+	vkCmdSetScissor(commandbuffer, 0, 1, &scissor);
+
+	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipeline);
+
+	for (SeamStrip seam : seamStrips) {
+		if (isRight) {
+			VkBuffer vertexBuffers[] = { seam.rightAlphaMesh.vertexBuffer };
+			VkDeviceSize offsets[] = { 0 };
+
+			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
+
+			vkCmdBindIndexBuffer(commandbuffer, seam.rightAlphaMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.rightAlphaMesh.indices.size()), 1, 0, 0, 0);
+
+		}
+		else {
+			VkBuffer vertexBuffers[] = { seam.leftAlphaMesh.vertexBuffer };
+			VkDeviceSize offsets[] = { 0 };
+
+			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
+
+			vkCmdBindIndexBuffer(commandbuffer, seam.leftAlphaMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.leftAlphaMesh.indices.size()), 1, 0, 0, 0);
 		}
 	}
 	vkCmdEndRenderPass(commandbuffer);
