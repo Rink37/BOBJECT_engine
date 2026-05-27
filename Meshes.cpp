@@ -994,7 +994,6 @@ void SeamFixer::findAdjacentStrips(cv::Mat demoMat) {
 	// UV seams are denoted by any unique vertices which share the same position but have different UV coordinates
 	
 	imageTex = new imageTexture(demoMat);
-	imageTex->textureImageView = imageTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	
 	std::vector<Vertex> vertices = target->vertices;
 
