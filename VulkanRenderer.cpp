@@ -1885,6 +1885,8 @@ private:
 			testSeamFixer.alphaOverRight();
 
 			testSeamFixer.alphaOverLeft();
+
+			testSeamFixer.cleanup();
 		}
 	}
 

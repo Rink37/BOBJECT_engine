@@ -672,6 +672,8 @@ void Texture::transitionMatToImg() {
 	else {
 		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureLayout, mipLevels);
 	}
+
+	cleaned = false;
 }
 
 void webcamTexture::createWebcamImage() {

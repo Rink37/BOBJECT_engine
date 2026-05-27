@@ -1015,8 +1015,6 @@ void SeamFixer::findAdjacentStrips(cv::Mat demoMat) {
 	// The aim is now to separate individual seams and determine which side of the seam each vertex falls on i.e. we construct the chain of vertices on either side of each
 	// In the indices of the mesh vertices which correspond to triangles are arranged in triples; therefore if multiple seam vertices appear in the same set of three indices we know that these vertices are on the same side of a seam
 
-	std::cout << "Found " << seamVertexPairs.size() << " vertex pairs" << std::endl;
-
 	width = demoMat.size().width;
 	height = demoMat.size().height;
 
@@ -1604,11 +1602,17 @@ void SeamFixer::alphaOverMap(bool isRight) {
 	cv::imshow("Alpha over", res->texMat);
 	cv::waitKey(0);
 
+	seamMap->cleanup();
+	seamAlpha->cleanup();
+	baseTex->cleanup();
 	alphaOver.cleanup();
 
 	std::string fileName = winFile::SaveFileDialog();
 	if (fileName == string("fail")) {
+		res->cleanup();
 		return; // We will need to check if this menu has been setup after the setup function is called otherwise we will have some draw errors
 	}
 	cv::imwrite(fileName, res->texMat);
+
+	res->cleanup();
 }

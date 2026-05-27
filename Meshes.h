@@ -127,14 +127,36 @@ public:
 	}
 
 	struct OverlayMap {
-		VkFramebuffer frameBuffer;
+		VkFramebuffer frameBuffer = nullptr;
 		VkRenderPass renderPass = nullptr;
 		Texture* colour = nullptr;
-		VkDescriptorPool descriptorPool;
-		VkDescriptorSet descriptorSet;
-		VkDescriptorSetLayout descriptorSetLayout;
+		VkDescriptorPool descriptorPool = nullptr;
+		VkDescriptorSet descriptorSet = nullptr;
+		VkDescriptorSetLayout descriptorSetLayout = nullptr;
 		VkPipelineLayout pipelineLayout = nullptr;
 		VkPipeline pipeline = nullptr;
+
+		void cleanup() {
+			vkDeviceWaitIdle(Engine::get()->device);
+			if (colour != nullptr) {
+				colour->cleanup();
+				delete colour;
+			}
+			if (descriptorSetLayout != nullptr) {
+				vkDestroyDescriptorSetLayout(Engine::get()->device, descriptorSetLayout, nullptr);
+				vkDestroyDescriptorPool(Engine::get()->device, descriptorPool, nullptr);
+			}
+			if (pipeline != nullptr) {
+				vkDestroyPipeline(Engine::get()->device, pipeline, nullptr);
+				vkDestroyPipelineLayout(Engine::get()->device, pipelineLayout, nullptr);
+			}
+			if (renderPass != nullptr) {
+				vkDestroyRenderPass(Engine::get()->device, renderPass, nullptr);
+			}
+			if (frameBuffer != nullptr) {
+				vkDestroyFramebuffer(Engine::get()->device, frameBuffer, nullptr);
+			}
+		}
 	};
 
 	void createSeamMeshes(cv::Mat, SeamStrip&);
@@ -201,6 +223,22 @@ public:
 		leftAlpha.colour->getCVMat();
 		cv::imshow("Drawn Map", leftAlpha.colour->texMat);
 		cv::waitKey(0);
+	}
+
+	void cleanup() {
+		leftMap.cleanup();
+		leftAlpha.cleanup();
+		rightMap.cleanup();
+		rightAlpha.cleanup();
+
+		imageTex->cleanup();
+
+		for (SeamStrip strip : seamStrips) {
+			strip.leftAlphaMesh.cleanup();
+			strip.leftMesh.cleanup();
+			strip.rightAlphaMesh.cleanup();
+			strip.rightMesh.cleanup();
+		}
 	}
 private:
 	Mesh* target = nullptr;
