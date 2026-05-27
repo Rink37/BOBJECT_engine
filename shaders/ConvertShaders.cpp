@@ -24,6 +24,7 @@ string getGlslcPath(){
 
 void compileShader(string glslcPath, string glslName, string spvName){
 	if (!filesystem::exists(glslName)){
+		//std::cout << glslName << std::endl;
 		return;
 	}
 	string compileCommand = glslcPath + string(" ") + glslName + string(" -o ") + spvName;
@@ -153,7 +154,6 @@ void compileAndWriteShaders(string basepath, string shadername, bool wireframe, 
 	try{
 		vertData = readFile(vertPath);
 		fragData = readFile(fragPath);
-		//std:: cout << "Vert and frag found" << std::endl;
 	} catch(std::runtime_error){
 	} 
 	try{
@@ -270,6 +270,8 @@ int main(){
 	compileAndWriteShaders(basepath, string("CreateCoordMap"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("CoordMapRead"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("CombineNorms"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("SeamFix_Colour"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("SeamFix_Alpha"), 0, outRoot);
 
 	basepath = rootPath+string("/shaders/");
 	compileAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);

@@ -2,6 +2,10 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include"tiny_obj_loader.h"
 
+#include"include/ShaderDataType.h"
+#include"include/SeamFix_Colour.h"
+#include"include/SeamFix_Alpha.h"
+
 using namespace std;
 
 void Mesh::createVertexBuffer() {
@@ -767,25 +771,25 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	// For example, the texture coordinates of the 'out' strip of the left mesh need to be the same as the positions of the 'in' strip of the right mesh
 
 	for (auto elem : L_out) {
-		cv::Point coord(0.0f, 0.0f);
+		glm::vec2 coord{ 0.0f, 0.0f };
 		if (elem.second.size() > 1) {
 			glm::vec2 avgPoint{ 0.0f, 0.0f };
 			for (glm::vec2 point : elem.second) {
 				avgPoint += point;
 			}
 			avgPoint /= elem.second.size();
-			coord.x = avgPoint.x * width;
-			coord.y = avgPoint.y * height;
+			coord.x = avgPoint.x;// *width;
+			coord.y = avgPoint.y;// *height;
 		}
 		else {
-			coord.x = elem.second[0].x * width;
-			coord.y = elem.second[0].y * height;
+			coord.x = elem.second[0].x;// *width;
+			coord.y = elem.second[0].y;// *height;
 		}
-		cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
-		cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
+		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
 
 		Vertex L_out{};
-		L_out.pos = glm::vec3(coord.x/width, coord.y/height, 0.0f);
+		L_out.pos = glm::vec3(coord.x, coord.y, 0.0f);
 		L_out.normal = glm::vec3(0.0f);
 		L_out.texCoord = glm::vec2(0.0f, 1.0f);
 		Vertex L_center{};
@@ -801,7 +805,7 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		Vertex R_in{};
 		R_in.pos = glm::vec3(0.0f, 0.0f, 0.0f);
 		R_in.normal = glm::vec3(0.0f);
-		R_in.texCoord = glm::vec2(coord.x / width, coord.y / height);
+		R_in.texCoord = glm::vec2(coord.x, coord.y);
 		
 		Vertex R_center{};
 		R_center.pos = glm::vec3(0.0f);
@@ -813,25 +817,25 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	}
 
 	for (auto elem : L_in) {
-		cv::Point coord(0.0f, 0.0f);
+		glm::vec2 coord{ 0.0f, 0.0f };
 		if (elem.second.size() > 1) {
 			glm::vec2 avgPoint{ 0.0f, 0.0f };
 			for (glm::vec2 point : elem.second) {
 				avgPoint += point;
 			}
 			avgPoint /= elem.second.size();
-			coord.x = avgPoint.x * width;
-			coord.y = avgPoint.y * height;
+			coord.x = avgPoint.x;// *width;
+			coord.y = avgPoint.y;// *height;
 		}
 		else {
-			coord.x = elem.second[0].x * width;
-			coord.y = elem.second[0].y * height;
+			coord.x = elem.second[0].x;// *width;
+			coord.y = elem.second[0].y;// *height;
 		}
-		cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
-		cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
+		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
 
 		Vertex L_in{};
-		L_in.pos = glm::vec3(coord.x / width, coord.y / height, 0.0f);
+		L_in.pos = glm::vec3(coord.x, coord.y, 0.0f);
 		L_in.normal = glm::vec3(0.0f);
 		L_in.texCoord = glm::vec2(0.0f);
 		Vertex L_center{};
@@ -851,7 +855,7 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		Vertex R_out{};
 		R_out.pos = glm::vec3(0.0f, 0.0f, 0.0f);
 		R_out.normal = glm::vec3(0.0f);
-		R_out.texCoord = glm::vec2(coord.x / width, coord.y / height);
+		R_out.texCoord = glm::vec2(coord.x, coord.y);
 
 		strip.rightMesh.vertices.push_back(R_center);
 		strip.rightMesh.vertices.push_back(R_out);
@@ -860,32 +864,32 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	uint32_t index = 0;
 
 	for (auto elem : R_in) {
-		cv::Point coord(0.0f, 0.0f);
+		glm::vec2 coord{ 0.0f, 0.0f };
 		if (elem.second.size() > 1) {
 			glm::vec2 avgPoint{ 0.0f, 0.0f };
 			for (glm::vec2 point : elem.second) {
 				avgPoint += point;
 			}
 			avgPoint /= elem.second.size();
-			coord.x = avgPoint.x * width;
-			coord.y = avgPoint.y * height;
+			coord.x = avgPoint.x;// *width;
+			coord.y = avgPoint.y;// *height;
 		}
 		else {
-			coord.x = elem.second[0].x * width;
-			coord.y = elem.second[0].y * height;
+			coord.x = elem.second[0].x;// *width;
+			coord.y = elem.second[0].y;// *height;
 		}
-		cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
-		cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
+		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
 
-		strip.rightMesh.vertices[index].pos = glm::vec3(coord.x / width, coord.y / height, 0.0f);
-		strip.leftMesh.vertices[index].texCoord = glm::vec2(coord.x / width, coord.y / height);
+		strip.rightMesh.vertices.at(index).pos = glm::vec3(coord.x, coord.y, 0.0f);
+		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(coord.x, coord.y);
 		index++;
-		strip.rightMesh.vertices[index].pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
-		strip.leftMesh.vertices[index].texCoord = glm::vec2(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y);
+		strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
+		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y);
 		index++;
 
 		Vertex R_in_Alpha{};
-		R_in_Alpha.pos = glm::vec3(coord.x / width, coord.y / height, 0.0f);
+		R_in_Alpha.pos = glm::vec3(coord.x, coord.y, 0.0f);
 		R_in_Alpha.normal = glm::vec3(0.0f);
 		R_in_Alpha.texCoord = glm::vec2(0.0f);
 		Vertex R_center_Alpha{};
@@ -898,28 +902,28 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	}
 
 	for (auto elem : R_out) {
-		cv::Point coord(0.0f, 0.0f);
+		glm::vec2 coord{ 0.0f, 0.0f };
 		if (elem.second.size() > 1) {
 			glm::vec2 avgPoint{ 0.0f, 0.0f };
 			for (glm::vec2 point : elem.second) {
 				avgPoint += point;
 			}
 			avgPoint /= elem.second.size();
-			coord.x = avgPoint.x * width;
-			coord.y = avgPoint.y * height;
+			coord.x = avgPoint.x;// *width;
+			coord.y = avgPoint.y;// *height;
 		}
 		else {
-			coord.x = elem.second[0].x * width;
-			coord.y = elem.second[0].y * height;
+			coord.x = elem.second[0].x;// *width;
+			coord.y = elem.second[0].y;// *height;
 		}
-		cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
-		cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
+		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
 
-		strip.rightMesh.vertices[index].pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
-		strip.leftMesh.vertices[index].texCoord = glm::vec2(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y);
+		strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
+		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y);
 		index++;
-		strip.rightMesh.vertices[index].pos = glm::vec3(coord.x / width, coord.y / height, 0.0f);
-		strip.leftMesh.vertices[index].texCoord = glm::vec2(coord.x / width, coord.y / height);
+		strip.rightMesh.vertices.at(index).pos = glm::vec3(coord.x, coord.y, 0.0f);
+		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(coord.x, coord.y);
 		index++;
 
 		Vertex R_center_Alpha{};
@@ -927,7 +931,7 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		R_center_Alpha.normal = glm::vec3(0.0f);
 		R_center_Alpha.texCoord = glm::vec2(0.0f);
 		Vertex R_out_Alpha{};
-		R_out_Alpha.pos = glm::vec3(coord.x / width, coord.y / height, 0.0f);
+		R_out_Alpha.pos = glm::vec3(coord.x, coord.y, 0.0f);
 		R_out_Alpha.normal = glm::vec3(0.0f);
 		R_out_Alpha.texCoord = glm::vec2(0.0f, 1.0f);
 
@@ -935,14 +939,48 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		strip.rightAlphaMesh.vertices.push_back(R_out_Alpha);
 	}
 
-	cv::imshow("Tex coord points", demoMatDupe);
-	cv::waitKey(0);
+	std::vector<uint32_t> stripIndices{}; // All meshes are assembled with essentially the same vertex structure, so the mesh indices will be identical
+	uint32_t size = strip.leftMesh.vertices.size();
+	uint32_t midpoint = size / 2; 
 
+	//Each pair of triangles should be structured like {0, 1, 2, 1, 2, 3}, but 2 and 3 are shared by the next pair of triangles
+	uint32_t currentPosition = 0;
+	std::vector<uint32_t> quadIndices{ 0, 1, 2, 1, 2, 3 };
+	while (currentPosition + 3 < size) {
+		for (uint32_t i : quadIndices) {
+			stripIndices.push_back(i + currentPosition);
+		}
+		currentPosition += 2;
+		if (currentPosition == midpoint - 2) {
+			currentPosition += 2; // We don't want to draw triangles to connect the quad chains
+		}
+	}
+
+	strip.leftMesh.indices = stripIndices;
+	strip.leftAlphaMesh.indices = stripIndices;
+	strip.rightMesh.indices = stripIndices;
+	strip.rightAlphaMesh.indices = stripIndices;
+
+	//std::cout << "Setting up meshes" << std::endl;
+	//std::cout << strip.leftMesh.vertices.size() << " " << strip.rightMesh.vertices.size() << " " << strip.leftAlphaMesh.vertices.size() << " " << strip.rightAlphaMesh.vertices.size() << std::endl;
+	//std::cout << strip.leftMesh.indices.size() << " " << strip.rightMesh.indices.size() << " " << strip.leftAlphaMesh.indices.size() << " " << strip.rightAlphaMesh.indices.size() << std::endl;
+
+	strip.leftMesh.setup();
+	strip.rightMesh.setup();
+	strip.leftAlphaMesh.setup();
+	strip.rightAlphaMesh.setup();
+
+	//cv::imshow("Tex coord points", demoMatDupe);
+	//cv::waitKey(0);
 }
 
 void SeamFixer::findAdjacentStrips(cv::Mat demoMat) {
 	// This function aims to find the UV seams in a given model and then return two sets of vertex indices - the vertices corresponding to the pair of triangle strips on either side of each seam
 	// UV seams are denoted by any unique vertices which share the same position but have different UV coordinates
+	
+	imageTex = new imageTexture(demoMat);
+	imageTex->textureImageView = imageTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	
 	std::vector<Vertex> vertices = target->vertices;
 
 	std::vector<std::array<uint32_t, 2>> seamVertexPairs{};
@@ -962,10 +1000,10 @@ void SeamFixer::findAdjacentStrips(cv::Mat demoMat) {
 	// The aim is now to separate individual seams and determine which side of the seam each vertex falls on i.e. we construct the chain of vertices on either side of each
 	// In the indices of the mesh vertices which correspond to triangles are arranged in triples; therefore if multiple seam vertices appear in the same set of three indices we know that these vertices are on the same side of a seam
 
-	//std::cout << "Found " << seamVertexPairs.size() << " vertex pairs" << std::endl;
+	std::cout << "Found " << seamVertexPairs.size() << " vertex pairs" << std::endl;
 
-	uint32_t width = demoMat.size().width;
-	uint32_t height = demoMat.size().height;
+	width = demoMat.size().width;
+	height = demoMat.size().height;
 
 	cv::Mat cleanDemoMat = demoMat.clone();
 
@@ -974,6 +1012,13 @@ void SeamFixer::findAdjacentStrips(cv::Mat demoMat) {
 		std::vector<uint32_t> chainIndices{};
 
 		getStripChain(newSeamStrip, 0, seamVertexPairs, chainIndices);
+
+		if (newSeamStrip.leftIndices.size() <= 1) {
+			std::cout << "Seam not found" << std::endl;
+			seamVertexPairs[0] = std::array<uint32_t, 2>{ 0,0 };
+			seamVertexPairs.erase(remove(seamVertexPairs.begin(), seamVertexPairs.end(), std::array<uint32_t, 2>{0, 0}), seamVertexPairs.end());
+			continue;
+		}
 
 		createSeamMeshes(cleanDemoMat, newSeamStrip);
 
@@ -1000,4 +1045,345 @@ void SeamFixer::findAdjacentStrips(cv::Mat demoMat) {
 
 	cv::imshow("Seam checker", demoMat);
 	cv::waitKey(0);
+}
+
+void SeamFixer::prepMap(bool alpha, bool isRight) {
+
+	OverlayMap* map = nullptr;
+	if (alpha) {
+		if (isRight) {
+			map = alphaMaps[1];
+		}
+		else {
+			map = alphaMaps[0];
+		}
+	}
+	else {
+		if (isRight) {
+			map = maps[1];
+		}
+		else {
+			map = maps[0];
+		}
+	}
+
+	map->colour = new Texture;
+
+	map->colour->texWidth = width;
+	map->colour->texHeight = height;
+	map->colour->texChannels = 4;
+	map->colour->mipLevels = 1;
+	map->colour->textureFormat = VK_FORMAT_R8G8B8A8_SRGB;
+	map->colour->textureLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	map->colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+	map->colour->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	map->colour->textureImageView = map->colour->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+	array<VkAttachmentDescription, 1> attachmentDescriptions = {};
+	attachmentDescriptions[0].format = VK_FORMAT_R8G8B8A8_SRGB;
+	attachmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
+	attachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	attachmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attachmentDescriptions[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachmentDescriptions[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attachmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	attachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+
+	VkSubpassDescription subpassDescription = {};
+	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpassDescription.colorAttachmentCount = 1;
+	subpassDescription.pColorAttachments = &colorReference;
+
+	VkSubpassDependency dependency{};
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+
+	VkRenderPassCreateInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
+	renderPassInfo.pAttachments = attachmentDescriptions.data();
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpassDescription;
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &dependency;
+
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+	if (vkCreateRenderPass(Engine::get()->device, &renderPassInfo, nullptr, &map->renderPass) != VK_SUCCESS) {
+		throw runtime_error("Failed to create render pass");
+	}
+
+	VkImageView attachments[1] = {};
+	attachments[0] = map->colour->textureImageView;
+
+	VkFramebufferCreateInfo fbufCreateInfo = {};
+	fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	fbufCreateInfo.renderPass = map->renderPass;
+	fbufCreateInfo.attachmentCount = 1;
+	fbufCreateInfo.pAttachments = attachments;
+	fbufCreateInfo.width = map->colour->texWidth;
+	fbufCreateInfo.height = map->colour->texHeight;
+	fbufCreateInfo.layers = 1;
+
+	if (vkCreateFramebuffer(Engine::get()->device, &fbufCreateInfo, nullptr, &map->frameBuffer) != VK_SUCCESS) {
+		throw runtime_error("Failed to create framebuffer");
+	}
+}
+
+void SeamFixer::prepareColourDescriptor(bool isRight) {
+
+	OverlayMap* map = (isRight) ? maps[1] : maps[0];
+
+	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+	samplerLayoutBinding.binding = 0;
+	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerLayoutBinding.pImmutableSamplers = nullptr;
+	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &samplerLayoutBinding;
+
+	if (vkCreateDescriptorSetLayout(Engine::get()->device, &layoutInfo, nullptr, &map->descriptorSetLayout) != VK_SUCCESS) {
+		throw runtime_error("failed to create descriptor set layout!");
+	}
+
+	VkDescriptorPoolSize poolSize;
+
+	poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	poolSize.descriptorCount = 1;
+
+	VkDescriptorPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolSize;
+	poolInfo.maxSets = 1;
+
+	if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &map->descriptorPool) != VK_SUCCESS) {
+		throw runtime_error("failed to create descriptor pool!");
+	}
+
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = map->descriptorPool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &map->descriptorSetLayout;
+
+	if (vkAllocateDescriptorSets(Engine::get()->device, &allocInfo, &map->descriptorSet) != VK_SUCCESS) {
+		throw runtime_error("failed to allocate descriptor sets!");
+	}
+
+	VkDescriptorImageInfo imageInfo{};
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.imageView = imageTex->textureImageView;
+	imageInfo.sampler = Engine::get()->textureSampler;
+
+	VkWriteDescriptorSet descriptorWrite{};
+	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrite.dstSet = map->descriptorSet;
+	descriptorWrite.dstBinding = 0;
+	descriptorWrite.dstArrayElement = 0;
+	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrite.descriptorCount = 1;
+	descriptorWrite.pImageInfo = &imageInfo;
+
+	vkUpdateDescriptorSets(Engine::get()->device, 1, &descriptorWrite, 0, nullptr);
+}
+
+void SeamFixer::createTexWritePipeline(bool isRight) {
+	shaderData* sD = new SEAMFIX_COLOURSHADER;
+
+	OverlayMap* map = (isRight) ? maps[1] : maps[0];
+
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+	auto bindingDescription = Vertex::getBindingDescription();
+	auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
+	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	VkPipelineViewportStateCreateInfo viewportState{};
+	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportState.viewportCount = 1;
+	viewportState.scissorCount = 1;
+
+	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	VkPipelineMultisampleStateCreateInfo multisampling{};
+	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling.sampleShadingEnable = VK_TRUE;
+	multisampling.rasterizationSamples = msaaSamples;
+	multisampling.minSampleShading = .2f;
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+
+	VkPipelineColorBlendStateCreateInfo colorBlending{};
+	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlending.logicOpEnable = VK_FALSE;
+	colorBlending.logicOp = VK_LOGIC_OP_COPY;
+	colorBlending.attachmentCount = 1;
+	colorBlending.pAttachments = &colorBlendAttachment;
+	colorBlending.blendConstants[0] = 0.0f;
+	colorBlending.blendConstants[1] = 0.0f;
+	colorBlending.blendConstants[2] = 0.0f;
+	colorBlending.blendConstants[3] = 0.0f;
+
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &map->descriptorSetLayout;
+
+	if (vkCreatePipelineLayout(Engine::get()->device, &pipelineLayoutInfo, nullptr, &map->pipelineLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
+	auto VertShaderCode = *(sD->vertData);
+	auto FragShaderCode = *(sD->fragData);
+
+	VkShaderModule VertShaderModule = Engine::get()->createShaderModule(VertShaderCode);
+	VkShaderModule FragShaderModule = Engine::get()->createShaderModule(FragShaderCode);
+
+	VkPipelineShaderStageCreateInfo VertShaderStageInfo{};
+	VertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	VertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	VertShaderStageInfo.module = VertShaderModule;
+	VertShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo FragShaderStageInfo{};
+	FragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	FragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	FragShaderStageInfo.module = FragShaderModule;
+	FragShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo, FragShaderStageInfo };
+
+	VkPipelineRasterizationStateCreateInfo rasterizer{};
+	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer.depthClampEnable = VK_FALSE;
+	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizer.lineWidth = 1.0f;
+	rasterizer.cullMode = VK_CULL_MODE_NONE;
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	rasterizer.depthBiasEnable = VK_FALSE;
+
+	std::vector<VkDynamicState> dynamicStates = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
+	VkPipelineDynamicStateCreateInfo dynamicState{};
+	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+	dynamicState.pDynamicStates = dynamicStates.data();
+
+	VkGraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = ShaderStages;
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizer;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pDynamicState = &dynamicState;
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.layout = map->pipelineLayout;
+	pipelineInfo.renderPass = map->renderPass;
+	pipelineInfo.subpass = 0;
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+	if (vkCreateGraphicsPipelines(Engine::get()->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &map->pipeline) != VK_SUCCESS) {
+		throw runtime_error("failed to create graphics pipeline!");
+	}
+
+	vkDestroyShaderModule(Engine::get()->device, FragShaderModule, nullptr);
+	vkDestroyShaderModule(Engine::get()->device, VertShaderModule, nullptr);
+
+	delete sD;
+}
+
+VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, bool isRight) {
+
+	OverlayMap* map = (isRight) ? maps[1] : maps[0];
+
+	VkClearValue clearValues[1] = {};
+	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+
+	VkRenderPassBeginInfo renderPassBeginInfo = {};
+	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBeginInfo.renderPass = map->renderPass;
+	renderPassBeginInfo.framebuffer = map->frameBuffer;
+	renderPassBeginInfo.renderArea.extent.width = map->colour->texWidth;
+	renderPassBeginInfo.renderArea.extent.height = map->colour->texHeight;
+	renderPassBeginInfo.clearValueCount = 1;
+	renderPassBeginInfo.pClearValues = clearValues;
+
+	vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(map->colour->texWidth);
+	viewport.height = static_cast<float>(map->colour->texHeight);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
+
+	VkRect2D scissor{};
+	scissor.offset = { 0,0 };
+	scissor.extent = { map->colour->texWidth, map->colour->texHeight };
+	vkCmdSetScissor(commandbuffer, 0, 1, &scissor);
+
+	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipeline);
+
+	for (SeamStrip seam : seamStrips) {
+		if (isRight) {
+			VkBuffer vertexBuffers[] = { seam.rightMesh.vertexBuffer };
+			VkDeviceSize offsets[] = { 0 };
+
+			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
+
+			vkCmdBindIndexBuffer(commandbuffer, seam.rightMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipelineLayout, 0, 1, &map->descriptorSet, 0, nullptr);
+			
+			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.rightMesh.indices.size()), 1, 0, 0, 0);
+
+		}
+		else {
+			VkBuffer vertexBuffers[] = { seam.leftMesh.vertexBuffer };
+			VkDeviceSize offsets[] = { 0 };
+
+			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
+
+			vkCmdBindIndexBuffer(commandbuffer, seam.leftMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipelineLayout, 0, 1, &map->descriptorSet, 0, nullptr);
+			
+			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.leftMesh.indices.size()), 1, 0, 0, 0);
+		}
+	}
+	vkCmdEndRenderPass(commandbuffer);
+
+	return commandbuffer;
 }

@@ -4,17 +4,6 @@
 #include"Bobject_Engine.h"
 #include"Materials.h"
 
-struct SeamStrip {
-	std::vector<uint32_t> leftIndices{};
-	std::vector<uint32_t> rightIndices{};
-
-	Mesh leftMesh{};
-	Mesh leftAlphaMesh{};
-	
-	Mesh rightMesh{};
-	Mesh rightAlphaMesh{};
-};
-
 struct Mesh {
 	std::vector<Vertex> vertices;
 	
@@ -120,19 +109,85 @@ public:
 	Material* mat = nullptr;
 };
 
+struct SeamStrip {
+	std::vector<uint32_t> leftIndices{};
+	std::vector<uint32_t> rightIndices{};
+
+	Mesh leftMesh{};
+	Mesh leftAlphaMesh{};
+
+	Mesh rightMesh{};
+	Mesh rightAlphaMesh{};
+};
+
 class SeamFixer {
 public:
 	SeamFixer(Mesh* mesh) {
 		target = mesh;
 	}
 
+	struct OverlayMap {
+		VkFramebuffer frameBuffer;
+		VkRenderPass renderPass = nullptr;
+		Texture* colour = nullptr;
+		VkDescriptorPool descriptorPool;
+		VkDescriptorSet descriptorSet;
+		VkDescriptorSetLayout descriptorSetLayout;
+		VkPipelineLayout pipelineLayout = nullptr;
+		VkPipeline pipeline = nullptr;
+	};
+
 	void createSeamMeshes(cv::Mat, SeamStrip&);
 	void findAdjacentStrips(cv::Mat);
 	void getStripChain(SeamStrip&, uint32_t, std::vector<std::array<uint32_t, 2>>&, std::vector<uint32_t>&);
+
+	void drawRightMap() {
+		prepMap(false, true);
+		prepareColourDescriptor(true);
+		createTexWritePipeline(true);
+		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+		commandBuffer = drawColourMap(commandBuffer, true);
+		Engine::get()->endSingleTimeCommands(commandBuffer);
+
+		rightMap.colour->getCVMat();
+		cv::imshow("Drawn Map", rightMap.colour->texMat);
+		cv::waitKey(0);
+	}
+
+	void drawLeftMap() {
+		prepMap(false, false);
+		prepareColourDescriptor(false);
+		createTexWritePipeline(false);
+		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+		commandBuffer = drawColourMap(commandBuffer, false);
+		Engine::get()->endSingleTimeCommands(commandBuffer);
+
+		leftMap.colour->getCVMat();
+		cv::imshow("Drawn Map", leftMap.colour->texMat);
+		cv::waitKey(0);
+	}
 private:
 	Mesh* target = nullptr;
 
+	OverlayMap leftMap{};
+	OverlayMap leftAlpha{};
+	OverlayMap rightMap{};
+	OverlayMap rightAlpha{};
+
+	Texture* imageTex = nullptr;
+
+	std::vector<OverlayMap*> maps{ &leftMap, &rightMap };
+	std::vector<OverlayMap*> alphaMaps{ &leftAlpha, &rightAlpha };
+
 	std::vector<SeamStrip> seamStrips{};
+
+	uint32_t width = 0;
+	uint32_t height = 0;
+
+	void prepMap(bool, bool);
+	void prepareColourDescriptor(bool);
+	void createTexWritePipeline(bool);
+	VkCommandBuffer drawColourMap(VkCommandBuffer, bool);
 };
 
 

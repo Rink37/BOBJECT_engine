@@ -1881,6 +1881,10 @@ private:
 			SeamFixer testSeamFixer(staticObjects[0].mesh);
 
 			testSeamFixer.findAdjacentStrips(testMat);
+
+			testSeamFixer.drawRightMap();
+
+			testSeamFixer.drawLeftMap();
 		}
 	}
 
