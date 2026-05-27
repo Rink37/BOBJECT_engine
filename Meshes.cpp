@@ -558,9 +558,15 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		float gradient = static_cast<float>(texCoord_1.y - texCoord_0.y) / static_cast<float>(texCoord_1.x - texCoord_0.x);
 		float invGradient = -1.0f / gradient;
 
-		glm::vec2 pointingVec = glm::vec2(1.0f, invGradient);
-		pointingVec /= glm::length(pointingVec);
-
+		glm::vec2 pointingVec{ 0.0f, 0.0f };
+		if (gradient != 0.0f) {
+			pointingVec = glm::vec2(1.0f, invGradient);
+			pointingVec /= glm::length(pointingVec);
+		}
+		else {
+			pointingVec = glm::vec2(0.0f, 1.0f);
+		}
+		
 		glm::vec2 minCoord = -pointingVec * distance + texCoord_0;
 		glm::vec2 addCoord = pointingVec * distance + texCoord_0;
 
@@ -704,8 +710,14 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		float gradient = static_cast<float>(texCoord_1.y - texCoord_0.y) / static_cast<float>(texCoord_1.x - texCoord_0.x);
 		float invGradient = -1.0f / gradient;
 
-		glm::vec2 pointingVec = glm::vec2(1.0f, invGradient);
-		pointingVec /= glm::length(pointingVec);
+		glm::vec2 pointingVec{ 0.0f, 0.0f };
+		if (gradient != 0.0f) {
+			pointingVec = glm::vec2(1.0f, invGradient);
+			pointingVec /= glm::length(pointingVec);
+		}
+		else {
+			pointingVec = glm::vec2(0.0f, 1.0f);
+		}
 
 		glm::vec2 minCoord = -pointingVec * distance + texCoord_0;
 		glm::vec2 addCoord = pointingVec * distance + texCoord_0;
