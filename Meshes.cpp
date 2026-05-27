@@ -254,32 +254,59 @@ void Mesh::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		glm::vec2 pointingVec = glm::vec2(1.0f, invGradient);
 		pointingVec /= glm::length(pointingVec);
 
-		if (L_out.count(i) == 0) {
-			L_out.insert({ i, std::vector<glm::vec2>{ -pointingVec * distance + texCoord_0} });
+		glm::vec2 minCoord = -pointingVec * distance + texCoord_0;
+		glm::vec2 addCoord = pointingVec * distance + texCoord_0;
+
+		glm::vec2 outCoord;
+		glm::vec2 inCoord;
+
+		if (glm::length(minCoord - thirdCoord) < glm::length(addCoord - thirdCoord)) {
+			outCoord = addCoord;
+			inCoord = minCoord;
 		}
 		else {
-			L_out.at(i).push_back( -pointingVec * distance + texCoord_0);
+			inCoord = addCoord;
+			outCoord = minCoord;
 		}
 
-		if (L_out.count(i+1) == 0) {
-			L_out.insert({ i+1, std::vector<glm::vec2>{ -pointingVec * distance + texCoord_1} });
+		if (L_out.count(i) == 0) {
+			L_out.insert({ i, std::vector<glm::vec2>{outCoord} });
 		}
 		else {
-			L_out.at(i+1).push_back( -pointingVec * distance + texCoord_1);
+			L_out.at(i).push_back(outCoord);
 		}
 
 		if (L_in.count(i) == 0) {
-			L_in.insert({ i, std::vector<glm::vec2>{ pointingVec * distance + texCoord_0} });
+			L_in.insert({ i, std::vector<glm::vec2>{ inCoord} });
 		}
 		else {
-			L_in.at(i).push_back(pointingVec * distance + texCoord_0);
+			L_in.at(i).push_back(inCoord);
+		}
+
+		minCoord = -pointingVec * distance + texCoord_1;
+		addCoord = pointingVec * distance + texCoord_1;
+
+		if (glm::length(minCoord - thirdCoord) < glm::length(addCoord - thirdCoord)) {
+			outCoord = addCoord;
+			inCoord = minCoord;
+		}
+		else {
+			inCoord = addCoord;
+			outCoord = minCoord;
+		}
+
+		if (L_out.count(i+1) == 0) {
+			L_out.insert({ i+1, std::vector<glm::vec2>{ outCoord } });
+		}
+		else {
+			L_out.at(i+1).push_back(outCoord);
 		}
 
 		if (L_in.count(i + 1) == 0) {
-			L_in.insert({ i + 1, std::vector<glm::vec2>{ pointingVec * distance + texCoord_1} });
+			L_in.insert({ i + 1, std::vector<glm::vec2>{ inCoord } });
 		}
 		else {
-			L_in.at(i + 1).push_back(pointingVec * distance + texCoord_1);
+			L_in.at(i + 1).push_back(inCoord);
 		}
 	}
 
@@ -327,38 +354,144 @@ void Mesh::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	for (uint32_t i = 0; i != strip.rightIndices.size() - 1; i++) {
 		glm::vec2 texCoord_0 = vertices[strip.rightIndices[i]].texCoord;
 		glm::vec2 texCoord_1 = vertices[strip.rightIndices[i + 1]].texCoord;
+		
+		std::vector<uint32_t> Occurences_0{};
+		std::vector<uint32_t> Occurences_1{};
+
+		auto it_0 = find(indices.begin(), indices.end(), strip.rightIndices[i]);
+		auto it_1 = find(indices.begin(), indices.end(), strip.rightIndices[i + 1]);
+		while (it_0 != indices.end()) {
+			Occurences_0.push_back(it_0 - indices.begin());
+			it_0 = find(it_0 + 1, indices.end(), strip.rightIndices[i]);
+		}
+		while (it_1 != indices.end()) {
+			Occurences_1.push_back(it_1 - indices.begin());
+			it_1 = find(it_1 + 1, indices.end(), strip.rightIndices[i + 1]);
+		}
+
+		std::set<uint32_t> connectedIndices{};
+		for (uint32_t j : Occurences_0) {
+			switch (j % 3) {
+			case (0):
+				connectedIndices.insert(j + 1);
+				connectedIndices.insert(j + 2);
+				break;
+			case (1):
+				connectedIndices.insert(j - 1);
+				connectedIndices.insert(j + 1);
+				break;
+			case (2):
+				connectedIndices.insert(j - 2);
+				connectedIndices.insert(j - 1);
+				break;
+			default:
+				break;
+			}
+		}
+
+		for (uint32_t j : Occurences_1) {
+			switch (j % 3) {
+			case (0):
+				connectedIndices.insert(j + 1);
+				connectedIndices.insert(j + 2);
+				break;
+			case (1):
+				connectedIndices.insert(j - 1);
+				connectedIndices.insert(j + 1);
+				break;
+			case (2):
+				connectedIndices.insert(j - 2);
+				connectedIndices.insert(j - 1);
+				break;
+			default:
+				break;
+			}
+		}
+
+		glm::vec2 thirdCoord{ 0, 0 };
+
+		for (uint32_t j : Occurences_0) {
+			auto it = find(connectedIndices.begin(), connectedIndices.end(), j);
+			if (it != connectedIndices.end()) {
+				connectedIndices.erase(it);
+			}
+		}
+
+		for (uint32_t j : Occurences_1) {
+			auto it = find(connectedIndices.begin(), connectedIndices.end(), j);
+			if (it != connectedIndices.end()) {
+				connectedIndices.erase(it);
+			}
+		}
+
+		for (uint32_t j : connectedIndices) {
+			thirdCoord += vertices[indices[j]].texCoord;
+		}
+
+		thirdCoord /= connectedIndices.size();
+
+		cv::circle(demoMatDupe, cv::Point(thirdCoord.x * width, thirdCoord.y * height), 5, cv::Scalar(0, 0, 255), -1);
+		
 		float gradient = static_cast<float>(texCoord_1.y - texCoord_0.y) / static_cast<float>(texCoord_1.x - texCoord_0.x);
 		float invGradient = -1.0f / gradient;
 
 		glm::vec2 pointingVec = glm::vec2(1.0f, invGradient);
 		pointingVec /= glm::length(pointingVec);
 
-		if (R_out.count(i) == 0) {
-			R_out.insert({ i, std::vector<glm::vec2>{ -pointingVec * distance + texCoord_0} });
+		glm::vec2 minCoord = -pointingVec * distance + texCoord_0;
+		glm::vec2 addCoord = pointingVec * distance + texCoord_0;
+
+		glm::vec2 outCoord;
+		glm::vec2 inCoord;
+
+		if (glm::length(minCoord - thirdCoord) < glm::length(addCoord - thirdCoord)) {
+			outCoord = addCoord;
+			inCoord = minCoord;
 		}
 		else {
-			R_out.at(i).push_back(-pointingVec * distance + texCoord_0);
+			inCoord = addCoord;
+			outCoord = minCoord;
 		}
 
-		if (R_out.count(i + 1) == 0) {
-			R_out.insert({ i + 1, std::vector<glm::vec2>{ -pointingVec * distance + texCoord_1} });
+
+		if (R_out.count(i) == 0) {
+			R_out.insert({ i, std::vector<glm::vec2>{ outCoord} });
 		}
 		else {
-			R_out.at(i + 1).push_back(-pointingVec * distance + texCoord_1);
+			R_out.at(i).push_back(outCoord);
 		}
 
 		if (R_in.count(i) == 0) {
-			R_in.insert({ i, std::vector<glm::vec2>{ pointingVec * distance + texCoord_0} });
+			R_in.insert({ i, std::vector<glm::vec2>{ inCoord } });
 		}
 		else {
-			R_in.at(i).push_back(pointingVec * distance + texCoord_0);
+			R_in.at(i).push_back(inCoord);
+		}
+
+		minCoord = -pointingVec * distance + texCoord_1;
+		addCoord = pointingVec * distance + texCoord_1;
+
+		if (glm::length(minCoord - thirdCoord) < glm::length(addCoord - thirdCoord)) {
+			outCoord = addCoord;
+			inCoord = minCoord;
+		}
+		else {
+			inCoord = addCoord;
+			outCoord = minCoord;
+		}
+
+		if (R_out.count(i + 1) == 0) {
+			R_out.insert({ i + 1, std::vector<glm::vec2>{ outCoord } });
+		}
+		else {
+			R_out.at(i + 1).push_back(outCoord);
 		}
 
 		if (R_in.count(i + 1) == 0) {
-			R_in.insert({ i + 1, std::vector<glm::vec2>{ pointingVec * distance + texCoord_1} });
+			R_in.insert({ i + 1, std::vector<glm::vec2>{ inCoord} });
 		}
 		else {
-			R_in.at(i + 1).push_back(pointingVec * distance + texCoord_1);
+			R_in.at(i + 1).push_back(inCoord);
 		}
 	}
 
