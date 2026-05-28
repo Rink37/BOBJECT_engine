@@ -492,13 +492,15 @@ void SeamFixer::getStripChain(SeamStrip& strip, uint32_t nodeIndex, std::vector<
 
 void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 	// Sorts both sets of indices based on the layout of the left indices
+	// We need to modify this so that it's based on the layout of both the left and right indices
 	std::map<uint32_t, std::vector<uint32_t>> localIndicesMap{};
+	std::map<uint32_t, std::vector<uint32_t>> rightLocalIndicesMap{};
 	for (uint32_t i = 0; i != strip.leftIndices.size(); i++) {
 		std::vector<uint32_t> localIndices{};
 		localIndicesMap.insert({ i, std::vector<uint32_t>{} });
+		rightLocalIndicesMap.insert({ i, std::vector<uint32_t>{} });
 		findLocalIndices(localIndices, target->indices, strip.leftIndices[i]);
 		for (uint32_t index : localIndices) {
-
 			auto it = find(strip.leftIndices.begin(), strip.leftIndices.end(), index);
 			if (it != strip.leftIndices.end()) {
 				localIndicesMap.at(i).push_back(it - strip.leftIndices.begin());
@@ -507,12 +509,26 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 		if (localIndicesMap.at(i).size() == 0) {
 			return;
 		}
+		findLocalIndices(localIndices, target->indices, strip.rightIndices[i]);
+		for (uint32_t index : localIndices) {
+			auto it = find(strip.rightIndices.begin(), strip.rightIndices.end(), index);
+			if (it != strip.rightIndices.end()) {
+				rightLocalIndicesMap.at(i).push_back(it - strip.rightIndices.begin());
+			}
+		}
+		if (rightLocalIndicesMap.at(i).size() == 0) {
+			return;
+		}
 	}
 	bool closed = true;
+	bool leftClosed = true;
+	bool rightClosed = true;
 	uint32_t currentIndex = 0;
 	for (auto elem : localIndicesMap) {
-		if (elem.second.size() == 1) {
+		if (elem.second.size() == 1 || rightLocalIndicesMap.at(elem.first).size() == 1) {
 			closed = false;
+			leftClosed = (elem.second.size() == 1);
+			rightClosed = (rightLocalIndicesMap.at(elem.first).size() == 1);
 			currentIndex = elem.first;
 			break;
 		}
@@ -551,6 +567,9 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 		}
 		break;
 	}
+
+	std::cout << strip.leftIndices.size() << std::endl;
+
 	std::cout << "Sorted positions: ";
 	for (uint32_t i : sortedSeamPositions) {
 		std::cout << i << " ";
