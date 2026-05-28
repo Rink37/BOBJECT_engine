@@ -118,6 +118,9 @@ struct SeamStrip {
 
 	Mesh rightMesh{};
 	Mesh rightAlphaMesh{};
+
+	bool rightClosed = false;
+	bool leftClosed = false;
 };
 
 class SeamFixer {
