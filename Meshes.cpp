@@ -490,6 +490,88 @@ void SeamFixer::getStripChain(SeamStrip& strip, uint32_t nodeIndex, std::vector<
 	}
 }
 
+void SeamFixer::sortSeamIndices(SeamStrip& strip) {
+	// Sorts both sets of indices based on the layout of the left indices
+	std::map<uint32_t, std::vector<uint32_t>> localIndicesMap{};
+	for (uint32_t i = 0; i != strip.leftIndices.size(); i++) {
+		std::vector<uint32_t> localIndices{};
+		localIndicesMap.insert({ i, std::vector<uint32_t>{} });
+		findLocalIndices(localIndices, target->indices, strip.leftIndices[i]);
+		for (uint32_t index : localIndices) {
+
+			auto it = find(strip.leftIndices.begin(), strip.leftIndices.end(), index);
+			if (it != strip.leftIndices.end()) {
+				localIndicesMap.at(i).push_back(it - strip.leftIndices.begin());
+			}
+		}
+		if (localIndicesMap.at(i).size() == 0) {
+			return;
+		}
+	}
+	bool closed = true;
+	uint32_t currentIndex = 0;
+	for (auto elem : localIndicesMap) {
+		if (elem.second.size() == 1) {
+			closed = false;
+			currentIndex = elem.first;
+			break;
+		}
+	}
+	std::vector<uint32_t> sortedSeamPositions{};
+	sortedSeamPositions.push_back(currentIndex);
+	std::vector<uint32_t> local = localIndicesMap.at(currentIndex);
+	if (local.size() == 1) {
+		currentIndex = localIndicesMap.at(currentIndex)[0];
+	}
+	else {
+		currentIndex = ((local[0] - currentIndex) * (local[0] - currentIndex) < (local[1] - currentIndex) * (local[1] - currentIndex)) ? local[0] : local[1];
+	}
+	sortedSeamPositions.push_back(currentIndex);
+	while (true) {
+		std::vector<uint32_t> localIndices = localIndicesMap.at(currentIndex);
+		if (localIndices.size() <= 1) {
+			break;
+		}
+		auto it_0 = find(sortedSeamPositions.begin(), sortedSeamPositions.end(), localIndices[0]);
+		auto it_1 = find(sortedSeamPositions.begin(), sortedSeamPositions.end(), localIndices[1]);
+		if (it_0 == it_1) {
+			currentIndex = ((localIndices[0] - currentIndex) * (localIndices[0] - currentIndex) < (localIndices[1] - currentIndex) * (localIndices[1] - currentIndex)) ? localIndices[0] : localIndices[1];
+			sortedSeamPositions.push_back(currentIndex);
+			continue;
+		}
+		if (it_0 == sortedSeamPositions.end()) {
+			currentIndex = localIndices[0];
+			sortedSeamPositions.push_back(localIndices[0]);
+			continue;
+		}
+		if (it_1 == sortedSeamPositions.end()) {
+			currentIndex = localIndices[1];
+			sortedSeamPositions.push_back(localIndices[1]);
+			continue;
+		}
+		break;
+	}
+	std::cout << "Sorted positions: ";
+	for (uint32_t i : sortedSeamPositions) {
+		std::cout << i << " ";
+	}
+	std::cout << endl;
+
+	std::vector<uint32_t> newLeftIndices{};
+	std::vector<uint32_t> newRightIndices{};
+	for (uint32_t i : sortedSeamPositions) {
+		newLeftIndices.push_back(strip.leftIndices[i]);
+		newRightIndices.push_back(strip.rightIndices[i]);
+	}
+	if (closed) {
+		std::cout << "Closed seam found" << std::endl;
+		newLeftIndices.push_back(strip.leftIndices[sortedSeamPositions[0]]);
+		newRightIndices.push_back(strip.rightIndices[sortedSeamPositions[0]]);
+	}
+	strip.leftIndices = newLeftIndices;
+	strip.rightIndices = newRightIndices;
+}
+
 void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	float distance = 0.01f;
 
@@ -1066,14 +1148,16 @@ void SeamFixer::findAdjacentStrips(cv::Mat demoMat) {
 
 		getStripChain(newSeamStrip, 0, seamVertexPairs, chainIndices);
 
-		std::vector<uint32_t> localIndices{};
-		findLocalIndices(localIndices, target->indices, newSeamStrip.leftIndices[newSeamStrip.leftIndices.size() - 1]);
+		sortSeamIndices(newSeamStrip);
 
-		if (find(localIndices.begin(), localIndices.end(), newSeamStrip.leftIndices[0]) != localIndices.end()) {
-			std::cout << "A closed loop has possibly been found" << std::endl;
-			newSeamStrip.leftIndices.push_back(newSeamStrip.leftIndices[0]);
-			newSeamStrip.rightIndices.push_back(newSeamStrip.rightIndices[0]);
-		}
+		//std::vector<uint32_t> localIndices{};
+		//findLocalIndices(localIndices, target->indices, newSeamStrip.leftIndices[newSeamStrip.leftIndices.size() - 1]);
+
+		//if (find(localIndices.begin(), localIndices.end(), newSeamStrip.leftIndices[0]) != localIndices.end()) {
+		//	std::cout << "A closed loop has possibly been found" << std::endl;
+		//	newSeamStrip.leftIndices.push_back(newSeamStrip.leftIndices[0]);
+		//	newSeamStrip.rightIndices.push_back(newSeamStrip.rightIndices[0]);
+		//}
 
 		if (newSeamStrip.leftIndices.size() <= 1) {
 			std::cout << "Seam not found" << std::endl;

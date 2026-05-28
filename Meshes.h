@@ -258,6 +258,7 @@ private:
 	uint32_t width = 0;
 	uint32_t height = 0;
 
+	void sortSeamIndices(SeamStrip&);
 	void prepMap(bool, bool);
 	void prepareColourDescriptor(bool);
 	void createTexWritePipeline(bool);
