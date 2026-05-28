@@ -352,6 +352,36 @@ void PlaneMesh::computeTangents() {
 	}
 }
 
+void findLocalIndices(std::vector<uint32_t>& localIndices, std::vector<uint32_t> indices, uint32_t index) {
+	auto it = find(indices.begin(), indices.end(), index);
+	
+	std::vector<uint32_t> indexOccurrences{};
+	while (it != indices.end()) {
+		indexOccurrences.push_back(it - indices.begin());
+		it = find(it + 1, indices.end(), index);
+	}
+
+	for (uint32_t i = 0; i != indexOccurrences.size(); i++) {
+		uint32_t L_Index = indexOccurrences[i];
+		switch (L_Index % 3) {
+		case (0):
+			localIndices.push_back(indices[L_Index + 1]);
+			localIndices.push_back(indices[L_Index + 2]);
+			break;
+		case (1):
+			localIndices.push_back(indices[L_Index - 1]);
+			localIndices.push_back(indices[L_Index + 1]);
+			break;
+		case (2):
+			localIndices.push_back(indices[L_Index - 2]);
+			localIndices.push_back(indices[L_Index - 1]);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
 void SeamFixer::getStripChain(SeamStrip& strip, uint32_t nodeIndex, std::vector<std::array<uint32_t, 2>>& vertexPairs, std::vector<uint32_t>& deleteIndices) {
 	if (nodeIndex >= vertexPairs.size() - 1 || find(deleteIndices.begin(), deleteIndices.end(), nodeIndex) != deleteIndices.end()) {
 		return;
@@ -435,7 +465,6 @@ void SeamFixer::getStripChain(SeamStrip& strip, uint32_t nodeIndex, std::vector<
 	//}
 	//std::cout << std::endl;
 
-
 	std::vector<uint32_t> chainIndices{};
 
 	for (uint32_t i = 0; i != vertexPairs.size(); i++) {
@@ -478,21 +507,24 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	std::vector<uint32_t> indices = target->indices;
 
 	for (uint32_t i = 0; i != strip.leftIndices.size() - 1; i++) {
-		glm::vec2 texCoord_0 = vertices[strip.leftIndices[i]].texCoord;
-		glm::vec2 texCoord_1 = vertices[strip.leftIndices[i + 1]].texCoord;
+		uint32_t index_1 = strip.leftIndices[i];
+		uint32_t index_2 = strip.leftIndices[i+1];
+		
+		glm::vec2 texCoord_0 = vertices[index_1].texCoord;
+		glm::vec2 texCoord_1 = vertices[index_2].texCoord;
 
 		std::vector<uint32_t> Occurences_0{};
 		std::vector<uint32_t> Occurences_1{};
 
-		auto it_0 = find(indices.begin(), indices.end(), strip.leftIndices[i]);
-		auto it_1 = find(indices.begin(), indices.end(), strip.leftIndices[i + 1]);
+		auto it_0 = find(indices.begin(), indices.end(), index_1);
+		auto it_1 = find(indices.begin(), indices.end(), index_2);
 		while (it_0 != indices.end()) {
 			Occurences_0.push_back(it_0 - indices.begin());
-			it_0 = find(it_0 + 1, indices.end(), strip.leftIndices[i]);
+			it_0 = find(it_0 + 1, indices.end(), index_1);
 		}
 		while (it_1 != indices.end()) {
 			Occurences_1.push_back(it_1 - indices.begin());
-			it_1 = find(it_1 + 1, indices.end(), strip.leftIndices[i + 1]);
+			it_1 = find(it_1 + 1, indices.end(), index_2);
 		}
 
 		std::set<uint32_t> connectedIndices{};
@@ -585,18 +617,18 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 			outCoord = minCoord;
 		}
 
-		if (L_out.count(i) == 0) {
-			L_out.insert({ i, std::vector<glm::vec2>{outCoord} });
+		if (L_out.count(index_1) == 0) {
+			L_out.insert({ index_1, std::vector<glm::vec2>{outCoord} });
 		}
 		else {
-			L_out.at(i).push_back(outCoord);
+			L_out.at(index_1).push_back(outCoord);
 		}
 
-		if (L_in.count(i) == 0) {
-			L_in.insert({ i, std::vector<glm::vec2>{ inCoord} });
+		if (L_in.count(index_1) == 0) {
+			L_in.insert({ index_1, std::vector<glm::vec2>{ inCoord} });
 		}
 		else {
-			L_in.at(i).push_back(inCoord);
+			L_in.at(index_1).push_back(inCoord);
 		}
 
 		minCoord = -pointingVec * distance + texCoord_1;
@@ -611,18 +643,18 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 			outCoord = minCoord;
 		}
 
-		if (L_out.count(i + 1) == 0) {
-			L_out.insert({ i + 1, std::vector<glm::vec2>{ outCoord } });
+		if (L_out.count(index_2) == 0) {
+			L_out.insert({ index_2, std::vector<glm::vec2>{ outCoord } });
 		}
 		else {
-			L_out.at(i + 1).push_back(outCoord);
+			L_out.at(index_2).push_back(outCoord);
 		}
 
-		if (L_in.count(i + 1) == 0) {
-			L_in.insert({ i + 1, std::vector<glm::vec2>{ inCoord } });
+		if (L_in.count(index_2) == 0) {
+			L_in.insert({ index_2, std::vector<glm::vec2>{ inCoord } });
 		}
 		else {
-			L_in.at(i + 1).push_back(inCoord);
+			L_in.at(index_2).push_back(inCoord);
 		}
 	}
 
@@ -630,21 +662,24 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	std::map<uint32_t, std::vector<glm::vec2>> R_in{};
 
 	for (uint32_t i = 0; i != strip.rightIndices.size() - 1; i++) {
-		glm::vec2 texCoord_0 = vertices[strip.rightIndices[i]].texCoord;
-		glm::vec2 texCoord_1 = vertices[strip.rightIndices[i + 1]].texCoord;
+		uint32_t index_1 = strip.rightIndices[i];
+		uint32_t index_2 = strip.rightIndices[i + 1];
+		
+		glm::vec2 texCoord_0 = vertices[index_1].texCoord;
+		glm::vec2 texCoord_1 = vertices[index_2].texCoord;
 
 		std::vector<uint32_t> Occurences_0{};
 		std::vector<uint32_t> Occurences_1{};
 
-		auto it_0 = find(indices.begin(), indices.end(), strip.rightIndices[i]);
-		auto it_1 = find(indices.begin(), indices.end(), strip.rightIndices[i + 1]);
+		auto it_0 = find(indices.begin(), indices.end(), index_1);
+		auto it_1 = find(indices.begin(), indices.end(), index_2);
 		while (it_0 != indices.end()) {
 			Occurences_0.push_back(it_0 - indices.begin());
-			it_0 = find(it_0 + 1, indices.end(), strip.rightIndices[i]);
+			it_0 = find(it_0 + 1, indices.end(), index_1);
 		}
 		while (it_1 != indices.end()) {
 			Occurences_1.push_back(it_1 - indices.begin());
-			it_1 = find(it_1 + 1, indices.end(), strip.rightIndices[i + 1]);
+			it_1 = find(it_1 + 1, indices.end(), index_2);
 		}
 
 		std::set<uint32_t> connectedIndices{};
@@ -738,18 +773,18 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		}
 
 
-		if (R_out.count(i) == 0) {
-			R_out.insert({ i, std::vector<glm::vec2>{ outCoord} });
+		if (R_out.count(index_1) == 0) {
+			R_out.insert({ index_1, std::vector<glm::vec2>{ outCoord} });
 		}
 		else {
-			R_out.at(i).push_back(outCoord);
+			R_out.at(index_1).push_back(outCoord);
 		}
 
-		if (R_in.count(i) == 0) {
-			R_in.insert({ i, std::vector<glm::vec2>{ inCoord } });
+		if (R_in.count(index_1) == 0) {
+			R_in.insert({ index_1, std::vector<glm::vec2>{ inCoord } });
 		}
 		else {
-			R_in.at(i).push_back(inCoord);
+			R_in.at(index_1).push_back(inCoord);
 		}
 
 		minCoord = -pointingVec * distance + texCoord_1;
@@ -764,18 +799,18 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 			outCoord = minCoord;
 		}
 
-		if (R_out.count(i + 1) == 0) {
-			R_out.insert({ i + 1, std::vector<glm::vec2>{ outCoord } });
+		if (R_out.count(index_2) == 0) {
+			R_out.insert({ index_2, std::vector<glm::vec2>{ outCoord } });
 		}
 		else {
-			R_out.at(i + 1).push_back(outCoord);
+			R_out.at(index_2).push_back(outCoord);
 		}
 
-		if (R_in.count(i + 1) == 0) {
-			R_in.insert({ i + 1, std::vector<glm::vec2>{ inCoord} });
+		if (R_in.count(index_2) == 0) {
+			R_in.insert({ index_2, std::vector<glm::vec2>{ inCoord} });
 		}
 		else {
-			R_in.at(i + 1).push_back(inCoord);
+			R_in.at(index_2).push_back(inCoord);
 		}
 	}
 
@@ -785,20 +820,21 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 	// The challenge is in setting the texture coordinates: they need to be the position of the vertices in the opposite mesh on the opposite region
 	// For example, the texture coordinates of the 'out' strip of the left mesh need to be the same as the positions of the 'in' strip of the right mesh
 
-	for (auto elem : L_out) {
+	for (uint32_t i = 0; i != strip.leftIndices.size(); i++) {
+		std::vector<glm::vec2> second = L_out.at(strip.leftIndices[i]);
 		glm::vec2 coord{ 0.0f, 0.0f };
-		if (elem.second.size() > 1) {
+		if (second.size() > 1) {
 			glm::vec2 avgPoint{ 0.0f, 0.0f };
-			for (glm::vec2 point : elem.second) {
+			for (glm::vec2 point : second) {
 				avgPoint += point;
 			}
-			avgPoint /= elem.second.size();
+			avgPoint /= second.size();
 			coord.x = avgPoint.x;// *width;
 			coord.y = avgPoint.y;// *height;
 		}
 		else {
-			coord.x = elem.second[0].x;// *width;
-			coord.y = elem.second[0].y;// *height;
+			coord.x = second[0].x;// *width;
+			coord.y = second[0].y;// *height;
 		}
 		//cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
 		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
@@ -808,7 +844,7 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		L_out.normal = glm::vec3(0.0f);
 		L_out.texCoord = glm::vec2(0.0f, 0.0f);
 		Vertex L_center{};
-		L_center.pos = glm::vec3(vertices[strip.leftIndices[elem.first]].texCoord.x, vertices[strip.leftIndices[elem.first]].texCoord.y, 0.0f);
+		L_center.pos = glm::vec3(vertices[strip.leftIndices[i]].texCoord.x, vertices[strip.leftIndices[i]].texCoord.y, 0.0f);
 		L_center.normal = glm::vec3(0.0f);
 		L_center.texCoord = glm::vec2(0.0f);
 
@@ -827,26 +863,27 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		Vertex R_center{};
 		R_center.pos = glm::vec3(0.0f);
 		R_center.normal = glm::vec3(0.0f);
-		R_center.texCoord = glm::vec2(vertices[strip.leftIndices[elem.first]].texCoord.x, vertices[strip.leftIndices[elem.first]].texCoord.y);
+		R_center.texCoord = glm::vec2(vertices[strip.leftIndices[i]].texCoord.x, vertices[strip.leftIndices[i]].texCoord.y);
 
 		strip.rightMesh.vertices.push_back(R_in);
 		strip.rightMesh.vertices.push_back(R_center);
 	}
 
-	for (auto elem : L_in) {
+	for (uint32_t i = 0; i != strip.leftIndices.size(); i++) {
+		std::vector<glm::vec2> second = L_in.at(strip.leftIndices[i]);
 		glm::vec2 coord{ 0.0f, 0.0f };
-		if (elem.second.size() > 1) {
+		if (second.size() > 1) {
 			glm::vec2 avgPoint{ 0.0f, 0.0f };
-			for (glm::vec2 point : elem.second) {
+			for (glm::vec2 point : second) {
 				avgPoint += point;
 			}
-			avgPoint /= elem.second.size();
+			avgPoint /= second.size();
 			coord.x = avgPoint.x;// *width;
 			coord.y = avgPoint.y;// *height;
 		}
 		else {
-			coord.x = elem.second[0].x;// *width;
-			coord.y = elem.second[0].y;// *height;
+			coord.x = second[0].x;// *width;
+			coord.y = second[0].y;// *height;
 		}
 		//cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
 		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
@@ -856,7 +893,7 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		L_in.normal = glm::vec3(0.0f);
 		L_in.texCoord = glm::vec2(0.0f, 1.0f);
 		Vertex L_center{};
-		L_center.pos = glm::vec3(vertices[strip.leftIndices[elem.first]].texCoord.x, vertices[strip.leftIndices[elem.first]].texCoord.y, 0.0f);
+		L_center.pos = glm::vec3(vertices[strip.leftIndices[i]].texCoord.x, vertices[strip.leftIndices[i]].texCoord.y, 0.0f);
 		L_center.normal = glm::vec3(0.0f);
 		L_center.texCoord = glm::vec2(0.0f);
 
@@ -870,7 +907,7 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		Vertex R_center{};
 		R_center.pos = glm::vec3(0.0f);
 		R_center.normal = glm::vec3(0.0f);
-		R_center.texCoord = glm::vec2(vertices[strip.leftIndices[elem.first]].texCoord.x, vertices[strip.leftIndices[elem.first]].texCoord.y);
+		R_center.texCoord = glm::vec2(vertices[strip.leftIndices[i]].texCoord.x, vertices[strip.leftIndices[i]].texCoord.y);
 		Vertex R_out{};
 		R_out.pos = glm::vec3(0.0f, 0.0f, 0.0f);
 		R_out.normal = glm::vec3(0.0f);
@@ -882,20 +919,22 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 
 	uint32_t index = 0;
 
-	for (auto elem : R_in) {
+	//for (auto elem : R_in) {
+	for (uint32_t i = 0; i != strip.rightIndices.size(); i++) {
+		std::vector<glm::vec2> second = R_in.at(strip.rightIndices[i]);
 		glm::vec2 coord{ 0.0f, 0.0f };
-		if (elem.second.size() > 1) {
+		if (second.size() > 1) {
 			glm::vec2 avgPoint{ 0.0f, 0.0f };
-			for (glm::vec2 point : elem.second) {
+			for (glm::vec2 point : second) {
 				avgPoint += point;
 			}
-			avgPoint /= elem.second.size();
+			avgPoint /= second.size();
 			coord.x = avgPoint.x;// *width;
 			coord.y = avgPoint.y;// *height;
 		}
 		else {
-			coord.x = elem.second[0].x;// *width;
-			coord.y = elem.second[0].y;// *height;
+			coord.x = second[0].x;// *width;
+			coord.y = second[0].y;// *height;
 		}
 		//cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
 		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
@@ -903,8 +942,8 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		strip.rightMesh.vertices.at(index).pos = glm::vec3(coord.x, coord.y, 0.0f);
 		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(coord.x, coord.y);
 		index++;
-		strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
-		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y);
+		strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
+		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y);
 		index++;
 
 		Vertex R_in_Alpha{};
@@ -912,7 +951,7 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		R_in_Alpha.normal = glm::vec3(0.0f);
 		R_in_Alpha.texCoord = glm::vec2(0.0f, 1.0f);
 		Vertex R_center_Alpha{};
-		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
+		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
 		R_center_Alpha.normal = glm::vec3(0.0f);
 		R_center_Alpha.texCoord = glm::vec2(0.0f);
 
@@ -920,33 +959,35 @@ void SeamFixer::createSeamMeshes(cv::Mat demoMat, SeamStrip& strip) {
 		strip.rightAlphaMesh.vertices.push_back(R_center_Alpha);
 	}
 
-	for (auto elem : R_out) {
+	//for (auto elem : R_out) {
+	for (uint32_t i = 0; i != strip.rightIndices.size(); i++) {
+		std::vector<glm::vec2> second = R_out.at(strip.rightIndices[i]);
 		glm::vec2 coord{ 0.0f, 0.0f };
-		if (elem.second.size() > 1) {
+		if (second.size() > 1) {
 			glm::vec2 avgPoint{ 0.0f, 0.0f };
-			for (glm::vec2 point : elem.second) {
+			for (glm::vec2 point : second) {
 				avgPoint += point;
 			}
-			avgPoint /= elem.second.size();
+			avgPoint /= second.size();
 			coord.x = avgPoint.x;// *width;
 			coord.y = avgPoint.y;// *height;
 		}
 		else {
-			coord.x = elem.second[0].x;// *width;
-			coord.y = elem.second[0].y;// *height;
+			coord.x = second[0].x;// *width;
+			coord.y = second[0].y;// *height;
 		}
 		//cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
 		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
 
-		strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
-		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y);
+		strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
+		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y);
 		index++;
 		strip.rightMesh.vertices.at(index).pos = glm::vec3(coord.x, coord.y, 0.0f);
 		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(coord.x, coord.y);
 		index++;
 
 		Vertex R_center_Alpha{};
-		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[elem.first]].texCoord.x, vertices[strip.rightIndices[elem.first]].texCoord.y, 0.0f);
+		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
 		R_center_Alpha.normal = glm::vec3(0.0f);
 		R_center_Alpha.texCoord = glm::vec2(0.0f);
 		Vertex R_out_Alpha{};
@@ -1024,6 +1065,15 @@ void SeamFixer::findAdjacentStrips(cv::Mat demoMat) {
 		std::vector<uint32_t> chainIndices{};
 
 		getStripChain(newSeamStrip, 0, seamVertexPairs, chainIndices);
+
+		std::vector<uint32_t> localIndices{};
+		findLocalIndices(localIndices, target->indices, newSeamStrip.leftIndices[newSeamStrip.leftIndices.size() - 1]);
+
+		if (find(localIndices.begin(), localIndices.end(), newSeamStrip.leftIndices[0]) != localIndices.end()) {
+			std::cout << "A closed loop has possibly been found" << std::endl;
+			newSeamStrip.leftIndices.push_back(newSeamStrip.leftIndices[0]);
+			newSeamStrip.rightIndices.push_back(newSeamStrip.rightIndices[0]);
+		}
 
 		if (newSeamStrip.leftIndices.size() <= 1) {
 			std::cout << "Seam not found" << std::endl;
