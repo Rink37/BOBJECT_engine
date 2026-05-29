@@ -69,7 +69,9 @@ public:
 		bool cleaned = true;
 	};
 
-	void createSeamMeshes(SeamStrip&);
+	void updateSeamMeshes(float);
+
+	void createSeamMeshes(SeamStrip&, float);
 	void findAdjacentStrips();
 	void getStripChain(SeamStrip&, uint32_t, std::vector<std::array<uint32_t, 2>>&, std::vector<uint32_t>&);
 

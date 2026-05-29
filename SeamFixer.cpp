@@ -301,8 +301,7 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 	//std::cout << strip.leftIndices.size() << " " << strip.rightIndices.size() << std::endl;
 }
 
-void SeamFixer::createSeamMeshes(SeamStrip& strip) {
-	float distance = 0.01f;
+void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
 
 	//cv::Mat demoMatDupe = targetTex->texMat.clone();
 	uint32_t width = targetTex->texWidth;
@@ -839,6 +838,19 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip) {
 
 	//cv::imshow("Tex coord points", demoMatDupe);
 	//cv::waitKey(0);
+}
+
+void SeamFixer::updateSeamMeshes(float distance = 0.01f) {
+	vkDeviceWaitIdle(Engine::get()->device);
+
+	for (SeamStrip strip : seamStrips) {
+		strip.leftAlphaMesh.cleanup();
+		strip.leftMesh.cleanup();
+		strip.rightAlphaMesh.cleanup();
+		strip.rightMesh.cleanup();
+
+		createSeamMeshes(strip, distance);
+	}
 }
 
 void SeamFixer::findAdjacentStrips() {
