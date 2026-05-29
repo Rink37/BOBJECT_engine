@@ -63,7 +63,10 @@ public:
 			if (frameBuffer != nullptr) {
 				vkDestroyFramebuffer(Engine::get()->device, frameBuffer, nullptr);
 			}
+			cleaned = true;
 		}
+
+		bool cleaned = true;
 	};
 
 	void createSeamMeshes(SeamStrip&);
@@ -85,34 +88,42 @@ public:
 	}
 
 	void drawRightMap() {
-		prepMap(false, true);
-		prepareColourDescriptor(true);
-		createTexWritePipeline(true);
+		if (rightMap.cleaned) {
+			prepMap(false, true);
+			prepareColourDescriptor(true);
+			createTexWritePipeline(true);
+		}
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawColourMap(commandBuffer, true);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
 	}
 
 	void drawLeftMap() {
-		prepMap(false, false);
-		prepareColourDescriptor(false);
-		createTexWritePipeline(false);
+		if (leftMap.cleaned) {
+			prepMap(false, false);
+			prepareColourDescriptor(false);
+			createTexWritePipeline(false);
+		}
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawColourMap(commandBuffer, false);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
 	}
 
 	void drawRightAlpha() {
-		prepMap(true, true);
-		createAlphaWritePipeline(true);
+		if (rightAlpha.cleaned) {
+			prepMap(true, true);
+			createAlphaWritePipeline(true);
+		}
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawAlphaMap(commandBuffer, true);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
 	}
 
 	void drawLeftAlpha() {
-		prepMap(true, false);
-		createAlphaWritePipeline(false);
+		if (leftAlpha.cleaned) {
+			prepMap(true, false);
+			createAlphaWritePipeline(false);
+		}
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawAlphaMap(commandBuffer, false);
 		Engine::get()->endSingleTimeCommands(commandBuffer);

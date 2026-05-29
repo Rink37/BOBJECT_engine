@@ -1002,6 +1002,8 @@ void SeamFixer::prepMap(bool alpha, bool isRight) {
 	if (vkCreateFramebuffer(Engine::get()->device, &fbufCreateInfo, nullptr, &map->frameBuffer) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create framebuffer");
 	}
+
+	map->cleaned = false;
 }
 
 void SeamFixer::prepareColourDescriptor(bool isRight) {
@@ -1064,6 +1066,8 @@ void SeamFixer::prepareColourDescriptor(bool isRight) {
 	descriptorWrite.pImageInfo = &imageInfo;
 
 	vkUpdateDescriptorSets(Engine::get()->device, 1, &descriptorWrite, 0, nullptr);
+
+	map->cleaned = false;
 }
 
 void SeamFixer::createTexWritePipeline(bool isRight) {
@@ -1188,6 +1192,8 @@ void SeamFixer::createTexWritePipeline(bool isRight) {
 	vkDestroyShaderModule(Engine::get()->device, VertShaderModule, nullptr);
 
 	delete sD;
+
+	map->cleaned = false;
 }
 
 void SeamFixer::createAlphaWritePipeline(bool isRight) {
@@ -1311,6 +1317,8 @@ void SeamFixer::createAlphaWritePipeline(bool isRight) {
 	vkDestroyShaderModule(Engine::get()->device, VertShaderModule, nullptr);
 
 	delete sD;
+
+	map->cleaned = false;
 }
 
 VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, bool isRight) {
