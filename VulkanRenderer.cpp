@@ -13,6 +13,7 @@
 #include"Remapper.h"
 #include"ImageProcessor.h"
 #include"GenerateNormalMap.h"
+#include"SeamFixer.h"
 
 #include<chrono>
 
@@ -36,7 +37,7 @@ public:
 		textureLL = textureAssets;
 	}
 
-	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc) {
+	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc) {
 		if (isSetup) {
 			return;
 		}
@@ -88,7 +89,12 @@ public:
 				remapArrangement->addItem(getPtr(normalType));
 			}
 		}
-		
+		if (texName != "Webcam View") {
+			Button* seamFixBtn = new Button(settingsMat, fixSeamsFnc);
+			seamFixBtn->Name = texName;
+
+			remapArrangement->addItem(getPtr(seamFixBtn));
+		}
 		remapArrangement->addItem(getPtr(remapBtn));
 
 		Material* panelMat = loadList->replacePtr(new Material(tex), "Image view");
@@ -1762,12 +1768,11 @@ public:
 			webcamTexture::get()->webCam->loadFilter();
 		}
 		TextureElements.getPtr(webcamTexture::get(), "Webcam View");
-		std::function<void()> testFunct = bind(&Application::testSeamPatcher, this);
+		//std::function<void()> testFunct = bind(&Application::testSeamPatcher, this);
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
-		//std::function<void()> drawUpdate = bind(&Application::updateDrawVariables, this);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
-		keyBinds.addBinding(GLFW_KEY_T, testFunct, PRESS_EVENT);
+		//keyBinds.addBinding(GLFW_KEY_T, testFunct, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
@@ -1817,12 +1822,14 @@ private:
 	TomogRefPicker tomogPicker = TomogRefPicker(&UIElements, &TextureElements);
 	SpaceTransitionMenu stm = SpaceTransitionMenu(&UIElements, &TextureElements);
 	NormalMixer normalMixer = NormalMixer(&UIElements, &TextureElements);
+	SeamObjPicker sob = SeamObjPicker(&UIElements, &TextureElements);
+	SeamFixMenu seamFixer = SeamFixMenu(&UIElements, &TextureElements);
 
 	Material* webcamMat = nullptr;
 	Material* wireMat = nullptr;
 
 	vector<Widget*> widgets;
-	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, &mc, &osm, &rts, &tlm, &tomogPicker, &stm, &normalMixer};
+	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, &mc, &osm, &rts, &tlm, &tomogPicker, &stm, &normalMixer, &sob, &seamFixer};
 
 	drawImage renderImage;
 	GraphicsPass renderGP;
@@ -1870,24 +1877,60 @@ private:
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
 
-	void testSeamPatcher() {
-		std::string fileName = winFile::OpenFileDialog();
-		if (fileName == string("fail")) {
-			return; // We will need to check if this menu has been setup after the setup function is called otherwise we will have some draw errors
+	void openSeamObjPicker(UIItem* owner) {
+		std::string texName = owner->Name;
+		
+		std::vector<std::string> objectNames{};
+		for (auto elem : objectMenu.ObjectMap) {
+			objectNames.push_back(elem.first);
 		}
-		cv::Mat testMat = cv::imread(fileName);
+		closeTextureSettingsMenu(owner);
 
-		if (staticObjects.size() > 0) {
-			SeamFixer testSeamFixer(staticObjects[0].mesh);
+		sob.setup(texName, objectNames, std::bind(&Application::openSeamFixer ,this, std::placeholders::_1));
+		sob.clickIndex = mouseManager.addClickListener(sob.getClickCallback());
+		widgets.push_back(&sob);
+	}
 
-			testSeamFixer.findAdjacentStrips(testMat);
+	void openSeamFixer(UIItem* owner) {
+		std::string texName = owner->Name;
+		std::string objName = owner->text;
+		Mesh* selectedMesh = staticObjects[objectMenu.ObjectMap.at(objName)].mesh;
 
-			testSeamFixer.alphaOverRight();
+		mouseManager.removeClickListener(sob.clickIndex);
+		sob.cleanup();
+		widgets.erase(find(widgets.begin(), widgets.end(), &sob));
 
-			testSeamFixer.alphaOverLeft();
+		seamFixer.setup(selectedMesh, texName, std::bind(&Application::cancelSeamFixer, this, std::placeholders::_1), std::bind(&Application::finishSeamFixer, this, std::placeholders::_1));
+		seamFixer.clickIndex = mouseManager.addClickListener(seamFixer.getClickCallback());
+		widgets.push_back(&seamFixer);
+	}
 
-			testSeamFixer.cleanup();
-		}
+	void cancelSeamFixer(UIItem* owner) {
+		std::string texName = owner->Name;
+		
+		mouseManager.removeClickListener(seamFixer.clickIndex);
+		seamFixer.cleanup();
+		widgets.erase(find(widgets.begin(), widgets.end(), &seamFixer));
+
+		UIItem* temp = new spacer;
+		temp->Name = texName;
+		openTextureSettingsMenu(temp);
+		temp->cleanup();
+		delete temp;
+	}
+
+	void finishSeamFixer(UIItem* owner) {
+		std::string texName = owner->Name;
+
+		mouseManager.removeClickListener(seamFixer.clickIndex);
+		seamFixer.cleanup();
+		widgets.erase(find(widgets.begin(), widgets.end(), &seamFixer));
+
+		UIItem* temp = new spacer;
+		temp->Name = texName;
+		openTextureSettingsMenu(temp);
+		temp->cleanup();
+		delete temp;
 	}
 
 	void colourChangeTest() {
@@ -2109,7 +2152,9 @@ private:
 	}
 
 	void openTextureSettingsMenu(UIItem* owner) {
-		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1));
+		std::function<void(UIItem*)> seamFixFunc = std::bind(&Application::openSeamObjPicker, this, std::placeholders::_1);
+
+		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc);
 
 		textureSettings.clickIndex = mouseManager.addClickListener(textureSettings.getClickCallback());
 
@@ -2598,7 +2643,7 @@ private:
 			
 			closeTextureSettingsMenu(owner);
 			
-			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr);
+			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr);
 
 			textureSettings.clickIndex = mouseManager.addClickListener(textureSettings.getClickCallback());
 
