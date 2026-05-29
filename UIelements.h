@@ -1677,11 +1677,11 @@ struct Widget {
 	}
 
 	virtual void drawText(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
-		for (size_t i = 0; i != TextBoxes.size(); i++) {
-			TextBoxes[i]->draw(commandBuffer, currentFrame);
-		}
 		for (size_t i = 0; i != DropdownMenus.size(); i++) {
 			DropdownMenus[i]->drawText(commandBuffer, currentFrame);
+		}
+		for (size_t i = 0; i != TextBoxes.size(); i++) {
+			TextBoxes[i]->draw(commandBuffer, currentFrame);
 		}
 	}
 

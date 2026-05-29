@@ -91,10 +91,6 @@ public:
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawColourMap(commandBuffer, true);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
-
-		//rightMap.colour->getCVMat();
-		//cv::imshow("Drawn Map", rightMap.colour->texMat);
-		//cv::waitKey(0);
 	}
 
 	void drawLeftMap() {
@@ -274,6 +270,17 @@ public:
 
 		column->addItem(outMap);
 
+		Arrangement* directionButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		TextBox* directionTB = new TextBox(loadList->getFont(), 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		directionTB->addText("Seam direction:");
+		
+		directionButtons->addItem(getPtr(directionTB));
+
+		directionButtons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, std::bind(&SeamFixMenu::swapDirection, this, std::placeholders::_1))));
+
+		column->addItem(getPtr(directionButtons));
+
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
 		imageData cancel = CANCELBUTTON;
@@ -288,10 +295,10 @@ public:
 		endButtons->addItem(getPtr(cancelButton));
 		endButtons->addItem(getPtr(finishButton));
 
-		canvas.push_back(getPtr(column));
+		column->addItem(getPtr(endButtons));
+		column->updateDisplay();
 
-		canvas[0]->addItem(getPtr(endButtons));
-		canvas[0]->updateDisplay();
+		canvas.push_back(getPtr(column));
 
 		isSetup = true;
 	}
@@ -304,6 +311,15 @@ private:
 
 	std::function<void(UIItem*)> cancelFunc = nullptr;
 	std::function<void(UIItem*)> finishFunc = nullptr;
+
+	void swapDirection(UIItem* owner) {
+		if (owner->activestate) {
+			fixer->alphaOverLeft();
+		}
+		else {
+			fixer->alphaOverRight();
+		}
+	}
 
 	void finish(UIItem* owner) {
 		outMap->setVisibility(false);
