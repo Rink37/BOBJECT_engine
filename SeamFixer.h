@@ -92,9 +92,9 @@ public:
 		commandBuffer = drawColourMap(commandBuffer, true);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
 
-		rightMap.colour->getCVMat();
-		cv::imshow("Drawn Map", rightMap.colour->texMat);
-		cv::waitKey(0);
+		//rightMap.colour->getCVMat();
+		//cv::imshow("Drawn Map", rightMap.colour->texMat);
+		//cv::waitKey(0);
 	}
 
 	void drawLeftMap() {
@@ -105,9 +105,9 @@ public:
 		commandBuffer = drawColourMap(commandBuffer, false);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
 
-		leftMap.colour->getCVMat();
-		cv::imshow("Drawn Map", leftMap.colour->texMat);
-		cv::waitKey(0);
+		//leftMap.colour->getCVMat();
+		//cv::imshow("Drawn Map", leftMap.colour->texMat);
+		//cv::waitKey(0);
 	}
 
 	void drawRightAlpha() {
@@ -117,9 +117,9 @@ public:
 		commandBuffer = drawAlphaMap(commandBuffer, true);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
 
-		rightAlpha.colour->getCVMat();
-		cv::imshow("Drawn Map", rightAlpha.colour->texMat);
-		cv::waitKey(0);
+		//rightAlpha.colour->getCVMat();
+		//cv::imshow("Drawn Map", rightAlpha.colour->texMat);
+		//cv::waitKey(0);
 	}
 
 	void drawLeftAlpha() {
@@ -129,9 +129,9 @@ public:
 		commandBuffer = drawAlphaMap(commandBuffer, false);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
 
-		leftAlpha.colour->getCVMat();
-		cv::imshow("Drawn Map", leftAlpha.colour->texMat);
-		cv::waitKey(0);
+		//leftAlpha.colour->getCVMat();
+		//cv::imshow("Drawn Map", leftAlpha.colour->texMat);
+		//cv::waitKey(0);
 	}
 
 	void cleanup() {

@@ -259,17 +259,17 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 
 	//std::cout << strip.leftIndices.size() << std::endl;
 
-	std::cout << "Sorted left positions: ";
-	for (uint32_t i : sortedSeamPositions) {
-		std::cout << i << " ";
-	}
-	std::cout << std::endl;
+	//std::cout << "Sorted left positions: ";
+	//for (uint32_t i : sortedSeamPositions) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << std::endl;
 
-	std::cout << "Sorted right positions: ";
-	for (uint32_t i : rightSortedSeamPositions) {
-		std::cout << i << " ";
-	}
-	std::cout << std::endl;
+	//std::cout << "Sorted right positions: ";
+	//for (uint32_t i : rightSortedSeamPositions) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << std::endl;
 
 	std::vector<uint32_t> newLeftIndices{};
 	std::vector<uint32_t> newRightIndices{};
@@ -304,9 +304,9 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 void SeamFixer::createSeamMeshes(SeamStrip& strip) {
 	float distance = 0.01f;
 
-	cv::Mat demoMatDupe = targetTex->texMat.clone();
-	uint32_t width = demoMatDupe.size().width;
-	uint32_t height = demoMatDupe.size().height;
+	//cv::Mat demoMatDupe = targetTex->texMat.clone();
+	uint32_t width = targetTex->texWidth;
+	uint32_t height = targetTex->texHeight;
 
 	// First we do the left hand mesh
 	// I'll start just by plotting points but later we can make this into an actual mesh
@@ -399,7 +399,7 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip) {
 
 		thirdCoord /= connectedIndices.size();
 
-		cv::circle(demoMatDupe, cv::Point(thirdCoord.x * width, thirdCoord.y * height), 5, cv::Scalar(0, 0, 255), -1);
+		//cv::circle(demoMatDupe, cv::Point(thirdCoord.x * width, thirdCoord.y * height), 5, cv::Scalar(0, 0, 255), -1);
 
 		float gradient = static_cast<float>(texCoord_1.y - texCoord_0.y) / static_cast<float>(texCoord_1.x - texCoord_0.x);
 		float invGradient = -1.0f / gradient;
@@ -554,7 +554,7 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip) {
 
 		thirdCoord /= connectedIndices.size();
 
-		cv::circle(demoMatDupe, cv::Point(thirdCoord.x * width, thirdCoord.y * height), 5, cv::Scalar(0, 0, 255), -1);
+		//cv::circle(demoMatDupe, cv::Point(thirdCoord.x * width, thirdCoord.y * height), 5, cv::Scalar(0, 0, 255), -1);
 
 		float gradient = static_cast<float>(texCoord_1.y - texCoord_0.y) / static_cast<float>(texCoord_1.x - texCoord_0.x);
 		float invGradient = -1.0f / gradient;
@@ -866,12 +866,12 @@ void SeamFixer::findAdjacentStrips() {
 	// The aim is now to separate individual seams and determine which side of the seam each vertex falls on i.e. we construct the chain of vertices on either side of each
 	// In the indices of the mesh vertices which correspond to triangles are arranged in triples; therefore if multiple seam vertices appear in the same set of three indices we know that these vertices are on the same side of a seam
 
-	cv::Mat demoMat = targetTex->texMat.clone();
+	//cv::Mat demoMat = targetTex->texMat.clone();
 
-	width = demoMat.size().width;
-	height = demoMat.size().height;
+	width = targetTex->texWidth;
+	height = targetTex->texHeight;
 
-	cv::Mat cleanDemoMat = demoMat.clone();
+	//cv::Mat cleanDemoMat = demoMat.clone();
 
 	while (seamVertexPairs.size() > 1) {
 		SeamStrip newSeamStrip;
@@ -888,15 +888,15 @@ void SeamFixer::findAdjacentStrips() {
 			continue;
 		}
 
-		for (uint32_t j = 0; j != newSeamStrip.leftIndices.size(); j++) {
-			uint32_t i = newSeamStrip.leftIndices[j];
-			cv::circle(demoMat, cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height), 5, cv::Scalar(255 * static_cast<float>(j) / static_cast<float>(newSeamStrip.leftIndices.size()), 0, 0), -1);
-		}
+		//for (uint32_t j = 0; j != newSeamStrip.leftIndices.size(); j++) {
+		//	uint32_t i = newSeamStrip.leftIndices[j];
+		//	cv::circle(demoMat, cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height), 5, cv::Scalar(255 * static_cast<float>(j) / static_cast<float>(newSeamStrip.leftIndices.size()), 0, 0), -1);
+		//}
 
-		for (uint32_t j = 0; j != newSeamStrip.rightIndices.size(); j++) {
-			uint32_t i = newSeamStrip.rightIndices[j];
-			cv::circle(demoMat, cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height), 5, cv::Scalar(0, 255 * static_cast<float>(j) / static_cast<float>(newSeamStrip.rightIndices.size()), 0), -1);
-		}
+		//for (uint32_t j = 0; j != newSeamStrip.rightIndices.size(); j++) {
+		//	uint32_t i = newSeamStrip.rightIndices[j];
+		//	cv::circle(demoMat, cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height), 5, cv::Scalar(0, 255 * static_cast<float>(j) / static_cast<float>(newSeamStrip.rightIndices.size()), 0), -1);
+		//}
 
 		createSeamMeshes(newSeamStrip);
 
@@ -911,8 +911,8 @@ void SeamFixer::findAdjacentStrips() {
 		seamStrips.push_back(newSeamStrip);
 	}
 
-	cv::imshow("Seam checker", demoMat);
-	cv::waitKey(0);
+	//cv::imshow("Seam checker", demoMat);
+	//cv::waitKey(0);
 }
 
 void SeamFixer::prepMap(bool alpha, bool isRight) {
