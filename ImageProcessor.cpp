@@ -296,7 +296,7 @@ void filter::filterImage() {
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipelineLayout, 0, 1, &filterDescriptorSet, 0, 0);
-	vkCmdDispatch(commandBuffer, source[0]->texWidth / 16, source[0]->texHeight / 16, 1);
+	vkCmdDispatch(commandBuffer, source[0]->texWidth / 16 + 1, source[0]->texHeight / 16 + 1, 1);
 
 	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
 }
