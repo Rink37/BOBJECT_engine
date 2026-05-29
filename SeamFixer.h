@@ -104,10 +104,6 @@ public:
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawColourMap(commandBuffer, false);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
-
-		//leftMap.colour->getCVMat();
-		//cv::imshow("Drawn Map", leftMap.colour->texMat);
-		//cv::waitKey(0);
 	}
 
 	void drawRightAlpha() {
@@ -116,10 +112,6 @@ public:
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawAlphaMap(commandBuffer, true);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
-
-		//rightAlpha.colour->getCVMat();
-		//cv::imshow("Drawn Map", rightAlpha.colour->texMat);
-		//cv::waitKey(0);
 	}
 
 	void drawLeftAlpha() {
@@ -128,10 +120,6 @@ public:
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawAlphaMap(commandBuffer, false);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
-
-		//leftAlpha.colour->getCVMat();
-		//cv::imshow("Drawn Map", leftAlpha.colour->texMat);
-		//cv::waitKey(0);
 	}
 
 	void cleanup() {
@@ -139,8 +127,6 @@ public:
 		leftAlpha.cleanup();
 		rightMap.cleanup();
 		rightAlpha.cleanup();
-
-		//imageTex->cleanup();
 
 		for (SeamStrip strip : seamStrips) {
 			strip.leftAlphaMesh.cleanup();

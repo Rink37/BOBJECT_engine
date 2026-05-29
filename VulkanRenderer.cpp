@@ -918,7 +918,7 @@ public:
 		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		Checkbox* objectButton = new Checkbox(visibleMat, invisibleMat, toggleFunction);
-		objectButton->Name = "Object button " + std::to_string(ObjectButtons->Items.size() - 1);
+		objectButton->Name = nameString;
 
 		Checkbox* objWireframeButton = new Checkbox(wireframeMat, invisibleMat, wireframeToggle);
 		objWireframeButton->Name = objectButton->Name;
@@ -929,12 +929,12 @@ public:
 		TextBox* objectName = new TextBox(objectFont, 0.0f, 0.0f, 3.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		objectName->addText(nameString);
 
-		Button* newButton = new Button(settingsMat, optionsMenu);
-		newButton->Name = to_string(ObjectButtons->Items.size() - 1);
+		Button* optionsButton = new Button(settingsMat, optionsMenu);
+		optionsButton->Name = nameString;
 
 		objButtons->addItem(getPtr(objectName));
 		objButtons->addItem(getPtr(new spacer()));
-		objButtons->addItem(getPtr(newButton));
+		objButtons->addItem(getPtr(optionsButton));
 		objButtons->addItem(getPtr(objectButton));
 		objButtons->addItem(getPtr(objWireframeButton));
 		objButtons->arrangeItems();
@@ -2166,7 +2166,7 @@ private:
 	void openObjectSettingsMenu(UIItem* owner) {
 		std::function<void(std::function<void(UIItem*)>, std::string)> openEditMenu = std::bind(&Application::openEditSettingsMenu, this, std::placeholders::_1, std::placeholders::_2);
 		
-		osm.setup(&staticObjects[stoi(owner->Name)], textureMenu.getAddTexCallback(), std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeObjectSettingsMenu, this, std::placeholders::_1), openEditMenu);
+		osm.setup(&staticObjects[objectMenu.ObjectMap.at(owner->Name)], textureMenu.getAddTexCallback(), std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeObjectSettingsMenu, this, std::placeholders::_1), openEditMenu);
 		
 		addWidget(&osm);
 	}
