@@ -1937,7 +1937,7 @@ private:
 		removeWidget(&sob);
 
 		seamFixer.setup(selectedMesh, texName, std::bind(&Application::cancelSeamFixer, this, std::placeholders::_1), std::bind(&Application::finishSeamFixer, this, std::placeholders::_1));
-		addWidget(&seamFixer);
+		addWidget(&seamFixer, true, true);
 	}
 
 	void cancelSeamFixer(UIItem* owner) {

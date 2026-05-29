@@ -302,6 +302,14 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 }
 
 void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
+	strip.leftMesh.vertices.clear();
+	strip.leftMesh.indices.clear();
+	strip.leftAlphaMesh.vertices.clear();
+	strip.leftAlphaMesh.indices.clear();
+	strip.rightMesh.vertices.clear();
+	strip.rightMesh.indices.clear();
+	strip.rightAlphaMesh.vertices.clear();
+	strip.rightAlphaMesh.indices.clear();
 
 	//cv::Mat demoMatDupe = targetTex->texMat.clone();
 	uint32_t width = targetTex->texWidth;
@@ -843,7 +851,7 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
 void SeamFixer::updateSeamMeshes(float distance = 0.01f) {
 	vkDeviceWaitIdle(Engine::get()->device);
 
-	for (SeamStrip strip : seamStrips) {
+	for (SeamStrip& strip : seamStrips) {
 		strip.leftAlphaMesh.cleanup();
 		strip.leftMesh.cleanup();
 		strip.rightAlphaMesh.cleanup();

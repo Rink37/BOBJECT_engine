@@ -294,6 +294,17 @@ public:
 
 		column->addItem(getPtr(directionButtons));
 
+		TextBox* sizeText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.2f, 18, ARRANGE_START, ARRANGE_CENTER);
+		sizeText->addText("Seam size:");
+
+		column->addItem(getPtr(sizeText));
+
+		Slider* sizeSlide = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 1.0f, 0.2f);
+		sizeSlide->setFloatCallback(std::bind(&SeamFixMenu::setSize, this, std::placeholders::_1), false);
+		sizeSlide->setSlideValues(0.005f, 0.05f, 0.01f);
+
+		column->addItem(getPtr(sizeSlide));
+
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
 		imageData cancel = CANCELBUTTON;
@@ -321,12 +332,25 @@ private:
 	UIItem* outMap = nullptr;
 
 	SeamFixer* fixer = nullptr;
+	bool currentDirection = true;
 
 	std::function<void(UIItem*)> cancelFunc = nullptr;
 	std::function<void(UIItem*)> finishFunc = nullptr;
 
+	void setSize(float distance) {
+		fixer->updateSeamMeshes(distance);
+
+		if (currentDirection) {
+			fixer->alphaOverLeft();
+		}
+		else {
+			fixer->alphaOverRight();
+		}
+	}
+	
 	void swapDirection(UIItem* owner) {
-		if (owner->activestate) {
+		currentDirection = owner->activestate;
+		if (currentDirection) {
 			fixer->alphaOverLeft();
 		}
 		else {
