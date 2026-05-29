@@ -1877,6 +1877,44 @@ private:
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
 
+	void addWidget(Widget* widget, bool hasClick = true, bool hasPos = false) {
+		// The widget must be set up beforehand since setup functions don't have consistent arguments
+		if (!widget->isSetup) {
+			return;
+		}
+
+		if (hasClick) {
+			widget->clickIndex = mouseManager.addClickListener(widget->getClickCallback());
+		}
+		else {
+			widget->clickIndex = INT_MAX;
+		}
+		if (hasPos) {
+			widget->posIndex = mouseManager.addPositionListener(widget->getPosCallback());
+		}
+		else {
+			widget->posIndex = INT_MAX;
+		}
+		widgets.push_back(widget);
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	}
+
+	void removeWidget(Widget* widget) {
+		vkDeviceWaitIdle(Engine::get()->device);
+
+		if (widget->clickIndex != INT_MAX) {
+			mouseManager.removeClickListener(widget->clickIndex);
+		}
+		if (widget->posIndex != INT_MAX) {
+			mouseManager.removePositionListener(widget->posIndex);
+		}
+		widget->cleanup();
+		widgets.erase(find(widgets.begin(), widgets.end(), widget));
+
+		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+	}
+
 	void openSeamObjPicker(UIItem* owner) {
 		std::string texName = owner->Name;
 		
@@ -1887,8 +1925,8 @@ private:
 		closeTextureSettingsMenu(owner);
 
 		sob.setup(texName, objectNames, std::bind(&Application::openSeamFixer ,this, std::placeholders::_1));
-		sob.clickIndex = mouseManager.addClickListener(sob.getClickCallback());
-		widgets.push_back(&sob);
+		
+		addWidget(&sob);
 	}
 
 	void openSeamFixer(UIItem* owner) {
@@ -1896,25 +1934,16 @@ private:
 		std::string objName = owner->text;
 		Mesh* selectedMesh = staticObjects[objectMenu.ObjectMap.at(objName)].mesh;
 
-		vkDeviceWaitIdle(Engine::get()->device);
-
-		mouseManager.removeClickListener(sob.clickIndex);
-		sob.cleanup();
-		widgets.erase(find(widgets.begin(), widgets.end(), &sob));
+		removeWidget(&sob);
 
 		seamFixer.setup(selectedMesh, texName, std::bind(&Application::cancelSeamFixer, this, std::placeholders::_1), std::bind(&Application::finishSeamFixer, this, std::placeholders::_1));
-		seamFixer.clickIndex = mouseManager.addClickListener(seamFixer.getClickCallback());
-		widgets.push_back(&seamFixer);
+		addWidget(&seamFixer);
 	}
 
 	void cancelSeamFixer(UIItem* owner) {
 		std::string texName = owner->Name;
 		
-		vkDeviceWaitIdle(Engine::get()->device);
-
-		mouseManager.removeClickListener(seamFixer.clickIndex);
-		seamFixer.cleanup();
-		widgets.erase(find(widgets.begin(), widgets.end(), &seamFixer));
+		removeWidget(&seamFixer);
 
 		UIItem* temp = new spacer;
 		temp->Name = texName;
@@ -1926,11 +1955,7 @@ private:
 	void finishSeamFixer(UIItem* owner) {
 		std::string texName = owner->Name;
 
-		vkDeviceWaitIdle(Engine::get()->device);
-
-		mouseManager.removeClickListener(seamFixer.clickIndex);
-		seamFixer.cleanup();
-		widgets.erase(find(widgets.begin(), widgets.end(), &seamFixer));
+		removeWidget(&seamFixer);
 
 		UIItem* temp = new spacer;
 		temp->Name = texName;
@@ -1991,12 +2016,7 @@ private:
 		if (!webSets.isSetup) {
 			return;
 		}
-		webSets.clickIndex = mouseManager.addClickListener(webSets.getClickCallback());
-		webSets.posIndex = mouseManager.addPositionListener(webSets.getPosCallback());
-
-		widgets.push_back(&webSets);
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		addWidget(&webSets);
 
 		inWebSettings = true;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 0;
@@ -2004,16 +2024,8 @@ private:
 	}
 
 	void finishWebSettings(UIItem* owner) {
-		vkDeviceWaitIdle(Engine::get()->device);
-		webSets.cleanup();
+		removeWidget(&webSets);
 
-		mouseManager.removeClickListener(webSets.clickIndex);
-		mouseManager.removePositionListener(webSets.posIndex);
-
-		widgets.erase(find(widgets.begin(), widgets.end(), &webSets));
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
-		
 		inWebSettings = false;
 	}
 
@@ -2021,34 +2033,27 @@ private:
 		std::function<void(std::string, std::string)> continueCallback = std::bind(&Application::createRemapper, this, std::placeholders::_1, std::placeholders::_2);
 		
 		rts.setup(owner->Name, continueCallback);
-		rts.clickIndex = mouseManager.addClickListener(rts.getClickCallback());
-
-		widgets.push_back(&rts);
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		
+		addWidget(&rts);
 	}
 
 	void createRemapper(std::string refTexture, std::string targetTexture) {
 		std::function<void(UIItem*)> destroySelf = std::bind(&Application::destroyRemapper, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishRemapper, this, std::placeholders::_1);
 
-		vkDeviceWaitIdle(Engine::get()->device);
-		rts.cleanup();
+		removeWidget(&rts);
+
 		UIItem* newItem = new spacer();
 		closeTextureSettingsMenu(newItem);
 		newItem->cleanup();
 		delete newItem;
-		widgets.erase(find(widgets.begin(), widgets.end(), &rts));
 
 		remapMenu.setup(refTexture, targetTexture, destroySelf, finishSelf); 
 		if (!remapMenu.isSetup) {
 			return;
 		}
-		remapMenu.clickIndex = mouseManager.addClickListener(remapMenu.getClickCallback());
-		remapMenu.posIndex = mouseManager.addPositionListener(remapMenu.getPosCallback());
-		
-		widgets.push_back(&remapMenu);
 
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		addWidget(&remapMenu);
 	}
 
 	void destroyRemapper(UIItem* owner) {
@@ -2118,24 +2123,6 @@ private:
 
 		// Clear session data
 		session::get()->clearStudio();
-		
-		// Clear all studio material data
-		//surfaceMenu.removeNormalMenu(owner);
-		//sConst->clearSurface();
-		//surfaceMenu.resetDiffuseTog(false);
-		//if (sConst->normalAvailable) {
-		//	surfaceMenu.resetNormalTog(false);
-		//}
-		//sConst->normalAvailable = false;
-		//surfaceMenu.setDiffuse(sConst->currentDiffuse());
-
-		//if (sConst->alphaClipEnabled) {
-		//	sConst->renderPipeline = "AC_BF";
-		//}
-		//else {
-		//	sConst->renderPipeline = "BF";
-		//}
-		//sConst->updateSurfaceMat();
 	}
 
 	void createTexLoadMenu(std::function<void(UIItem*)> updateTexMenu) {
@@ -2145,16 +2132,12 @@ private:
 		if (!tlm.isSetup) {
 			return;
 		}
-		tlm.clickIndex = mouseManager.addClickListener(tlm.getClickCallback());
-		widgets.push_back(&tlm);
+		addWidget(&tlm);
+
 	}
 
 	void exitTexLoadMenu(UIItem* owner) {
-		vkDeviceWaitIdle(Engine::get()->device);
-		tlm.cleanup();
-		mouseManager.removeClickListener(tlm.clickIndex);
-
-		widgets.erase(find(widgets.begin(), widgets.end(), &tlm));
+		removeWidget(&tlm);
 	}
 
 	void openTextureSettingsMenu(UIItem* owner) {
@@ -2162,9 +2145,7 @@ private:
 
 		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc);
 
-		textureSettings.clickIndex = mouseManager.addClickListener(textureSettings.getClickCallback());
-
-		widgets.push_back(&textureSettings);
+		addWidget(&textureSettings);
 	}
 
 	void updateTextureSettingsMenu() {
@@ -2179,57 +2160,41 @@ private:
 		if (!textureSettings.isSetup){
 			return;
 		}
-		vkDeviceWaitIdle(Engine::get()->device);
-		textureSettings.cleanup();
-		mouseManager.removeClickListener(textureSettings.clickIndex);
-
-		widgets.erase(find(widgets.begin(), widgets.end(), &textureSettings));
+		removeWidget(&textureSettings);
 	}
 
 	void openObjectSettingsMenu(UIItem* owner) {
 		std::function<void(std::function<void(UIItem*)>, std::string)> openEditMenu = std::bind(&Application::openEditSettingsMenu, this, std::placeholders::_1, std::placeholders::_2);
 		
 		osm.setup(&staticObjects[stoi(owner->Name)], textureMenu.getAddTexCallback(), std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeObjectSettingsMenu, this, std::placeholders::_1), openEditMenu);
-		osm.clickIndex = mouseManager.addClickListener(osm.getClickCallback());
-		widgets.push_back(&osm);
+		
+		addWidget(&osm);
 	}
 
 	void closeObjectSettingsMenu(UIItem* owner) {
-		vkDeviceWaitIdle(Engine::get()->device);
-		osm.cleanup();
-		mouseManager.removeClickListener(osm.clickIndex);
-
-		widgets.erase(find(widgets.begin(), widgets.end(), &osm));
+		removeWidget(&osm);
 	}
 
 	void openSettingsMenu(std::function<void(UIItem*)> closeFnc) {
 		osm.hide();
 		mc.setup("BF", currentPass, closeFnc);
-		mc.clickIndex = mouseManager.addClickListener(mc.getClickCallback());
-		widgets.push_back(&mc);
+		addWidget(&mc);
 	}
 
 	void openEditSettingsMenu(std::function<void(UIItem*)> closeFnc, std::string matName) {
 		osm.hide();
 		mc.setupEditMode("BF", currentPass, closeFnc, matName);
-		mc.clickIndex = mouseManager.addClickListener(mc.getClickCallback());
-		widgets.push_back(&mc);
+		addWidget(&mc);
 	}
 
 	void closeSettingsMenu(UIItem* owner) {
 
-		vkDeviceWaitIdle(Engine::get()->device);
-		mc.cleanup();
-		mouseManager.removeClickListener(mc.clickIndex);
+		removeWidget(&mc);
 
 		osm.show();
 		osm.update();
 
 		updateVisibleObjects();
-
-		widgets.erase(find(widgets.begin(), widgets.end(), &mc));
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 	
 	void loadSave(UIItem* owner) {
@@ -2274,33 +2239,12 @@ private:
 		}
 		if (session::get()->currentStudio.diffusePath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
-
-			//sConst->diffuseIdx = 1;
-			//surfaceMenu.setDiffuse(sConst->currentDiffuse());
-			//surfaceMenu.resetDiffuseTog(true);
 		}
 		if (session::get()->currentStudio.OSPath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.OSPath, VK_FORMAT_R8G8B8A8_UNORM);
-			//if (!sConst->normalAvailable) {
-			//	surfaceMenu.createNormalMenu(new UIItem);
-			//}
-			//sConst->normalType = 0;
-			//sConst->loadNormal(loadedTexture);
-			//surfaceMenu.setNormal(sConst->currentNormal());
-			//surfaceMenu.resetNormalTog(true);
-			//surfaceMenu.toggleNormalState(true);
 		}
 		if (session::get()->currentStudio.TSPath != "None") {
 			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.TSPath, VK_FORMAT_R8G8B8A8_UNORM);
-			//if (!sConst->normalAvailable) {
-			//	surfaceMenu.createNormalMenu(new UIItem);
-			//}
-			//sConst->normalType = 1;
-			//sConst->loadNormal(loadedTexture);
-			//sConst->TSmatching = true;
-			//surfaceMenu.setNormal(sConst->currentNormal());
-			//surfaceMenu.resetNormalTog(true);
-			//surfaceMenu.toggleNormalState(false);
 		}
 		if (webcamIndex != webcamTexture::get()->webCam->camIndex) {
 			webcamTexture::get()->webCam->switchWebcam(webcamIndex);
@@ -2315,8 +2259,6 @@ private:
 		//reloadWebcamTex();
 
 		//reloadWebcamTex();
-
-		//sConst->updateSurfaceMat();
 
 		updateVisibleObjects();
 	}
@@ -2338,27 +2280,20 @@ private:
 		std::function<void(float)> azimuthFunc = std::bind(&Application::updateLightAzimuth, this, placeholders::_1);
 
 		objectMenu.setup(loadObjectFunct);
-		mouseManager.addClickListener(objectMenu.getClickCallback());
-		widgets.push_back(&objectMenu);
+		addWidget(&objectMenu);
 
 		textureMenu.setup(texModify, openTexLoad, tomogCallback);
-		mouseManager.addClickListener(textureMenu.getClickCallback());
-		widgets.push_back(&textureMenu);
+		addWidget(&textureMenu);
 
 		//saveMenu.setup(loadSessionFunc, newSessionFunc);
 		//mouseManager.addClickListener(saveMenu.getClickCallback());
 		//widgets.push_back(&saveMenu);
 
 		webcamMenu.setup(lightingFunction, webcamSettings);
-		mouseManager.addClickListener(webcamMenu.getClickCallback());
-		widgets.push_back(&webcamMenu);
+		addWidget(&webcamMenu);
 
 		renderMenu.setup(loadObjectFunct, pipelinefunction, polarFunc, azimuthFunc);
-		mouseManager.addClickListener(renderMenu.getClickCallback());
-		mouseManager.addPositionListener(renderMenu.getPosCallback());
-		widgets.push_back(&renderMenu);
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		addWidget(&renderMenu, true, true);
 	}
 
 	void updateColourScheme() {
@@ -2390,8 +2325,7 @@ private:
 		std::function<Mesh* (std::string)> getMeshFnc = std::bind(&Application::getObj, this, std::placeholders::_1);
 
 		normalMixer.setup(texName, objects, getMeshFnc, std::bind(&Application::exitNormalMixer, this, std::placeholders::_1));
-		normalMixer.clickIndex = mouseManager.addClickListener(normalMixer.getClickCallback());
-		widgets.push_back(&normalMixer);
+		addWidget(&normalMixer);
 	}
 
 	void exitNormalMixer(UIItem* owner) {
@@ -2423,10 +2357,7 @@ private:
 
 		stm.setup(texName, objects, textureMenu.getAddTexCallback(), getMeshFnc, exitFnc);
 
-		stm.clickIndex = mouseManager.addClickListener(stm.getClickCallback());
-		widgets.push_back(&stm);
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		addWidget(&stm);
 	}
 
 	void exitSpaceTransitionMenu(UIItem* owner) {
@@ -2452,21 +2383,11 @@ private:
 		
 		tomogPicker.setup(finishFunc, cancelFunc);
 
-		tomogPicker.clickIndex = mouseManager.addClickListener(tomogPicker.getClickCallback());
-		widgets.push_back(&tomogPicker);
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		addWidget(&tomogPicker);
 	}
 
 	void exitTomogSelector(UIItem* owner) {
-		vkDeviceWaitIdle(Engine::get()->device);
-
-		mouseManager.removeClickListener(tomogPicker.clickIndex);
-		tomogPicker.cleanup();
-
-		widgets.erase(find(widgets.begin(), widgets.end(), &tomogPicker));
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		removeWidget(&tomogPicker);
 	}
 
 	void openTomogMenu(UIItem* owner) {
@@ -2488,10 +2409,7 @@ private:
 
 		exitTomogSelector(owner);
 
-		tomogUI.clickIdx = mouseManager.addClickListener(tomogUI.getClickCallback());
-		widgets.push_back(&tomogUI);
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		addWidget(&tomogUI);
 
 		tomogActive = true;
 	}
