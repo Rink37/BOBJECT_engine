@@ -1896,6 +1896,8 @@ private:
 		std::string objName = owner->text;
 		Mesh* selectedMesh = staticObjects[objectMenu.ObjectMap.at(objName)].mesh;
 
+		vkDeviceWaitIdle(Engine::get()->device);
+
 		mouseManager.removeClickListener(sob.clickIndex);
 		sob.cleanup();
 		widgets.erase(find(widgets.begin(), widgets.end(), &sob));
@@ -1908,6 +1910,8 @@ private:
 	void cancelSeamFixer(UIItem* owner) {
 		std::string texName = owner->Name;
 		
+		vkDeviceWaitIdle(Engine::get()->device);
+
 		mouseManager.removeClickListener(seamFixer.clickIndex);
 		seamFixer.cleanup();
 		widgets.erase(find(widgets.begin(), widgets.end(), &seamFixer));
@@ -1921,6 +1925,8 @@ private:
 
 	void finishSeamFixer(UIItem* owner) {
 		std::string texName = owner->Name;
+
+		vkDeviceWaitIdle(Engine::get()->device);
 
 		mouseManager.removeClickListener(seamFixer.clickIndex);
 		seamFixer.cleanup();
