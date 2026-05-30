@@ -273,6 +273,7 @@ int main(){
 	compileAndWriteShaders(basepath, string("SeamFix_Colour"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("SeamFix_Alpha"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("AlphaOver"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("IPAlphaOver"), 0, outRoot);
 
 	basepath = rootPath+string("/shaders/");
 	compileAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);

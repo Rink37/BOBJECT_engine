@@ -114,7 +114,7 @@ public:
 
 	void filterImage(VkCommandBuffer);
 
-	void cleanup() {
+	void cleanupSource() {
 		for (Texture* tex : source) {
 			if (tex == nullptr) {
 				continue;
@@ -122,6 +122,12 @@ public:
 			if (!tex->cleaned) {
 				tex->cleanup();
 			}
+		}
+	}
+
+	void cleanup(bool cleanSource = true) {
+		if (cleanSource) {
+			cleanupSource();
 		}
 		for (Texture* tex : filterTarget) {
 			if (tex == nullptr) {

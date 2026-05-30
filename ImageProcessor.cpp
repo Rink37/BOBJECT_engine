@@ -305,7 +305,7 @@ void filter::filterImage(VkCommandBuffer commandBuffer) {
 	
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipelineLayout, 0, 1, &filterDescriptorSet, 0, 0);
-	vkCmdDispatch(commandBuffer, source[0]->texWidth / 16, source[0]->texHeight / 16, 1);
+	vkCmdDispatch(commandBuffer, source[0]->texWidth / 16 + 1, source[0]->texHeight / 16 + 1, 1);
 	
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -349,8 +349,6 @@ void filter::filterImage(VkCommandBuffer commandBuffer) {
 		0, nullptr,
 		1, &barrier
 	);
-
-
 }
 
 int countInputs(std::vector<shaderIOValue> IOValues) {

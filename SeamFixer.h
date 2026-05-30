@@ -20,6 +20,9 @@ struct SeamStrip {
 
 	bool rightClosed = false;
 	bool leftClosed = false;
+
+	bool isRight = true;
+	bool directionLocked = false;
 };
 
 class SeamFixer {
@@ -75,6 +78,15 @@ public:
 	void findAdjacentStrips();
 	void getStripChain(SeamStrip&, uint32_t, std::vector<std::array<uint32_t, 2>>&, std::vector<uint32_t>&);
 
+	void seamFixAll();
+	void setSeamDirections(bool isRight) {
+		for (SeamStrip& seam : seamStrips) {
+			if (!seam.directionLocked) {
+				seam.isRight = isRight;
+			}
+		}
+	}
+
 	void alphaOverRight() {
 		vkDeviceWaitIdle(Engine::get()->device);
 		drawRightMap();
@@ -91,9 +103,9 @@ public:
 
 	void drawRightMap() {
 		if (rightMap.cleaned) {
-			prepMap(false, true);
-			prepareColourDescriptor(true);
-			createTexWritePipeline(true);
+			prepMap(&rightMap);
+			prepareColourDescriptor(&rightMap);
+			createTexWritePipeline(&rightMap);
 		}
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawColourMap(commandBuffer, true);
@@ -102,9 +114,9 @@ public:
 
 	void drawLeftMap() {
 		if (leftMap.cleaned) {
-			prepMap(false, false);
-			prepareColourDescriptor(false);
-			createTexWritePipeline(false);
+			prepMap(&leftMap);
+			prepareColourDescriptor(&leftMap);
+			createTexWritePipeline(&leftMap);
 		}
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawColourMap(commandBuffer, false);
@@ -113,8 +125,8 @@ public:
 
 	void drawRightAlpha() {
 		if (rightAlpha.cleaned) {
-			prepMap(true, true);
-			createAlphaWritePipeline(true);
+			prepMap(&rightAlpha);
+			createAlphaWritePipeline(&rightAlpha);
 		}
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawAlphaMap(commandBuffer, true);
@@ -123,8 +135,8 @@ public:
 
 	void drawLeftAlpha() {
 		if (leftAlpha.cleaned) {
-			prepMap(true, false);
-			createAlphaWritePipeline(false);
+			prepMap(&leftAlpha);
+			createAlphaWritePipeline(&leftAlpha);
 		}
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawAlphaMap(commandBuffer, false);
@@ -136,6 +148,9 @@ public:
 		leftAlpha.cleanup();
 		rightMap.cleanup();
 		rightAlpha.cleanup();
+
+		colourMap.cleanup();
+		alphaMap.cleanup();
 
 		for (SeamStrip strip : seamStrips) {
 			strip.leftAlphaMesh.cleanup();
@@ -150,6 +165,9 @@ public:
 
 private:
 	Mesh* target = nullptr;
+
+	OverlayMap colourMap{};
+	OverlayMap alphaMap{};
 
 	OverlayMap leftMap{};
 	OverlayMap leftAlpha{};
@@ -167,14 +185,18 @@ private:
 	uint32_t height = 0;
 
 	void sortSeamIndices(SeamStrip&);
-	void prepMap(bool, bool);
-	void prepareColourDescriptor(bool);
-	void createTexWritePipeline(bool);
-	void createAlphaWritePipeline(bool);
+	void prepMap(OverlayMap*);
+	void prepareColourDescriptor(OverlayMap*);
+	void createTexWritePipeline(OverlayMap*);
+	void createAlphaWritePipeline(OverlayMap*);
 	VkCommandBuffer drawColourMap(VkCommandBuffer, bool);
+	VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*, Mesh*);
+
 	VkCommandBuffer drawAlphaMap(VkCommandBuffer, bool);
+	VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, Mesh*);
 
 	void alphaOverMap(bool);
+	void alphaOverMap(OverlayMap*, OverlayMap*, Texture*);
 };
 
 class SeamObjPicker : public Widget {
@@ -266,7 +288,8 @@ public:
 	void setup(Mesh* mesh, std::string texName, std::function<void(UIItem*)> cancelFunct, std::function<void(UIItem*)> finishFunct) {
 		fixer = new SeamFixer(mesh, textureLL, texName);
 		fixer->findAdjacentStrips();
-		fixer->alphaOverLeft();
+		//fixer->alphaOverLeft();
+		fixer->seamFixAll();
 
 		cancelFunc = cancelFunct;
 		finishFunc = finishFunct;
@@ -339,23 +362,25 @@ private:
 
 	void setSize(float distance) {
 		fixer->updateSeamMeshes(distance);
-
-		if (currentDirection) {
-			fixer->alphaOverLeft();
-		}
-		else {
-			fixer->alphaOverRight();
-		}
+		fixer->seamFixAll();
+		//if (currentDirection) {
+		//	fixer->alphaOverLeft();
+		//}
+		//else {
+		//	fixer->alphaOverRight();
+		//}
 	}
 	
 	void swapDirection(UIItem* owner) {
 		currentDirection = owner->activestate;
-		if (currentDirection) {
-			fixer->alphaOverLeft();
-		}
-		else {
-			fixer->alphaOverRight();
-		}
+		fixer->setSeamDirections(currentDirection);
+		fixer->seamFixAll();
+		//if (currentDirection) {
+		//	fixer->alphaOverLeft();
+		//}
+		//else {
+		//	fixer->alphaOverRight();
+		//}
 	}
 
 	void finish(UIItem* owner) {
