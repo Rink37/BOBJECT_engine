@@ -110,6 +110,12 @@ public:
 		mainArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(mainArrangement));
+		
+		addBackground(loadList->getMaterial("UIRoundBox"));
+
+		//Background* bg = new Background(loadList->getMaterial("UIRoundBox"), this);
+		//bg->updateDisplay();
+		//canvas.push_back(bg);
 		isSetup = true;
 	}
 

@@ -54,7 +54,7 @@ struct UIImage {
 
 	bool isGray = true;
 
-	void UpdateVertices(float, float, float, float);
+	void UpdateVertices(float, float, float, float, float zp = 0.0f);
 
 	void cleanup() {
 		mesh.cleanup();
@@ -81,6 +81,8 @@ struct UIItem {
 	float posx, posy = 0.0f;
 	float extentx, extenty = 1.0f;
 	float anchorx, anchory = 0.0f;
+
+	float zp = 0.0f;
 
 	float baseExtentx, baseExtenty, baseSqAxisRatio = 1.0f;
 
@@ -1621,6 +1623,43 @@ private:
 	}
 };
 
+class Background : public UIItem {
+public:
+	Background(Material* mat, UIItem* par) {
+		parent = par;
+		setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
+
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(mat);
+
+		image->texHeight = 100;
+		image->texWidth = 100;
+	}
+
+	Background(Material* mat) {
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(mat);
+
+		image->texHeight = 100;
+		image->texWidth = 100;
+	}
+
+	void updateDisplay() {
+		if (parent != nullptr) {
+			setDims(parent->posx, parent->posy, parent->extentx, parent->extenty);
+			zp = parent->zp;
+		}
+		if (image != nullptr) {
+			std::cout << posx << " " << posy << " " << extentx << " " << extenty << std::endl;
+			image->UpdateVertices(posx, posy, extentx, extenty, zp + 0.01f);
+		}
+	}
+private:
+	UIItem* parent = nullptr;
+
+	bool isParentWidget = false;
+};
+
 struct Widget {
 	// Individual widgets should be classes with their own setup scripts, functions etc. which are called in the application with a standard constructor
 	// UI is managed based on pointers, but the widget must explicitly manage the resources so that we don't have any memory leaks
@@ -1650,12 +1689,28 @@ struct Widget {
 			std::vector<UIItem*> scs;
 			item->getSubclasses(scs);
 			for (UIItem* sitem : scs) {
+				if (sitem->isSpacer() || sitem->isArrangement() || sitem == thisBG) {
+					continue;
+				}
 				sitem->calculateScreenPosition();
 				windowPositions[0] = (sitem->windowPositions[0] < windowPositions[0]) ? sitem->windowPositions[0] : windowPositions[0];
 				windowPositions[1] = (sitem->windowPositions[1] > windowPositions[1]) ? sitem->windowPositions[1] : windowPositions[1];
 				windowPositions[2] = (sitem->windowPositions[2] < windowPositions[2]) ? sitem->windowPositions[2] : windowPositions[2];
 				windowPositions[3] = (sitem->windowPositions[3] > windowPositions[3]) ? sitem->windowPositions[3] : windowPositions[3];
 			}
+		}
+
+		float W = static_cast<float>(Engine::get()->windowWidth);
+		float H = static_cast<float>(Engine::get()->windowHeight);
+
+		if (thisBG != nullptr) {
+			float posx = (windowPositions[1] / W + windowPositions[0] / W) - 1.0f;
+			float extentx = (windowPositions[1] / W - 0.5f) * 2.0f - posx + 0.05f;
+			float posy = (windowPositions[3] / H + windowPositions[2] / H) - 1.0f;
+			float extenty = (windowPositions[3] / W - 0.5f) * 2.0f - posy + 0.05f;
+
+			thisBG->updateArrangedPosition(posx, posy, extentx, extenty);
+			thisBG->zp = this->zp;
 		}
 	}
 
@@ -1666,6 +1721,13 @@ struct Widget {
 		}
 		return result;
 	};
+
+	void addBackground(Material* mat) {
+		thisBG = getPtr(new Background(mat));
+		canvas.push_back(thisBG);
+		measureWindowPositions();
+		thisBG->updateDisplay();
+	}
 
 	virtual void sortImages() {
 		imagePipelines.clear();
@@ -1752,9 +1814,15 @@ struct Widget {
 	void update() {
 		if (isVisible) {
 			for (size_t i = 0; i != canvas.size(); i++) {
+				if (canvas[i] == thisBG) {
+					continue;
+				}
 				canvas[i]->updateDisplay();
 			}
 			measureWindowPositions();
+			if (thisBG != nullptr) {
+				thisBG->updateDisplay();
+			}
 			customUpdate();
 		}
 	}
@@ -1802,6 +1870,10 @@ struct Widget {
 			DropdownMenus[i]->cleanup();
 		}
 		DropdownMenus.clear();
+		for (size_t i = 0; i != Backgrounds.size(); i++) {
+			Backgrounds[i]->cleanup();
+		}
+		Backgrounds.clear();
 		isSetup = false;
 	}
 
@@ -1887,6 +1959,11 @@ struct Widget {
 		return DropdownMenus[DropdownMenus.size() - 1].get();
 	}
 
+	UIItem* getPtr(Background* background) {
+		Backgrounds.emplace_back(background);
+		return Backgrounds[Backgrounds.size() - 1].get();
+	}
+
 	std::vector<UIItem*> canvas;
 	bool isSetup = false;
 
@@ -1900,6 +1977,8 @@ struct Widget {
 	size_t posIndex = 0;
 
 	std::map<std::string, std::vector<UIImage*>> imagePipelines{};
+
+	float posx = 0.0f, posy = 0.0f, extentx = 0.0f, extenty = 0.0f, zp = 0.0f;
 private:
 	float windowPositions[4] = { 0.0f };
 	// Array of pointers which manages the actual structure of the UI
@@ -1915,6 +1994,9 @@ private:
 	std::vector<std::shared_ptr<Rotator>> Rotators;
 	std::vector<std::shared_ptr<TextBox>> TextBoxes;
 	std::vector<std::shared_ptr<DropdownMenu>> DropdownMenus;
+	std::vector<std::shared_ptr<Background>> Backgrounds;
+
+	UIItem* thisBG = nullptr;
 };
 
 #endif

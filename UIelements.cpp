@@ -2,8 +2,8 @@
 
 using namespace std;
 
-void UIImage::UpdateVertices(float xp, float yp, float xsc, float ysc) {
-	mesh.UpdateVertices(xp, yp, xsc, ysc);
+void UIImage::UpdateVertices(float xp, float yp, float xsc, float ysc, float zp) {
+	mesh.UpdateVertices(xp, yp, xsc, ysc, zp);
 }
 
 static void bufferPosition(float &extentx, float &extenty, float &posx, float &posy, float brx, float bry, float ax, float ay) {

@@ -37,7 +37,7 @@ void font::getAdvanceWidth(int character, float& width) {
 	width = coolvetica_sdfAdvances[character];
 }
 
-void fontMesh::UpdateVertices(float xp, float yp, float xsc, float windowRatio) {
+void fontMesh::UpdateVertices(float xp, float yp, float xsc, float windowRatio, float zp) {
 	vertices.clear();
 
 	Vertex vertex{};
@@ -48,17 +48,17 @@ void fontMesh::UpdateVertices(float xp, float yp, float xsc, float windowRatio) 
 	float ysc = xsc * sqAxisRatio * windowRatio;
 	characterHeight = ysc;
 
-	vertex.pos = { -xsc + xp, yp - ysc, 0.0f };
+	vertex.pos = { -xsc + xp, yp - ysc, zp };
 	vertex.normal = { 0.0f, 0.0f, 0.0f };
 	vertex.texCoord = { left, top };
 	vertices.push_back(vertex);
-	vertex.pos = { xsc + xp, yp - ysc, 0.0f };
+	vertex.pos = { xsc + xp, yp - ysc, zp };
 	vertex.texCoord = { right, top };
 	vertices.push_back(vertex);
-	vertex.pos = { xsc + xp, yp + ysc, 0.0f };
+	vertex.pos = { xsc + xp, yp + ysc, zp };
 	vertex.texCoord = { right, bottom };
 	vertices.push_back(vertex);
-	vertex.pos = { -xsc + xp, yp + ysc, 0.0f };
+	vertex.pos = { -xsc + xp, yp + ysc, zp };
 	vertex.texCoord = { left, bottom };
 	vertices.push_back(vertex);
 

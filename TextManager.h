@@ -55,7 +55,7 @@ public:
 
 	void* vBuffer = nullptr;
 
-	void UpdateVertices(float, float, float, float);
+	void UpdateVertices(float, float, float, float, float zp = 0.0f);
 
 	void createVertexBuffer();
 	void updateVertexBuffer();

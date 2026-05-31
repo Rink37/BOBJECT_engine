@@ -97,7 +97,11 @@ void Material::createDescriptorSets() {
 		pipelineLayout = Engine::get()->defaultPass.pipelineLayouts[pipelineLayoutIndex];
 
 		if (isUIMat) {
+			if (textures[0]->textureFormat == VK_FORMAT_R8_UNORM);
 			shaderName = "UIGray";
+		}
+		else {
+			shaderName = "UI";
 		}
 	}
 	else if (textures.size() == 0) {
