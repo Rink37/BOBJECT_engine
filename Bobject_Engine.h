@@ -42,6 +42,7 @@
 #include"include/AC_TS_BF.h"
 #include"include/TS_BF.h"
 #include"include/UIText.h"
+#include"include/UIRoundBox.h"
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;

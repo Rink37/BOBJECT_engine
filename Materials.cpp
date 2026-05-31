@@ -230,6 +230,7 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 			textureCount++;
 		}
 	}
+
 	if (textures.size() < textureCount) {
 		throw runtime_error("Material could not be created - not enough textures were provided");
 	}
@@ -305,6 +306,5 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 		}
 
 		vkUpdateDescriptorSets(Engine::get()->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-
 	}
 }

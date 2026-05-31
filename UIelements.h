@@ -60,12 +60,12 @@ struct UIImage {
 		mesh.cleanup();
 	}
 
-	VkCommandBuffer draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
-		if (!isVisible) {
+	VkCommandBuffer draw(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
+		if (!isVisible || mat[matidx]->pipelineLayoutIndex != pipelineIndex) {
 			return commandBuffer;
 		}
 
-		Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->defaultPass.pipelineLayouts[Engine::get()->defaultPass.layoutMap.at("1_0_")], mat[matidx]->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
+		Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->defaultPass.pipelineLayouts[mat[matidx]->pipelineLayoutIndex], mat[matidx]->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
 
 		return commandBuffer;
 	}
@@ -218,21 +218,21 @@ struct UIItem {
 		isEnabled = enabled;
 	}
 
-	virtual void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	virtual void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
 		std::vector<UIImage*> images;
 		getImages(images, true);
 
 		for (UIImage* image : images) {
-			image->draw(commandBuffer, currentFrame);
+			image->draw(commandBuffer, currentFrame, pipelineIndex);
 		}
 	}
 
-	virtual void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	virtual void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
 		std::vector<UIImage*> images;
 		getImages(images, false);
 
 		for (UIImage* image : images) {
-			image->draw(commandBuffer, currentFrame);
+			image->draw(commandBuffer, currentFrame, pipelineIndex);
 		}
 	}
 
@@ -974,16 +974,22 @@ public:
 
 		image->isGray = mat->isUIMat;
 
-		image->texWidth = image->mat[0]->textures[0]->texWidth;
-		image->texHeight = image->mat[0]->textures[0]->texHeight;
-
 		backgroundImage = std::make_shared<UIImage>(new UIImage);
 		backgroundImage->mat.emplace_back(mat);
 
 		backgroundImage->isGray = mat->isUIMat;
 
-		backgroundImage->texWidth = backgroundImage->mat[0]->textures[0]->texWidth;
-		backgroundImage->texHeight = backgroundImage->mat[0]->textures[0]->texHeight;
+		if (mat->textures.size() > 0) {
+			image->texWidth = image->mat[0]->textures[0]->texWidth;
+			image->texHeight = image->mat[0]->textures[0]->texHeight;
+			backgroundImage->texWidth = backgroundImage->mat[0]->textures[0]->texWidth;
+			backgroundImage->texHeight = backgroundImage->mat[0]->textures[0]->texHeight;
+		} else {
+			image->texWidth = 256;
+			image->texHeight = 256;
+			backgroundImage->texWidth = 256;
+			backgroundImage->texHeight = 256;
+		}
 
 		baseExtentx = extentx;
 		baseExtenty = extenty;
@@ -998,16 +1004,23 @@ public:
 
 		image->isGray = mat->isUIMat;
 
-		image->texWidth = image->mat[0]->textures[0]->texWidth;
-		image->texHeight = image->mat[0]->textures[0]->texHeight;
-
 		backgroundImage = std::make_shared<UIImage>(new UIImage);
 		backgroundImage->mat.emplace_back(mat);
 
 		backgroundImage->isGray = mat->isUIMat;
 
-		backgroundImage->texWidth = backgroundImage->mat[0]->textures[0]->texWidth;
-		backgroundImage->texHeight = backgroundImage->mat[0]->textures[0]->texHeight;
+		if (mat->textures.size() > 0) {
+			image->texWidth = image->mat[0]->textures[0]->texWidth;
+			image->texHeight = image->mat[0]->textures[0]->texHeight;
+			backgroundImage->texWidth = backgroundImage->mat[0]->textures[0]->texWidth;
+			backgroundImage->texHeight = backgroundImage->mat[0]->textures[0]->texHeight;
+		}
+		else {
+			image->texWidth = 256;
+			image->texHeight = 256;
+			backgroundImage->texWidth = 256;
+			backgroundImage->texHeight = 256;
+		}
 
 		this->orientation = orient;
 
@@ -1089,14 +1102,10 @@ public:
 
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
 		if (isInArea(mouseX, mouseY) && eventType == LMB_PRESS) {
-			//std::cout << "Slider has been clicked on" << std::endl;
-			//std::cout << posx << " " << posy << std::endl;
-			//std::cout << extentx << " " << extenty << std::endl;
 			isHeld = true;
 			return true;
 		}
 		else if (eventType == LMB_RELEASE && isHeld) {
-			//std::cout << "Slider has been released" << std::endl;
 			isHeld = false;
 			this->calculateScreenPosition();
 			if (hasCallback && !updateOnMove) {
@@ -1141,21 +1150,21 @@ public:
 		return false;
 	};
 
-	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
 		if (image->isGray) {
-			image->draw(commandBuffer, currentFrame);
+			image->draw(commandBuffer, currentFrame, pipelineIndex);
 		}
 		if (backgroundImage->isGray) {
-			backgroundImage->draw(commandBuffer, currentFrame);
+			backgroundImage->draw(commandBuffer, currentFrame, pipelineIndex);
 		}
 	}
 
-	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
 		if (!image->isGray) {
-			image->draw(commandBuffer, currentFrame);
+			image->draw(commandBuffer, currentFrame, pipelineIndex);
 		}
 		if (!backgroundImage->isGray) {
-			backgroundImage->draw(commandBuffer, currentFrame);
+			backgroundImage->draw(commandBuffer, currentFrame, pipelineIndex);
 		}
 	}
 
@@ -1176,8 +1185,6 @@ public:
 	void update(float x, float y, float xsize, float ysize) {
 		this->posx = x;
 		this->posy = y;
-		//this->anchorx = x;
-		//this->anchory = y;
 
 		this->extentx = xsize;
 		this->extenty = ysize;
@@ -1236,9 +1243,6 @@ public:
 		valueType = SLIDER_DISCRETE;
 		minValue = static_cast<float>(min);
 		maxValue = static_cast<float>(max);
-
-		//(1.0f - slideValue)* (maxValue - minValue) + minValue = angle
-		// angle-minValue = (1.0f - slideValue);
 
 		slideValue = 1.0f - (static_cast<float>(position) - minValue) / (maxValue - minValue);
 	}
@@ -1342,15 +1346,15 @@ public:
 		return false;
 	};
 
-	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
 		if (image->isGray) {
-			image->draw(commandBuffer, currentFrame);
+			image->draw(commandBuffer, currentFrame, pipelineIndex);
 		}
 	}
 
-	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
 		if (!image->isGray) {
-			image->draw(commandBuffer, currentFrame);
+			image->draw(commandBuffer, currentFrame, pipelineIndex);
 		}
 	}
 
@@ -1664,15 +1668,15 @@ struct Widget {
 		return result;
 	};
 	
-	virtual void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	virtual void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
 		for (size_t i = 0; i != canvas.size(); i++) {
-			canvas[i]->drawUI(commandBuffer, currentFrame);
+			canvas[i]->drawUI(commandBuffer, currentFrame, pipelineIndex);
 		}
 	}
 
-	virtual void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	virtual void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
 		for (size_t i = 0; i != canvas.size(); i++) {
-			canvas[i]->drawImages(commandBuffer, currentFrame);
+			canvas[i]->drawImages(commandBuffer, currentFrame, pipelineIndex);
 		}
 	}
 

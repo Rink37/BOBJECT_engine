@@ -15,13 +15,14 @@ public:
 		createMaterial();
 	}
 
-	Material(std::vector<Texture*> inTextures, std::string targetShader, GraphicsPass* graphicsPass) {
+	Material(std::vector<Texture*> inTextures, std::string targetShader, GraphicsPass* graphicsPass, bool isUI = false) {
 		textures = inTextures;
-		if (textures.size() > 0) {
-			if (textures[0]->textureFormat == VK_FORMAT_R8_UNORM) {
-				isUIMat = true;
-			}
-		}
+		//if (textures.size() > 0) {
+		//	if (textures[0]->textureFormat == VK_FORMAT_R8_UNORM) {
+		//		isUIMat = true;
+		//	}
+		//}
+		isUIMat = isUI;
 		createMaterial(targetShader, graphicsPass);
 	}
 

@@ -385,21 +385,21 @@ public:
 		}
 	}
 
-	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
 		if (tomogLoadMenu != nullptr) {
-			tomogLoadMenu->drawUI(commandBuffer, currentFrame);
+			tomogLoadMenu->drawUI(commandBuffer, currentFrame, pipelineIndex);
 		}
 		for (size_t i = 0; i != canvas.size(); i++) {
-			canvas[i]->drawUI(commandBuffer, currentFrame);
+			canvas[i]->drawUI(commandBuffer, currentFrame, pipelineIndex);
 		}
 	}
 
-	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
+	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
 		if (tomogLoadMenu != nullptr) {
-			tomogLoadMenu->drawImages(commandBuffer, currentFrame);
+			tomogLoadMenu->drawImages(commandBuffer, currentFrame, pipelineIndex);
 		}
 		for (size_t i = 0; i != canvas.size(); i++) {
-			canvas[i]->drawImages(commandBuffer, currentFrame);
+			canvas[i]->drawImages(commandBuffer, currentFrame, pipelineIndex);
 		}
 	}
 

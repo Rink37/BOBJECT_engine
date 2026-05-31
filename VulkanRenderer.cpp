@@ -200,7 +200,7 @@ public:
 		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
 
 		ratioSlider = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 1.0f, 0.1f);
-		ratioSlider->setFloatCallback(bind(&WebcamSettings::updateAspectRatio, this, placeholders::_1), true);
+		ratioSlider->setFloatCallback(std::bind(&WebcamSettings::updateAspectRatio, this, placeholders::_1), true);
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
 
 		ARSettings->addItem(getPtr(ratioSlider));
@@ -415,12 +415,14 @@ public:
 		Renderbuttons->addItem(getPtr(litRenderingButton));
 		Renderbuttons->addItem(getPtr(wireframeRenderingButton));
 
-		Slider* polarSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
+		std::cout << "Creating sliders" << std::endl;
+
+		Slider* polarSlider = new Slider(loadList->getMaterial("UIRoundBox"), 0.0f, 0.0f, 1.0f, 0.25f);
 		polarSlider->updateDisplay();
 		polarSlider->setSlideValues(0.0f, 3.14159265f, 0.0f);
 		polarSlider->setFloatCallback(polarCallback, true);
 
-		Slider* azimuthSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
+		Slider* azimuthSlider = new Slider(loadList->getMaterial("UIRoundBox"), 0.0f, 0.0f, 1.0f, 0.25f);
 		azimuthSlider->updateDisplay();
 		azimuthSlider->setSlideValues(0.0f, 6.283185307f, 0.0f);
 		azimuthSlider->setFloatCallback(azimuthCallback, true);
@@ -1763,31 +1765,33 @@ public:
 		mouseManager.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		webcamTexture::get()->setup();
-		createCanvas();
 		if (webcamTexture::get()->webCam != nullptr) {
 			webcamTexture::get()->webCam->loadFilter();
 		}
 		TextureElements.getPtr(webcamTexture::get(), "Webcam View");
-		//std::function<void()> testFunct = bind(&Application::testSeamPatcher, this);
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
-		//keyBinds.addBinding(GLFW_KEY_T, testFunct, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
-		webcamMenu.canvas[0]->Items[1]->activestate = false;
-		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
 
 		Engine::get()->createRenderPass(renderGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		renderImage = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, renderGP.renderPass);
 		Engine::get()->createGraphicsPipelines(renderGP);
+
+		currentPass = &renderGP;
 
 		webcamMat = TextureElements.getPtr(new Material(webcamTexture::get()) , "Webcam Material");
 		MaterialTemplate wireMatTemplate(std::string("W"), &renderGP);
 		wireMatTemplate.listChannels();
 		wireMat = UIElements.getPtr(wireMatTemplate.createMaterial(), "Wire Material");
 
-		currentPass = &renderGP;
+		UIElements.getPtr(new Material(std::vector<Texture*>{}, "UIRoundBox", currentPass, true), "UIRoundBox");
+
+		createCanvas();
+		
+		webcamMenu.canvas[0]->Items[1]->activestate = false;
+		webcamMenu.canvas[0]->Items[1]->image->matidx = 1;
 
 		updateColourScheme();
 		updateLightAzimuth(0.0f);
@@ -2730,16 +2734,28 @@ private:
 			}
 		}
 
+		uint32_t pipelineIndex = currentPass->layoutMap.at("1_0_");
+
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIGray")]);
 
 		for (size_t i = 0; i != widgets.size(); i++) {
-			widgets[i]->drawUI(commandBuffer, currentFrame);
+			widgets[i]->drawUI(commandBuffer, currentFrame, pipelineIndex);
 		}
+
+		pipelineIndex = currentPass->layoutMap.at("1_");
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIRoundBox")]);
+
+		for (size_t i = 0; i != widgets.size(); i++) {
+			widgets[i]->drawUI(commandBuffer, currentFrame, pipelineIndex);
+		}
+
+		pipelineIndex = currentPass->layoutMap.at("1_0_");
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UI")]);
 
 		for (size_t i = 0; i != widgets.size(); i++) {
-			widgets[i]->drawImages(commandBuffer, currentFrame);
+			widgets[i]->drawImages(commandBuffer, currentFrame, pipelineIndex);
 		}
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIText")]);

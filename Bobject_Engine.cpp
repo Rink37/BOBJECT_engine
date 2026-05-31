@@ -460,6 +460,7 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	shaderData TS_BF = TS_BFSHADER;
 	shaderData AC_TS_BF = AC_TS_BFSHADER;
 	shaderData uiTextShader = UITEXTSHADER;
+	shaderData uiRoundBox = UIROUNDBOXSHADER;
 	
 	std::vector<int> vertexInputInfoIndices;
 
@@ -488,6 +489,8 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	graphicsPass.shaderDatas.push_back(AC_TS_BF);
 	vertexInputInfoIndices.push_back(1);
 	graphicsPass.shaderDatas.push_back(uiTextShader);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(uiRoundBox);
 	vertexInputInfoIndices.push_back(0);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
