@@ -352,7 +352,6 @@ public:
 
 	void cleanup() {
 		for (fontMesh* mesh : characters) {
-			//std::cout << "Cleaning " << static_cast<char>(mesh->unicodeCharacter) << std::endl;
 			mesh->cleanup();
 		}
 		characters.clear();
@@ -1667,6 +1666,40 @@ struct Widget {
 		}
 		return result;
 	};
+
+	virtual void sortImages() {
+		imagePipelines.clear();
+		std::vector<UIImage*> allImages{};
+		for (size_t i = 0; i != canvas.size(); i++) {
+			std::vector<UIImage*> images{};
+			canvas[i]->getImages(images, true);
+			canvas[i]->getImages(images, false);
+			allImages.insert(allImages.end(), images.begin(), images.end());
+		}
+		for (UIImage* image : allImages) {
+			std::string key = image->mat[image->matidx]->shaderName;
+			if (imagePipelines.count(key) == 0) {
+				imagePipelines.insert({ key, std::vector<UIImage*>{image} });
+			}
+			else {
+				imagePipelines.at(key).push_back(image);
+			}
+		}
+	}
+
+	virtual void drawAll(VkCommandBuffer commandBuffer, uint32_t currentFrame, GraphicsPass* currentPass) {
+		if (imagePipelines.empty()) {
+			sortImages();
+		}
+		for (auto elem : imagePipelines) {
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(elem.first)]);
+			for (UIImage* image : elem.second) {
+				image->draw(commandBuffer, currentFrame, image->mat[image->matidx]->pipelineLayoutIndex);
+			}
+		}
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIText")]);
+		drawText(commandBuffer, currentFrame);
+	}
 	
 	virtual void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
 		for (size_t i = 0; i != canvas.size(); i++) {
@@ -1695,8 +1728,8 @@ struct Widget {
 		}
 		for (UIItem* item : canvas) {
 			if (item->checkForClickEvent(mouseX, mouseY, eventType)) {
+				sortImages();
 				return true;
-				break;
 			};
 		}
 		return false;
@@ -1865,6 +1898,8 @@ struct Widget {
 
 	size_t clickIndex = 0;
 	size_t posIndex = 0;
+
+	std::map<std::string, std::vector<UIImage*>> imagePipelines{};
 private:
 	float windowPositions[4] = { 0.0f };
 	// Array of pointers which manages the actual structure of the UI

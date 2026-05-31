@@ -95,6 +95,10 @@ void Material::createDescriptorSets() {
 		pipelineLayoutIndex = Engine::get()->defaultPass.layoutMap.at(key);
 		descriptorSetLayout = Engine::get()->defaultPass.descriptorSetLayouts[pipelineLayoutIndex];
 		pipelineLayout = Engine::get()->defaultPass.pipelineLayouts[pipelineLayoutIndex];
+
+		if (isUIMat) {
+			shaderName = "UIGray";
+		}
 	}
 	else if (textures.size() == 0) {
 		key = "1_";

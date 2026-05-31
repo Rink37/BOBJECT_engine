@@ -1679,6 +1679,8 @@ private:
 
 		TextureButtons->addItem(getPtr(objButtons));
 		TextureButtons->arrangeItems();
+
+		sortImages();
 	}
 
 	void saveTexture(UIItem* owner) {
@@ -2734,34 +2736,8 @@ private:
 			}
 		}
 
-		uint32_t pipelineIndex = currentPass->layoutMap.at("1_0_");
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIGray")]);
-
 		for (size_t i = 0; i != widgets.size(); i++) {
-			widgets[i]->drawUI(commandBuffer, currentFrame, pipelineIndex);
-		}
-
-		pipelineIndex = currentPass->layoutMap.at("1_");
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIRoundBox")]);
-
-		for (size_t i = 0; i != widgets.size(); i++) {
-			widgets[i]->drawUI(commandBuffer, currentFrame, pipelineIndex);
-		}
-
-		pipelineIndex = currentPass->layoutMap.at("1_0_");
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UI")]);
-
-		for (size_t i = 0; i != widgets.size(); i++) {
-			widgets[i]->drawImages(commandBuffer, currentFrame, pipelineIndex);
-		}
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIText")]);
-
-		for (size_t i = 0; i != widgets.size(); i++) {
-			widgets[i]->drawText(commandBuffer, currentFrame);
+			widgets[i]->drawAll(commandBuffer, currentFrame, currentPass);
 		}
 
 		if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
