@@ -392,33 +392,6 @@ private:
 			std::function<void(float)> gradientSliderFunction = std::bind(&RemapUI::gradientCallback, this, std::placeholders::_1);
 			std::function<void(int)> iterationSliderFunction = std::bind(&RemapUI::iterationCallback, this, std::placeholders::_1);
 
-			imageData searchSize = SEARCHSIZETEXT;
-			Material* searchSizeMat = newMaterial(&searchSize, "SearchSizeText");
-
-			imageData flatness = STROKEFLATNESSTEXT;
-			Material* flatnessMat = newMaterial(&flatness, "FlatnessText");
-
-			imageData sharpness = EDGESHARPNESSTEXT;
-			Material* sharpnessMat = newMaterial(&sharpness, "SharpnessText");
-
-			imageData noiseRemoval = NOISEREMOVALTEXT;
-			Material* noiseMat = newMaterial(&noiseRemoval, "NoiseRemovalText");
-
-			imageData flattenThresh = FLATTENTHRESHOLDTEXT;
-			Material* threshMat = newMaterial(&flattenThresh, "FlattenThresholdText");
-
-			Button* searchSizeBtn = new Button(searchSizeMat);
-			Button* flatnessBtn = new Button(flatnessMat);
-			Button* sharpnessBtn = new Button(sharpnessMat);
-			Button* noiseBtn = new Button(noiseMat);
-			Button* threshBtn = new Button(threshMat);
-
-			Arrangement* kuwaharaArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* zeroCrossArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* sharpnessArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* averagerArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* gradientArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-
 			Slider* kuwaharaKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 			kuwaharaKernSlider->updateDisplay();
 			kuwaharaKernSlider->setSlideValues(remapper->minKuwaharaKernel, remapper->maxKuwaharaKernel, 15);
@@ -450,26 +423,31 @@ private:
 			imageData finish = FINISHBUTTON;
 			Material* finishMat = newMaterial(&finish, "FinishBtn");
 
-			zeroCrossArranger->addItem(getPtr(noiseBtn));
-			zeroCrossArranger->addItem(getPtr(zeroCrossSlider));
+			TextBox* noiseText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.25f, 18, ARRANGE_START, ARRANGE_CENTER);
+			noiseText->addText("Noise removal:");
 
-			kuwaharaArranger->addItem(getPtr(searchSizeBtn));
-			kuwaharaArranger->addItem(getPtr(kuwaharaKernSlider));
+			TextBox* kuwaharaText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.25f, 18, ARRANGE_START, ARRANGE_CENTER);
+			kuwaharaText->addText("Search size:");
 
-			sharpnessArranger->addItem(getPtr(sharpnessBtn));
-			sharpnessArranger->addItem(getPtr(sharpnessSlider));
+			TextBox* sharpnessText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.25f, 18, ARRANGE_START, ARRANGE_CENTER);
+			sharpnessText->addText("Edge sharpness:");
 
-			averagerArranger->addItem(getPtr(flatnessBtn));
-			averagerArranger->addItem(getPtr(averagerKernSlider));
+			TextBox* flatnessText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.25f, 18, ARRANGE_START, ARRANGE_CENTER);
+			flatnessText->addText("Stroke flatness:");
 
-			gradientArranger->addItem(getPtr(threshBtn));
-			gradientArranger->addItem(getPtr(gradientThreshSlider));
+			TextBox* gradientText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.25f, 18, ARRANGE_START, ARRANGE_CENTER);
+			gradientText->addText("Flatten threshold:");
 
-			column->addItem(getPtr(kuwaharaArranger));
-			column->addItem(getPtr(zeroCrossArranger));
-			column->addItem(getPtr(sharpnessArranger));
-			column->addItem(getPtr(averagerArranger));
-			column->addItem(getPtr(gradientArranger));
+			column->addItem(getPtr(kuwaharaText));
+			column->addItem(getPtr(kuwaharaKernSlider));
+			column->addItem(getPtr(noiseText));
+			column->addItem(getPtr(zeroCrossSlider));
+			column->addItem(getPtr(sharpnessText));
+			column->addItem(getPtr(sharpnessSlider));
+			column->addItem(getPtr(flatnessText));
+			column->addItem(getPtr(averagerKernSlider));
+			column->addItem(getPtr(gradientText));
+			column->addItem(getPtr(gradientThreshSlider));
 		}
 		else {
 			std::function<void(int)> kuwaharaSliderFunction = std::bind(&RemapUI::kuwaharaCallback, this, std::placeholders::_1);
@@ -479,22 +457,14 @@ private:
 			std::function<void(float)> gradientSliderFunction = std::bind(&RemapUI::gradientCallback, this, std::placeholders::_1);
 			std::function<void(int)> iterationSliderFunction = std::bind(&RemapUI::iterationCallback, this, std::placeholders::_1);
 
-			imageData searchSize = SEARCHSIZETEXT;
-			Material* searchSizeMat = newMaterial(&searchSize, "SearchSizeText");
+			TextBox* searchText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.25f, 18, ARRANGE_START, ARRANGE_CENTER);
+			searchText->addText("Search size:");
 
-			imageData flatness = STROKEFLATNESSTEXT;
-			Material* flatnessMat = newMaterial(&flatness, "FlatnessText");
+			TextBox* flatnessText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.25f, 18, ARRANGE_START, ARRANGE_CENTER);
+			flatnessText->addText("Stroke flatness:");
 
-			imageData sharpness = EDGESHARPNESSTEXT;
-			Material* sharpnessMat = newMaterial(&sharpness, "SharpnessText");
-
-			Button* searchSizeBtn = new Button(searchSizeMat);
-			Button* flatnessBtn = new Button(flatnessMat);
-			Button* threshBtn = new Button(sharpnessMat);
-
-			Arrangement* kuwaharaArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* averagerArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
-			Arrangement* gradientArranger = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
+			TextBox* sharpnessText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.25f, 18, ARRANGE_START, ARRANGE_CENTER);
+			sharpnessText->addText("Edge sharpness:");
 
 			Slider* kuwaharaKernSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.25f);
 			kuwaharaKernSlider->updateDisplay();
@@ -511,18 +481,12 @@ private:
 			gradientThreshSlider->setSlideValues(remapper->minGradientThreshold, remapper->maxGradientThreshold, 0.05f);
 			gradientThreshSlider->setFloatCallback(gradientSliderFunction, false);
 
-			kuwaharaArranger->addItem(getPtr(searchSizeBtn));
-			kuwaharaArranger->addItem(getPtr(kuwaharaKernSlider));
-
-			averagerArranger->addItem(getPtr(flatnessBtn));
-			averagerArranger->addItem(getPtr(averagerKernSlider));
-
-			gradientArranger->addItem(getPtr(threshBtn));
-			gradientArranger->addItem(getPtr(gradientThreshSlider));
-
-			column->addItem(getPtr(kuwaharaArranger));
-			column->addItem(getPtr(averagerArranger));
-			column->addItem(getPtr(gradientArranger));
+			column->addItem(getPtr(searchText));
+			column->addItem(getPtr(kuwaharaKernSlider));
+			column->addItem(getPtr(flatnessText));
+			column->addItem(getPtr(averagerKernSlider));
+			column->addItem(getPtr(sharpnessText));
+			column->addItem(getPtr(gradientThreshSlider));
 		}
 
 		column->updateDisplay();

@@ -113,7 +113,7 @@ public:
 
 		canvas.push_back(getPtr(mainArrangement));
 		
-		addBackground(loadList->getMaterial("UIRoundBox"));
+		//addBackground(loadList->getMaterial("UIRoundBox"));
 
 		isSetup = true;
 	}
@@ -1698,6 +1698,7 @@ private:
 		TextureButtons->arrangeItems();
 
 		sortImages();
+		measureWindowPositions();
 	}
 
 	void saveTexture(UIItem* owner) {

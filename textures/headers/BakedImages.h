@@ -149,41 +149,6 @@ extern unsigned char FinishButtonBytes[];
 
 #define FINISHBUTTON imageData(FinishButtonWidth, FinishButtonHeight, FinishButtonChannels, FinishButtonBytes )
 
-extern const int EdgeSharpnessTextWidth;
-extern const int EdgeSharpnessTextHeight;
-extern const int EdgeSharpnessTextChannels;
-extern unsigned char EdgeSharpnessTextBytes[];
-
-#define EDGESHARPNESSTEXT imageData(EdgeSharpnessTextWidth, EdgeSharpnessTextHeight, EdgeSharpnessTextChannels, EdgeSharpnessTextBytes )
-
-extern const int SearchSizeTextWidth;
-extern const int SearchSizeTextHeight;
-extern const int SearchSizeTextChannels;
-extern unsigned char SearchSizeTextBytes[];
-
-#define SEARCHSIZETEXT imageData(SearchSizeTextWidth, SearchSizeTextHeight, SearchSizeTextChannels, SearchSizeTextBytes )
-
-extern const int StrokeFlatnessTextWidth;
-extern const int StrokeFlatnessTextHeight;
-extern const int StrokeFlatnessTextChannels;
-extern unsigned char StrokeFlatnessTextBytes[];
-
-#define STROKEFLATNESSTEXT imageData(StrokeFlatnessTextWidth, StrokeFlatnessTextHeight, StrokeFlatnessTextChannels, StrokeFlatnessTextBytes )
-
-extern const int FlattenThresholdTextWidth;
-extern const int FlattenThresholdTextHeight;
-extern const int FlattenThresholdTextChannels;
-extern unsigned char FlattenThresholdTextBytes[];
-
-#define FLATTENTHRESHOLDTEXT imageData(FlattenThresholdTextWidth, FlattenThresholdTextHeight, FlattenThresholdTextChannels, FlattenThresholdTextBytes )
-
-extern const int NoiseRemovalTextWidth;
-extern const int NoiseRemovalTextHeight;
-extern const int NoiseRemovalTextChannels;
-extern unsigned char NoiseRemovalTextBytes[];
-
-#define NOISEREMOVALTEXT imageData(NoiseRemovalTextWidth, NoiseRemovalTextHeight, NoiseRemovalTextChannels, NoiseRemovalTextBytes )
-
 extern const int UpdateButtonWidth;
 extern const int UpdateButtonHeight;
 extern const int UpdateButtonChannels;
