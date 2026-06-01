@@ -52,11 +52,8 @@ public:
 
 		imageName = texName;
 
-		imageData cb = CLOSEBUTTON;
-		Material* closeMat = newMaterial(&cb, "CloseBtn");
-
-		imageData sb = SETTINGSBUTTON;
-		Material* settingsMat = newMaterial(&sb, "SettingsBtn");
+		Material* closeMat = loadList->getMaterial("CloseBtnMat");
+		Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
 
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 		Arrangement* exitArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
@@ -73,8 +70,7 @@ public:
 			remapArrangement->addItem(getPtr(mapMixer));
 
 			if (tex->normalType) {
-				imageData tsb = TANGENTSPACE;
-				Material* tsMat = newMaterial(&tsb, "TSBtn");
+				Material* tsMat = loadList->getMaterial("TSBtnMat");
 
 				Button* normalType = new Button(tsMat, transitionTypeFnc);
 				normalType->Name = texName;
@@ -82,8 +78,7 @@ public:
 				remapArrangement->addItem(getPtr(normalType));
 			}
 			else {
-				imageData osb = OSBUTTON;
-				Material* osMat = newMaterial(&osb, "OSBtn");
+				Material* osMat = loadList->getMaterial("OSBtnMat");
 
 				Button* normalType = new Button(osMat, transitionTypeFnc);
 				normalType->Name = texName;
@@ -170,24 +165,14 @@ public:
 		Arrangement* ARSettings = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.1f, 0.05f);
 
 		webcamView = new ImagePanel(new Material(webcamTexture::get()), true);
-		
-		imageData finishBtnImage = FINISHBUTTON;
-		Material* finishmat = newMaterial(&finishBtnImage, "FinishBtn");
 
-		imageData sb = SETTINGSBUTTON;
-		Material* settingsMat = newMaterial(&sb, "SettingsBtn");
-
-		imageData pb = PLAYBUTTON;
-		Material* forwardMat = newMaterial(&pb, "PlayBtn");
-
-		imageData bb = BACKBUTTON;
-		Material* backMat = newMaterial(&bb, "BackBtn");
-
-		imageData rf = ROTATEFORWARD;
-		Material* rotForward = newMaterial(&rf, "RotateFWBtn");
-
-		imageData rb = ROTATEBACKWARD;
-		Material* rotBackward = newMaterial(&rb, "RotateBWBtn");
+		Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
+		Material* finishmat = loadList->getMaterial("FinishBtnMat");
+		Material* forwardMat = loadList->getMaterial("PlayBtnMat");
+		Material* backMat = loadList->getMaterial("BackBtnMat");
+		Material* rotForward = loadList->getMaterial("RotateFWBtnMat");
+		Material* rotBackward = loadList->getMaterial("RotateBWBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 
 		idButtons->addItem(getPtr(new Button(backMat, idDown)));
 		idButtons->addItem(getPtr(new spacer));
@@ -200,9 +185,6 @@ public:
 		endButtons->addItem(getPtr(new Button(settingsMat, webcamCalib)));
 		endButtons->addItem(getPtr(new spacer));
 		endButtons->addItem(getPtr(new Button(finishmat, finishCallback)));
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
 
 		ratioSlider = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 1.0f, 0.1f);
 		ratioSlider->setFloatCallback(std::bind(&WebcamSettings::updateAspectRatio, this, placeholders::_1), true);
@@ -346,14 +328,9 @@ public:
 
 		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
 
-		imageData OpenButton = OPENBUTTON;
-		Material* openMat = newMaterial(&OpenButton, "OpenBtn");
-
-		imageData SaveButton = SAVEBUTTON;
-		Material* saveMat = newMaterial(&SaveButton, "SaveBtn");
-
-		imageData plusButton = PLUSBUTTON;
-		Material* plusMat = newMaterial(&plusButton, "PlusBtn");
+		Material* openMat = loadList->getMaterial("OpenBtnMat");
+		Material* saveMat = loadList->getMaterial("SaveBtnMat");
+		Material* plusMat = loadList->getMaterial("PlusBtnMat");
 
 		SessionButtons->addItem(getPtr(new Button(plusMat, newSessionFunc)));
 		SessionButtons->addItem(getPtr(new Button(openMat, loadSessionFunc)));
@@ -389,17 +366,10 @@ public:
 			return;
 		}
 
-		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = newMaterial(&rb, "RenderBtn");
-
-		imageData ub = WEBCAMVIEWBUTTON;
-		Material* webcamViewMat = newMaterial(&ub, "WebcamBtn");
-
-		imageData wb = WIREFRAMEBUTTON;
-		Material* wireframeViewMat = newMaterial(&wb, "WireframeBtn");
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
+		Material* webcamViewMat = loadList->getMaterial("WebcamBtnMat");
+		Material* wireframeViewMat = loadList->getMaterial("WireframeBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 
 		Arrangement* Renderbuttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.2f, 0.6f, 0.01f, ARRANGE_CENTER);
 
@@ -419,8 +389,6 @@ public:
 		Renderbuttons->addItem(getPtr(unlitRenderingButton));
 		Renderbuttons->addItem(getPtr(litRenderingButton));
 		Renderbuttons->addItem(getPtr(wireframeRenderingButton));
-
-		std::cout << "Creating sliders" << std::endl;
 
 		Slider* polarSlider = new Slider(loadList->getMaterial("UIRoundBox"), 0.0f, 0.0f, 1.0f, 0.25f);
 		polarSlider->updateDisplay();
@@ -466,11 +434,8 @@ public:
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = newMaterial(&rb, "RenderBtn");
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 
 		int index = 0;
 		int optionIndex = 0;
@@ -602,14 +567,9 @@ private:
 			texChannels.erase(it);
 		}
 
-		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = newMaterial(&rb, "RenderBtn");
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
-
-		imageData fb = FINISHBUTTON;
-		Material* finishedMat = newMaterial(&fb, "FinishBtn");
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		Material* finishedMat = loadList->getMaterial("FinishBtnMat");
 
 		std::function<void(UIItem*)> updateMatTemplate = std::bind(&MaterialCreator::setTexCallback, this, std::placeholders::_1);
 		std::function<void(UIItem*)> exitCallback = std::bind(&MaterialCreator::exit, this, std::placeholders::_1);
@@ -696,11 +656,8 @@ public:
 		TextBox* matLabel = new TextBox(inFont, 0.0f, 0.0f, 3.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
 		matLabel->addText("MATERIAL:");
 
-		imageData sb = SETTINGSBUTTON;
-		Material* settingsMat = newMaterial(&sb, "SettingsBtn");
-
-		imageData pb = PLUSBUTTON;
-		Material* plusMat = newMaterial(&pb, "PlusBtn");
+		Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
+		Material* plusMat = loadList->getMaterial("PlusBtnMat");
 
 		std::function<void(UIItem*)> newMatBtn = std::bind(&ObjectSettingsMenu::newMaterialMenu, this, std::placeholders::_1);
 		std::function<void(UIItem*)> editMatBtn = std::bind(&ObjectSettingsMenu::editMaterialMenu, this, std::placeholders::_1);
@@ -715,14 +672,9 @@ public:
 
 		totalArrangement->addItem(getPtr(materialSettingsArrangement));
 
-		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = newMaterial(&rb, "RenderBtn");
-		
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
-
-		imageData fb = FINISHBUTTON;
-		Material* finishMat = newMaterial(&fb, "FinishBtn");
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 		int index = 0;
 		int optionIndex = 0;
@@ -894,22 +846,13 @@ public:
 			return;
 		}
 
-		imageData ub = UNRENDEREDBUTTON;
-		invisibleMat = newMaterial(&ub, "UnrenderedBtn");
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		visibleMat = newMaterial(&tcb, "CheckboxBtn");
-
-		imageData wb = WIREFRAMEBUTTON;
-		wireframeMat = newMaterial(&wb, "WireframeBtn");
-
-		imageData sb = SETTINGSBUTTON;
-		settingsMat = newMaterial(&sb, "SettingsBtn");
+		invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
+		visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		wireframeMat = loadList->getMaterial("WireframeBtnMat");
+		settingsMat = loadList->getMaterial("SettingsBtnMat");
+		Material* loadMat = loadList->getMaterial("OpenBtnMat");
 
 		Arrangement* textArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-
-		imageData lb = OPENBUTTON;
-		Material* loadMat = newMaterial(&lb, "OpenBtn");
 
 		font* newFont = loadList->getFont();
 
@@ -1012,14 +955,9 @@ public:
 			textures.erase(it);
 		}
 
-		imageData ub = UNRENDEREDBUTTON;
-		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
-
-		imageData fb = FINISHBUTTON;
-		Material* finishMat = newMaterial(&fb, "FinishBtn");
+		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -1281,17 +1219,10 @@ public:
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		
-		imageData ub = UNRENDEREDBUTTON;
-		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
-
-		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = newMaterial(&rb, "RenderBtn");
-
-		imageData fb = FINISHBUTTON;
-		Material* finishMat = newMaterial(&fb, "FinishBtn");
+		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
+		Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 		DropdownMenu* objectSelector = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		objectSelector->addOptions(objects);
@@ -1478,20 +1409,11 @@ public:
 
 		std::vector<std::string> loadOptions{ "Colour", "Normalized vector" };
 
-		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = newMaterial(&rb, "RenderBtn");
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
-
-		imageData fb = FINISHBUTTON;
-		Material* finishedMat = newMaterial(&fb, "FinishBtn");
-
-		imageData osb = OSBUTTON;
-		Material* osMat = newMaterial(&osb, "OSBtn");
-
-		imageData tsb = TANGENTSPACE;
-		Material* tsMat = newMaterial(&tsb, "TSBtn");
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		Material* finishedMat = loadList->getMaterial("FinishBtnMat");
+		Material* osMat = loadList->getMaterial("OSBtnMat");
+		Material* tsMat = loadList->getMaterial("TSBtnMat");
 
 		normalTypeToggle = getPtr(new Checkbox(osMat, tsMat));
 		normalTypeToggle->setVisibility(false);
@@ -1593,20 +1515,11 @@ public:
 
 		std::function<void(UIItem*)> loadTexFunct = std::bind(&TextureMenu::loadTexture, this, std::placeholders::_1);
 
-		imageData ub = UNRENDEREDBUTTON;
-		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "CheckboxBtn");
-
-		imageData wb = WIREFRAMEBUTTON;
-		Material* wireframeMat = newMaterial(&wb, "WireframeBtn");
-
-		imageData sb = SETTINGSBUTTON;
-		settingsMat = newMaterial(&sb, "SettingsBtn");
-
-		imageData svm = SAVEBUTTON;
-		saveMat = newMaterial(&svm, "SaveBtn");
+		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		Material* wireframeMat = loadList->getMaterial("WireframeBtnMat");
+		settingsMat = loadList->getMaterial("SettingsBtnMat");
+		saveMat = loadList->getMaterial("SaveBtnMat");
 
 		saveCallback = std::bind(&TextureMenu::saveTexture, this, std::placeholders::_1);
 
@@ -1735,23 +1648,12 @@ public:
 		if (isSetup) {
 			return;
 		}
-		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = newMaterial(&rb, "RenderBtn");
-		
-		imageData fb = UNRENDEREDBUTTON;
-		Material* unrenderedMat = newMaterial(&fb, "UnrenderedBtn");
-
-		imageData plb = PLAYBUTTON;
-		Material* playMat = newMaterial(&plb, "PlayBtn");
-
-		imageData pb = PAUSEBUTTON;
-		Material* pauseMat = newMaterial(&pb, "PauseBtn");
-
-		imageData sb = SETTINGSBUTTON;
-		Material* settingsMat = newMaterial(&sb, "SettingsBtn");
-
-		imageData webcamOn = WEBCAMONBUTTON;
-		Material* webcamMat = newMaterial(&webcamOn, "WebcamOnBtn");
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
+		Material* unrenderedMat = loadList->getMaterial("UnrenderedBtnMat");
+		Material* playMat = loadList->getMaterial("PlayBtnMat");
+		Material* pauseMat = loadList->getMaterial("PauseBtnMat");
+		Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
+		Material* webcamMat = loadList->getMaterial("WebcamOnBtnMat");
 
 		std::function<void(UIItem*)> toggleWebcamFunct = bind(&WebcamMenu::toggleWebcam, this, placeholders::_1);
 
@@ -1806,8 +1708,7 @@ public:
 		wireMatTemplate.listChannels();
 		wireMat = UIElements.getPtr(wireMatTemplate.createMaterial(), "Wire Material");
 
-		UIElements.getPtr(new Material(std::vector<Texture*>{}, "UIRoundBox", currentPass, true), "UIRoundBox");
-
+		createWidgetMaterials();
 		createCanvas();
 		
 		webcamMenu.canvas[0]->Items[1]->activestate = false;
@@ -1861,8 +1762,6 @@ private:
 
 	StaticObject* currentObject = nullptr;
 
-	//bool use_sConst = false;
-
 	bool mouseDown = false;
 	bool tomogActive = false;
 
@@ -1901,8 +1800,46 @@ private:
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
 
-	void typeTester(char c) {
-		std::cout << c;
+	void createWidgetMaterials() {
+		UIElements.getPtr(new Material(std::vector<Texture*>{}, "UIRoundBox", currentPass, true), "UIRoundBox");
+		imageData cb = CLOSEBUTTON;
+		UIElements.getPtr(&cb, "CloseBtn");
+		imageData sb = SETTINGSBUTTON;
+		UIElements.getPtr(&sb, "SettingsBtn");
+		imageData tsb = TANGENTSPACE;
+		UIElements.getPtr(&tsb, "TSBtn");
+		imageData osb = OSBUTTON;
+		UIElements.getPtr(&osb, "OSBtn");
+		imageData finishBtnImage = FINISHBUTTON;
+		UIElements.getPtr(&finishBtnImage, "FinishBtn");
+		imageData pb = PLAYBUTTON;
+		UIElements.getPtr(&pb, "PlayBtn");
+		imageData psb = PAUSEBUTTON;
+		UIElements.getPtr(&psb, "PauseBtn");
+		imageData bb = BACKBUTTON;
+		UIElements.getPtr(&bb, "BackBtn");
+		imageData rf = ROTATEFORWARD;
+		UIElements.getPtr(&rf, "RotateFWBtn");
+		imageData rtb = ROTATEBACKWARD;
+		UIElements.getPtr(&rtb, "RotateBWBtn");
+		imageData tcb = TESTCHECKBOXBUTTON;
+		UIElements.getPtr(&tcb, "TestCheckBtn");
+		imageData OpenButton = OPENBUTTON;
+		UIElements.getPtr(&OpenButton, "OpenBtn");
+		imageData SaveButton = SAVEBUTTON;
+		UIElements.getPtr(&SaveButton, "SaveBtn");
+		imageData plusButton = PLUSBUTTON;
+		UIElements.getPtr(&plusButton, "PlusBtn");
+		imageData rb = RENDEREDBUTTON;
+		UIElements.getPtr(&rb, "RenderBtn");
+		imageData ub = WEBCAMVIEWBUTTON;
+		UIElements.getPtr(&ub, "WebcamBtn");
+		imageData wb = WIREFRAMEBUTTON;
+		UIElements.getPtr(&wb, "WireframeBtn");
+		imageData urb = UNRENDEREDBUTTON;
+		UIElements.getPtr(&urb, "UnrenderedBtn");
+		imageData webcamOn = WEBCAMONBUTTON;
+		UIElements.getPtr(&webcamOn, "WebcamOnBtn");
 	}
 
 	void addWidget(Widget* widget, bool hasClick = true, bool hasPos = false) {

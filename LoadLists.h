@@ -75,6 +75,22 @@ struct LoadList {
 		return materials.at(materials.size() - 1).get();
 	}
 
+	Material* getPtr(imageData* imgData, std::string name) {
+		if (checkForMaterial(name + "Mat")) {
+			return findMatPtr(name + "Mat");
+		}
+		else {
+			Texture* tex = nullptr;
+			if (checkForTexture(name + "Tex")) {
+				tex = findTexPtr(name + "Tex");
+			}
+			else {
+				tex = getPtr(new imageTexture(imgData), name + "Tex");
+			}
+			return getPtr(new Material(tex), name + "Mat");
+		}
+	}
+
 	Material* replacePtr(Material* tex, std::string name) {
 		if (checkForMaterial(name)) {
 			deleteMaterial(name);
@@ -108,6 +124,7 @@ struct LoadList {
 		if (checkForMaterial(name)) {
 			return materials.at(materialMap.at(name)).get();
 		}
+		std::cout << "Material " << name << " not found" << std::endl;
 		return nullptr;
 	}
 
