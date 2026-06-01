@@ -55,8 +55,40 @@ void UIItem::calculateScreenPosition() {
 	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // left position
 	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // right position
 	this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H; // top position
-	this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom position
+	this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom positio
+}
 
+void DropdownMenu::calculateScreenPosition() {
+	float W = static_cast<float>(Engine::get()->windowWidth);
+	float H = static_cast<float>(Engine::get()->windowHeight);
+
+	extenty = extentx * sqAxisRatio * W / H;
+
+	float bufferRatioX, bufferRatioY;
+
+	bufferRatioX = static_cast<float>(buffer) / (2 * W);
+	bufferRatioY = static_cast<float>(buffer) / (2 * H);
+
+	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY, anchorx, anchory);
+
+	windowPositions[0] = 10000.0f;
+	windowPositions[1] = 0.0f;
+	windowPositions[2] = 10000.0f;
+	windowPositions[3] = 0.0f;
+	for (UIItem* item : Items) {
+		std::vector<UIItem*> scs;
+		item->getSubclasses(scs);
+		for (UIItem* sitem : scs) {
+			if (sitem->isSpacer()) {
+				continue;
+			}
+			sitem->calculateScreenPosition();
+			windowPositions[0] = (sitem->windowPositions[0] < windowPositions[0]) ? sitem->windowPositions[0] : windowPositions[0];
+			windowPositions[1] = (sitem->windowPositions[1] > windowPositions[1]) ? sitem->windowPositions[1] : windowPositions[1];
+			windowPositions[2] = (sitem->windowPositions[2] < windowPositions[2]) ? sitem->windowPositions[2] : windowPositions[2];
+			windowPositions[3] = (sitem->windowPositions[3] > windowPositions[3]) ? sitem->windowPositions[3] : windowPositions[3];
+		}
+	}
 }
 
 void UIItem::addItem(UIItem *item) {

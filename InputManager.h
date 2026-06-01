@@ -21,6 +21,8 @@
 #define LMB_RELEASE 5
 #define MOUSE_HOVER 6
 
+const std::map<char, char> upperCaseSpecial{ {49, 33}, {50, 34}, {52, 36}, { 53, 37 }, {54, 94}, {55, 38}, {56, 42}, {57, 40}, {48, 41}, {45, 95} };
+
 struct KeyState {
 public:
 	bool isKeyDown = false;
@@ -68,10 +70,21 @@ class TypeManager {
 public:
 	TypeManager() {
 		TypeManager::_instances.push_back(this);
+		listening = false;
 	}
 
 	~TypeManager() {
 		TypeManager::_instances.erase(find(TypeManager::_instances.begin(), TypeManager::_instances.end(), this));
+	}
+
+	void startListening() {
+		std::cout << "Started listening" << std::endl;
+		listening = true;
+	}
+
+	void stopListening() {
+		std::cout << "Stopped listening" << std::endl;
+		listening = false;
 	}
 
 	void setTypeCallback(std::function<void(char)> func) {
@@ -81,6 +94,8 @@ public:
 	void initCallbacks(GLFWwindow* window);
 private:
 	static std::vector<TypeManager*> _instances;
+
+	bool listening = false;
 
 	bool shiftHeld = false;
 	std::function<void(char)> typeCallback = nullptr;

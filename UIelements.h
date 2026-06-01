@@ -6,6 +6,7 @@
 #include"Materials.h"
 #include"Meshes.h"
 #include"TextManager.h"
+#include"InputManager.h"
 #include<iostream>
 #include<vector>
 #include<array>
@@ -266,12 +267,38 @@ struct UIItem {
 
 class TextBox : public UIItem {
 public:
-	TextBox(font* inFont, float px, float py, float ex, float ey, uint32_t fSize = 24, int hArrange = ARRANGE_START, int vArrange = ARRANGE_START) {
+	TextBox(font* inFont, float px, float py, float ex, float ey, uint32_t fSize = 24, int hArrange = ARRANGE_START, int vArrange = ARRANGE_START, bool isModifiable = false) {
 		setDims(px, py, ex, ey);
 		textFont = inFont;
 		characterSize = fSize;
 		horizontalArrange = hArrange;
 		verticalArrange = vArrange;
+
+		modifiable = isModifiable;
+
+		if (modifiable) {
+			std::cout << "Modifiable text box created" << std::endl;
+			typeManager = new TypeManager();
+			typeManager->initCallbacks(Engine::get()->window);
+			typeManager->setTypeCallback(std::bind(&TextBox::updateText, this, std::placeholders::_1));
+		}
+	}
+
+	void updateText(char c) {
+		//std::cout << static_cast<int>(c) << std::endl;
+		if (c == 3) {
+			removeLastChar();
+		}
+		else if (c == 1) {
+			typeManager->stopListening();
+			if (clickFunct != nullptr) {
+				clickFunct(this);
+			}
+		}
+		else {
+			createCharacter(c);
+		}
+		updateDisplay();
 	}
 
 	void updateDisplay();
@@ -312,17 +339,28 @@ public:
 		default:
 			fontMesh* newMesh = new fontMesh(unicodeCharacter, textFont);
 			characters.push_back(newMesh);
+			break;
 		}
-		boxText += static_cast<char>(unicodeCharacter);
+		text += static_cast<char>(unicodeCharacter);
+	}
+
+	void removeLastChar() {
+		vkDeviceWaitIdle(Engine::get()->device);
+		uint32_t index = characters.size() - 1;
+		characters[index]->cleanup();
+		delete characters[index];
+		characters.erase(characters.begin() + index);
+		text.erase(text.begin() + index);
 	}
 
 	void clearText() {
 		vkDeviceWaitIdle(Engine::get()->device);
 		for (fontMesh* mesh : characters) {
 			mesh->cleanup();
+			delete mesh;
 		}
 		characters.clear();
-		boxText = "";
+		text = "";
 	}
 
 	void addText(std::string text) {
@@ -353,6 +391,9 @@ public:
 	}
 
 	void cleanup() {
+		if (typeManager != nullptr) {
+			typeManager->~TypeManager();
+		}
 		for (fontMesh* mesh : characters) {
 			mesh->cleanup();
 		}
@@ -371,16 +412,26 @@ public:
 	}
 
 	bool checkForClickEvent(double mousex, double mousey, int clicktype) {
-		if (clickFunct != nullptr && clicktype == LMB_PRESS && isInArea(mousex, mousey)) {
-			clickFunct(this);
-			return true;
+		if (!modifiable) {
+			if (clickFunct != nullptr && clicktype == LMB_PRESS && isInArea(mousex, mousey)) {
+				clickFunct(this);
+				return true;
+			}
+			return false;
 		}
-		return false;
+		else {
+			//std::cout << "Checking modifiable box" << std::endl;
+			if (clicktype == LMB_PRESS && isInArea(mousex, mousey)) {
+				std::cout << "Try typing" << std::endl;
+				typeManager->startListening();
+			}
+		}
 	};
 
 private:
+	bool modifiable = false;
 
-	std::string boxText = "";
+	TypeManager* typeManager = nullptr;
 
 	int horizontalArrange = ARRANGE_START;
 	int verticalArrange = ARRANGE_START;
@@ -1574,11 +1625,11 @@ public:
 
 		this->sqAxisRatio = ey / ex;
 
-		//std::cout << this->posy << std::endl;
-
 		Items[0]->updateArrangedPosition(px, py, ex, ey);
 		Items[0]->arrangeItems();
 	}
+
+	void calculateScreenPosition();
 
 	void drawText(VkCommandBuffer commandbuffer, uint32_t currentFrame) {
 		selectedTextBox->draw(commandbuffer, currentFrame);
@@ -1714,7 +1765,7 @@ struct Widget {
 			std::vector<UIItem*> scs;
 			item->getSubclasses(scs);
 			for (UIItem* sitem : scs) {
-				if (sitem->isSpacer() || sitem->isArrangement() || sitem == thisBG) {
+				if (sitem->isSpacer() || (sitem->isArrangement() && !sitem->isText()) || sitem == thisBG) {
 					continue;
 				}
 				sitem->calculateScreenPosition();
@@ -1816,6 +1867,10 @@ struct Widget {
 		for (UIItem* item : canvas) {
 			if (item->checkForClickEvent(mouseX, mouseY, eventType)) {
 				sortImages();
+				measureWindowPositions();
+				if (thisBG != nullptr) {
+					thisBG->updateDisplay();
+				}
 				return true;
 			};
 		}

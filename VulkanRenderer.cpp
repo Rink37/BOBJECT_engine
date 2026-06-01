@@ -28,7 +28,6 @@ std::vector<KeyManager*> KeyManager::_instances;
 KeyManager keyBinds;
 
 std::vector<TypeManager*> TypeManager::_instances;
-TypeManager testType;
 
 std::vector<MouseManager*> MouseManager::_instances;
 MouseManager mouseManager;
@@ -116,9 +115,6 @@ public:
 		
 		addBackground(loadList->getMaterial("UIRoundBox"));
 
-		//Background* bg = new Background(loadList->getMaterial("UIRoundBox"), this);
-		//bg->updateDisplay();
-		//canvas.push_back(bg);
 		isSetup = true;
 	}
 
@@ -496,11 +492,16 @@ public:
 		textureLL->listMaterials(existingMaterials);
 		newMaterialName = "Material" + std::to_string(existingMaterials.size() - 1);
 
+		TextBox* matNameTB = new TextBox(inFont, 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER, true);
+		matNameTB->addText(newMaterialName);
+		matNameTB->setClickFunction(std::bind(&MaterialCreator::setMaterialName, this, std::placeholders::_1));
+
 		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), inFont);
 		materialSelect->addOptions(materialOptions);
 		materialSelect->setSelectCallback(std::bind(&MaterialCreator::createMatOptionsMenu, this, std::placeholders::_1));
 		materialSelect->setOptionIndex(optionIndex);
 
+		totalArrangement->addItem(getPtr(matNameTB));
 		totalArrangement->addItem(getPtr(materialSelect));
 		totalArrangement->arrangeItems();
 
@@ -567,6 +568,11 @@ private:
 	std::function<void(UIItem*)> finishedCallback = nullptr;
 
 	std::vector<int> autoIndices{};
+
+	void setMaterialName(UIItem* owner) {
+		std::cout << newMaterialName << std::endl;
+		newMaterialName = owner->text;
+	}
 
 	void createMatOptionsMenu(UIItem* owner) {
 		if (canvas[0]->Items.size() > 1) {
@@ -952,6 +958,8 @@ public:
 
 		ObjectButtons->addItem(getPtr(objButtons));
 		ObjectButtons->arrangeItems();
+
+		measureWindowPositions();
 	}
 
 	void clearObjects() {
@@ -1773,7 +1781,6 @@ public:
 		engine->initWindow("BOBERT_TradPainter");
 		engine->initVulkan();
 		keyBinds.initCallbacks(engine->window);
-		testType.initCallbacks(engine->window);
 		mouseManager.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		webcamTexture::get()->setup();
@@ -1786,8 +1793,6 @@ public:
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
-
-		testType.setTypeCallback(std::bind(&Application::typeTester, this, std::placeholders::_1));
 
 		Engine::get()->createRenderPass(renderGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		renderImage = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, renderGP.renderPass);

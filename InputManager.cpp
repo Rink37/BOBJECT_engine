@@ -101,10 +101,18 @@ void TypeManager::callback(GLFWwindow* window, int key, int scancode, int action
 	}
 	if (action == GLFW_PRESS) {
 		for (TypeManager* typeManager : _instances) {
+			if (!typeManager->listening) {
+				continue;
+			}
 			if (typeManager->typeCallback != nullptr) {
 				char cKey = static_cast<char>(key);
-				if (!typeManager->shiftHeld && GLFW_KEY_A <= key && key <= GLFW_KEY_Z) {
-					cKey += 32;
+				if (!typeManager->shiftHeld) {
+					if (GLFW_KEY_A <= key && key <= GLFW_KEY_Z) {
+						cKey += 32;
+					}
+				}
+				else if (upperCaseSpecial.count(cKey) != 0) {
+					cKey = upperCaseSpecial.at(cKey);
 				}
 				typeManager->typeCallback(cKey);
 			}
