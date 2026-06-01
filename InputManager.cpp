@@ -87,10 +87,26 @@ void TypeManager::initCallbacks(GLFWwindow* window) {
 }
 
 void TypeManager::callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	if (action == GLFW_PRESS && key < 255) {
+	if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) {
+		for (TypeManager* typeManager : _instances) {
+			typeManager->shiftHeld = (action != GLFW_RELEASE);
+		}
+		return;
+	}
+	if (key == GLFW_KEY_CAPS_LOCK && action == GLFW_PRESS) {
+		for (TypeManager* typeManager : _instances) {
+			typeManager->shiftHeld = !typeManager->shiftHeld;
+		}
+		return;
+	}
+	if (action == GLFW_PRESS) {
 		for (TypeManager* typeManager : _instances) {
 			if (typeManager->typeCallback != nullptr) {
-				typeManager->typeCallback(static_cast<char>(key));
+				char cKey = static_cast<char>(key);
+				if (!typeManager->shiftHeld && GLFW_KEY_A <= key && key <= GLFW_KEY_Z) {
+					cKey += 32;
+				}
+				typeManager->typeCallback(cKey);
 			}
 		}
 	}

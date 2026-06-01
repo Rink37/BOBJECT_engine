@@ -82,6 +82,7 @@ public:
 private:
 	static std::vector<TypeManager*> _instances;
 
+	bool shiftHeld = false;
 	std::function<void(char)> typeCallback = nullptr;
 
 	static void callback(GLFWwindow* window, int key, int scancode, int action, int mods);
