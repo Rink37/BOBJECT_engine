@@ -1650,9 +1650,18 @@ public:
 			zp = parent->zp;
 		}
 		if (image != nullptr) {
-			std::cout << posx << " " << posy << " " << extentx << " " << extenty << std::endl;
 			image->UpdateVertices(posx, posy, extentx, extenty, zp + 0.01f);
 		}
+	}
+
+	void calculateScreenPosition() {
+		float W = static_cast<float>(Engine::get()->windowWidth);
+		float H = static_cast<float>(Engine::get()->windowHeight);
+		
+		this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // left position
+		this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // right position
+		this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H; // top position
+		this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom position
 	}
 private:
 	UIItem* parent = nullptr;
@@ -1707,7 +1716,7 @@ struct Widget {
 			float posx = (windowPositions[1] / W + windowPositions[0] / W) - 1.0f;
 			float extentx = (windowPositions[1] / W - 0.5f) * 2.0f - posx + 0.05f;
 			float posy = (windowPositions[3] / H + windowPositions[2] / H) - 1.0f;
-			float extenty = (windowPositions[3] / W - 0.5f) * 2.0f - posy + 0.05f;
+			float extenty = (windowPositions[3] / H - 0.5f) * 2.0f - posy + 0.05f;
 
 			thisBG->updateArrangedPosition(posx, posy, extentx, extenty);
 			thisBG->zp = this->zp;
@@ -1821,6 +1830,7 @@ struct Widget {
 			}
 			measureWindowPositions();
 			if (thisBG != nullptr) {
+				//std::cout << "Updating thisBG" << std::endl;
 				thisBG->updateDisplay();
 			}
 			customUpdate();
