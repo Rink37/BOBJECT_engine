@@ -27,6 +27,9 @@ using namespace std;
 std::vector<KeyManager*> KeyManager::_instances;
 KeyManager keyBinds;
 
+std::vector<TypeManager*> TypeManager::_instances;
+TypeManager testType;
+
 std::vector<MouseManager*> MouseManager::_instances;
 MouseManager mouseManager;
 
@@ -1770,6 +1773,7 @@ public:
 		engine->initWindow("BOBERT_TradPainter");
 		engine->initVulkan();
 		keyBinds.initCallbacks(engine->window);
+		testType.initCallbacks(engine->window);
 		mouseManager.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		webcamTexture::get()->setup();
@@ -1782,6 +1786,8 @@ public:
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
+
+		testType.setTypeCallback(std::bind(&Application::typeTester, this, std::placeholders::_1));
 
 		Engine::get()->createRenderPass(renderGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		renderImage = Engine::get()->createDrawImage(Engine::get()->swapChainExtent.width, Engine::get()->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, renderGP.renderPass);
@@ -1888,6 +1894,10 @@ private:
 	glm::vec3 secondaryColour = glm::vec3(0.82f, 0.55f, 0.36f);
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
+
+	void typeTester(char c) {
+		std::cout << c;
+	}
 
 	void addWidget(Widget* widget, bool hasClick = true, bool hasPos = false) {
 		// The widget must be set up beforehand since setup functions don't have consistent arguments

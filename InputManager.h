@@ -64,6 +64,29 @@ private:
 	static void callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 };
 
+class TypeManager {
+public:
+	TypeManager() {
+		TypeManager::_instances.push_back(this);
+	}
+
+	~TypeManager() {
+		TypeManager::_instances.erase(find(TypeManager::_instances.begin(), TypeManager::_instances.end(), this));
+	}
+
+	void setTypeCallback(std::function<void(char)> func) {
+		typeCallback = func;
+	}
+
+	void initCallbacks(GLFWwindow* window);
+private:
+	static std::vector<TypeManager*> _instances;
+
+	std::function<void(char)> typeCallback = nullptr;
+
+	static void callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+};
+
 struct Mouse {
 	bool isRMBDown = false;
 	bool isLMBDown = false;

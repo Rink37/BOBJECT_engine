@@ -82,6 +82,20 @@ void KeyManager::callback(GLFWwindow* window, int key, int scancode, int action,
 	}
 }
 
+void TypeManager::initCallbacks(GLFWwindow* window) {
+	glfwSetKeyCallback(window, callback);
+}
+
+void TypeManager::callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (action == GLFW_PRESS && key < 255) {
+		for (TypeManager* typeManager : _instances) {
+			if (typeManager->typeCallback != nullptr) {
+				typeManager->typeCallback(static_cast<char>(key));
+			}
+		}
+	}
+}
+
 void MouseManager::initCallbacks(GLFWwindow* window) {
 	glfwSetMouseButtonCallback(window, callback);
 	glfwSetCursorEnterCallback(window, cursorExitCallback);
