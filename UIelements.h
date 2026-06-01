@@ -1433,14 +1433,62 @@ private:
 	bool updateOnMove = false; // If false we only perform callbacks on release, if true we perform callbacks on every movement
 };
 
+class Background : public UIItem {
+public:
+	Background(Material* mat, UIItem* par) {
+		parent = par;
+		setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
+
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(mat);
+
+		image->texHeight = 100;
+		image->texWidth = 100;
+	}
+
+	Background(Material* mat) {
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mat.emplace_back(mat);
+
+		image->texHeight = 100;
+		image->texWidth = 100;
+	}
+
+	void updateDisplay() {
+		if (parent != nullptr) {
+			setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
+			zp = parent->zp;
+		}
+		if (image != nullptr) {
+			image->UpdateVertices(posx, posy, extentx, extenty, zp + 0.01f);
+		}
+	}
+
+	void calculateScreenPosition() {
+		float W = static_cast<float>(Engine::get()->windowWidth);
+		float H = static_cast<float>(Engine::get()->windowHeight);
+
+		this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // left position
+		this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // right position
+		this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H; // top position
+		this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom position
+	}
+private:
+	UIItem* parent = nullptr;
+
+	bool isParentWidget = false;
+};
+
 class DropdownMenu : public UIItem {
 public:
-	DropdownMenu(float x, float y, float xsize, float ysize, Material* dropButtonMat, Material* raiseButtonMat, font* inFont) {
+	DropdownMenu(float x, float y, float xsize, float ysize, Material* dropButtonMat, Material* raiseButtonMat, Material* bg,  font* inFont) {
 		setDims(x, y, xsize, ysize);
 		Arrangement* mainArranger = new Arrangement(ORIENT_HORIZONTAL, x, y, xsize, ysize, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		selectedTextBox = new TextBox(inFont, 0.0f, 0.0f, (xsize * 0.8f) / ysize, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		mainArranger->addItem(selectedTextBox);
 		
+		bgMat = bg;
+
 		std::function<void(UIItem*)> dropdownFunc = std::bind(&DropdownMenu::optionsToggle, this, std::placeholders::_1);
 
 		mainArranger->addItem(new spacer());
@@ -1567,7 +1615,11 @@ private:
 	TextBox* selectedTextBox = nullptr;
 
 	Arrangement* optionsArrangement = nullptr;
+	Background* background = nullptr;
+
 	font* textFont = nullptr;
+
+	Material* bgMat = nullptr;
 
 	int optionIndex = 0;
 
@@ -1593,13 +1645,13 @@ private:
 
 	void openOptions(UIItem* owner) {
 		float boxHeight = options.size()* selectedTextBox->characters[0]->characterHeight;
-		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx, - posy - boxHeight / 2.0f - extenty * 2.0f, extentx, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx - 0.2f * extentx, - posy - boxHeight / 2.0f - extenty, extentx * 0.8f, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		
 		std::function<void(UIItem*)> optionSelectFunct = std::bind(&DropdownMenu::optionSelect, this, std::placeholders::_1);
 
 		uint32_t optionIndex = 0;
 		for (std::string option : options) {
-			TextBox* optionText = new TextBox(textFont, 0.0f, 0.0f, extentx, boxHeight / options.size(), 18, ARRANGE_START, ARRANGE_CENTER);
+			TextBox* optionText = new TextBox(textFont, 0.0f, 0.0f, (extentx * 0.8f), boxHeight / options.size(), 18, ARRANGE_START, ARRANGE_CENTER);
 			optionText->addText(option);
 			optionText->Name = std::to_string(optionIndex);
 			optionText->setClickFunction(optionSelectFunct);
@@ -1607,7 +1659,13 @@ private:
 			optionIndex++;
 		}
 		optionsArrangement->arrangeItems();
+
 		addItem(optionsArrangement);
+		if (bgMat != nullptr) {
+			background = new Background(bgMat, optionsArrangement);
+			background->updateDisplay();
+			addItem(background);
+		}
 	}
 
 	void closeOptions(UIItem* owner) {
@@ -1616,57 +1674,15 @@ private:
 			optionsArrangement->cleanup();
 			delete optionsArrangement;
 			optionsArrangement = nullptr;
+			background->cleanup();
+			delete background;
+			background = nullptr;
+			Items.erase(Items.begin() + Items.size() - 1);
 			Items.erase(Items.begin() + Items.size() - 1);
 			Items[0]->Items[2]->activestate = true;
 			Items[0]->Items[2]->image->matidx = 0;
 		}
 	}
-};
-
-class Background : public UIItem {
-public:
-	Background(Material* mat, UIItem* par) {
-		parent = par;
-		setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
-
-		image = std::make_shared<UIImage>(new UIImage);
-		image->mat.emplace_back(mat);
-
-		image->texHeight = 100;
-		image->texWidth = 100;
-	}
-
-	Background(Material* mat) {
-		image = std::make_shared<UIImage>(new UIImage);
-		image->mat.emplace_back(mat);
-
-		image->texHeight = 100;
-		image->texWidth = 100;
-	}
-
-	void updateDisplay() {
-		if (parent != nullptr) {
-			setDims(parent->posx, parent->posy, parent->extentx, parent->extenty);
-			zp = parent->zp;
-		}
-		if (image != nullptr) {
-			image->UpdateVertices(posx, posy, extentx, extenty, zp + 0.01f);
-		}
-	}
-
-	void calculateScreenPosition() {
-		float W = static_cast<float>(Engine::get()->windowWidth);
-		float H = static_cast<float>(Engine::get()->windowHeight);
-		
-		this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // left position
-		this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // right position
-		this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H; // top position
-		this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom position
-	}
-private:
-	UIItem* parent = nullptr;
-
-	bool isParentWidget = false;
 };
 
 struct Widget {

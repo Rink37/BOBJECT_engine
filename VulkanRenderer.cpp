@@ -493,7 +493,7 @@ public:
 		textureLL->listMaterials(existingMaterials);
 		newMaterialName = "Material" + std::to_string(existingMaterials.size() - 1);
 
-		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
+		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), inFont);
 		materialSelect->addOptions(materialOptions);
 		materialSelect->setSelectCallback(std::bind(&MaterialCreator::createMatOptionsMenu, this, std::placeholders::_1));
 		materialSelect->setOptionIndex(optionIndex);
@@ -619,7 +619,7 @@ private:
 			channelTextBox->addText(channel);
 			canvas[0]->addItem(getPtr(channelTextBox));
 
-			DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
+			DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), inFont);
 			materialSelect->addOptions(availableTextures);
 			materialSelect->setSelectCallback(updateMatTemplate);
 			materialSelect->setOptionIndex(index);
@@ -729,7 +729,7 @@ public:
 			index++;
 		}
 
-		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, inFont);
+		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), inFont);
 		materialSelect->addOptions(existingMaterials);
 		materialSelect->setOptionIndex(optionIndex);
 		materialSelect->setSelectCallback(std::bind(&ObjectSettingsMenu::selectMaterialCallback, this, std::placeholders::_1));
@@ -1017,7 +1017,7 @@ public:
 
 		totalArrangement->addItem(getPtr(topText));
 
-		DropdownMenu* textureSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getFont());
+		DropdownMenu* textureSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		textureSelect->addOptions(textures);
 		textureSelect->setOptionIndex(0);
 		textureSelect->setSelectCallback(std::bind(&NormalMixer::setMixTex, this, std::placeholders::_1));
@@ -1030,7 +1030,7 @@ public:
 
 		totalArrangement->addItem(getPtr(midText));
 
-		DropdownMenu* objSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getFont());
+		DropdownMenu* objSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		objSelect->addOptions(objects);
 		objSelect->setOptionIndex(0);
 		objSelect->setSelectCallback(std::bind(&NormalMixer::setObject, this, std::placeholders::_1));
@@ -1282,7 +1282,7 @@ public:
 		imageData fb = FINISHBUTTON;
 		Material* finishMat = newMaterial(&fb, "FinishBtn");
 
-		DropdownMenu* objectSelector = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getFont());
+		DropdownMenu* objectSelector = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		objectSelector->addOptions(objects);
 		objectSelector->setSelectCallback(std::bind(&SpaceTransitionMenu::setObjName, this, std::placeholders::_1));
 		objectSelector->setOptionIndex(0);
@@ -1485,7 +1485,7 @@ public:
 		normalTypeToggle = getPtr(new Checkbox(osMat, tsMat));
 		normalTypeToggle->setVisibility(false);
 
-		DropdownMenu* loadOption = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, newFont);
+		DropdownMenu* loadOption = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), newFont);
 		loadOption->addOptions(loadOptions);
 		loadOption->setSelectCallback(std::bind(&TextureLoadMenu::setOptionCallback, this, std::placeholders::_1));
 		loadOption->setOptionIndex(0);

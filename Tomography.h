@@ -229,7 +229,7 @@ public:
 		std::vector<std::string> textureOptions{};
 		textureLL->listTextures(textureOptions);
 
-		DropdownMenu* texSelect = new DropdownMenu(0.0f, 0.0f, 1.0f, 1.0f / 9.0f, renderedMat, visibleMat, textureLL->getFont());
+		DropdownMenu* texSelect = new DropdownMenu(0.0f, 0.0f, 1.0f, 1.0f / 9.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		texSelect->addOptions(textureOptions);
 		texSelect->setSelectCallback(std::bind(&TomogRefPicker::setTexName, this, std::placeholders::_1));
 		texSelect->setOptionIndex(optionIndex);

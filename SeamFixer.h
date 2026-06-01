@@ -238,7 +238,7 @@ public:
 
 		totalArrangement->addItem(getPtr(topText));
 
-		DropdownMenu* objSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getFont());
+		DropdownMenu* objSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		objSelect->addOptions(objects);
 		objSelect->setOptionIndex(0);
 		objSelect->setSelectCallback(std::bind(&SeamObjPicker::setObject, this, std::placeholders::_1));

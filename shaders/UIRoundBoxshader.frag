@@ -8,10 +8,10 @@ layout(location = 0) out vec4 outColor;
 
 void main(){
 	float secondaryBlend = 1.0f;
-	if (fragTexCoord.x < 0.05f || fragTexCoord.x > 0.95f){
+	if (fragTexCoord.x < 0.01f || fragTexCoord.x > 0.99f){
 		secondaryBlend = 0.0f;
 	} 
-	if (fragTexCoord.y < 0.05f || fragTexCoord.y > 0.95f){
+	if (fragTexCoord.y < 0.01f || fragTexCoord.y > 0.99f){
 		secondaryBlend = 0.0f;
 	} 
 	vec3 mixColour = primaryColour*(1.0-secondaryBlend) + secondaryBlend*secondaryColour;

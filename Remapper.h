@@ -203,7 +203,7 @@ public:
 		TextBox* setRefText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		setRefText->addText("Set the reference map:");
 
-		DropdownMenu* refDropdown = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, newFont);
+		DropdownMenu* refDropdown = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), newFont);
 		refDropdown->addOptions(availableTextures);
 		refDropdown->setOptionIndex(0);
 		refDropdown->setSelectCallback(std::bind(&RemapTexSelector::setRefName, this, std::placeholders::_1));
