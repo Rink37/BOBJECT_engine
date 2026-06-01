@@ -19,7 +19,6 @@
 #include"include/CoordMapRead.h"
 #include"GaussBlurX.h"
 #include"GaussBlurY.h"
-#include"include/BakedImages.h"
 
 #define KUWAHARA 0
 #define ITERATIVE 1
@@ -182,14 +181,9 @@ public:
 			return;
 		}
 
-		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = newMaterial(&rb, "RenderBtn");
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
-
-		imageData fb = FINISHBUTTON;
-		Material* finishedMat = newMaterial(&fb, "FinishBtn");
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		Material* finishedMat = loadList->getMaterial("FinishBtnMat");
 
 		std::function<void(UIItem*)> finishFunct = std::bind(&RemapTexSelector::finish, this, std::placeholders::_1);
 		
@@ -277,12 +271,11 @@ public:
 			remapper->toggleNormalization();
 		}
 		fullRemap(refTex, targetTex);
-		
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
 
-		imageData ub = UNRENDEREDBUTTON;
-		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
+		Material* forwardMat = loadList->getMaterial("PlayBtnMat");
+		Material* backMat = loadList->getMaterial("BackBtnMat");
 
 		std::function<void(UIItem*)> toggleNormFunction = std::bind(&RemapUI::toggleNormalization, this, std::placeholders::_1);
 		std::function<void(UIItem*)> incrementMethodFunction = std::bind(&RemapUI::incrementMethod, this, std::placeholders::_1);
@@ -291,12 +284,6 @@ public:
 		outMap = getPtr(new ImagePanel(loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat"), false));
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-
-		imageData pb = PLAYBUTTON;
-		Material* forwardMat = newMaterial(&pb, "PlayBtn");
-
-		imageData bb = BACKBUTTON;
-		Material* backMat = newMaterial(&bb, "BackBtn");
 
 		Arrangement* methodButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.25f, 0.01f);
 
@@ -314,11 +301,8 @@ public:
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
-		imageData cancel = CANCELBUTTON;
-		Material* cancelMat = newMaterial(&cancel, "CancelBtn");
-
-		imageData finish = FINISHBUTTON;
-		Material* finishMat = newMaterial(&finish, "FinishBtn");
+		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
+		Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 		Button* finishButton = new Button(finishMat, finishFunct);
 		Button* cancelButton = new Button(cancelMat, cancelFunct);
@@ -379,8 +363,7 @@ private:
 	void reduceMethod(UIItem*);
 
 	void createUI() {
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 
 		UIItem* column = canvas[0];
 
@@ -417,11 +400,8 @@ private:
 			gradientThreshSlider->setSlideValues(remapper->minGradientThreshold, remapper->maxGradientThreshold, 0.06f);
 			gradientThreshSlider->setFloatCallback(gradientSliderFunction, false);
 
-			imageData cancel = CANCELBUTTON;
-			Material* cancelMat = newMaterial(&cancel, "CancelBtn");
-
-			imageData finish = FINISHBUTTON;
-			Material* finishMat = newMaterial(&finish, "FinishBtn");
+			Material* cancelMat = loadList->getMaterial("CancelBtnMat");
+			Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 			TextBox* noiseText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.25f, 18, ARRANGE_START, ARRANGE_CENTER);
 			noiseText->addText("Noise removal:");

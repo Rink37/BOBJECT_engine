@@ -6,7 +6,7 @@
 #include"LoadLists.h"
 #include"UIelements.h"
 
-#include"include/BakedImages.h"
+//#include"include/BakedImages.h"
 
 struct SeamStrip {
 	std::vector<uint32_t> leftIndices{};
@@ -222,14 +222,9 @@ public:
 			textures.erase(it);
 		}
 
-		imageData ub = UNRENDEREDBUTTON;
-		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
-
-		imageData fb = FINISHBUTTON;
-		Material* finishMat = newMaterial(&fb, "FinishBtn");
+		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -294,11 +289,8 @@ public:
 		cancelFunc = cancelFunct;
 		finishFunc = finishFunct;
 
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
-
-		imageData ub = UNRENDEREDBUTTON;
-		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
 
 		outMap = getPtr(new ImagePanel(textureLL->replacePtr(new Material(textureLL->getTexture(texName)), "SeamFixMat"), false));
 
@@ -330,11 +322,8 @@ public:
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
-		imageData cancel = CANCELBUTTON;
-		Material* cancelMat = newMaterial(&cancel, "CancelBtn");
-
-		imageData finish = FINISHBUTTON;
-		Material* finishMat = newMaterial(&finish, "FinishBtn");
+		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
+		Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 		Button* finishButton = new Button(finishMat, std::bind(&SeamFixMenu::finish, this, std::placeholders::_1));
 		Button* cancelButton = new Button(cancelMat, std::bind(&SeamFixMenu::cancel, this, std::placeholders::_1));
@@ -363,24 +352,12 @@ private:
 	void setSize(float distance) {
 		fixer->updateSeamMeshes(distance);
 		fixer->seamFixAll();
-		//if (currentDirection) {
-		//	fixer->alphaOverLeft();
-		//}
-		//else {
-		//	fixer->alphaOverRight();
-		//}
 	}
 	
 	void swapDirection(UIItem* owner) {
 		currentDirection = owner->activestate;
 		fixer->setSeamDirections(currentDirection);
 		fixer->seamFixAll();
-		//if (currentDirection) {
-		//	fixer->alphaOverLeft();
-		//}
-		//else {
-		//	fixer->alphaOverRight();
-		//}
 	}
 
 	void finish(UIItem* owner) {
