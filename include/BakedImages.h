@@ -79,27 +79,6 @@ extern unsigned char UnrenderedButtonBytes[];
 
 #define UNRENDEREDBUTTON imageData(UnrenderedButtonWidth, UnrenderedButtonHeight, UnrenderedButtonChannels, UnrenderedButtonBytes )
 
-extern const int D2NButtonWidth;
-extern const int D2NButtonHeight;
-extern const int D2NButtonChannels;
-extern unsigned char D2NButtonBytes[];
-
-#define D2NBUTTON imageData(D2NButtonWidth, D2NButtonHeight, D2NButtonChannels, D2NButtonBytes )
-
-extern const int DiffuseTextWidth;
-extern const int DiffuseTextHeight;
-extern const int DiffuseTextChannels;
-extern unsigned char DiffuseTextBytes[];
-
-#define DIFFUSETEXT imageData(DiffuseTextWidth, DiffuseTextHeight, DiffuseTextChannels, DiffuseTextBytes )
-
-extern const int NormalTextWidth;
-extern const int NormalTextHeight;
-extern const int NormalTextChannels;
-extern unsigned char NormalTextBytes[];
-
-#define NORMALTEXT imageData(NormalTextWidth, NormalTextHeight, NormalTextChannels, NormalTextBytes )
-
 extern const int OpenButtonWidth;
 extern const int OpenButtonHeight;
 extern const int OpenButtonChannels;

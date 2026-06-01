@@ -302,11 +302,11 @@ public:
 		imageData OpenButton = OPENBUTTON;
 		Material* openMat = newMaterial(&OpenButton, "OpenBtn");
 
-		imageData normal = NORMALTEXT;
-		Material* normalMat = newMaterial(&normal, "NormalBtn");
+		//imageData normal = NORMALTEXT;
+		//Material* normalMat = newMaterial(&normal, "NormalBtn");
 
-		imageData diffuse = DIFFUSETEXT;
-		Material* diffuseMat = newMaterial(&diffuse, "DiffuseBtn");
+		//imageData diffuse = DIFFUSETEXT;
+		//Material* diffuseMat = newMaterial(&diffuse, "DiffuseBtn");
 
 		imageData ub = UNRENDEREDBUTTON;
 		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
@@ -349,10 +349,15 @@ public:
 
 		grid = column->Items[1];
 
-		buttons->addItem(getPtr(new Button(diffuseMat)));
+		TextBox* diffText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 2.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		TextBox* normText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 2.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		diffText->addText("Diffuse:");
+		normText->addText("Normal:");
+
+		buttons->addItem(getPtr(diffText));
 		buttons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, toggleDiffuse)));
 		buttons->addItem(getPtr(new spacer));
-		buttons->addItem(getPtr(new Button(normalMat)));
+		buttons->addItem(getPtr(normText));
 		buttons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, toggleNormal)));
 		buttons->addItem(getPtr(new spacer));
 		buttons->addItem(getPtr(new Button(updateMat, performTomog)));
