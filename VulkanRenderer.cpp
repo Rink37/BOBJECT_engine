@@ -464,7 +464,7 @@ public:
 		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), inFont);
 		materialSelect->addOptions(materialOptions);
 		materialSelect->setSelectCallback(std::bind(&MaterialCreator::createMatOptionsMenu, this, std::placeholders::_1));
-		materialSelect->setOptionIndex(optionIndex);
+		materialSelect->setBlankText("Select material");
 
 		totalArrangement->addItem(getPtr(matNameTB));
 		totalArrangement->addItem(getPtr(materialSelect));
@@ -1812,6 +1812,8 @@ private:
 		UIElements.getPtr(&osb, "OSBtn");
 		imageData finishBtnImage = FINISHBUTTON;
 		UIElements.getPtr(&finishBtnImage, "FinishBtn");
+		imageData cancelBtnImage = CANCELBUTTON;
+		UIElements.getPtr(&cancelBtnImage, "CancelBtn");
 		imageData pb = PLAYBUTTON;
 		UIElements.getPtr(&pb, "PlayBtn");
 		imageData psb = PAUSEBUTTON;

@@ -1550,6 +1550,16 @@ public:
 		textFont = inFont;
 	}
 
+	void setBlankText(std::string string) {
+		optionIndex = -1;
+		selectedTextBox->clearText();
+		selectedTextBox->addText(string);
+		this->text = "";
+
+		arrangeItems();
+		updateDisplay();
+	}
+
 	void setOptionIndex(int index) {
 		if (index >= options.size()) {
 			std::cout << "Invalid option index" << std::endl;
@@ -1672,7 +1682,7 @@ private:
 
 	Material* bgMat = nullptr;
 
-	int optionIndex = 0;
+	int optionIndex = -1;
 
 	std::function<void(UIItem*)> selectCallback = nullptr;
 
