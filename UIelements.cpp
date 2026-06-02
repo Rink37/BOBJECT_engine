@@ -101,9 +101,9 @@ void TextBox::updateDisplay() {
 	float W = static_cast<float>(Engine::get()->windowWidth);
 	float H = static_cast<float>(Engine::get()->windowHeight);
 
-	float scaledCharacterSize = static_cast<float>(characterSize) / W;
+	float characterWidth = static_cast<float>(characterSize) / W;
 
-	float characterHeight = scaledCharacterSize * W / H;
+	float characterHeight = static_cast<float>(characterSize) / H;
 
 	float pos_x = posx - extentx;
 	float maxPos_x = posx + extentx;
@@ -133,7 +133,7 @@ void TextBox::updateDisplay() {
 			continue;
 		}
 
-		lineWidth += scaledCharacterSize * mesh->advanceWidth * 2.4f;
+		lineWidth += characterWidth * mesh->advanceWidth * 2.4f;
 
 		bool isBlank = (mesh->unicodeCharacter == SPACE_CHAR || mesh->unicodeCharacter == TAB_CHAR); // We will want to ignore cases where a spacebar causes an overlap at the edge
 
@@ -150,7 +150,7 @@ void TextBox::updateDisplay() {
 
 			if (lineIndices.size() > 0) {
 				uint32_t lastCharacterIndex = lineIndices[lineIndices.size() - 1];
-				lineWidth = xps[lastCharacterIndex] + scaledCharacterSize * characters[lastCharacterIndex]->advanceWidth * 1.2f;
+				lineWidth = xps[lastCharacterIndex] + characterWidth * characters[lastCharacterIndex]->advanceWidth * 1.2f;
 
 				switch (horizontalArrange) {
 				case(ARRANGE_CENTER):
@@ -209,17 +209,17 @@ void TextBox::updateDisplay() {
 			else {
 				for (uint32_t meshRef : wordIndices) {
 					characters[meshRef]->setVisibility(!hideCharacters);
-					pos_x += scaledCharacterSize * characters[meshRef]->advanceWidth * 1.2f;
+					pos_x += characterWidth * characters[meshRef]->advanceWidth * 1.2f;
 					xps[meshRef] = pos_x;
 					yis[meshRef] = lineIndex;
-					pos_x += scaledCharacterSize * characters[meshRef]->advanceWidth * 1.2f;
+					pos_x += characterWidth * characters[meshRef]->advanceWidth * 1.2f;
 				}
 				wordIndices.push_back(index);
 				mesh->setVisibility(!hideCharacters);
-				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
 				xps.push_back(pos_x);
 				yis.push_back(lineIndex);
-				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
 				lineWidth = pos_x - (posx - extentx);
 			}
 			//std::cout << "Successfully updated word" << std::endl;
@@ -233,18 +233,18 @@ void TextBox::updateDisplay() {
 				spaceIndices.push_back(index);
 				lineIndices.push_back(index);
 				mesh->setVisibility(false);
-				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
 				xps.push_back(pos_x);
 				yis.push_back(lineIndex);
-				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
 			}
 			else {
 				wordIndices.push_back(index);
 				mesh->setVisibility(!hideCharacters);
-				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
 				xps.push_back(pos_x);
 				yis.push_back(lineIndex);
-				pos_x += scaledCharacterSize * mesh->advanceWidth * 1.2f;
+				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
 			}
 		}
 		index++;
@@ -279,7 +279,7 @@ void TextBox::updateDisplay() {
 	}
 	float factor = W / H;
 	for (uint32_t i = 0; i != xps.size(); i++) {
-		characters[i]->UpdateVertices(xps[i], lineps[yis[i]], scaledCharacterSize, factor);
+		characters[i]->UpdateVertices(xps[i], lineps[yis[i]], characterWidth, factor);
 	}
 }
 
@@ -306,10 +306,12 @@ void Arrangement::calculateScreenPosition() {
 
 	float bufferRatioX, bufferRatioY;
 
-	bufferRatioX = static_cast<float>(buffer) / (2 * W);
-	bufferRatioY = static_cast<float>(buffer) / (2 * H);
+	bufferRatioX = static_cast<float>(buffer) / (2.0f * W);
+	bufferRatioY = static_cast<float>(buffer) / (2.0f * H);
 
 	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY, anchorx, anchory);
+
+	std::cout << posy << " " << extenty << std::endl;
 
 	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W;
 	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W;

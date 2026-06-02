@@ -1617,6 +1617,15 @@ public:
 		for (UIItem* item : Items) {
 			item->updateDisplay();
 		}
+		if (optionsArrangement != nullptr) {
+			float W = static_cast<float>(Engine::get()->windowWidth);
+			float H = static_cast<float>(Engine::get()->windowHeight);
+
+			float boxHeight = options.size() * (selectedTextBox->characterSize) / H;
+			std::cout << posy << " " << extenty << " " << -(posy + boxHeight / 2.0f + extenty / 2.0f) << " " << boxHeight << std::endl;
+
+			optionsArrangement->updateArrangedPosition(posx - 0.2f * extentx, posy + boxHeight + extenty, extentx * 0.8f, boxHeight);
+		}
 	}
 
 	void arrangeItems() {
@@ -1649,6 +1658,14 @@ public:
 				itemText->draw(commandbuffer, currentFrame);
 			}
 		}
+	}
+
+	bool isArranger() {
+		return true;
+	}
+
+	bool isText() {
+		return true;
 	}
 
 	bool checkForClickEvent(double mousex, double mousey, int clickType) {
@@ -1705,14 +1722,18 @@ private:
 	}
 
 	void openOptions(UIItem* owner) {
-		float boxHeight = options.size()* selectedTextBox->characters[0]->characterHeight;
-		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx - 0.2f * extentx, - posy - boxHeight / 2.0f - extenty, extentx * 0.8f, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		float W = static_cast<float>(Engine::get()->windowWidth);
+		float H = static_cast<float>(Engine::get()->windowHeight);
+
+		float boxHeight = options.size() * (selectedTextBox->characterSize) / H; // The box size in pixels
+		std::cout << posy << " " << extenty << " " << -(posy + boxHeight / 2.0f + extenty) << " " << boxHeight << std::endl;
+		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx - 0.2f * extentx, - (posy + boxHeight + extenty), extentx * 0.8f, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		
 		std::function<void(UIItem*)> optionSelectFunct = std::bind(&DropdownMenu::optionSelect, this, std::placeholders::_1);
 
 		uint32_t optionIndex = 0;
 		for (std::string option : options) {
-			TextBox* optionText = new TextBox(textFont, 0.0f, 0.0f, (extentx * 0.8f), boxHeight / options.size(), 18, ARRANGE_START, ARRANGE_CENTER);
+			TextBox* optionText = new TextBox(textFont, 0.0f, 0.0f, (extentx * 0.8f), selectedTextBox->characterSize / H, selectedTextBox->characterSize, ARRANGE_START, ARRANGE_START);
 			optionText->addText(option);
 			optionText->Name = std::to_string(optionIndex);
 			optionText->setClickFunction(optionSelectFunct);

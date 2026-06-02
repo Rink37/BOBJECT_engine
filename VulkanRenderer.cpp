@@ -461,10 +461,10 @@ public:
 		matNameTB->addText(newMaterialName);
 		matNameTB->setClickFunction(std::bind(&MaterialCreator::setMaterialName, this, std::placeholders::_1));
 
-		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), inFont);
+		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), inFont);
 		materialSelect->addOptions(materialOptions);
-		materialSelect->setSelectCallback(std::bind(&MaterialCreator::createMatOptionsMenu, this, std::placeholders::_1));
 		materialSelect->setBlankText("Select material");
+		materialSelect->setSelectCallback(std::bind(&MaterialCreator::createMatOptionsMenu, this, std::placeholders::_1));
 
 		totalArrangement->addItem(getPtr(matNameTB));
 		totalArrangement->addItem(getPtr(materialSelect));
