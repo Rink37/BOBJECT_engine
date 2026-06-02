@@ -1528,8 +1528,8 @@ public:
 
 		Arrangement* textArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-		imageData lb = OPENBUTTON;
-		Material* loadMat = newMaterial(&lb, "OpenBtn");
+		//imageData lb = OPENBUTTON;
+		Material* loadMat = loadList->getMaterial("OpenBtnMat");
 
 		TextBox* menuText = new TextBox(objectFont, 0.0f, 0.0f, 4.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
 		menuText->addText("TEXTURES");
@@ -1853,6 +1853,12 @@ private:
 		UIElements.getPtr(&urb, "UnrenderedBtn");
 		imageData webcamOn = WEBCAMONBUTTON;
 		UIElements.getPtr(&webcamOn, "WebcamOnBtn");
+		imageData update = UPDATEBUTTON;
+		UIElements.getPtr(&update, "UpdateBtn");
+		imageData plb = PLANEBUTTON;
+		UIElements.getPtr(&plb, "PlaneBtn");
+		imageData crs = CLOSEBUTTON;
+		UIElements.getPtr(&crs, "CrossBtn");
 	}
 
 	void addWidget(Widget* widget, bool hasClick = true, bool hasPos = false) {

@@ -46,6 +46,9 @@ struct UIImage {
 	int texHeight = 0;
 	int texWidth = 0;
 
+	float zp = 0.0f;
+	float zp_default = 0.0f;
+
 	std::vector<Material*> mat;
 	uint32_t matidx = 0;
 	
@@ -55,7 +58,7 @@ struct UIImage {
 
 	bool isGray = true;
 
-	void UpdateVertices(float, float, float, float, float zp = 0.0f);
+	void UpdateVertices(float, float, float, float);
 
 	void cleanup() {
 		mesh.cleanup();
@@ -82,8 +85,6 @@ struct UIItem {
 	float posx, posy = 0.0f;
 	float extentx, extenty = 1.0f;
 	float anchorx, anchory = 0.0f;
-
-	float zp = 0.0f;
 
 	float baseExtentx, baseExtenty, baseSqAxisRatio = 1.0f;
 
@@ -123,6 +124,19 @@ struct UIItem {
 			this->sqAxisRatio = ysize / xsize;
 		}
 	};
+
+	virtual void setHeight(float z) {
+		if (image != nullptr) {
+			image->zp_default = z;
+		}
+	}
+
+	//virtual float getHeight() {
+	//	if (image != nullptr) {
+	//		return image->zp;
+	//	}
+	//	return 0.0f;
+	//}
 
 	virtual void addText(std::string text) {
 		return;
@@ -283,6 +297,12 @@ public:
 			typeManager->initCallbacks(Engine::get()->window);
 			typeManager->setTypeCallback(std::bind(&TextBox::updateText, this, std::placeholders::_1));
 		}
+
+		image = std::make_shared<UIImage>(new UIImage);
+		image->isVisible = false;
+		image->texWidth = 2;
+		image->texHeight = 2;
+		image->isGray = true;
 	}
 
 	void updateText(char c) {
@@ -434,6 +454,8 @@ public:
 	};
 
 private:
+	float zp = 0.0f;
+
 	bool modifiable = false;
 
 	TypeManager* typeManager = nullptr;
@@ -815,6 +837,12 @@ public:
 	bool isArrangement() {
 		return true;
 	}
+
+	void setHeight(float z) {
+		for (UIItem* item : Items) {
+			setHeight(z);
+		}
+	}
 	
 	void getSubclasses(std::vector<UIItem*>& scs) {
 		scs.push_back(this);
@@ -955,6 +983,12 @@ public:
 			for (size_t j = 0; j != subitems.size(); j++) {
 				textboxes.push_back(subitems[j]);
 			}
+		}
+	}
+
+	void setHeight(float z) {
+		for (UIItem* item : Items) {
+			item->setHeight(z);
 		}
 	}
 
@@ -1531,10 +1565,12 @@ public:
 	void updateDisplay() {
 		if (parent != nullptr) {
 			setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
-			zp = parent->zp;
+			if (image != nullptr && parent->image != nullptr) {
+				image->zp_default = parent->image->zp_default + 0.01f;
+			}
 		}
 		if (image != nullptr) {
-			image->UpdateVertices(posx, posy, extentx, extenty, zp + 0.01f);
+			image->UpdateVertices(posx, posy, extentx, extenty);
 		}
 	}
 
@@ -1645,7 +1681,6 @@ public:
 			float H = static_cast<float>(Engine::get()->windowHeight);
 
 			float boxHeight = options.size() * (selectedTextBox->characterSize) / H;
-			//std::cout << posy << " " << extenty << " " << -(posy + boxHeight / 2.0f + extenty / 2.0f) << " " << boxHeight << std::endl;
 
 			optionsArrangement->updateArrangedPosition(posx - 0.2f * extentx, posy + boxHeight + extenty, extentx * 0.8f, boxHeight);
 		}
@@ -1706,16 +1741,20 @@ public:
 	};
 
 	void cleanup() {
-		//std::cout << "Cleaning up a dropdown menu" << std::endl;
-		//Items[0]->cleanup();
 		for (UIItem* item : Items) {
 			item->cleanup();
 		}
 	}
 
+	void setHeight(float z) {
+		zp = z;
+	}
+
 	std::vector<std::string> options{};
 
 private:
+	float zp = 0.0f;
+
 	TextBox* selectedTextBox = nullptr;
 
 	Arrangement* optionsArrangement = nullptr;
@@ -1726,6 +1765,8 @@ private:
 	Material* bgMat = nullptr;
 
 	int optionIndex = -1;
+
+	//bool optionsVisible = false;
 
 	std::function<void(UIItem*)> selectCallback = nullptr;
 
@@ -1752,14 +1793,14 @@ private:
 		float H = static_cast<float>(Engine::get()->windowHeight);
 
 		float boxHeight = options.size() * (selectedTextBox->characterSize) / H; // The box size in pixels
-		//std::cout << posy << " " << extenty << " " << -(posy + boxHeight / 2.0f + extenty) << " " << boxHeight << std::endl;
-		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx - 0.2f * extentx, - (posy + boxHeight + extenty), extentx * 0.8f, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-		
+		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx - 0.2f * extentx, -(posy + boxHeight + extenty), extentx * 0.8f, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
 		std::function<void(UIItem*)> optionSelectFunct = std::bind(&DropdownMenu::optionSelect, this, std::placeholders::_1);
 
 		uint32_t optionIndex = 0;
 		for (std::string option : options) {
 			TextBox* optionText = new TextBox(textFont, 0.0f, 0.0f, (extentx * 0.8f), selectedTextBox->characterSize / H, selectedTextBox->characterSize, ARRANGE_START, ARRANGE_START);
+			optionText->setHeight(zp + 0.02f);
 			optionText->addText(option);
 			optionText->Name = std::to_string(optionIndex);
 			optionText->setClickFunction(optionSelectFunct);
@@ -1771,6 +1812,7 @@ private:
 		addItem(optionsArrangement);
 		if (bgMat != nullptr) {
 			background = new Background(bgMat, optionsArrangement);
+			background->setHeight(zp + 0.01f);
 			background->updateDisplay();
 			addItem(background);
 		}
@@ -1782,9 +1824,11 @@ private:
 			optionsArrangement->cleanup();
 			delete optionsArrangement;
 			optionsArrangement = nullptr;
-			background->cleanup();
-			delete background;
-			background = nullptr;
+			if (background != nullptr) {
+				background->cleanup();
+				delete background;
+				background = nullptr;
+			}
 			Items.erase(Items.begin() + Items.size() - 1);
 			Items.erase(Items.begin() + Items.size() - 1);
 			Items[0]->Items[2]->activestate = true;
@@ -1843,7 +1887,7 @@ struct Widget {
 			float extenty = (windowPositions[3] / H - 0.5f) * 2.0f - posy + 0.05f;
 
 			thisBG->updateArrangedPosition(posx, posy, extentx, extenty);
-			thisBG->zp = this->zp;
+			thisBG->image->zp = this->zp;
 		}
 	}
 
@@ -1864,6 +1908,7 @@ struct Widget {
 
 	virtual void sortImages() {
 		imagePipelines.clear();
+		std::map<float, std::vector<UIImage*>, std::greater<float>> imageHeights{};
 		std::vector<UIImage*> allImages{};
 		for (size_t i = 0; i != canvas.size(); i++) {
 			std::vector<UIImage*> images{};
@@ -1872,14 +1917,34 @@ struct Widget {
 			allImages.insert(allImages.end(), images.begin(), images.end());
 		}
 		for (UIImage* image : allImages) {
-			std::string key = image->mat[image->matidx]->shaderName;
-			if (imagePipelines.count(key) == 0) {
-				imagePipelines.insert({ key, std::vector<UIImage*>{image} });
+			if (image->isVisible) {
+				std::string key = image->mat[image->matidx]->shaderName;
+				if (imagePipelines.count(key) == 0) {
+					imagePipelines.insert({ key, std::vector<UIImage*>{image} });
+				}
+				else {
+					imagePipelines.at(key).push_back(image);
+				}
+			}
+			float heightKey = image->zp_default;
+			if (imageHeights.count(heightKey) == 0) {
+				imageHeights.insert({ heightKey, std::vector<UIImage*>{image} });
 			}
 			else {
-				imagePipelines.at(key).push_back(image);
+				imageHeights.at(heightKey).push_back(image);
 			}
 		}
+
+		float separation = 0.01f;
+		float pos = 0.0f;
+		for (auto elem : imageHeights) {
+			std::cout << elem.first << " " << pos << std::endl;
+			for (UIImage* image : elem.second) {
+				image->zp = pos;
+			}
+			pos += separation;
+		}
+		update();
 	}
 
 	virtual void drawAll(VkCommandBuffer commandBuffer, uint32_t currentFrame, GraphicsPass* currentPass) {
@@ -1930,10 +1995,6 @@ struct Widget {
 		for (UIItem* item : canvas) {
 			if (item->checkForClickEvent(mouseX, mouseY, eventType)) {
 				sortImages();
-				measureWindowPositions();
-				if (thisBG != nullptr) {
-					thisBG->updateDisplay();
-				}
 				return true;
 			};
 		}
@@ -2026,34 +2087,10 @@ struct Widget {
 
 	void hide() {
 		isVisible = false;
-		for (size_t i = 0; i != canvas.size(); i++) {
-			canvas[i]->setVisibility(false);
-			canvas[i]->setIsEnabled(false);
-		}
 	}
 
 	void show() {
 		isVisible = true;
-		for (size_t i = 0; i != canvas.size(); i++) {
-			canvas[i]->setVisibility(true);
-			canvas[i]->setIsEnabled(true);
-		}
-	}
-
-	Material* newMaterial(imageData* imgData, std::string name) {
-		if (loadList->checkForMaterial(name + "Mat")) {
-			return loadList->findMatPtr(name + "Mat");
-		}
-		else {
-			Texture* tex = nullptr;
-			if (loadList->checkForTexture(name + "Tex")) {
-				tex = loadList->findTexPtr(name + "Tex");
-			}
-			else {
-				tex = loadList->getPtr(new imageTexture(imgData), name + "Tex");
-			}
-			return loadList->getPtr(new Material(tex), name + "Mat");
-		}
 	}
 
 	UIItem* getPtr(ImagePanel* ip) {

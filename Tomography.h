@@ -90,14 +90,14 @@ public:
 		loadedUI->update(0.0f, 0.0f, 0.4f, 0.4f);
 		loadedUI->updateDisplay();
 
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+		//imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 
-		imageData cancel = CANCELBUTTON;
-		Material* cancelMat = newMaterial(&cancel, "CancelBtn");
+		//imageData cancel = CANCELBUTTON;
+		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
 
-		imageData update = UPDATEBUTTON;
-		Material* updateMat = newMaterial(&update, "UpdateBtn");
+		//imageData update = UPDATEBUTTON;
+		Material* updateMat = loadList->getMaterial("UpdateBtnMat");
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f);
 		Arrangement* imageArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.4f, 0.01f, ARRANGE_CENTER);
@@ -149,8 +149,8 @@ public:
 		canvas[0]->Items[1]->Items[1]->cleanup();
 		canvas[0]->Items[1]->Items.erase(canvas[0]->Items[1]->Items.begin() + 1);
 		
-		imageData finish = FINISHBUTTON;
-		Material* finishMat = newMaterial(&finish, "FinishBtn");
+		//imageData finish = FINISHBUTTON;
+		Material* finishMat = loadList->getMaterial("FinishBtnMat");
 		
 		std::function<void(UIItem*)> finishFunct = std::bind(&TomographyLoad::finish, this, std::placeholders::_1);
 		Button* finishButton = new Button(finishMat, finishFunct);
@@ -218,11 +218,11 @@ public:
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.35f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = newMaterial(&rb, "RenderBtn");
+		//imageData rb = RENDEREDBUTTON;
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
 
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "TestCheckBtn");
+		//imageData tcb = TESTCHECKBOXBUTTON;
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 
 		int optionIndex = 0;
 
@@ -240,11 +240,11 @@ public:
 		totalArrangement->addItem(getPtr(mainText));
 		totalArrangement->addItem(getPtr(texSelect));
 
-		imageData fb = FINISHBUTTON;
-		Material* finishMat = newMaterial(&fb, "FinishBtn");
+		//imageData fb = FINISHBUTTON;
+		Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
-		imageData cb = CANCELBUTTON;
-		Material* cancelMat = newMaterial(&cb, "CancelBtn");
+		//imageData cb = CANCELBUTTON;
+		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
 
 		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 1.0f / 9.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		finishArrangement->addItem(getPtr(new Button(cancelMat, std::bind(&TomogRefPicker::cancel, this, std::placeholders::_1))));
@@ -299,35 +299,14 @@ public:
 		}
 		mouseManager = mm;
 
-		imageData OpenButton = OPENBUTTON;
-		Material* openMat = newMaterial(&OpenButton, "OpenBtn");
-
-		//imageData normal = NORMALTEXT;
-		//Material* normalMat = newMaterial(&normal, "NormalBtn");
-
-		//imageData diffuse = DIFFUSETEXT;
-		//Material* diffuseMat = newMaterial(&diffuse, "DiffuseBtn");
-
-		imageData ub = UNRENDEREDBUTTON;
-		Material* invisibleMat = newMaterial(&ub, "UnrenderedBtn");
-
-		imageData tcb = TESTCHECKBOXBUTTON;
-		Material* visibleMat = newMaterial(&tcb, "CheckboxBtn");
-
-		imageData plb = PLANEBUTTON;
-		Material* planeMat = newMaterial(&plb, "PlaneBtn");
-
-		imageData update = UPDATEBUTTON;
-		Material* updateMat = newMaterial(&update, "UpdateBtn");
-
-		imageData finish = FINISHBUTTON;
-		Material* finishMat = newMaterial(&finish, "FinishBtn");
-
-		imageData crs = CLOSEBUTTON;
-		Material* crossMat = newMaterial(&crs, "CrossBtn");
-
-		imageData rb = RENDEREDBUTTON;
-		Material* renderedMat = newMaterial(&rb, "RenderBtn");
+		Material* openMat = loadList->getMaterial("OpenBtnMat");
+		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
+		Material* visibleMat = loadList->getMaterial("CheckboxBtnMat");
+		Material* planeMat = loadList->getMaterial("PlaneBtnMat");
+		Material* updateMat = loadList->getMaterial("UpdateBtnMat");
+		Material* finishMat = loadList->getMaterial("FinishBtnMat");
+		Material* crossMat = loadList->getMaterial("CrossBtnMat");
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, -1.0f, 0.75f, 0.3f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 

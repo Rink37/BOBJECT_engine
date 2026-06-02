@@ -2,8 +2,8 @@
 
 using namespace std;
 
-void UIImage::UpdateVertices(float xp, float yp, float xsc, float ysc, float zp) {
-	mesh.UpdateVertices(xp, yp, xsc, ysc, zp);
+void UIImage::UpdateVertices(float xp, float yp, float xsc, float ysc) {
+	mesh.UpdateVertices(xp, yp, xsc, ysc, this->zp);
 }
 
 static void bufferPosition(float &extentx, float &extenty, float &posx, float &posy, float brx, float bry, float ax, float ay) {
@@ -102,7 +102,6 @@ void TextBox::updateDisplay() {
 	float H = static_cast<float>(Engine::get()->windowHeight);
 
 	float characterWidth = static_cast<float>(characterSize) / W;
-
 	float characterHeight = static_cast<float>(characterSize) / H;
 
 	float pos_x = posx - extentx;
@@ -278,8 +277,9 @@ void TextBox::updateDisplay() {
 		break;
 	}
 	float factor = W / H;
+	//std::cout << image->zp << std::endl;
 	for (uint32_t i = 0; i != xps.size(); i++) {
-		characters[i]->UpdateVertices(xps[i], lineps[yis[i]], characterWidth, factor);
+		characters[i]->UpdateVertices(xps[i], lineps[yis[i]], characterWidth, factor, image->zp);
 	}
 }
 
