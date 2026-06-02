@@ -20,7 +20,7 @@ void loadAndWriteFile(string path, int colCount, int rowCount, int cellWidth, in
     string binName = nameNoExt + string("_advances.bin");
     string capNameNoExt = nameNoExt;
     std::transform(capNameNoExt.begin(), capNameNoExt.end(), capNameNoExt.begin(), ::toupper);
-    unsigned char* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    unsigned char* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, 4);
     ifstream advances;
     advances.open(location+string("\\")+binName, ios::binary | ios::in); 
     string outname = location+string("\\headers\\")+nameNoExt+string(".h");
@@ -39,6 +39,7 @@ void loadAndWriteFile(string path, int colCount, int rowCount, int cellWidth, in
     out << ";\n\n";
     out << string("const int ")+nameNoExt+string("Channels = ");
     out << texChannels;
+    std::cout << texChannels << std::endl;
     out << ";\n\n";
     out << string("const float ")+nameNoExt+string("Advances[] = {");
     for (int i = 0; i != 94; i++){
@@ -54,11 +55,17 @@ void loadAndWriteFile(string path, int colCount, int rowCount, int cellWidth, in
     out << "};\n\n";
     out << string("unsigned char ")+nameNoExt+string("Bytes[] = { ");
     //cout << texChannels << endl;
+    if (texChannels > 1){
+        texChannels = 4;
+    }
     size_t imagesize = texWidth*texHeight*4;
-    for (size_t i = 0; i!= imagesize; i += 5-texChannels){
+    size_t byteCount = 0;
+    for (size_t i = 0; i != imagesize; i += 5-texChannels){
         out << "0x" << hex << setw(2) << setfill('0') << (int)(unsigned char) pixels[i];
-        if (i < imagesize-1){
-            out << ", ";
+        byteCount++;
+        std::cout << byteCount << std::endl;
+        if (i < imagesize - 5 + texChannels){
+                out << ", ";
         }
     }
     out << string(" };\n\n");
@@ -68,9 +75,12 @@ void loadAndWriteFile(string path, int colCount, int rowCount, int cellWidth, in
 
     out << string("#endif");
     out.close();
+
+    stbi_image_free(pixels);
 }
 
 int main(int argc, char* argv[]){
-    loadAndWriteFile("C:\\Users\\robda\\Documents\\Trad_Painter\\fonts\\coolvetica_sdf.png", 11, 9, 46, 53);
+    loadAndWriteFile("C:\\Users\\robda\\Documents\\VulkanRenderer\\fonts\\coolvetica_sdf.png", 11, 9, 46, 53);
+    loadAndWriteFile("C:\\Users\\robda\\Documents\\VulkanRenderer\\fonts\\coolvetica_msdf.png", 11, 9, 31, 35);
     return 0;
 }

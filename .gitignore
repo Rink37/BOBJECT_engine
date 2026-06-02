@@ -2,6 +2,7 @@ models/
 savefiles/
 .vs/
 out/
+fonts/
 shaders/libstdc++-6.dll
 shaders/libgcc_s_seh-1.dll
 shaders/libwinpthread-1.dll

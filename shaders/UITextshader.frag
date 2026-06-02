@@ -8,9 +8,18 @@ layout(location = 0) out vec4 outColor;
 
 layout(binding = 1) uniform sampler2D texSampler;
 
+float median(float a, float b, float c){
+	return max(min(a, b), min(max(a, b), c));
+}
+
 void main(){
-	float sdfPix = texture(texSampler, fragTexCoord).r;
-	if (sdfPix <= 0.5){
+	vec3 pix = texture(texSampler, fragTexCoord).rgb;
+	
+	float d = median(pix.r, pix.g, pix.b) - 0.5;
+
+	float w = clamp(d/fwidth(d) + 0.5, 0.0, 1.0); // This would be the anti-aliased alpha value but we can't use it yet since smooth transparency is not available for UI yet
+
+	if (d <= 0.0){
 		discard;
 	}
 	outColor = vec4(primaryColour, 1.0);

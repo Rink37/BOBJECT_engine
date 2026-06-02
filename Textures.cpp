@@ -218,6 +218,9 @@ void imageTexture::createTextureImage(imageData* imgData) {
 	if (texChannels == 1) {
 		textureFormat = VK_FORMAT_R8_UNORM; // We assume that images which have only one channel contain data not an image
 	}
+	else if (texChannels != 4) {
+		texChannels = 4;
+	}
 
 	VkDeviceSize imageSize = texWidth * texHeight * texChannels;
 

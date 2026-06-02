@@ -33,8 +33,8 @@ private:
 	int colCount = 11;
 	int rowCount = 9;
 
-	int cellWidth = 46;
-	int cellHeight = 53;
+	int cellWidth = 31;
+	int cellHeight = 35;
 
 	bool cleaned = false;
 };

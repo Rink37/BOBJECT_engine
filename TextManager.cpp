@@ -1,12 +1,13 @@
 #include"TextManager.h"
 
 #include"include/coolvetica_sdf.h"
+#include"include/coolvetica_msdf.h"
 
 font::font() {
-	//std::cout << "New font created" << std::endl;
-	imageData fontData = COOLVETICA_SDF;
-	fontAtlas = new imageTexture(&fontData);
-	fontMat = new Material(fontAtlas);
+	imageData fontData = COOLVETICA_MSDF;
+	fontAtlas = new imageTexture(&fontData, VK_FORMAT_R8G8B8A8_UNORM);
+	//std::cout << "Created atlas" << std::endl;
+	fontMat = new Material(std::vector<Texture*>{fontAtlas}, "UIText", &Engine::get()->defaultPass, true);
 }
 
 void font::getCorners(int character, float& left, float& right, float& top, float& bottom) {
