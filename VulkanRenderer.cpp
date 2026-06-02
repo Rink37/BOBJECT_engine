@@ -517,6 +517,9 @@ public:
 
 		createMatOptionsMenu(empty);
 
+		empty->cleanup();
+		delete empty;
+
 		isSetup = true;
 	}
 
@@ -540,7 +543,7 @@ private:
 	}
 
 	void createMatOptionsMenu(UIItem* owner) {
-		if (canvas[0]->Items.size() > 1) {
+ 		if (canvas[0]->Items.size() > 1) {
 			for (int i = 1; i != canvas[0]->Items.size(); i++) {
 				canvas[0]->Items[i]->cleanup();
 			}
@@ -1693,8 +1696,10 @@ public:
 		TextureElements.getPtr(webcamTexture::get(), "Webcam View");
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
+		std::function<void()> widgetToggle = bind(&Application::toggleWidgets, this);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
+		keyBinds.addBinding(GLFW_KEY_F1, widgetToggle, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 
 		Engine::get()->createRenderPass(renderGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -1750,6 +1755,8 @@ private:
 	SeamObjPicker sob = SeamObjPicker(&UIElements, &TextureElements);
 	SeamFixMenu seamFixer = SeamFixMenu(&UIElements, &TextureElements);
 
+	bool showWidgets = true;
+
 	Material* webcamMat = nullptr;
 	Material* wireMat = nullptr;
 
@@ -1799,6 +1806,10 @@ private:
 	glm::vec3 secondaryColour = glm::vec3(0.82f, 0.55f, 0.36f);
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
+
+	void toggleWidgets() {
+		showWidgets = !showWidgets;
+	}
 
 	void createWidgetMaterials() {
 		UIElements.getPtr(new Material(std::vector<Texture*>{}, "UIRoundBox", currentPass, true), "UIRoundBox");
@@ -2687,20 +2698,21 @@ private:
 
 		engine->beginRenderPass(commandBuffer, currentPass, &renderImage, imageIndex, backgroundColour);
 
-		if (showWireframe) {
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UV")]);
+		if (showWidgets) {
+			if (showWireframe) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UV")]);
 
-			for (uint32_t i = 0; i != staticObjects.size(); i++) {
-				if (staticObjects[i].isWireframeVisible) {
-					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, currentPass->pipelineLayouts[currentPass->layoutMap.at("1_")], wireMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+				for (uint32_t i = 0; i != staticObjects.size(); i++) {
+					if (staticObjects[i].isWireframeVisible) {
+						engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, currentPass->pipelineLayouts[currentPass->layoutMap.at("1_")], wireMat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
+					}
 				}
 			}
+			for (size_t i = 0; i != widgets.size(); i++) {
+				widgets[i]->drawAll(commandBuffer, currentFrame, currentPass);
+			}
 		}
-
-		for (size_t i = 0; i != widgets.size(); i++) {
-			widgets[i]->drawAll(commandBuffer, currentFrame, currentPass);
-		}
-
+		
 		if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(tomogUI.renderPipeline)]);
 

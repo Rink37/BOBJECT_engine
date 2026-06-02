@@ -215,6 +215,7 @@ struct UIItem {
 		if (image != nullptr) {
 			image->isVisible = vis;
 		}
+		setIsEnabled(vis);
 	}
 
 	virtual void setIsEnabled(bool enabled) {
@@ -388,6 +389,7 @@ public:
 		for (fontMesh* mesh : characters) {
 			mesh->isVisible = vis;
 		}
+		setIsEnabled(vis);
 	}
 
 	void cleanup() {
@@ -412,6 +414,9 @@ public:
 	}
 
 	bool checkForClickEvent(double mousex, double mousey, int clicktype) {
+		if (!isEnabled) {
+			return false;
+		}
 		if (!modifiable) {
 			if (clickFunct != nullptr && clicktype == LMB_PRESS && isInArea(mousex, mousey)) {
 				clickFunct(this);
@@ -613,6 +618,9 @@ public:
 	}
 
 	bool checkForClickEvent(double mousex, double mousey, int eventType) {
+		if (!isEnabled) {
+			return false;
+		}
 		bool found = false;
 		if (clickFunction != nullptr && isEnabled && eventType == clickType) {
 			if (isInArea(mousex, mousey)) {
@@ -712,6 +720,9 @@ public:
 	}
 
 	bool checkForClickEvent(double mousex, double mousey, int eventType) {
+		if (!isEnabled) {
+			return false;
+		}
 		bool found = false;
 		bool check = isInArea(mousex, mousey);
 		if (check && eventType == clickType && isEnabled) {
@@ -849,7 +860,7 @@ public:
 	}
 
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
-		if (!isInArea(mouseX, mouseY)) {
+		if (!isInArea(mouseX, mouseY) || !isEnabled) {
 			return false;
 		}
 		bool found = false;
@@ -960,7 +971,7 @@ public:
 	}
 
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
-		if (!isInArea(mouseX, mouseY)) {
+		if (!isInArea(mouseX, mouseY) || !isEnabled) {
 			return false;
 		}
 		bool found = false;
@@ -1153,6 +1164,9 @@ public:
 	void calculateSlideValue(double, double);
 
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
+		if (!isEnabled) {
+			return false;
+		}
 		if (isInArea(mouseX, mouseY) && eventType == LMB_PRESS) {
 			isHeld = true;
 			return true;
@@ -1181,6 +1195,9 @@ public:
 	}
 
 	bool checkForPosEvent(double mouseX, double mouseY, int eventType) {
+		if (!isEnabled) {
+			return false;
+		}
 		if (eventType == LMB_HOLD && isHeld) {
 			calculateSlideValue(mouseX, mouseY);
 			updateDisplayOnly();
@@ -1349,6 +1366,9 @@ public:
 	}
 
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
+		if (!isEnabled) {
+			return false;
+		}
 		if (isInArea(mouseX, mouseY) && eventType == LMB_PRESS) {
 			isHeld = true;
 			return true;
@@ -1377,6 +1397,9 @@ public:
 	}
 
 	bool checkForPosEvent(double mouseX, double mouseY, int eventType) {
+		if (!isEnabled) {
+			return false;
+		}
 		if (eventType == LMB_HOLD && isHeld) {
 			calculateSlideValue(mouseX, mouseY);
 			updateDisplayOnly();
@@ -1669,6 +1692,9 @@ public:
 	}
 
 	bool checkForClickEvent(double mousex, double mousey, int clickType) {
+		if (!isEnabled) {
+			return false;
+		}
 		bool event = false;
 		for (UIItem* item : Items) {
 			event = item->checkForClickEvent(mousex, mousey, clickType);
@@ -1857,6 +1883,9 @@ struct Widget {
 	}
 
 	virtual void drawAll(VkCommandBuffer commandBuffer, uint32_t currentFrame, GraphicsPass* currentPass) {
+		if (!isVisible) {
+			return;
+		}
 		if (imagePipelines.empty()) {
 			sortImages();
 		}
@@ -1892,6 +1921,9 @@ struct Widget {
 	}
 
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
+		if (!isVisible) {
+			return false;
+		}
 		if (!isInArea(mouseX, mouseY) && Sliders.size() == 0 && Rotators.size() == 0) {
 			return false;
 		}
@@ -1909,6 +1941,9 @@ struct Widget {
 	}
 
 	bool checkForPosEvent(double mouseX, double mouseY, int eventType) {
+		if (!isVisible) {
+			return false;
+		}
 		for (UIItem* item : canvas) {
 			std::vector<UIItem*> scs;
 			item->getSubclasses(scs);
