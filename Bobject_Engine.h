@@ -138,7 +138,7 @@ struct drawImage {
 	
 	VkExtent2D imageExtent{};
 	VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
-	VkImageUsageFlags imageUsage;
+	VkImageUsageFlags imageUsage{};
 
 	VkRenderPass* boundRenderPass = nullptr;
 
@@ -216,7 +216,7 @@ struct QueueFamilyIndices {
 };
 
 struct SwapChainSupportDetails {
-	VkSurfaceCapabilitiesKHR capabilities;
+	VkSurfaceCapabilitiesKHR capabilities{};
 	std::vector<VkSurfaceFormatKHR> formats;
 	std::vector<VkPresentModeKHR> presentModes;
 };
@@ -329,7 +329,7 @@ public:
 	VkFormat swapChainImageFormat = {};
 
 	void createRenderPass(VkRenderPass&, VkFormat, VkImageLayout);
-	void createGraphicsPipelines(GraphicsPass&);
+	void createGraphicsPipelines(GraphicsPass&, int blendMode = 0, bool alphaToCoverage = true);
 
 	void copyImageToSwapchain(VkCommandBuffer, drawImage*, uint32_t);
 	void copyImageToSwapchain(VkCommandBuffer, VkImage, VkExtent2D, uint32_t);

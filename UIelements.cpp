@@ -311,7 +311,7 @@ void Arrangement::calculateScreenPosition() {
 
 	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY, anchorx, anchory);
 
-	std::cout << posy << " " << extenty << std::endl;
+	//std::cout << posy << " " << extenty << std::endl;
 
 	this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W;
 	this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W;

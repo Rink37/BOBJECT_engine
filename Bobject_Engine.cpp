@@ -149,8 +149,6 @@ void Engine::pickPhysicalDevice() {
 	if (deviceCount == 0) {
 		throw runtime_error("failed to find GPUs with Vulkan support!");
 	}
-
-	std::cout << "Device count = " << deviceCount << std::endl;
 	vector<VkPhysicalDevice> devices(deviceCount);
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
@@ -445,7 +443,7 @@ void Engine::createGraphicsPipelines() {
 	createGraphicsPipelines(defaultPass);
 }
 
-void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
+void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, bool alphaToCoverage) {
 
 	shaderData flatShader = FLATSHADER;
 	shaderData AC_flatShader = AC_FLATSHADER;
@@ -529,6 +527,7 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	multisampling.sampleShadingEnable = VK_TRUE;
 	multisampling.rasterizationSamples = msaaSamples;
 	multisampling.minSampleShading = .2f;
+	multisampling.alphaToCoverageEnable = alphaToCoverage;
 
 	VkPipelineDepthStencilStateCreateInfo depthStencil{};
 	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -538,10 +537,33 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass) {
 	depthStencil.depthBoundsTestEnable = VK_FALSE;
 	depthStencil.minDepthBounds = 0.0f;
 	depthStencil.maxDepthBounds = 1.0f;
-
+	
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable = VK_FALSE;
+	if (blendMode == 1) {
+		// Additive blending
+		colorBlendAttachment.blendEnable = VK_TRUE;
+		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+	}
+	else if (blendMode == 2) {
+		// Alpha blending
+		colorBlendAttachment.blendEnable = VK_TRUE;
+		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+	}
+	else {
+		colorBlendAttachment.blendEnable = VK_FALSE;
+	}
+	
 
 	VkPipelineColorBlendStateCreateInfo colorBlending{};
 	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;

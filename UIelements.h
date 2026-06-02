@@ -1622,7 +1622,7 @@ public:
 			float H = static_cast<float>(Engine::get()->windowHeight);
 
 			float boxHeight = options.size() * (selectedTextBox->characterSize) / H;
-			std::cout << posy << " " << extenty << " " << -(posy + boxHeight / 2.0f + extenty / 2.0f) << " " << boxHeight << std::endl;
+			//std::cout << posy << " " << extenty << " " << -(posy + boxHeight / 2.0f + extenty / 2.0f) << " " << boxHeight << std::endl;
 
 			optionsArrangement->updateArrangedPosition(posx - 0.2f * extentx, posy + boxHeight + extenty, extentx * 0.8f, boxHeight);
 		}
@@ -1726,7 +1726,7 @@ private:
 		float H = static_cast<float>(Engine::get()->windowHeight);
 
 		float boxHeight = options.size() * (selectedTextBox->characterSize) / H; // The box size in pixels
-		std::cout << posy << " " << extenty << " " << -(posy + boxHeight / 2.0f + extenty) << " " << boxHeight << std::endl;
+		//std::cout << posy << " " << extenty << " " << -(posy + boxHeight / 2.0f + extenty) << " " << boxHeight << std::endl;
 		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx - 0.2f * extentx, - (posy + boxHeight + extenty), extentx * 0.8f, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		
 		std::function<void(UIItem*)> optionSelectFunct = std::bind(&DropdownMenu::optionSelect, this, std::placeholders::_1);

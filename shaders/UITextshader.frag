@@ -17,10 +17,10 @@ void main(){
 	
 	float d = median(pix.r, pix.g, pix.b) - 0.5;
 
-	float w = clamp(d/fwidth(d) + 0.5, 0.0, 1.0); // This would be the anti-aliased alpha value but we can't use it yet since smooth transparency is not available for UI yet
+	float w = clamp(d/fwidth(d) + 0.5, 0.0, 1.0); // The anti-aliased alpha value
 
 	if (d <= 0.0){
 		discard;
 	}
-	outColor = vec4(primaryColour, 1.0);
+	outColor = vec4(primaryColour, w);
 }
