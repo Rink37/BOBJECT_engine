@@ -58,6 +58,8 @@ struct UIImage {
 
 	bool isGray = true;
 
+	bool isOpaque = true;
+
 	void UpdateVertices(float, float, float, float);
 
 	void cleanup() {
@@ -303,6 +305,7 @@ public:
 		image->texWidth = 2;
 		image->texHeight = 2;
 		image->isGray = true;
+		image->isOpaque = false;
 	}
 
 	void updateText(char c) {
@@ -1908,6 +1911,8 @@ struct Widget {
 
 	virtual void sortImages() {
 		imagePipelines.clear();
+		transparentImages.clear();
+		transparentImagePipelines.clear();
 		std::map<float, std::vector<UIImage*>, std::greater<float>> imageHeights{};
 		std::vector<UIImage*> allImages{};
 		for (size_t i = 0; i != canvas.size(); i++) {
@@ -1917,7 +1922,7 @@ struct Widget {
 			allImages.insert(allImages.end(), images.begin(), images.end());
 		}
 		for (UIImage* image : allImages) {
-			if (image->isVisible) {
+			if (image->isVisible && image->isOpaque) {
 				std::string key = image->mat[image->matidx]->shaderName;
 				if (imagePipelines.count(key) == 0) {
 					imagePipelines.insert({ key, std::vector<UIImage*>{image} });
@@ -1925,6 +1930,10 @@ struct Widget {
 				else {
 					imagePipelines.at(key).push_back(image);
 				}
+			}
+			else if (image->isVisible) {
+				// If the image is not opaque then we need to draw them sorted from back to front and associate their pipelines properly
+				transparentImages.push_back(image);
 			}
 			float heightKey = image->zp_default;
 			if (imageHeights.count(heightKey) == 0) {
@@ -1944,6 +1953,13 @@ struct Widget {
 			}
 			pos += separation;
 		}
+
+		if (transparentImages.size() > 0) {
+			std::sort(transparentImages.begin(), transparentImages.end(), [](UIImage* a, UIImage* b) {return a->zp > b->zp; });
+		}
+		for (UIImage* transparentImage : transparentImages) {
+			transparentImagePipelines.push_back(transparentImage->mat[transparentImage->matidx]->shaderName);
+		}
 		update();
 	}
 
@@ -1958,6 +1974,12 @@ struct Widget {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(elem.first)]);
 			for (UIImage* image : elem.second) {
 				image->draw(commandBuffer, currentFrame, image->mat[image->matidx]->pipelineLayoutIndex);
+			}
+		}
+		if (transparentImages.size() > 0) {
+			for (uint32_t i = 0; i != transparentImages.size(); i++) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(transparentImagePipelines[i])]);
+				transparentImages[i]->draw(commandBuffer, currentFrame, transparentImages[i]->mat[transparentImages[i]->matidx]->pipelineLayoutIndex);
 			}
 		}
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIText")]);
@@ -2161,6 +2183,8 @@ struct Widget {
 	size_t posIndex = 0;
 
 	std::map<std::string, std::vector<UIImage*>> imagePipelines{};
+	std::vector<UIImage*> transparentImages{};
+	std::vector<std::string> transparentImagePipelines{};
 
 	float posx = 0.0f, posy = 0.0f, extentx = 0.0f, extenty = 0.0f, zp = 0.0f;
 private:
