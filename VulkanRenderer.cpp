@@ -1473,28 +1473,38 @@ private:
 
 	void finishCallback(UIItem* owner) {
 		imageTexture* loadedTexture = nullptr;
-		if (isNormalized) {
-			loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_UNORM);
-			loadedTexture->isNormal = true;
-			normalType = !normalTypeToggle->activestate;
-			if (normalType) {
-				std::cout << "TS" << std::endl;
+		try {
+			if (isNormalized) {
+				cv::Mat initMat = cv::imread(fileName, cv::IMREAD_UNCHANGED);
+				loadedTexture = new imageTexture(initMat, VK_FORMAT_R8G8B8A8_UNORM);
+				loadedTexture->isNormal = true;
+				normalType = !normalTypeToggle->activestate;
+				if (normalType) {
+					std::cout << "TS" << std::endl;
+				}
+				else {
+					std::cout << "OS" << std::endl;
+				}
+				loadedTexture->normalType = normalType;
 			}
 			else {
-				std::cout << "OS" << std::endl;
+				cv::Mat initMat = cv::imread(fileName, cv::IMREAD_UNCHANGED);
+				loadedTexture = new imageTexture(initMat, VK_FORMAT_R8G8B8A8_SRGB);
 			}
-			loadedTexture->normalType = normalType;
+			textureLL->getPtr(loadedTexture, textureName);
+			owner->Name = textureName;
+			if (updateTextureMenu != nullptr) {
+				updateTextureMenu(owner);
+			}
+			if (exitCallback != nullptr) {
+				exitCallback(nullptr);
+			}
 		}
-		else {
-			loadedTexture = new imageTexture(fileName, VK_FORMAT_R8G8B8A8_SRGB);
-		}
-		textureLL->getPtr(loadedTexture, textureName);
-		owner->Name = textureName;
-		if (updateTextureMenu != nullptr) {
-			updateTextureMenu(owner);
-		}
-		if (exitCallback != nullptr) {
-			exitCallback(nullptr);
+		catch (...) {
+			std::cout << "Invalid texture name or extension" << std::endl;
+			if (exitCallback != nullptr) {
+				exitCallback(nullptr);
+			}
 		}
 	}
 };
@@ -2183,68 +2193,64 @@ private:
 	
 	void loadSave(UIItem* owner) {
 
-		string saveLocation;
-		saveLocation = winFile::OpenFileDialog();
-		if (saveLocation == "fail") {
-			return;
-		}
-		newSession(owner);
-		session::get()->loadStudio(saveLocation);
+		//string saveLocation;
+		//saveLocation = winFile::OpenFileDialog();
+		//if (saveLocation == "fail") {
+		//	return;
+		//}
+		//newSession(owner);
+		//session::get()->loadStudio(saveLocation);
 
-		uint8_t webcamRot = 0;
-		uint8_t webcamIndex = 0;
+		//uint8_t webcamRot = 0;
+		//uint8_t webcamIndex = 0;
 
-		session::get()->currentStudio.unpackWebcamSettings(webcamRot, webcamIndex);
+		//session::get()->currentStudio.unpackWebcamSettings(webcamRot, webcamIndex);
 
-		for (string path : session::get()->currentStudio.modelPaths) {
-			StaticObject newObject(path);
-			string objectName = path;
-			string del = "\\";
-			auto pos = objectName.find(del);
-			while (pos != string::npos) {
-				objectName.erase(0, pos + del.length());
-				pos = objectName.find(del);
-			}
-			del = ".";
-			pos = objectName.find(del);
-			objectName = objectName.substr(0, pos);
-			newObject.objectName = objectName;
+		//for (string path : session::get()->currentStudio.modelPaths) {
+		//	StaticObject newObject(path);
+		//	string objectName = path;
+		//	string del = "\\";
+		//	auto pos = objectName.find(del);
+		//	while (pos != string::npos) {
+		//		objectName.erase(0, pos + del.length());
+		//		pos = objectName.find(del);
+		//	}
+		//	del = ".";
+		//	pos = objectName.find(del);
+		//	objectName = objectName.substr(0, pos);
+		//	newObject.objectName = objectName;
 
-			std::function<void(UIItem*)> visibleFunction = std::bind(&Application::setObjectVisibility, this, placeholders::_1);
-			std::function<void(UIItem*)> wireFunction = std::bind(&Application::setObjectWireframe, this, placeholders::_1);
-			std::function<void(UIItem*)> optionsFunction = std::bind(&Application::openObjectSettingsMenu, this, placeholders::_1);
+		//	std::function<void(UIItem*)> visibleFunction = std::bind(&Application::setObjectVisibility, this, placeholders::_1);
+		//	std::function<void(UIItem*)> wireFunction = std::bind(&Application::setObjectWireframe, this, placeholders::_1);
+		//	std::function<void(UIItem*)> optionsFunction = std::bind(&Application::openObjectSettingsMenu, this, placeholders::_1);
 
-			objectMenu.addObject(visibleFunction, wireFunction, optionsFunction, objectName);
+		//	objectMenu.addObject(visibleFunction, wireFunction, optionsFunction, objectName);
 
-			newObject.isVisible = true;
-			newObject.setMat(TextureElements.getMaterial("Webcam Material"), "BF");
+		//	newObject.isVisible = true;
+		//	newObject.setMat(TextureElements.getMaterial("Webcam Material"), "BF");
 
-			staticObjects.push_back(newObject);
-		}
-		if (session::get()->currentStudio.diffusePath != "None") {
-			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
-		}
-		if (session::get()->currentStudio.OSPath != "None") {
-			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.OSPath, VK_FORMAT_R8G8B8A8_UNORM);
-		}
-		if (session::get()->currentStudio.TSPath != "None") {
-			imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.TSPath, VK_FORMAT_R8G8B8A8_UNORM);
-		}
-		if (webcamIndex != webcamTexture::get()->webCam->camIndex) {
-			webcamTexture::get()->webCam->switchWebcam(webcamIndex);
-		}
-		webcamTexture::get()->webCam->setRotation(webcamRot);
-		webcamTexture::get()->webCam->updateAspectRatio(session::get()->currentStudio.webcamAspectRatio);
-		webcamTexture::get()->recreateWebcamImage();
-		webcamTexture::get()->interruptFrameUpdate();
-		webcamTexture::get()->webCam->loadFilter();
-		webcamTexture::get()->startFrameUpdate();
+			//staticObjects.push_back(newObject);
+		//}
+		//if (session::get()->currentStudio.diffusePath != "None") {
+		//	imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
+		//}
+		//if (session::get()->currentStudio.OSPath != "None") {
+		//	imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.OSPath, VK_FORMAT_R8G8B8A8_UNORM);
+		//}
+		//if (session::get()->currentStudio.TSPath != "None") {
+		//	imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.TSPath, VK_FORMAT_R8G8B8A8_UNORM);
+		//}
+		//if (webcamIndex != webcamTexture::get()->webCam->camIndex) {
+		//	webcamTexture::get()->webCam->switchWebcam(webcamIndex);
+		//}
+		//webcamTexture::get()->webCam->setRotation(webcamRot);
+		//webcamTexture::get()->webCam->updateAspectRatio(session::get()->currentStudio.webcamAspectRatio);
+		//webcamTexture::get()->recreateWebcamImage();
+		//webcamTexture::get()->interruptFrameUpdate();
+		//webcamTexture::get()->webCam->loadFilter();
+		//webcamTexture::get()->startFrameUpdate();
 
-		//reloadWebcamTex();
-
-		//reloadWebcamTex();
-
-		updateVisibleObjects();
+		//updateVisibleObjects();
 	}
 	
 	void createCanvas() {
@@ -2592,6 +2598,12 @@ private:
 		}
 		del = ".";
 		pos = objectName.find(del);
+		std::string extension = objectName.substr(pos+1, objectName.size());
+		std::cout << extension << std::endl;
+		if (extension != std::string("obj")) {
+			std::cout << "File extension " << extension << " is not currently supported for models" << std::endl;
+			return;
+		}
 		objectName = objectName.substr(0, pos);
 		StaticObject newObject(modelPath);
 		newObject.objectName = objectName;

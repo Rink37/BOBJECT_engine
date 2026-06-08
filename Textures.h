@@ -137,14 +137,14 @@ public:
 		destroyCVMat();
 	}
 
-	imageTexture(std::string filename, VkFormat format) {
-		// Image texture which is loaded from file
-		texMat = cv::imread(filename, cv::IMREAD_UNCHANGED);
-		textureFormat = format;
-		transitionMatToImg();
-		createTextureImageView();
-		destroyCVMat();
-	}
+	//imageTexture(std::string filename, VkFormat format) {
+	//	// Image texture which is loaded from file
+	//	texMat = cv::imread(filename, cv::IMREAD_UNCHANGED);
+	//	textureFormat = format;
+	//	transitionMatToImg();
+	//	createTextureImageView();
+	//	destroyCVMat();
+	//}
 
 	imageTexture(cv::Mat initMat, VkFormat format) {
 		// Image texture which is loaded from file
