@@ -621,20 +621,12 @@ private:
 	}
 
 	void exit(UIItem* owner) {
-		std::cout << "Starting exit func" << std::endl;
 		Material* mat = matTemplate->createMaterial();
 		Material* flatMat = matTemplate->createFlatMaterial();
-		std::cout << "Created materials" << std::endl;
-
 		textureLL->replacePtr(mat, newMaterialName);
-		textureLL->replacePtr(flatMat, newMaterialName + "_flat");
-
-		std::cout << "Inserted materials into loadList" << std::endl;
-		
+		textureLL->replacePtr(flatMat, newMaterialName + "_flat");		
 		owner->Name = newMaterialName;
 		owner->text = shaderName;
-
-		std::cout << "Set strings" << std::endl;
 		if (finishedCallback != nullptr) {
 			finishedCallback(owner);
 		}
@@ -787,8 +779,9 @@ private:
 		textureLL->listMaterials(existingMaterials);
 		matSelPtr->setOptionIndex(existingMaterials.size() - 2);
 
+		settingsButton->Name = obj->materialName;
+
 		if (closeMaterialMenu != nullptr) {
-			std::cout << "Closing material menu" << std::endl;
 			closeMaterialMenu(owner);
 		}
 	}

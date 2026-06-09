@@ -1738,8 +1738,6 @@ private:
 	}
 
 	void openOptions(UIItem* owner) {
-		std::cout << "Creating options" << std::endl;
-
 		float W = static_cast<float>(Engine::get()->windowWidth);
 		float H = static_cast<float>(Engine::get()->windowHeight);
 
