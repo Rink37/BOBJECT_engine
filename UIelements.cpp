@@ -97,6 +97,7 @@ void UIItem::addItem(UIItem *item) {
 
 void TextBox::updateDisplay() {
 	this->calculateScreenPosition();
+	this->setHeight(this->image->zp);
 	
 	float W = static_cast<float>(Engine::get()->windowWidth);
 	float H = static_cast<float>(Engine::get()->windowHeight);

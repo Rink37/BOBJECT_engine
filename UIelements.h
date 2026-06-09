@@ -130,6 +130,7 @@ struct UIItem {
 	virtual void setHeight(float z) {
 		if (image != nullptr) {
 			image->zp_default = z;
+			image->zp = z;
 		}
 	}
 
@@ -306,6 +307,7 @@ public:
 		image->texHeight = 2;
 		image->isGray = true;
 		image->isOpaque = false;
+		image->zp = 0.05f;
 	}
 
 	void updateText(char c) {
@@ -1879,19 +1881,6 @@ struct Widget {
 				windowPositions[3] = (sitem->windowPositions[3] > windowPositions[3]) ? sitem->windowPositions[3] : windowPositions[3];
 			}
 		}
-
-		float W = static_cast<float>(Engine::get()->windowWidth);
-		float H = static_cast<float>(Engine::get()->windowHeight);
-
-		if (thisBG != nullptr) {
-			float posx = (windowPositions[1] / W + windowPositions[0] / W) - 1.0f;
-			float extentx = (windowPositions[1] / W - 0.5f) * 2.0f - posx + 0.05f;
-			float posy = (windowPositions[3] / H + windowPositions[2] / H) - 1.0f;
-			float extenty = (windowPositions[3] / H - 0.5f) * 2.0f - posy + 0.05f;
-
-			thisBG->updateArrangedPosition(posx, posy, extentx, extenty);
-			thisBG->image->zp = this->zp;
-		}
 	}
 
 	bool isInArea(double x, double y) {
@@ -1903,64 +1892,12 @@ struct Widget {
 	};
 
 	void addBackground(Material* mat) {
-		thisBG = getPtr(new Background(mat));
-		canvas.push_back(thisBG);
+		Background* bg = new Background(mat);
+		bg->setHeight(this->zp - 0.01f);
+		canvas.push_back(getPtr(bg));
+		thisBG = canvas[canvas.size() - 1];
 		measureWindowPositions();
 		thisBG->updateDisplay();
-	}
-
-	virtual void sortImages() {
-		imagePipelines.clear();
-		transparentImages.clear();
-		transparentImagePipelines.clear();
-		std::map<float, std::vector<UIImage*>, std::greater<float>> imageHeights{};
-		std::vector<UIImage*> allImages{};
-		for (size_t i = 0; i != canvas.size(); i++) {
-			std::vector<UIImage*> images{};
-			canvas[i]->getImages(images, true);
-			canvas[i]->getImages(images, false);
-			allImages.insert(allImages.end(), images.begin(), images.end());
-		}
-		for (UIImage* image : allImages) {
-			if (image->isVisible && image->isOpaque) {
-				std::string key = image->mat[image->matidx]->shaderName;
-				if (imagePipelines.count(key) == 0) {
-					imagePipelines.insert({ key, std::vector<UIImage*>{image} });
-				}
-				else {
-					imagePipelines.at(key).push_back(image);
-				}
-			}
-			else if (image->isVisible) {
-				// If the image is not opaque then we need to draw them sorted from back to front and associate their pipelines properly
-				transparentImages.push_back(image);
-			}
-			float heightKey = image->zp_default;
-			if (imageHeights.count(heightKey) == 0) {
-				imageHeights.insert({ heightKey, std::vector<UIImage*>{image} });
-			}
-			else {
-				imageHeights.at(heightKey).push_back(image);
-			}
-		}
-
-		float separation = 0.01f;
-		float pos = 0.0f;
-		for (auto elem : imageHeights) {
-			std::cout << elem.first << " " << pos << std::endl;
-			for (UIImage* image : elem.second) {
-				image->zp = pos;
-			}
-			pos += separation;
-		}
-
-		if (transparentImages.size() > 0) {
-			std::sort(transparentImages.begin(), transparentImages.end(), [](UIImage* a, UIImage* b) {return a->zp > b->zp; });
-		}
-		for (UIImage* transparentImage : transparentImages) {
-			transparentImagePipelines.push_back(transparentImage->mat[transparentImage->matidx]->shaderName);
-		}
-		update();
 	}
 
 	virtual void drawAll(VkCommandBuffer commandBuffer, uint32_t currentFrame, GraphicsPass* currentPass) {
@@ -1968,7 +1905,7 @@ struct Widget {
 			return;
 		}
 		if (imagePipelines.empty()) {
-			sortImages();
+			update();
 		}
 		for (auto elem : imagePipelines) {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(elem.first)]);
@@ -2016,7 +1953,7 @@ struct Widget {
 		}
 		for (UIItem* item : canvas) {
 			if (item->checkForClickEvent(mouseX, mouseY, eventType)) {
-				sortImages();
+				update();
 				return true;
 			};
 		}
@@ -2042,15 +1979,21 @@ struct Widget {
 
 	void update() {
 		if (isVisible) {
+			sortImages();
 			for (size_t i = 0; i != canvas.size(); i++) {
-				if (canvas[i] == thisBG) {
-					continue;
-				}
 				canvas[i]->updateDisplay();
 			}
 			measureWindowPositions();
 			if (thisBG != nullptr) {
-				//std::cout << "Updating thisBG" << std::endl;
+				float W = static_cast<float>(Engine::get()->windowWidth);
+				float H = static_cast<float>(Engine::get()->windowHeight);
+				
+				float posx = (windowPositions[1] / W + windowPositions[0] / W) - 1.0f;
+				float extentx = (windowPositions[1] / W - 0.5f) * 2.0f - posx + 0.02f;
+				float posy = (windowPositions[3] / H + windowPositions[2] / H) - 1.0f;
+				float extenty = (windowPositions[3] / H - 0.5f) * 2.0f - posy + 0.02f;
+
+				thisBG->updateArrangedPosition(posx, posy, extentx, extenty);
 				thisBG->updateDisplay();
 			}
 			customUpdate();
@@ -2104,6 +2047,7 @@ struct Widget {
 			Backgrounds[i]->cleanup();
 		}
 		Backgrounds.clear();
+		thisBG = nullptr;
 		isSetup = false;
 	}
 
@@ -2205,6 +2149,59 @@ private:
 	std::vector<std::shared_ptr<Background>> Backgrounds;
 
 	UIItem* thisBG = nullptr;
+
+	virtual void sortImages() {
+		imagePipelines.clear();
+		transparentImages.clear();
+		transparentImagePipelines.clear();
+		std::map<float, std::vector<UIImage*>, std::greater<float>> imageHeights{};
+		std::vector<UIImage*> allImages{};
+		for (size_t i = 0; i != canvas.size(); i++) {
+			std::vector<UIImage*> images{};
+			canvas[i]->getImages(images, true);
+			canvas[i]->getImages(images, false);
+			allImages.insert(allImages.end(), images.begin(), images.end());
+		}
+		for (UIImage* image : allImages) {
+			if (image->isVisible && image->isOpaque) {
+				std::string key = image->mat[image->matidx]->shaderName;
+				if (imagePipelines.count(key) == 0) {
+					imagePipelines.insert({ key, std::vector<UIImage*>{image} });
+				}
+				else {
+					imagePipelines.at(key).push_back(image);
+				}
+			}
+			else if (image->isVisible) {
+				// If the image is not opaque then we need to draw them sorted from back to front and associate their pipelines properly
+				transparentImages.push_back(image);
+			}
+			float heightKey = image->zp_default;
+			if (imageHeights.count(heightKey) == 0) {
+				imageHeights.insert({ heightKey, std::vector<UIImage*>{image} });
+			}
+			else {
+				imageHeights.at(heightKey).push_back(image);
+			}
+		}
+
+		float separation = 0.01f;
+		float pos = 0.0f;
+		for (auto elem : imageHeights) {
+			//std::cout << elem.first << " " << pos << std::endl;
+			for (UIImage* image : elem.second) {
+				image->zp = pos;
+			}
+			pos += separation;
+		}
+
+		if (transparentImages.size() > 0) {
+			std::sort(transparentImages.begin(), transparentImages.end(), [](UIImage* a, UIImage* b) {return a->zp > b->zp; });
+		}
+		for (UIImage* transparentImage : transparentImages) {
+			transparentImagePipelines.push_back(transparentImage->mat[transparentImage->matidx]->shaderName);
+		}
+	}
 };
 
 #endif

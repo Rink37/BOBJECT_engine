@@ -871,6 +871,8 @@ public:
 		ObjectButtons->arrangeItems();
 		
 		canvas.push_back(ObjectButtons);
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
 		
 		isSetup = true;
 	}
@@ -1443,6 +1445,8 @@ public:
 
 		canvas.push_back(getPtr(mainArrangement));
 
+		addBackground(loadList->getMaterial("UIRoundBox"));
+
 		isSetup = true;
 	}
 
@@ -1584,6 +1588,8 @@ public:
 
 		canvas.push_back(TextureButtons);
 
+		addBackground(loadList->getMaterial("UIRoundBox"));
+
 		isSetup = true;
 	}
 
@@ -1623,7 +1629,7 @@ private:
 		TextureButtons->addItem(getPtr(objButtons));
 		TextureButtons->arrangeItems();
 
-		sortImages();
+		update();
 		measureWindowPositions();
 	}
 
@@ -2643,7 +2649,7 @@ private:
 		renderImage.cleanup(Engine::get()->device);
 		renderGP.cleanup(Engine::get()->device);
 
-		engine->cleanup();
+		engine->cleanup(); 
 	}
 
 	void drawFrame() {
