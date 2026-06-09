@@ -1751,7 +1751,7 @@ private:
 		uint32_t optionIndex = 0;
 		for (std::string option : options) {
 			TextBox* optionText = new TextBox(textFont, 0.0f, 0.0f, (extentx * 0.8f), selectedTextBox->characterSize / H, selectedTextBox->characterSize, ARRANGE_START, ARRANGE_START);
-			optionText->setHeight(image->zp_default + 0.026f);
+			optionText->setHeight(image->zp_default + 0.021f);
 			optionText->addText(option);
 			optionText->Name = std::to_string(optionIndex);
 			optionText->setClickFunction(optionSelectFunct);
@@ -1763,7 +1763,7 @@ private:
 		addItem(optionsArrangement);
 		if (bgMat != nullptr) {
 			background = new Background(bgMat, optionsArrangement);
-			background->setHeight(image->zp_default + 0.014f);
+			background->setHeight(image->zp_default + 0.011f);
 			background->updateDisplay();
 			addItem(background);
 		}
@@ -1943,6 +1943,7 @@ struct Widget {
 	void cleanup() {
 		cleanupSubClasses();
 		canvas.clear();
+		thisBG = nullptr;
 		for (size_t i = 0; i != imagePanels.size(); i++) {
 			imagePanels[i]->cleanup();
 		}
@@ -1981,7 +1982,6 @@ struct Widget {
 			Backgrounds[i]->cleanup();
 		}
 		Backgrounds.clear();
-		thisBG = nullptr;
 		isSetup = false;
 	}
 
@@ -2120,9 +2120,9 @@ private:
 
 		float separation = 0.01f;
 		float pos = 0.0f;
-		std::cout << "Starting sort" << std::endl;
+		//std::cout << "Starting sort" << std::endl;
 		for (auto elem : imageHeights) {
-			std::cout << elem.first << " " << pos << std::endl;
+			//std::cout << elem.first << " " << pos << std::endl;
 			for (UIImage* image : elem.second) {
 				image->zp = pos;
 			}

@@ -108,7 +108,7 @@ public:
 
 		canvas.push_back(getPtr(mainArrangement));
 		
-		//addBackground(loadList->getMaterial("UIRoundBox"));
+		addBackground(loadList->getMaterial("UIRoundBox"));
 
 		isSetup = true;
 	}
@@ -207,6 +207,8 @@ public:
 		if (webcamTexture::get()->webCam != nullptr) {
 			webcamTexture::get()->webCam->shouldUpdate = true;
 		}
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
 
 		isSetup = true;
 	}
@@ -427,8 +429,6 @@ public:
 		shaderName = sName;
 		boundPass = bPass;
 		matTemplate = new MaterialTemplate(shaderName, boundPass);
-
-		font* inFont = loadList->getFont();
 		
 		finishedCallback = callback;
 
@@ -457,11 +457,11 @@ public:
 		textureLL->listMaterials(existingMaterials);
 		newMaterialName = "Material" + std::to_string(existingMaterials.size() - 1);
 
-		TextBox* matNameTB = new TextBox(inFont, 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER, true);
+		TextBox* matNameTB = new TextBox(loadList->getFont() , 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER, true);
 		matNameTB->addText(newMaterialName);
 		matNameTB->setClickFunction(std::bind(&MaterialCreator::setMaterialName, this, std::placeholders::_1));
 
-		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), inFont);
+		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		materialSelect->addOptions(materialOptions);
 		materialSelect->setBlankText("Select material");
 		materialSelect->setSelectCallback(std::bind(&MaterialCreator::createMatOptionsMenu, this, std::placeholders::_1));
@@ -471,6 +471,9 @@ public:
 		totalArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(totalArrangement));
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
+
 		isSetup = true;
 	}
 
@@ -482,8 +485,6 @@ public:
 		boundPass = bPass;
 		matTemplate = new MaterialTemplate(shaderName, boundPass);
 
-		font* inFont = loadList->getFont();
-
 		finishedCallback = callback;
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
@@ -491,8 +492,13 @@ public:
 		newMaterialName = MatName;
 		std::string shaderName = textureLL->getMaterial(newMaterialName)->shaderName;
 
-		UIItem* empty = getPtr(new spacer());
+		UIItem* empty = new spacer();
 		empty->text = shaderName;
+
+		TextBox* matNameTB = new TextBox(loadList->getFont(), 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		matNameTB->addText(newMaterialName);
+
+		totalArrangement->addItem(getPtr(matNameTB));
 
 		totalArrangement->arrangeItems();
 
@@ -519,6 +525,8 @@ public:
 
 		empty->cleanup();
 		delete empty;
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
 
 		isSetup = true;
 	}
@@ -613,12 +621,20 @@ private:
 	}
 
 	void exit(UIItem* owner) {
+		std::cout << "Starting exit func" << std::endl;
 		Material* mat = matTemplate->createMaterial();
 		Material* flatMat = matTemplate->createFlatMaterial();
+		std::cout << "Created materials" << std::endl;
+
 		textureLL->replacePtr(mat, newMaterialName);
 		textureLL->replacePtr(flatMat, newMaterialName + "_flat");
+
+		std::cout << "Inserted materials into loadList" << std::endl;
+		
 		owner->Name = newMaterialName;
 		owner->text = shaderName;
+
+		std::cout << "Set strings" << std::endl;
 		if (finishedCallback != nullptr) {
 			finishedCallback(owner);
 		}
@@ -640,15 +656,12 @@ public:
 		obj = object;
 
 		OSNormName = obj->objectName + "_OSNorm";
-		TSNormName = obj->objectName + "_TSNorm";
 
 		openEditMaterialMenu = editMatFunc;
 		openMaterialMenu = newMatFunc;
 		closeMaterialMenu = closeMatFunc;
 
 		finishedCallback = closeFunc;
-		
-		font* inFont = loadList->getFont();
 
 		addTextureFunc = addTex;
 
@@ -656,7 +669,7 @@ public:
 
 		Arrangement* materialSettingsArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 4.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-		TextBox* matLabel = new TextBox(inFont, 0.0f, 0.0f, 3.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
+		TextBox* matLabel = new TextBox(loadList->getFont(), 0.0f, 0.0f, 3.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
 		matLabel->addText("MATERIAL:");
 
 		Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
@@ -693,7 +706,7 @@ public:
 			index++;
 		}
 
-		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), inFont);
+		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		materialSelect->addOptions(existingMaterials);
 		materialSelect->setOptionIndex(optionIndex);
 		materialSelect->setSelectCallback(std::bind(&ObjectSettingsMenu::selectMaterialCallback, this, std::placeholders::_1));
@@ -703,7 +716,7 @@ public:
 		totalArrangement->addItem(matSelPtr);
 		
 		Arrangement* genNormArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-		TextBox* genNormText = new TextBox(inFont, 0.0f, 0.0f, 3.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		TextBox* genNormText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 3.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		genNormText->addText("Generate OS normal:");
 
 		genNormArrangement->addItem(getPtr(genNormText));
@@ -716,6 +729,9 @@ public:
 		totalArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(totalArrangement));
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
+
 		isSetup = true;
 	}
 
@@ -737,18 +753,6 @@ private:
 	std::function<void(UIItem*)> addTextureFunc = nullptr;
 
 	std::string OSNormName = "";
-	std::string TSNormName = "";
-
-	int normalType = 0;
-
-	void selectNormType(UIItem* owner) {
-		if (owner->text == OSNormName) {
-			normalType = 0;
-		}
-		else if (owner->text == TSNormName) {
-			normalType = 1;
-		}
-	}
 	
 	void newMaterialMenu(UIItem* owner) {
 		std::function<void(UIItem*)> closeFnc = std::bind(&ObjectSettingsMenu::exitMaterialMenu, this, std::placeholders::_1);
@@ -767,7 +771,7 @@ private:
 		}
 	}
 
-	void exitMaterialMenu(UIItem* owner) {
+	void exitMaterialMenu(UIItem* owner) {		
 		obj->mat = textureLL->getMaterial(owner->Name);
 		obj->unlitMat = textureLL->getMaterial(owner->Name + "_flat");
 		obj->shaderName = owner->text;
@@ -782,7 +786,9 @@ private:
 		std::vector<std::string> existingMaterials{};
 		textureLL->listMaterials(existingMaterials);
 		matSelPtr->setOptionIndex(existingMaterials.size() - 2);
+
 		if (closeMaterialMenu != nullptr) {
+			std::cout << "Closing material menu" << std::endl;
 			closeMaterialMenu(owner);
 		}
 	}
@@ -1000,6 +1006,8 @@ public:
 		totalArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(totalArrangement));
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
 
 		isSetup = true;
 	}
@@ -1255,6 +1263,8 @@ public:
 		totalArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(totalArrangement));
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
 
 		isSetup = true;
 	}
@@ -1909,7 +1919,9 @@ private:
 		if (widget->posIndex != INT_MAX) {
 			mouseManager.removePositionListener(widget->posIndex);
 		}
+		
 		widget->cleanup();
+
 		widgets.erase(find(widgets.begin(), widgets.end(), widget));
 
 		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
@@ -2188,7 +2200,6 @@ private:
 	}
 
 	void closeSettingsMenu(UIItem* owner) {
-
 		removeWidget(&mc);
 
 		osm.show();
