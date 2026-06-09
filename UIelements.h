@@ -56,7 +56,7 @@ struct UIImage {
 
 	uint32_t mipLevels = 0;
 
-	bool isGray = true;
+	//bool isGray = true;
 
 	bool isOpaque = true;
 
@@ -182,8 +182,8 @@ struct UIItem {
 		scs.push_back(this);
 	};
 
-	virtual void getImages(std::vector<UIImage*>& images, bool isUI) {
-		if (image != nullptr && image->texHeight > 1 && image->isGray == isUI) {
+	virtual void getImages(std::vector<UIImage*>& images) {
+		if (image != nullptr && image->texHeight > 1) {
 			images.push_back(image.get());
 		}
 	};
@@ -239,28 +239,27 @@ struct UIItem {
 		isEnabled = enabled;
 	}
 
-	virtual void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
-		std::vector<UIImage*> images;
-		getImages(images, true);
+	//virtual void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
+	//	std::vector<UIImage*> images;
+	//	getImages(images);
 
-		for (UIImage* image : images) {
-			image->draw(commandBuffer, currentFrame, pipelineIndex);
-		}
-	}
+	//	for (UIImage* image : images) {
+	//		image->draw(commandBuffer, currentFrame, pipelineIndex);
+	//	}
+	//}
 
-	virtual void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
-		std::vector<UIImage*> images;
-		getImages(images, false);
+	//virtual void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
+	//	std::vector<UIImage*> images;
+	//	getImages(images);
 
-		for (UIImage* image : images) {
-			image->draw(commandBuffer, currentFrame, pipelineIndex);
-		}
-	}
+	//	for (UIImage* image : images) {
+	//		image->draw(commandBuffer, currentFrame, pipelineIndex);
+	//	}
+	//}
 
 	virtual void cleanup() {
 		std::vector<UIImage*> images;
-		getImages(images, true);
-		getImages(images, false);
+		getImages(images);
 
 		std::vector<UIItem*> textboxes;
 		getText(textboxes);
@@ -305,9 +304,8 @@ public:
 		image->isVisible = false;
 		image->texWidth = 2;
 		image->texHeight = 2;
-		image->isGray = true;
 		image->isOpaque = false;
-		image->zp = 0.05f;
+		image->zp_default = 0.05f;
 	}
 
 	void updateText(char c) {
@@ -459,8 +457,6 @@ public:
 	};
 
 private:
-	float zp = 0.0f;
-
 	bool modifiable = false;
 
 	TypeManager* typeManager = nullptr;
@@ -482,8 +478,6 @@ public:
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(surf);
 
-		image->isGray = surf->isUIMat;
-
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
@@ -503,8 +497,6 @@ public:
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(surf);
-
-		image->isGray = surf->isUIMat;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -578,8 +570,6 @@ public:
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.push_back(mat);
 
-		image->isGray = mat->isUIMat;
-
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
@@ -598,8 +588,6 @@ public:
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.push_back(mat);
-
-		image->isGray = mat->isUIMat;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -620,8 +608,6 @@ public:
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.push_back(mat);
-
-		image->isGray = mat->isUIMat;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -674,8 +660,6 @@ public:
 		image->matidx = 0;
 		this->activestate = true;
 
-		image->isGray = onMat->isUIMat;
-
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
 
@@ -695,8 +679,6 @@ public:
 		image->mat.push_back(offMat);
 		image->matidx = 0;
 		this->activestate = true;
-
-		image->isGray = onMat->isUIMat;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -719,8 +701,6 @@ public:
 		image->mat.push_back(offMat);
 		image->matidx = 0;
 		this->activestate = true;
-
-		image->isGray = onMat->isUIMat;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -860,10 +840,10 @@ public:
 		}
 	};
 
-	void getImages(std::vector<UIImage*>& images, bool isUI) {
+	void getImages(std::vector<UIImage*>& images) {
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIImage*> subimages;
-			Items[i]->getImages(subimages, isUI);
+			Items[i]->getImages(subimages);
 			for (size_t j = 0; j != subimages.size(); j++) {
 				images.push_back(subimages[j]);
 			}
@@ -971,10 +951,10 @@ public:
 		}
 	};
 
-	void getImages(std::vector<UIImage*>& images, bool isUI) {
+	void getImages(std::vector<UIImage*>& images) {
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIImage*> subimages;
-			Items[i]->getImages(subimages, isUI);
+			Items[i]->getImages(subimages);
 			for (size_t j = 0; j != subimages.size(); j++) {
 				images.push_back(subimages[j]);
 			}
@@ -1074,12 +1054,8 @@ public:
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(mat);
 
-		image->isGray = mat->isUIMat;
-
 		backgroundImage = std::make_shared<UIImage>(new UIImage);
 		backgroundImage->mat.emplace_back(mat);
-
-		backgroundImage->isGray = mat->isUIMat;
 
 		if (mat->textures.size() > 0) {
 			image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -1104,12 +1080,8 @@ public:
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(mat);
 
-		image->isGray = mat->isUIMat;
-
 		backgroundImage = std::make_shared<UIImage>(new UIImage);
 		backgroundImage->mat.emplace_back(mat);
-
-		backgroundImage->isGray = mat->isUIMat;
 
 		if (mat->textures.size() > 0) {
 			image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -1258,29 +1230,11 @@ public:
 		return false;
 	};
 
-	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
-		if (image->isGray) {
-			image->draw(commandBuffer, currentFrame, pipelineIndex);
-		}
-		if (backgroundImage->isGray) {
-			backgroundImage->draw(commandBuffer, currentFrame, pipelineIndex);
-		}
-	}
-
-	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
-		if (!image->isGray) {
-			image->draw(commandBuffer, currentFrame, pipelineIndex);
-		}
-		if (!backgroundImage->isGray) {
-			backgroundImage->draw(commandBuffer, currentFrame, pipelineIndex);
-		}
-	}
-
-	void getImages(std::vector<UIImage*>& images, bool isUI) {
-		if (image != nullptr && image->texHeight > 1 && image->isGray == isUI) {
+	void getImages(std::vector<UIImage*>& images) {
+		if (image != nullptr && image->texHeight > 1) {
 			images.push_back(image.get());
 		}
-		if (backgroundImage != nullptr && backgroundImage->texHeight > 1 && backgroundImage->isGray == isUI) {
+		if (backgroundImage != nullptr && backgroundImage->texHeight > 1) {
 			images.push_back(backgroundImage.get());
 		}
 	};
@@ -1335,8 +1289,6 @@ public:
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mat.emplace_back(mat);
-
-		image->isGray = mat->isUIMat;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;
@@ -1459,18 +1411,6 @@ public:
 		}
 		return false;
 	};
-
-	void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
-		if (image->isGray) {
-			image->draw(commandBuffer, currentFrame, pipelineIndex);
-		}
-	}
-
-	void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
-		if (!image->isGray) {
-			image->draw(commandBuffer, currentFrame, pipelineIndex);
-		}
-	}
 
 	void cleanup() {
 		image->cleanup();
@@ -1612,6 +1552,14 @@ public:
 		
 		addItem(mainArranger);
 		textFont = inFont;
+
+		image = std::make_shared<UIImage>(new UIImage);
+		image->isVisible = false;
+		image->texWidth = 2;
+		image->texHeight = 2;
+		image->isOpaque = false;
+		image->zp_default = 0.05f;
+		image->zp = 0.05f;
 	}
 
 	void setBlankText(std::string string) {
@@ -1666,10 +1614,11 @@ public:
 		}
 	}
 
-	void getImages(std::vector<UIImage*>& images, bool isUI) {
+	void getImages(std::vector<UIImage*>& images) {
+		images.push_back(image.get());
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIImage*> subimages;
-			Items[i]->getImages(subimages, isUI);
+			Items[i]->getImages(subimages);
 			for (size_t j = 0; j != subimages.size(); j++) {
 				images.push_back(subimages[j]);
 			}
@@ -1751,14 +1700,9 @@ public:
 		}
 	}
 
-	void setHeight(float z) {
-		zp = z;
-	}
-
 	std::vector<std::string> options{};
 
 private:
-	float zp = 0.0f;
 
 	TextBox* selectedTextBox = nullptr;
 
@@ -1794,6 +1738,8 @@ private:
 	}
 
 	void openOptions(UIItem* owner) {
+		std::cout << "Creating options" << std::endl;
+
 		float W = static_cast<float>(Engine::get()->windowWidth);
 		float H = static_cast<float>(Engine::get()->windowHeight);
 
@@ -1805,7 +1751,7 @@ private:
 		uint32_t optionIndex = 0;
 		for (std::string option : options) {
 			TextBox* optionText = new TextBox(textFont, 0.0f, 0.0f, (extentx * 0.8f), selectedTextBox->characterSize / H, selectedTextBox->characterSize, ARRANGE_START, ARRANGE_START);
-			optionText->setHeight(zp + 0.02f);
+			optionText->setHeight(image->zp_default + 0.026f);
 			optionText->addText(option);
 			optionText->Name = std::to_string(optionIndex);
 			optionText->setClickFunction(optionSelectFunct);
@@ -1817,7 +1763,7 @@ private:
 		addItem(optionsArrangement);
 		if (bgMat != nullptr) {
 			background = new Background(bgMat, optionsArrangement);
-			background->setHeight(zp + 0.01f);
+			background->setHeight(image->zp_default + 0.014f);
 			background->updateDisplay();
 			addItem(background);
 		}
@@ -1921,18 +1867,6 @@ struct Widget {
 		}
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIText")]);
 		drawText(commandBuffer, currentFrame);
-	}
-	
-	virtual void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
-		for (size_t i = 0; i != canvas.size(); i++) {
-			canvas[i]->drawUI(commandBuffer, currentFrame, pipelineIndex);
-		}
-	}
-
-	virtual void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
-		for (size_t i = 0; i != canvas.size(); i++) {
-			canvas[i]->drawImages(commandBuffer, currentFrame, pipelineIndex);
-		}
 	}
 
 	virtual void drawText(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
@@ -2158,8 +2092,7 @@ private:
 		std::vector<UIImage*> allImages{};
 		for (size_t i = 0; i != canvas.size(); i++) {
 			std::vector<UIImage*> images{};
-			canvas[i]->getImages(images, true);
-			canvas[i]->getImages(images, false);
+			canvas[i]->getImages(images);
 			allImages.insert(allImages.end(), images.begin(), images.end());
 		}
 		for (UIImage* image : allImages) {
@@ -2187,8 +2120,9 @@ private:
 
 		float separation = 0.01f;
 		float pos = 0.0f;
+		std::cout << "Starting sort" << std::endl;
 		for (auto elem : imageHeights) {
-			//std::cout << elem.first << " " << pos << std::endl;
+			std::cout << elem.first << " " << pos << std::endl;
 			for (UIImage* image : elem.second) {
 				image->zp = pos;
 			}
