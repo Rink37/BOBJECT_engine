@@ -197,8 +197,8 @@ public:
 		setRefText->addText("Set the reference map:");
 
 		DropdownMenu* refDropdown = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), newFont);
+		refDropdown->setBlankText("Select a texture");
 		refDropdown->addOptions(availableTextures);
-		refDropdown->setOptionIndex(0);
 		refDropdown->setSelectCallback(std::bind(&RemapTexSelector::setRefName, this, std::placeholders::_1));
 
 		Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 2.0f, 0.01f);
