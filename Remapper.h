@@ -4,7 +4,6 @@
 #include"UIelements.h"
 #include"Bobject_Engine.h"
 #include"Textures.h"
-//#include"SurfaceConstructor.h"
 
 #include"ImageProcessor.h"
 #include"include/Kuwahara.h"
@@ -27,18 +26,18 @@
 
 struct RemapParamObject {
 	// Kuwahara params
-	alignas(4) int kuwaharaKernelRadius;
+	alignas(4) int kuwaharaKernelRadius = 15;
 	// We could potentially add zero cross/sharpness params but these values are also currently unused
 
 	// Averager and gradient remapper params
-	alignas(4) int averagerKernelRadius;
-	alignas(4) float gradientThreshold;
+	alignas(4) int averagerKernelRadius = 15;
+	alignas(4) float gradientThreshold = 0.06f;
 
-	alignas(4) float zeroCross;
-	alignas(4) float hardness;
-	alignas(4) float sharpness;
+	alignas(4) float zeroCross = 0.58f;
+	alignas(4) float hardness = 8.0f;
+	alignas(4) float sharpness = 8.0f;
 
-	alignas(1) bool shouldNormalize;
+	alignas(1) bool shouldNormalize = true;
 };
 
 class RemapBackend {

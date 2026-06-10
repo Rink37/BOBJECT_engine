@@ -99,7 +99,7 @@ void RemapBackend::createReferenceMaps(Texture* refTex, Texture* targetTex) {
 
 		filteredTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		filteredTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		//filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		break;
 	case (ITERATIVE_COORDMAP):
 		baseRef = refTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
@@ -170,7 +170,7 @@ void RemapBackend::createReferenceMaps(Texture* refTex, Texture* targetTex) {
 
 		filteredTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		filteredTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		//filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		break;
 	}
 }
@@ -223,7 +223,7 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 
 		filteredTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		filteredTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		//filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		break;
 	case (ITERATIVE_COORDMAP):
 		Engine::get()->endSingleTimeComputeCommand(commandBuffer);
@@ -267,7 +267,7 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 		}
 		filteredTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		filteredTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		//filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		break;
 	}
 }
@@ -393,7 +393,12 @@ void RemapUI::incrementMethod(UIItem*) {
 	textureLL->replacePtr(remapper->baseTarget->copyTexture(), targetTexName);
 	remapper->cleanup();
 	delete remapper;
-	remapper = nullptr;
+
+	targetTex = textureLL->getTexture(targetTexName);
+	if (targetTex->textureImageView == nullptr) {
+		targetTex->textureImageView = targetTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	}
+
 	remapper = new RemapBackend();
 	remapper->method = newMethod;
 	remapper->setup();
@@ -420,7 +425,12 @@ void RemapUI::reduceMethod(UIItem*) {
 	textureLL->replacePtr(remapper->baseTarget->copyTexture(), targetTexName);
 	remapper->cleanup();
 	delete remapper;
-	remapper = nullptr;
+
+	targetTex = textureLL->getTexture(targetTexName);
+	if (targetTex->textureImageView == nullptr) {
+		targetTex->textureImageView = targetTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	}
+
 	remapper = new RemapBackend();
 	remapper->method = newMethod;
 	remapper->setup();
