@@ -426,6 +426,7 @@ public:
 		if (isSetup) {
 			return;
 		}
+		autoIndices.clear();
 		shaderName = sName;
 		boundPass = bPass;
 		matTemplate = new MaterialTemplate(shaderName, boundPass);
@@ -481,6 +482,7 @@ public:
 		if (isSetup) {
 			return;
 		}
+		autoIndices.clear();
 		shaderName = sName;
 		boundPass = bPass;
 		matTemplate = new MaterialTemplate(shaderName, boundPass);
@@ -546,7 +548,7 @@ private:
 	std::vector<int> autoIndices{};
 
 	void setMaterialName(UIItem* owner) {
-		std::cout << newMaterialName << std::endl;
+		//std::cout << newMaterialName << std::endl;
 		newMaterialName = owner->text;
 	}
 
@@ -773,11 +775,16 @@ private:
 		if (find(options.begin(), options.end(), obj->materialName) == options.end()) {
 			matSelPtr->addOption(obj->materialName);
 			matSelPtr->addOption(obj->materialName + "_flat");
+			options = static_cast<DropdownMenu*>(matSelPtr)->options;
 		}
 
-		std::vector<std::string> existingMaterials{};
-		textureLL->listMaterials(existingMaterials);
-		matSelPtr->setOptionIndex(existingMaterials.size() - 2);
+		auto it = find(options.begin(), options.end(), obj->materialName);
+		if (it != options.end()) {
+			matSelPtr->setOptionIndex(it - options.begin());
+		}
+		//else {
+		//	std::cout << "We were unable to find the material index" << std::endl;
+		//}
 
 		settingsButton->Name = obj->materialName;
 

@@ -61,13 +61,21 @@ struct LoadList {
 		for (auto elem : textureMap) {
 			auto it = find(tex->textures.begin(), tex->textures.end(), textures[elem.second].get());
 			if (it != tex->textures.end()) {
-				//std::cout << "Material " << name << " contains texture " << elem.first << std::endl;
 				if (textureAssociator.count(elem.first) == 0) {
 					textureAssociator.insert({ elem.first, std::vector<std::string>{name} });
 				}
 				else {
 					textureAssociator.at(elem.first).push_back(name);
 				}
+			}
+		}
+		auto it = find(tex->textures.begin(), tex->textures.end(), webcamTexture::get());
+		if (it != tex->textures.end()) {
+			if (textureAssociator.count("Webcam View") == 0) {
+				textureAssociator.insert({ "Webcam View", std::vector<std::string>{name}});
+			}
+			else {
+				textureAssociator.at("Webcam View").push_back(name);
 			}
 		}
 		materials.emplace_back(tex);
@@ -186,12 +194,20 @@ struct LoadList {
 
 	void listTexturesInMat(std::string matName, std::vector<std::string>& list) {
 		std::vector<Texture*> mTextures = getMaterial(matName)->textures;
+		list.clear();
+		for (uint32_t i = 0; i != mTextures.size(); i++) {
+			list.push_back("");
+		}
 		for (auto elem : textureMap) {
 			Texture* tex = textures[elem.second].get();
 			auto it = find(mTextures.begin(), mTextures.end(), tex);
 			if (it != mTextures.end()) {
-				list.push_back(elem.first);
+				list.at(it - mTextures.begin()) = elem.first;
 			}
+		}
+		auto it = find(mTextures.begin(), mTextures.end(), webcamTexture::get());
+		if (it != mTextures.end()) {
+			list.at(it - mTextures.begin()) = "Webcam View";
 		}
 	}
 
@@ -199,6 +215,14 @@ struct LoadList {
 		for (auto elem : materialMap) {
 			list.push_back(elem.first);
 		}
+	}
+
+	void listMaterialsWithTex(std::string texName, std::vector<std::string>& list) {
+		if (textureAssociator.count(texName) == 0) {
+			std::cout << "No materials use texture " << texName << std::endl;
+			return;
+		}
+		list = textureAssociator.at(texName);
 	}
 
 	font* getFont() {
