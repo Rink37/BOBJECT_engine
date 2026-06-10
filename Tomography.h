@@ -133,6 +133,8 @@ public:
 
 		customUpdate();
 
+		addBackground(loadList->getMaterial("UIRoundBox"));
+
 		isSetup = true;
 	}
 
@@ -224,15 +226,14 @@ public:
 		//imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 
-		int optionIndex = 0;
 
 		std::vector<std::string> textureOptions{};
 		textureLL->listTextures(textureOptions);
 
 		DropdownMenu* texSelect = new DropdownMenu(0.0f, 0.0f, 1.0f, 1.0f / 9.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
+		texSelect->setBlankText("Select a texture");
 		texSelect->addOptions(textureOptions);
 		texSelect->setSelectCallback(std::bind(&TomogRefPicker::setTexName, this, std::placeholders::_1));
-		texSelect->setOptionIndex(optionIndex);
 
 		TextBox* mainText = new TextBox(textureLL->getFont(), 0.0f, 0.0f, 1.0f, 1.0f / 9.0f, 24, ARRANGE_START, ARRANGE_CENTER);
 		mainText->addText("Select a reference texture:");
@@ -255,6 +256,9 @@ public:
 		totalArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(totalArrangement));
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
+
 		isSetup = true;
 	}
 
@@ -301,7 +305,7 @@ public:
 
 		Material* openMat = loadList->getMaterial("OpenBtnMat");
 		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
-		Material* visibleMat = loadList->getMaterial("CheckboxBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 		Material* planeMat = loadList->getMaterial("PlaneBtnMat");
 		Material* updateMat = loadList->getMaterial("UpdateBtnMat");
 		Material* finishMat = loadList->getMaterial("FinishBtnMat");
@@ -356,6 +360,8 @@ public:
 
 		canvas.push_back(getPtr(column));
 
+		addBackground(loadList->getMaterial("UIRoundBox"));
+
 		scannedMaterial.init(baseDiffuse);
 
 		isSetup = true;
@@ -369,7 +375,7 @@ public:
 		}
 	}
 
-	size_t clickIdx = 0;
+	//size_t clickIdx = 0;
 	size_t loadClickIdx = 0;
 	size_t loadPosIdx = 0;
 
@@ -386,6 +392,32 @@ public:
 
 	int imageCount = 0;
 	int activeImageCount = 0;
+
+	void drawAll(VkCommandBuffer commandBuffer, uint32_t currentFrame, GraphicsPass* currentPass) {
+		if (!isVisible) {
+			return;
+		}
+		if (tomogLoadMenu != nullptr) {
+			tomogLoadMenu->drawAll(commandBuffer, currentFrame, currentPass);
+		}
+		if (imagePipelines.empty()) {
+			update();
+		}
+		for (auto elem : imagePipelines) {
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(elem.first)]);
+			for (UIImage* image : elem.second) {
+				image->draw(commandBuffer, currentFrame, image->mat[image->matidx]->pipelineLayoutIndex);
+			}
+		}
+		if (transparentImages.size() > 0) {
+			for (uint32_t i = 0; i != transparentImages.size(); i++) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(transparentImagePipelines[i])]);
+				transparentImages[i]->draw(commandBuffer, currentFrame, transparentImages[i]->mat[transparentImages[i]->matidx]->pipelineLayoutIndex);
+			}
+		}
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIText")]);
+		drawText(commandBuffer, currentFrame);
+	}
 
 private:
 	Tomographer tomographer;
@@ -408,10 +440,6 @@ private:
 			std::function<void(UIItem*)> cancelCallback = std::bind(&TomographyMenu::cancelLoad, this, std::placeholders::_1);
 			std::function<void(UIItem*)> updateCallback = std::bind(&TomographyMenu::updateCallback, this, std::placeholders::_1);
 			tomogLoadMenu->setup(imageMat, loadCallback, cancelCallback, updateCallback);
-			for (UIItem* item : canvas) {
-				item->setIsEnabled(false);
-				item->setVisibility(false);
-			}
 			loadClickIdx = mouseManager->addClickListener(tomogLoadMenu->getClickCallback());
 			loadPosIdx = mouseManager->addPositionListener(tomogLoadMenu->getPosCallback());
 		}
@@ -431,30 +459,32 @@ private:
 		imageCount++;
 		activeImageCount++;
 		grid->addItem(getPtr(loadedUI));
-		grid->updateDisplay();
+		//grid->updateDisplay();
 		UIItem* ref = grid->Items[grid->Items.size() - 1];
-		//std::cout << ref->posx << " " << ref->posy << std::endl;
 		deleteButton->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
-		deleteButton->updateDisplay();
+		//deleteButton->updateDisplay();
 		canvas.push_back(getPtr(deleteButton));
 		tomographer.add_lightVector(azimuth, polar, activeImageCount-1);
+		
 		mouseManager->removeClickListener(loadClickIdx);
 		mouseManager->removePositionListener(loadPosIdx);
+		
+		vkDeviceWaitIdle(Engine::get()->device);
 		tomogLoadMenu->cleanup();
+		delete tomogLoadMenu;
 		tomogLoadMenu = nullptr;
-		for (UIItem* item : canvas) {
-			item->setIsEnabled(true);
-			item->setVisibility(true);
-		}
+
+		update();
 	}
 
 	void removeItem(UIItem* owner) {
+		std::cout << "Removing item" << std::endl;
 		int index = std::stoi(owner->Name);
 		vkQueueWaitIdle(Engine::get()->graphicsQueue);
 		tomographer.remove_element(index);
 		grid->Items.erase(grid->Items.begin() + index);
 		grid->updateDisplay();
-		for (size_t i = 1; i != canvas.size(); i++) {
+		for (size_t i = 2; i != canvas.size(); i++) {
 			int currentIndex = std::stoi(canvas[i]->Name);
 			if (currentIndex > index) {
 				UIItem* ref = grid->Items[currentIndex-1];
@@ -469,7 +499,7 @@ private:
 	}
 
 	void updateDeleteButtons() {
-		for (size_t i = 1; i != canvas.size(); i++) {
+		for (size_t i = 2; i != canvas.size(); i++) {
 			int currentIndex = std::stoi(canvas[i]->Name);
 			UIItem* ref = grid->Items[currentIndex];
 			canvas[i]->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
@@ -479,6 +509,7 @@ private:
 
 	void customUpdate() {
 		if (tomogLoadMenu != nullptr) {
+			std::cout << "Updating tomog load menu" << std::endl;
 			tomogLoadMenu->update();
 		}
 		updateDeleteButtons();

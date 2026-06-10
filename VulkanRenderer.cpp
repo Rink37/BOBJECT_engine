@@ -2476,7 +2476,7 @@ private:
 		updateVisibleObjects();
 
 		std::cout << "Removing click listener" << std::endl;
-		mouseManager.removeClickListener(tomogUI.clickIdx);
+		mouseManager.removeClickListener(tomogUI.clickIndex);
 
 		std::cout << "Cleaning up tomograpy UI" << std::endl;
 		tomogUI.cleanup();
@@ -2713,13 +2713,9 @@ private:
 					}
 				}
 			}
-			//std::cout << widgets.size() << " ";
 			for (size_t i = 0; i != widgets.size(); i++) {
-				//std::cout << i << " ";
 				widgets[i]->drawAll(commandBuffer, currentFrame, currentPass);
 			}
-			//std::cout << std::endl;
-			//std::cout << "Drew all widgets" << std::endl;
 		}
 		
 		if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
