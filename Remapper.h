@@ -331,9 +331,6 @@ public:
 
 	int priorityLayer = 100;
 
-	size_t clickIndex = 0;
-	size_t posIndex = 0;
-
 	RemapBackend* remapper = nullptr;
 	UIItem* outMap = nullptr;
 

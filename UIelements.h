@@ -1941,6 +1941,7 @@ struct Widget {
 	void cleanup() {
 		cleanupSubClasses();
 		canvas.clear();
+		imagePipelines.clear();
 		thisBG = nullptr;
 		for (size_t i = 0; i != imagePanels.size(); i++) {
 			imagePanels[i]->cleanup();

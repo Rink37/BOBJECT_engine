@@ -2054,11 +2054,7 @@ private:
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishRemapper, this, std::placeholders::_1);
 
 		removeWidget(&rts);
-
-		UIItem* newItem = new spacer();
-		closeTextureSettingsMenu(newItem);
-		newItem->cleanup();
-		delete newItem;
+		removeWidget(&textureSettings);
 
 		remapMenu.setup(refTexture, targetTexture, destroySelf, finishSelf); 
 		if (!remapMenu.isSetup) {
@@ -2074,39 +2070,34 @@ private:
 		remapMenu.remapper->baseTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		remapMenu.remapper->baseTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		
+		UIItem* temp = new UIItem();
+
 		std::string outName = remapMenu.targetTexName;
 		TextureElements.replacePtr(remapMenu.remapper->baseTarget->copyTexture(), outName);
-		owner->Name = outName;
+		temp->Name = outName;
+
+		removeWidget(&remapMenu);
 		
-		mouseManager.removeClickListener(remapMenu.clickIndex);
-		mouseManager.removePositionListener(remapMenu.posIndex);
-		
-		openTextureSettingsMenu(owner);
+		openTextureSettingsMenu(temp);
 
-		remapMenu.cleanup();
-
-		widgets.erase(find(widgets.begin(), widgets.end(), &remapMenu));
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		temp->cleanup();
+		delete temp;
 	}
 
 	void finishRemapper(UIItem* owner) {
 		vkDeviceWaitIdle(Engine::get()->device);
-		
+		UIItem* temp = new UIItem();
+
 		std::string outName = remapMenu.targetTexName;
-		TextureElements.replacePtr(remapMenu.remapper->filteredTarget->copyTexture(), remapMenu.targetTexName);
-		owner->Name = outName;
-		
-		mouseManager.removeClickListener(remapMenu.clickIndex);
-		mouseManager.removePositionListener(remapMenu.posIndex);
-		
-		openTextureSettingsMenu(owner);
+		TextureElements.replacePtr(remapMenu.remapper->filteredTarget->copyTexture(), outName);
+		temp->Name = outName;
 
-		remapMenu.cleanup();
+		removeWidget(&remapMenu);
 
-		widgets.erase(find(widgets.begin(), widgets.end(), &remapMenu));
+		openTextureSettingsMenu(temp);
 
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		temp->cleanup();
+		delete temp;
 	}
 
 	void updateLightPolar(float angle) {
@@ -2154,7 +2145,7 @@ private:
 
 	void openTextureSettingsMenu(UIItem* owner) {
 		std::function<void(UIItem*)> seamFixFunc = std::bind(&Application::openSeamObjPicker, this, std::placeholders::_1);
-
+		
 		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc);
 
 		addWidget(&textureSettings);
@@ -2482,21 +2473,7 @@ private:
 		addTex(tempItem);
 		tempItem->cleanup();
 		delete tempItem;
-	//	
-	// 
-	//  if (tomogDiff != nullptr) {
-	//		sConst->loadDiffuse(tomogDiff->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0));
-	//		surfaceMenu.setDiffuse(sConst->currentDiffuse());
-	//	}
-	//	if (tomogNorm != nullptr) {
-	//		sConst->normalType = 1;
-	//		sConst->loadNormal(tomogNorm->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 0));
-	//		if (!sConst->normalAvailable) {
-	//			surfaceMenu.createNormalMenu(owner);
-	//		}
-	//		sConst->normalType = 1;
-	//		surfaceMenu.setNormal(sConst->currentNormal());
-	//	}
+
 		tomogActive = false;
 
 		std::cout << "Showing visible objects" << std::endl;
@@ -2743,9 +2720,13 @@ private:
 					}
 				}
 			}
+			//std::cout << widgets.size() << " ";
 			for (size_t i = 0; i != widgets.size(); i++) {
+				//std::cout << i << " ";
 				widgets[i]->drawAll(commandBuffer, currentFrame, currentPass);
 			}
+			//std::cout << std::endl;
+			//std::cout << "Drew all widgets" << std::endl;
 		}
 		
 		if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
