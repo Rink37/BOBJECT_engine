@@ -164,7 +164,7 @@ public:
 		textureLL = texLL;
 	}
 
-	void setup(std::string targetTextureName, std::function<void(std::string, std::string)> callback) {
+	void setup(std::string targetTextureName, std::function<void(std::string, std::string)> callback, std::function<void(UIItem*)> cancel) {
 		if (isSetup) {
 			return;
 		}
@@ -183,6 +183,7 @@ public:
 		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 		Material* finishedMat = loadList->getMaterial("FinishBtnMat");
+		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
 
 		std::function<void(UIItem*)> finishFunct = std::bind(&RemapTexSelector::finish, this, std::placeholders::_1);
 		
@@ -202,6 +203,7 @@ public:
 		refDropdown->setSelectCallback(std::bind(&RemapTexSelector::setRefName, this, std::placeholders::_1));
 
 		Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 2.0f, 0.01f);
+		finishButtons->addItem(getPtr(new Button(cancelMat, cancel)));
 		finishButtons->addItem(getPtr(new spacer()));
 		finishButtons->addItem(getPtr(new Button(finishedMat, finishFunct)));
 

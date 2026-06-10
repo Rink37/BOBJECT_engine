@@ -2043,10 +2043,15 @@ private:
 
 	void createRemapTexSelector(UIItem* owner) {
 		std::function<void(std::string, std::string)> continueCallback = std::bind(&Application::createRemapper, this, std::placeholders::_1, std::placeholders::_2);
-		
-		rts.setup(owner->Name, continueCallback);
+		std::function<void(UIItem*)> cancelCallback = std::bind(&Application::destroyRemapTexSelector, this, std::placeholders::_1);
+
+		rts.setup(owner->Name, continueCallback, cancelCallback);
 		
 		addWidget(&rts);
+	}
+
+	void destroyRemapTexSelector(UIItem* owner) {
+		removeWidget(&rts);
 	}
 
 	void createRemapper(std::string refTexture, std::string targetTexture) {
