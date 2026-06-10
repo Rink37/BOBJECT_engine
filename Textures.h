@@ -221,7 +221,9 @@ public:
 	}
 
 	void interruptFrameUpdate() {
-		frameUpdate.get();
+		if (frameUpdate.valid()) {
+			frameUpdate.wait();
+		}
 	}
 
 	void startFrameUpdate() {

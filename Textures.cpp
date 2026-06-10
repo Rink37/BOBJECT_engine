@@ -685,6 +685,10 @@ void webcamTexture::createWebcamImage() {
 		return;
 	}
 	webCam->getFrame();
+	if (webCam->webcamFrame.empty()) {
+		std::cout << "We cannot create a webcam image if there is no frame" << std::endl;
+		return;
+	}
 	cv::cvtColor(webCam->webcamFrame, webCam->webcamFrame, cv::COLOR_BGR2RGBA, 4);
 
 	texWidth = webCam->webcamFrame.size().width;
@@ -709,9 +713,6 @@ void webcamTexture::recreateWebcamImage() {
 	cleanupImage();
 	createWebcamImage();
 	createWebcamTextureImageView();
-	frameUpdate.get();
-	frameUpdate = std::async(std::launch::async, &webcamTexture::fetchFrame, this);
-	//std::cout << "New frame update started " << std::endl;
 }
 
 void webcamTexture::createWebcamTextureImageView() {
@@ -736,6 +737,10 @@ void webcamTexture::asyncUpdate() {
 void webcamTexture::fetchFrame() {
 	webCam->getFrame();
 
+	if (webCam->webcamFrame.empty()) {
+		std::cout << "An async update has failed to get a webcam frame" << std::endl;
+		return;
+	}
 	cv::cvtColor(webCam->webcamFrame, webCam->webcamFrame, cv::COLOR_BGR2RGBA, 4);
 }
 
@@ -743,16 +748,18 @@ void webcamTexture::updateWebcam() {
 	if (webCam == nullptr || webCam->shouldUpdate == false || webCam->isValid == false) {
 		return;
 	}
-	//frameUpdate.get();
 	webCam->getFrame();
+
+	if (webCam->webcamFrame.empty()) {
+		std::cout << "The webcam frame is empty" << std::endl;
+		return;
+	}
 	
 	cv::cvtColor(webCam->webcamFrame, webCam->webcamFrame, cv::COLOR_BGR2RGBA, 4);
 
 	memcpy(tBuffer, webCam->webcamFrame.ptr(), (size_t)imageSize);
 
 	updateWebcamImage();
-
-	//frameUpdate = std::async(std::launch::async, &webcamTexture::fetchFrame, this);
 } 
 
 void webcamTexture::updateWebcamImage() {

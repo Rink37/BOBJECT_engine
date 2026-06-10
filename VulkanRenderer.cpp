@@ -136,8 +136,9 @@ private:
 
 class WebcamSettings : public Widget {
 public:
-	WebcamSettings(LoadList* assets) {
+	WebcamSettings(LoadList* assets, LoadList* texLL) {
 		loadList = assets;
+		textureLL = texLL;
 	}
 
 	void setup(std::function<void(UIItem*)> finishCallback, std::function<void()> reloadCallback) {
@@ -164,7 +165,7 @@ public:
 		Arrangement* rotationButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.05f, 0.01f);
 		Arrangement* ARSettings = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.1f, 0.05f);
 
-		webcamView = new ImagePanel(new Material(webcamTexture::get()), true);
+		webcamView = new ImagePanel(loadList->getPtr(new Material(webcamTexture::get()), "Webcam View Mat"), true);
 
 		Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
 		Material* finishmat = loadList->getMaterial("FinishBtnMat");
@@ -195,7 +196,7 @@ public:
 
 		ARSettings->arrangeItems();
 
-		mainArrangement->addItem(webcamView);
+		mainArrangement->addItem(getPtr(webcamView));
 		mainArrangement->addItem(getPtr(ARSettings));
 		mainArrangement->addItem(getPtr(idButtons));
 		mainArrangement->addItem(getPtr(rotationButtons));
@@ -217,15 +218,22 @@ public:
 
 	int priorityLayer = 100;
 
-	void cleanupSubClasses() {
-		if (webcamView != nullptr) {
-			webcamView->cleanup();
-			webcamView->image->mat[0]->cleanupDescriptor();
-			webcamView = nullptr;
-		}
+	//void cleanupSubClasses() {
+	//	if (webcamView != nullptr) {
+	//		webcamView->cleanup();
+	//		webcamView->image->mat[0]->cleanupDescriptor();
+	//		webcamView = nullptr;
+	//	}
+	//}
+
+	void customUpdate() {
+		loadList->updateWebcamMaterials();
+		textureLL->updateWebcamMaterials();
 	}
 
 private:
+
+	LoadList* textureLL = nullptr;
 
 	ImagePanel* webcamView = nullptr;
 	Slider* ratioSlider = nullptr;
@@ -239,79 +247,41 @@ private:
 	void addRotation(UIItem* owner) {
 		webcamTexture::get()->webCam->setRotation(true);
 		webcamTexture::get()->recreateWebcamImage();
-		webcamView->image->mat[0]->cleanupDescriptor();
-		webcamView->image->mat[0] = new Material(webcamTexture::get());
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
-		reload();
-		update();
-
-		reload();
 		update();
 	}
 
 	void subtractRotation(UIItem* owner) {
 		webcamTexture::get()->webCam->setRotation(false);
 		webcamTexture::get()->recreateWebcamImage();
-		webcamView->image->mat[0]->cleanupDescriptor();
-		webcamView->image->mat[0] = new Material(webcamTexture::get());
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
-		reload();
-		update();
-
-		reload();
 		update();
 	}
 
 	void indexUp(UIItem* owner) {
 		webcamTexture::get()->webCam->switchWebcam(true);
 		webcamTexture::get()->recreateWebcamImage();
-		webcamView->image->mat[0]->cleanupDescriptor();
-		webcamView->image->mat[0] = new Material(webcamTexture::get());
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
-		reload();
-		update();
-
-		reload();
 		update();
 	}
 
 	void indexDown(UIItem* owner) {
 		webcamTexture::get()->webCam->switchWebcam(false);
 		webcamTexture::get()->recreateWebcamImage();
-		webcamView->image->mat[0]->cleanupDescriptor();
-		webcamView->image->mat[0] = new Material(webcamTexture::get());
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
-		reload();
-		update();
-
-		reload();
 		update();
 	}
 
 	void revertAspectRatio(UIItem* owner) {
 		cv::Mat testFrame = webcamTexture::get()->webCam->getTestFrame();
 		float aspectRatio = static_cast<float>(testFrame.size().width) / static_cast<float>(testFrame.size().height);
-		webcamTexture::get()->webCam->updateAspectRatio(aspectRatio);
-		webcamTexture::get()->recreateWebcamImage();
-		webcamView->image->mat[0]->cleanupDescriptor();
-		webcamView->image->mat[0] = new Material(webcamTexture::get());
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
-		reload();
-		update();
-
-		reload();
 		update();
 	}
 
 	void updateAspectRatio(float newRatio) {
 		webcamTexture::get()->webCam->updateAspectRatio(newRatio);
 		webcamTexture::get()->recreateWebcamImage();
-		webcamView->image->mat[0]->cleanupDescriptor();
-		webcamView->image->mat[0] = new Material(webcamTexture::get());
-		reload();
-		update();
-
-		reload();
 		update();
 	}
 };
@@ -1785,7 +1755,7 @@ private:
 	TextureMenu textureMenu = TextureMenu(&UIElements, &TextureElements);
 	TextureSettings textureSettings = TextureSettings(&UIElements, &TextureElements);
 	RemapUI remapMenu = RemapUI(&UIElements, &TextureElements);
-	WebcamSettings webSets = WebcamSettings(&UIElements);
+	WebcamSettings webSets = WebcamSettings(&UIElements, &TextureElements);
 	MaterialCreator mc = MaterialCreator(&UIElements, &TextureElements); 
 	ObjectSettingsMenu osm = ObjectSettingsMenu(&UIElements, &TextureElements);
 	RemapTexSelector rts = RemapTexSelector(&UIElements, &TextureElements);
@@ -2046,12 +2016,16 @@ private:
 		addWidget(&webSets, true, true);
 
 		inWebSettings = true;
+		webcamTexture::get()->interruptFrameUpdate();
+		
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 0;
 		webcamMenu.canvas[0]->Items[1]->activestate = true;
 	}
 
 	void finishWebSettings(UIItem* owner) {
 		removeWidget(&webSets);
+
+		webcamTexture::get()->startFrameUpdate();
 
 		inWebSettings = false;
 	}

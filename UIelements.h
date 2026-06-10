@@ -1911,6 +1911,7 @@ struct Widget {
 
 	void update() {
 		if (isVisible) {
+			customUpdate();
 			sortImages();
 			for (size_t i = 0; i != canvas.size(); i++) {
 				canvas[i]->updateDisplay();
@@ -1928,7 +1929,6 @@ struct Widget {
 				thisBG->updateArrangedPosition(posx, posy, extentx, extenty);
 				thisBG->updateDisplay();
 			}
-			customUpdate();
 		}
 	}
 
