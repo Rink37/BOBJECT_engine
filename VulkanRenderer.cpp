@@ -942,10 +942,12 @@ public:
 		textureLL = texLL;
 	}
 
-	void setup(std::string tName, std::vector<std::string> objects, std::function<Mesh*(std::string)> getMeshFunc, std::function<void(UIItem*)> exitFunc) {
+	void setup(std::string tName, std::vector<std::string> objects, std::function<Mesh*(std::string)> getMeshFunc, std::function<void(UIItem*)> exitFunc, std::function<void(UIItem*)> cancel) {
 		if (isSetup) {
 			return;
 		}
+
+		std::cout << "Creating normal mixer" << std::endl;
 
 		textureName = tName;
 
@@ -963,6 +965,7 @@ public:
 		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 		Material* finishMat = loadList->getMaterial("FinishBtnMat");
+		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -985,14 +988,14 @@ public:
 		totalArrangement->addItem(getPtr(midText));
 
 		DropdownMenu* objSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
+		objSelect->setBlankText("Select an object");
 		objSelect->addOptions(objects);
-		objSelect->setOptionIndex(0);
 		objSelect->setSelectCallback(std::bind(&NormalMixer::setObject, this, std::placeholders::_1));
-		objectName = objects[0];
 
 		totalArrangement->addItem(getPtr(objSelect));
 
 		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		finishArrangement->addItem(getPtr(new Button(cancelMat, cancel)));
 		finishArrangement->addItem(getPtr(new spacer()));
 		finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&NormalMixer::mixNorms, this, std::placeholders::_1))));
 
@@ -1136,7 +1139,12 @@ private:
 	}
 
 	void mixNorms(UIItem* owner) {
-		std::cout << textureName << " " << mixTexName << std::endl;
+		//std::cout << textureName << " " << mixTexName << std::endl;
+
+		if (objectName == "") {
+			std::cout << "No object has been selected" << std::endl;
+			return;
+		}
 
 		Texture* baseNorm = textureLL->getTexture(textureName);
 		Texture* layerNorm = textureLL->getTexture(mixTexName);
@@ -2327,8 +2335,12 @@ private:
 
 		std::function<Mesh* (std::string)> getMeshFnc = std::bind(&Application::getObj, this, std::placeholders::_1);
 
-		normalMixer.setup(texName, objects, getMeshFnc, std::bind(&Application::exitNormalMixer, this, std::placeholders::_1));
+		normalMixer.setup(texName, objects, getMeshFnc, std::bind(&Application::exitNormalMixer, this, std::placeholders::_1), std::bind(&Application::cancelNormalMixer, this, std::placeholders::_1));
 		addWidget(&normalMixer);
+	}
+
+	void cancelNormalMixer(UIItem* owner) {
+		removeWidget(&normalMixer);
 	}
 
 	void exitNormalMixer(UIItem* owner) {
@@ -2336,14 +2348,15 @@ private:
 
 		UIItem* temp = new spacer;
 		temp->Name = owner->Name;
-		mouseManager.removeClickListener(normalMixer.clickIndex);
-		normalMixer.cleanup();
+		removeWidget(&normalMixer);
+		//mouseManager.removeClickListener(normalMixer.clickIndex);
+		//normalMixer.cleanup();
 
 		openTextureSettingsMenu(temp);
 		temp->cleanup();
 		delete temp;
 
-		widgets.erase(find(widgets.begin(), widgets.end(), &normalMixer));
+		//widgets.erase(find(widgets.begin(), widgets.end(), &normalMixer));
 	}
 
 	void createSpaceTransitionMenu(UIItem* owner) {

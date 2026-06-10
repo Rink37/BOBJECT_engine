@@ -234,10 +234,10 @@ public:
 		totalArrangement->addItem(getPtr(topText));
 
 		DropdownMenu* objSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
+		objSelect->setBlankText("Select an object");
 		objSelect->addOptions(objects);
-		objSelect->setOptionIndex(0);
 		objSelect->setSelectCallback(std::bind(&SeamObjPicker::setObject, this, std::placeholders::_1));
-		objectName = objects[0];
+		//objectName = objects[0];
 
 		totalArrangement->addItem(getPtr(objSelect));
 
@@ -265,6 +265,10 @@ private:
 	}
 
 	void finishFunc(UIItem* owner) {
+		if (objectName == "") {
+			std::cout << "No object has been selected" << std::endl;
+			return;
+		}
 		owner->Name = textureName;
 		owner->text = objectName;
 		if (finishCallback != nullptr) {
