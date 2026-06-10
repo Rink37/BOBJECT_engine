@@ -61,8 +61,8 @@ public:
 	VkCommandBuffer convertOStoTS(VkCommandBuffer, Mesh*);
 	VkCommandBuffer convertTStoOS(VkCommandBuffer, Mesh*);
 
-	void cleanupTS();
-	void cleanupOS();
+	void cleanupOStoTS();
+	void cleanupTStoOS();
 
 private:
 	LoadList* loadList = nullptr;

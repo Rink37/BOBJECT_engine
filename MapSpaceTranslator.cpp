@@ -315,7 +315,7 @@ VkCommandBuffer NormalGen::convertOStoTS(VkCommandBuffer commandbuffer, Mesh* me
 	return commandbuffer;
 }
 
-void NormalGen::cleanupTS() {
+void NormalGen::cleanupOStoTS() {
 	vkDeviceWaitIdle(Engine::get()->device);
 
 	vkDestroyDescriptorSetLayout(Engine::get()->device, tangentSpaceMap.descriptorSetLayout, nullptr);
@@ -629,7 +629,7 @@ VkCommandBuffer NormalGen::convertTStoOS(VkCommandBuffer commandbuffer, Mesh* me
 	return commandbuffer;
 }
 
-void NormalGen::cleanupOS() {
+void NormalGen::cleanupTStoOS() {
 	vkDeviceWaitIdle(Engine::get()->device);
 
 	vkDestroyDescriptorSetLayout(Engine::get()->device, objectSpaceMap.descriptorSetLayout, nullptr);

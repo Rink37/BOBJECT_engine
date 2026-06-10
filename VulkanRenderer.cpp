@@ -832,8 +832,9 @@ private:
 		}
 
 		generator.cleanupGenOS();
-		EdgeFillImg->cleanup();
 		OS_EdgeFill.cleanup();
+		EdgeFillImg->cleanup();
+		delete EdgeFillImg;
 	}
 };
 
@@ -1107,6 +1108,8 @@ private:
 			outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 			OS_EdgeFill.cleanup();
+			EdgeFillImg->cleanup();
+			delete EdgeFillImg;
 		}
 
 		outNorm->isNormal = true;
@@ -1117,10 +1120,10 @@ private:
 		createdTextures.push_back(outNormalName);
 
 		if (norm->normalType) {
-			generator.cleanupOS();
+			generator.cleanupTStoOS();
 		}
 		else {
-			generator.cleanupTS();
+			generator.cleanupOStoTS();
 		}
 	}
 
@@ -1299,11 +1302,13 @@ private:
 		Texture* norm = textureLL->getTexture(texName);
 		outNormalName = "";
 
+		bool normalType = norm->normalType;
+
 		if (overwrite) {
 			outNormalName = texName;
 		}
 		else {
-			if (norm->normalType) {
+			if (normalType) {
 				outNormalName = texName + "_OS";
 			}
 			else {
@@ -1318,7 +1323,7 @@ private:
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		NormalGen generator(loadList);
 		
-		if (norm->normalType) {
+		if (normalType) {
 			generator.copyTSImage(norm);
 			generator.setupOSConverter();
 			commandBuffer = generator.convertTStoOS(commandBuffer, mesh);
@@ -1335,7 +1340,7 @@ private:
 
 		Texture* outNorm = nullptr;
 
-		if (!norm->normalType) {
+		if (!normalType) {
 			outNorm = res->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -1358,10 +1363,12 @@ private:
 			outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 			OS_EdgeFill.cleanup();
+			EdgeFillImg->cleanup();
+			delete EdgeFillImg;
 		}
 
 		outNorm->isNormal = true;
-		outNorm->normalType = !norm->normalType;
+		outNorm->normalType = !normalType;
 
 		if (addTextureFunc != nullptr && !textureLL->checkForTexture(outNormalName)) {
 			owner->Name = outNormalName;
@@ -1370,11 +1377,11 @@ private:
 
 		textureLL->replacePtr(outNorm, outNormalName);
 
-		if (norm->normalType) {
-			generator.cleanupOS();
+		if (normalType) {
+			generator.cleanupTStoOS();
 		}
 		else {
-			generator.cleanupTS();
+			generator.cleanupOStoTS();
 		}
 	}
 };
