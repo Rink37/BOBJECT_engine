@@ -2065,7 +2065,7 @@ private:
 			return;
 		}
 
-		addWidget(&remapMenu);
+		addWidget(&remapMenu, true, true);
 	}
 
 	void destroyRemapper(UIItem* owner) {
