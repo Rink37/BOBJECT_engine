@@ -873,7 +873,7 @@ public:
 	}
 
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
-		if (!isInArea(mouseX, mouseY) || !isEnabled) {
+		if (!isEnabled) {
 			return false;
 		}
 		bool found = false;
@@ -990,7 +990,7 @@ public:
 	}
 
 	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
-		if (!isInArea(mouseX, mouseY) || !isEnabled) {
+		if (!isEnabled) {
 			return false;
 		}
 		bool found = false;
@@ -1902,7 +1902,6 @@ struct Widget {
 			for (UIItem* sitem : scs) {
 				if (sitem->checkForPosEvent(mouseX, mouseY, eventType)) {
 					return true;
-					break;
 				};
 			}
 		}

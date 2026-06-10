@@ -218,14 +218,6 @@ public:
 
 	int priorityLayer = 100;
 
-	//void cleanupSubClasses() {
-	//	if (webcamView != nullptr) {
-	//		webcamView->cleanup();
-	//		webcamView->image->mat[0]->cleanupDescriptor();
-	//		webcamView = nullptr;
-	//	}
-	//}
-
 	void customUpdate() {
 		loadList->updateWebcamMaterials();
 		textureLL->updateWebcamMaterials();
@@ -275,6 +267,8 @@ private:
 	void revertAspectRatio(UIItem* owner) {
 		cv::Mat testFrame = webcamTexture::get()->webCam->getTestFrame();
 		float aspectRatio = static_cast<float>(testFrame.size().width) / static_cast<float>(testFrame.size().height);
+		webcamTexture::get()->webCam->updateAspectRatio(aspectRatio);
+		webcamTexture::get()->recreateWebcamImage();
 		ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
 		update();
 	}

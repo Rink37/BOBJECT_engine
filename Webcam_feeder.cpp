@@ -154,6 +154,12 @@ void Webcam::setRotation(uint8_t state) {
 	float angle = 0.0f;
 	targetDim = (baseWidth > baseHeight) ? baseWidth : baseHeight;
 	uint32_t smallDimension = (baseWidth < baseHeight) ? baseWidth : baseHeight;
+	
+	std::cout << sizeRatio << std::endl;
+	sizeRatio = 1.0f / sizeRatio;
+	std::cout << sizeRatio << std::endl;
+	std::cout << std::endl;
+	
 	switch (rotationState) {
 	case 0:
 		angle = 0.0f;
@@ -195,8 +201,6 @@ void Webcam::setRotation(uint8_t state) {
 		ROI.copyTo(webcamFrame);
 		frame.release();
 	}
-	
-	sizeRatio = 1.0f / sizeRatio;
 
 	targetHeight = webcamFrame.size().height;
 	targetWidth = static_cast<uint32_t>(webcamFrame.size().height * sizeRatio);
