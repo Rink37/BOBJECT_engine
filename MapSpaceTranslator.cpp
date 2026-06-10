@@ -584,7 +584,7 @@ void NormalGen::prepareOSDescriptor() {
 VkCommandBuffer NormalGen::convertTStoOS(VkCommandBuffer commandbuffer, Mesh* mesh) {
 
 	VkClearValue clearValues[1] = {};
-	clearValues[0].color = { {0.5f, 0.5f, 1.0f, 1.0f} };
+	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

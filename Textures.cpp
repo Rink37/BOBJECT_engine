@@ -52,6 +52,9 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	copy->mipLevels = mipLevels;
 	copy->textureLayout = layout;
 
+	copy->isNormal = this->isNormal;
+	copy->normalType = this->normalType;
+
 	if (!supportsBlit && (width != texWidth || height != texHeight)) {
 		// Not ideal - a GPU implementation of changing image size without blit functionality would be better
 		//std::cout << "Performing rescaling through cv Mat conversion" << std::endl;

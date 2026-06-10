@@ -212,6 +212,9 @@ public:
 		mainArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(mainArrangement));
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
+
 		isSetup = true;
 	}
 
@@ -317,6 +320,8 @@ public:
 		canvas[0]->updateDisplay();
 		
 		textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
 
 		isSetup = true;
 	}
