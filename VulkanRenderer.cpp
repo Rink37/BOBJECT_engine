@@ -2043,7 +2043,7 @@ private:
 		if (!webSets.isSetup) {
 			return;
 		}
-		addWidget(&webSets);
+		addWidget(&webSets, true, true);
 
 		inWebSettings = true;
 		webcamMenu.canvas[0]->Items[1]->image->matidx = 0;
