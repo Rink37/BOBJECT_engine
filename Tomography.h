@@ -90,13 +90,8 @@ public:
 		loadedUI->update(0.0f, 0.0f, 0.4f, 0.4f);
 		loadedUI->updateDisplay();
 
-		//imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-
-		//imageData cancel = CANCELBUTTON;
 		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
-
-		//imageData update = UPDATEBUTTON;
 		Material* updateMat = loadList->getMaterial("UpdateBtnMat");
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f);
@@ -161,15 +156,11 @@ public:
 		customUpdate();
 		update();
 
-		//std::cout << azimuth << std::endl;
-
 		lightDirection->updateArrangedPosition(canvas[0]->Items[0]->Items[0]->posx, canvas[0]->Items[0]->Items[0]->posy, canvas[0]->Items[0]->Items[0]->extentx, canvas[0]->Items[0]->Items[0]->extentx * canvas[0]->Items[0]->Items[0]->sqAxisRatio);
 		lightDirection->setSlideValues(0.0f, 360.0f, lightDirection->getValue() - angle);
 		lightDirection->updateDisplay();
 
 		setAzimuth(lightDirection->getValue());
-
-		//std::cout << azimuth << std::endl;
 	}
 
 private:
@@ -220,15 +211,17 @@ public:
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.35f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-		//imageData rb = RENDEREDBUTTON;
 		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
-
-		//imageData tcb = TESTCHECKBOXBUTTON;
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 
 
 		std::vector<std::string> textureOptions{};
 		textureLL->listTextures(textureOptions);
+
+		auto it = find(textureOptions.begin(), textureOptions.end(), std::string("Webcam View"));
+		if (it != textureOptions.end()) {
+			textureOptions.erase(it);
+		}
 
 		DropdownMenu* texSelect = new DropdownMenu(0.0f, 0.0f, 1.0f, 1.0f / 9.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		texSelect->setBlankText("Select a texture");
@@ -241,7 +234,6 @@ public:
 		totalArrangement->addItem(getPtr(mainText));
 		totalArrangement->addItem(getPtr(texSelect));
 
-		//imageData fb = FINISHBUTTON;
 		Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 		//imageData cb = CANCELBUTTON;
