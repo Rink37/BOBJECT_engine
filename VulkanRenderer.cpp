@@ -746,9 +746,6 @@ private:
 		if (it != options.end()) {
 			matSelPtr->setOptionIndex(it - options.begin());
 		}
-		//else {
-		//	std::cout << "We were unable to find the material index" << std::endl;
-		//}
 
 		settingsButton->Name = obj->materialName;
 
@@ -2324,14 +2321,10 @@ private:
 		UIItem* temp = new spacer;
 		temp->Name = owner->Name;
 		removeWidget(&normalMixer);
-		//mouseManager.removeClickListener(normalMixer.clickIndex);
-		//normalMixer.cleanup();
 
 		openTextureSettingsMenu(temp);
 		temp->cleanup();
 		delete temp;
-
-		//widgets.erase(find(widgets.begin(), widgets.end(), &normalMixer));
 	}
 
 	void createSpaceTransitionMenu(UIItem* owner) {

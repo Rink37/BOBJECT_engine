@@ -40,6 +40,18 @@
 #define OPF_PI 4.71238898f 
 #define HALF_PI 1.57079632f
 
+#define IMAGEPANEL 1
+#define BUTTON 2
+#define CHECKBOX 3
+#define SPACER 4
+#define ARRANGEMENT 5
+#define GRID 6
+#define SLIDER 7
+#define ROTATOR 8
+#define TEXTBOX 9
+#define DROPDOWN 10
+#define BACKGROUND 11
+
 struct UIImage {
 	bool isVisible = true;
 
@@ -55,8 +67,6 @@ struct UIImage {
 	UIMesh mesh;
 
 	uint32_t mipLevels = 0;
-
-	//bool isGray = true;
 
 	bool isOpaque = true;
 
@@ -109,6 +119,8 @@ struct UIItem {
 
 	int clickType = LMB_PRESS;
 	int posType = MOUSE_HOVER;
+
+	uint32_t itemType = 0;
 
 	virtual void update(float x, float y, float xsize, float ysize) {
 		this->posx = x;
@@ -306,6 +318,8 @@ public:
 		image->texHeight = 2;
 		image->isOpaque = false;
 		image->zp_default = 0.05f;
+
+		itemType = TEXTBOX;
 	}
 
 	void updateText(char c) {
@@ -490,6 +504,8 @@ public:
 		baseSqAxisRatio = sqAxisRatio;
 
 		this->isWebcam = iW;
+
+		itemType = IMAGEPANEL;
 	}
 	
 	ImagePanel(float x, float y, float xsize, float ysize, Material* surf, bool iW) {
@@ -504,6 +520,8 @@ public:
 		this->sqAxisRatio = ysize / xsize;
 
 		this->isWebcam = iW;
+
+		itemType = IMAGEPANEL;
 	}
 
 	void updateDisplay() {
@@ -538,7 +556,9 @@ public:
 		}
 	}
 
-	ImagePanel() = default;
+	ImagePanel() {
+		itemType = IMAGEPANEL;
+	}
 
 	void setDims(float px, float py, float ex, float ey) {
 		this->posx = px;
@@ -563,7 +583,9 @@ class Button : public UIItem // Here a button is just a rectangle area in screen
 public:
 	std::function<void(UIItem*)> clickFunction = nullptr;
 
-	Button() = default;
+	Button() {
+		itemType = BUTTON;
+	}
 
 	Button(Material* mat, std::function<void(UIItem*)> func) {
 
@@ -582,6 +604,8 @@ public:
 		baseExtentx = extentx;
 		baseExtenty = extenty;
 		baseSqAxisRatio = sqAxisRatio;
+
+		itemType = BUTTON;
 	}
 
 	Button(Material* mat, std::function<void(UIItem*)> func, int code) {
@@ -602,6 +626,8 @@ public:
 		baseExtentx = extentx;
 		baseExtenty = extenty;
 		baseSqAxisRatio = sqAxisRatio;
+
+		itemType = BUTTON;
 	}
 
 	Button(Material* mat) {
@@ -619,6 +645,8 @@ public:
 		baseExtentx = extentx;
 		baseExtenty = extenty;
 		baseSqAxisRatio = sqAxisRatio;
+
+		itemType = BUTTON;
 	}
 
 	void setClickFunction(std::function<void(UIItem*)> func) {
@@ -650,7 +678,9 @@ class Checkbox : public UIItem
 public:
 	std::function<void(UIItem*)> clickFunction = nullptr;
 
-	Checkbox() = default;
+	Checkbox() {
+		itemType = CHECKBOX;
+	}
 
 	Checkbox(Material* onMat, Material* offMat) {
 
@@ -670,6 +700,8 @@ public:
 		baseExtentx = extentx;
 		baseExtenty = extenty;
 		baseSqAxisRatio = sqAxisRatio;
+
+		itemType = CHECKBOX;
 	}
 
 	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func) {
@@ -692,6 +724,8 @@ public:
 		baseExtentx = extentx;
 		baseExtenty = extenty;
 		baseSqAxisRatio = sqAxisRatio;
+
+		itemType = CHECKBOX;
 	}
 
 	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func, int code) {
@@ -715,6 +749,8 @@ public:
 		baseExtentx = extentx;
 		baseExtenty = extenty;
 		baseSqAxisRatio = sqAxisRatio;
+
+		itemType = CHECKBOX;
 	}
 
 	void setClickFunction(std::function<void(UIItem*)> func) {
@@ -751,6 +787,10 @@ public:
 
 class spacer : public UIItem {
 public:
+	spacer() {
+		itemType = SPACER;
+	}
+
 	bool isSpacer() {
 		return true;
 	}
@@ -774,11 +814,14 @@ class Arrangement : public UIItem {
 public:
 	float spacing;
 
-	Arrangement() = default;
+	Arrangement() {
+		itemType = ARRANGEMENT;
+	}
 
 	Arrangement(int orient, float px, float py, float ex, float ey, float spc) {
 		setDims(px, py, ex, ey, spc);
 		this->orientation = orient;
+		itemType = ARRANGEMENT;
 	}
 
 	Arrangement(int orient, float px, float py, float ex, float ey, float spc, int arrangeMethod) {
@@ -787,6 +830,8 @@ public:
 		this->method = arrangeMethod;
 
 		this->orientation = orient;
+
+		itemType = ARRANGEMENT;
 	}
 
 	Arrangement(int orient, float px, float py, float ex, float ey, float spc, int arrangeMethod, int sizeMethod) {
@@ -796,6 +841,8 @@ public:
 		this->method = arrangeMethod;
 
 		this->orientation = orient;
+
+		itemType = ARRANGEMENT;
 	}
 
 	void setSizeMethod(int sizeMethod) {
@@ -918,11 +965,15 @@ private:
 
 class Grid : public UIItem {
 public:
-	Grid() = default;
+	Grid() {
+		itemType = GRID;
+	}
 
 	Grid(int orient, float px, float py, float ex, float ey, float spc) {
 		setDims(px, py, ex, ey, spc);
 		this->orientation = orient;
+
+		itemType = GRID;
 	}
 
 	void removeItem(uint32_t index) {
@@ -1045,8 +1096,9 @@ private:
 
 class Slider : public UIItem {
 public:
-
-	Slider() = default;
+	Slider() {
+		itemType = SLIDER;
+	}
 	
 	Slider(Material* mat, float xp, float yp, float xs, float ys) {
 		setDims(xp, yp, xs, ys);
@@ -1072,6 +1124,8 @@ public:
 		baseExtentx = extentx;
 		baseExtenty = extenty;
 		baseSqAxisRatio = sqAxisRatio;
+
+		itemType = SLIDER;
 	}
 
 	Slider(int orient, Material* mat, float xp, float yp, float xs, float ys) {
@@ -1101,6 +1155,8 @@ public:
 		baseExtentx = extentx;
 		baseExtenty = extenty;
 		baseSqAxisRatio = sqAxisRatio;
+
+		itemType = SLIDER;
 	}
 
 	void setSlideValues(int min, int max, int position) {
@@ -1281,8 +1337,9 @@ private:
 
 class Rotator : public UIItem {
 public:
-
-	Rotator() = default;
+	Rotator() {
+		itemType = ROTATOR;
+	}
 
 	Rotator(Material* mat, float xp, float yp, float xs, float ys) {
 		setDims(xp, yp, xs, ys);
@@ -1296,6 +1353,8 @@ public:
 		baseExtentx = extentx;
 		baseExtenty = extenty;
 		baseSqAxisRatio = sqAxisRatio;
+
+		itemType = ROTATOR;
 	}
 
 	void setSlideValues(int min, int max, int position) {
@@ -1497,6 +1556,8 @@ public:
 
 		image->texHeight = 100;
 		image->texWidth = 100;
+
+		itemType = BACKGROUND;
 	}
 
 	Background(Material* mat) {
@@ -1505,6 +1566,8 @@ public:
 
 		image->texHeight = 100;
 		image->texWidth = 100;
+
+		itemType = BACKGROUND;
 	}
 
 	void updateDisplay() {
@@ -1560,6 +1623,8 @@ public:
 		image->isOpaque = false;
 		image->zp_default = 0.05f;
 		image->zp = 0.05f;
+
+		itemType = DROPDOWN;
 	}
 
 	void setBlankText(std::string string) {
@@ -1884,7 +1949,7 @@ struct Widget {
 			return false;
 		}
 		for (UIItem* item : canvas) {
-			if (item->checkForClickEvent(mouseX, mouseY, eventType)) {
+			if (item->checkForClickEvent(mouseX, mouseY, eventType)) {				
 				update();
 				return true;
 			};
@@ -1909,13 +1974,15 @@ struct Widget {
 	}
 
 	void update() {
-		if (isVisible) {
+		if (isVisible && isSetup) {
 			customUpdate();
 			sortImages();
-			for (size_t i = 0; i != canvas.size(); i++) {
-				canvas[i]->updateDisplay();
+			if (canvas.size() > 0) {
+				for (size_t i = 0; i != canvas.size(); i++) {
+					canvas[i]->updateDisplay();
+				}
+				measureWindowPositions();
 			}
-			measureWindowPositions();
 			if (thisBG != nullptr) {
 				float W = static_cast<float>(Engine::get()->windowWidth);
 				float H = static_cast<float>(Engine::get()->windowHeight);
