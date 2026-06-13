@@ -462,12 +462,12 @@ public:
 			return false;
 		}
 		else {
-			//std::cout << "Checking modifiable box" << std::endl;
 			if (clicktype == LMB_PRESS && isInArea(mousex, mousey)) {
-				std::cout << "Try typing" << std::endl;
 				typeManager->startListening();
+				return true;
 			}
 		}
+		return false;
 	};
 
 private:
@@ -1663,7 +1663,6 @@ public:
 
 	void addOption(std::string inOption) {
 		options.push_back(inOption);
-		//setOptionIndex(options.size() - 1);
 	}
 
 	void setSelectCallback(std::function<void(UIItem*)> cFunct) {
@@ -1975,7 +1974,6 @@ struct Widget {
 
 	void update() {
 		if (isVisible && isSetup) {
-			customUpdate();
 			sortImages();
 			if (canvas.size() > 0) {
 				for (size_t i = 0; i != canvas.size(); i++) {
@@ -1995,6 +1993,7 @@ struct Widget {
 				thisBG->updateArrangedPosition(posx, posy, extentx, extenty);
 				thisBG->updateDisplay();
 			}
+			customUpdate();
 		}
 	}
 

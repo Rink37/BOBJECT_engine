@@ -441,11 +441,14 @@ private:
 		Material* visibleMat = loadList->findMatPtr("CrossBtnMat");
 		Button* deleteButton = new Button(visibleMat, std::bind(&TomographyMenu::removeItem, this, std::placeholders::_1));
 		deleteButton->Name = std::to_string(activeImageCount);
+		deleteButton->baseSqAxisRatio = 1.0f;
 		imageCount++;
 		activeImageCount++;
 		grid->addItem(getPtr(loadedUI));
+		grid->arrangeItems();
 		UIItem* ref = grid->Items[grid->Items.size() - 1];
-		deleteButton->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
+		deleteButton->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extentx * 0.2f);
+		deleteButton->setHeight(this->zp + 0.01f);
 		canvas.push_back(getPtr(deleteButton));
 		tomographer.add_lightVector(azimuth, polar, activeImageCount-1);
 		
@@ -475,7 +478,7 @@ private:
 			int currentIndex = std::stoi(canvas[i]->Name);
 			if (currentIndex > index) {
 				UIItem* ref = grid->Items[currentIndex-1];
-				canvas[i]->update(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
+				canvas[i]->update(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extentx * 0.2f);
 				canvas[i]->updateDisplay();
 				canvas[i]->Name = std::to_string(currentIndex - 1);
 			}
@@ -486,11 +489,18 @@ private:
 	}
 
 	void updateDeleteButtons() {
+		if (canvas.size() > 0) {
+			for (size_t i = 0; i != canvas.size(); i++) {
+				canvas[i]->updateDisplay();
+			}
+			measureWindowPositions();
+		}
 		for (size_t i = 2; i != canvas.size(); i++) {
 			int currentIndex = std::stoi(canvas[i]->Name);
 			std::cout << currentIndex << std::endl;
 			UIItem* ref = grid->Items[currentIndex];
-			canvas[i]->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extenty * 0.2f);
+			std::cout << ref->posx << " " << ref->posy << std::endl;
+			canvas[i]->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extentx * 0.2f);
 			canvas[i]->updateDisplay();
 		}
 	}
