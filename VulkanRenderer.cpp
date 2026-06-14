@@ -1441,7 +1441,17 @@ public:
 			textureName.erase(0, pos + del.length());
 			pos = textureName.find(del);
 		}
-		del = ".";
+		
+		if (errorFunc != nullptr) {
+			cv::Mat test = cv::imread(fileName, cv::IMREAD_UNCHANGED);
+			if (test.empty()){
+				del = ".";
+				pos = fileName.find(del);
+				std::string extension = fileName.substr(pos + 1, fileName.size());
+				errorFunc("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for textures"));
+				return;
+			}
+		}
 
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -1545,6 +1555,12 @@ private:
 		}
 		catch (...) {
 			std::cout << "Invalid texture name or extension" << std::endl;
+			if (errorFunc != nullptr) {
+				std::string del = ".";
+				auto pos = fileName.find(del);
+				std::string extension = fileName.substr(pos + 1, fileName.size());
+				errorFunc("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for textures"));
+			}
 			if (exitCallback != nullptr) {
 				exitCallback(nullptr);
 			}
@@ -1953,10 +1969,22 @@ private:
 		vkDeviceWaitIdle(Engine::get()->device);
 
 		if (widget->clickIndex != INT_MAX) {
+			uint32_t clickIndex = widget->clickIndex;
 			mouseManager.removeClickListener(widget->clickIndex);
+			for (Widget* wid : widgets) {
+				if (wid->clickIndex > clickIndex) {
+					wid->clickIndex -= 1;
+				}
+			}
 		}
 		if (widget->posIndex != INT_MAX) {
+			uint32_t posIndex = widget->posIndex;
 			mouseManager.removePositionListener(widget->posIndex);
+			for (Widget* wid : widgets) {
+				if (wid->posIndex > posIndex) {
+					wid->posIndex -= 1;
+				}
+			}
 		}
 		
 		widget->cleanup();
@@ -2183,12 +2211,14 @@ private:
 	void createTexLoadMenu(std::function<void(UIItem*)> updateTexMenu) {
 		std::function<void(UIItem*)> exitCallback = std::bind(&Application::exitTexLoadMenu, this, std::placeholders::_1);
 		
+		if (tlm.errorFunc == nullptr) {
+			tlm.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		}
 		tlm.setup(updateTexMenu, exitCallback);
 		if (!tlm.isSetup) {
 			return;
 		}
 		addWidget(&tlm);
-
 	}
 
 	void exitTexLoadMenu(UIItem* owner) {
@@ -2610,7 +2640,7 @@ private:
 		std::string extension = objectName.substr(pos+1, objectName.size());
 		std::cout << extension << std::endl;
 		if (extension != std::string("obj")) {
-			std::cout << "File extension " << extension << " is not currently supported for models" << std::endl;
+			//std::cout << "File extension " << extension << " is not currently supported for models" << std::endl;
 			createErrorDialog("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for models"));
 			return;
 		}

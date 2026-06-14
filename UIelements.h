@@ -2117,6 +2117,8 @@ struct Widget {
 		errorFunc = fnc;
 	}
 
+	std::function<void(std::string, std::string)> errorFunc = nullptr;
+
 	std::vector<UIItem*> canvas;
 	bool isSetup = false;
 
@@ -2150,8 +2152,6 @@ private:
 	std::vector<std::shared_ptr<TextBox>> TextBoxes;
 	std::vector<std::shared_ptr<DropdownMenu>> DropdownMenus;
 	std::vector<std::shared_ptr<Background>> Backgrounds;
-
-	std::function<void(std::string, std::string)> errorFunc = nullptr;
 
 	UIItem* thisBG = nullptr;
 
