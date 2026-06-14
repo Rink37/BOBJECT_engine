@@ -2478,6 +2478,9 @@ private:
 		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::exitTomogSelector, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishFunc = std::bind(&Application::openTomogMenu, this, std::placeholders::_1);
 		
+		if (tomogPicker.errorFunc == nullptr) {
+			tomogPicker.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		}
 		tomogPicker.setup(finishFunc, cancelFunc);
 
 		webcamMenu.hide();
@@ -2494,6 +2497,9 @@ private:
 		std::function<void(UIItem*)> toggleFunct = std::bind(&Application::toggleTomogMeshes, this, std::placeholders::_1);
 		std::function<void(UIItem*)> tomogExit = std::bind(&Application::exitTomogMenu, this, std::placeholders::_1);
 
+		if (tomogUI.errorFunc == nullptr) {
+			tomogUI.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		}
 		tomogUI.setup(owner->Name, toggleFunct, tomogExit, &mouseManager);
 
 		Texture* refTex = TextureElements.getTexture(owner->Name);

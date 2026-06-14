@@ -265,6 +265,12 @@ private:
 	}
 
 	void finish(UIItem* owner) {
+		if (textureName == "") {
+			if (errorFunc != nullptr) {
+				errorFunc("SELECT ERROR:", "No reference texture has been selected!");
+			}
+			return;
+		}
 		owner->Name = textureName;
 		if (finishCallback != nullptr) {
 			finishCallback(owner);
@@ -425,6 +431,9 @@ private:
 			}
 			catch (...) {
 				std::cout << "Invalid file selected" << std::endl;
+				if (errorFunc != nullptr) {
+					errorFunc("FILE ERROR:", "The selected file is not a valid partial image");
+				}
 				return;
 			}
 			Material* imageMat = loadList->replacePtr(new Material(tomographer.items[activeImageCount]->baseImage), name + "Mat");
