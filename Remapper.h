@@ -176,7 +176,10 @@ public:
 		textureLL->listTextures(availableTextures);
 
 		if (std::find(availableTextures.begin(), availableTextures.end(), targetName) == availableTextures.end()) {
-			std::cout << "The target texture provided is not a valid texture in the set" << std::endl;
+			//std::cout << "The target texture provided is not a valid texture in the set" << std::endl;
+			if (errorFunc != nullptr) {
+				errorFunc("FILE ERROR: ", "The target texture is not valid!");
+			}
 			return;
 		}
 
@@ -236,7 +239,10 @@ private:
 
 	void finish(UIItem* owner) {
 		if (targetName.size() == 0 || refName.size() == 0) {
-			std::cout << "Insufficient textures to continue" << std::endl;
+			//std::cout << "Insufficient textures to continue" << std::endl;
+			if (errorFunc != nullptr) {
+				errorFunc("FILE ERROR: ", "No reference texture has been selected!");
+			}
 			return;
 		}
 

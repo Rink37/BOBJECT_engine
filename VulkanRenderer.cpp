@@ -36,6 +36,7 @@ class ErrorDialog : public Widget{
 public:
 	ErrorDialog(LoadList* assets) {
 		loadList = assets;
+		priorityLayer = 5000;
 	}
 
 	void setup(std::string title, std::string message, std::function<void(UIItem*)> exitCallback) {
@@ -2120,6 +2121,9 @@ private:
 		std::function<void(std::string, std::string)> continueCallback = std::bind(&Application::createRemapper, this, std::placeholders::_1, std::placeholders::_2);
 		std::function<void(UIItem*)> cancelCallback = std::bind(&Application::destroyRemapTexSelector, this, std::placeholders::_1);
 
+		if (rts.errorFunc == nullptr) {
+			rts.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		}
 		rts.setup(owner->Name, continueCallback, cancelCallback);
 		
 		addWidget(&rts);
