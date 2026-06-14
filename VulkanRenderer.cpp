@@ -533,7 +533,9 @@ private:
 			for (int i = 1; i != canvas[0]->Items.size(); i++) {
 				canvas[0]->Items[i]->cleanup();
 			}
-			canvas[0]->Items.erase(canvas[0]->Items.begin() + 1, canvas[0]->Items.end());
+			if (canvas[0]->Items.size() > 1) {
+				canvas[0]->Items.erase(canvas[0]->Items.begin() + 1, canvas[0]->Items.end());
+			}
 		}
 
 		shaderName = owner->text;
@@ -899,7 +901,9 @@ public:
 			}
 			item->image->cleanup();
 		}
-		ObjectButtons->Items.erase(ObjectButtons->Items.begin()+1, ObjectButtons->Items.end());
+		if (ObjectButtons->Items.size() > 1) {
+			ObjectButtons->Items.erase(ObjectButtons->Items.begin() + 1, ObjectButtons->Items.end());
+		}
 		ObjectMap.clear();
 		ObjectButtons->arrangeItems();
 	}
@@ -1910,9 +1914,13 @@ private:
 		
 		widget->cleanup();
 
-		widgets.erase(find(widgets.begin(), widgets.end(), widget));
+		auto it = find(widgets.begin(), widgets.end(), widget);
+		if (it != widgets.end()) {
+			std::cout << "Erasing widget" << std::endl;
+			widgets.erase(it);
 
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		}
 	}
 
 	void openSeamObjPicker(UIItem* owner) {
@@ -2361,16 +2369,12 @@ private:
 		
 		UIItem* temp = new spacer;
 		temp->Name = owner->Name;
-		mouseManager.removeClickListener(stm.clickIndex);
-		stm.cleanup();
+
+		removeWidget(&stm);
 
 		openTextureSettingsMenu(temp);
 		temp->cleanup();
 		delete temp;
-
-		widgets.erase(find(widgets.begin(), widgets.end(), &stm));
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 	}
 
 	void createTomogSelector(UIItem* owner) {
@@ -2519,9 +2523,7 @@ private:
 			
 			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr);
 
-			textureSettings.clickIndex = mouseManager.addClickListener(textureSettings.getClickCallback());
-
-			widgets.push_back(&textureSettings);
+			addWidget(&textureSettings);
 		}
 		else if (owner->Name == string("SurfaceMat")) {
 			viewIndex = 1;
