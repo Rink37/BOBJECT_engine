@@ -47,7 +47,7 @@ public:
 		
 		TextBox* titleBox = new TextBox(loadList->getFont(), 0.0f, 0.0f, 5.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
 		titleBox->addText(title);
-		TextBox* messageBox = new TextBox(loadList->getFont(), 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		TextBox* messageBox = new TextBox(loadList->getFont(), 0.0f, 0.0f, 5.0f, 2.0f, 18, ARRANGE_START, ARRANGE_START);
 		messageBox->addText(message);
 
 		totalArrangement->addItem(getPtr(titleBox));
@@ -1817,7 +1817,7 @@ private:
 	Material* wireMat = nullptr;
 
 	vector<Widget*> widgets;
-	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, &mc, &osm, &rts, &tlm, &tomogPicker, &stm, &normalMixer, &sob, &seamFixer};
+	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, &mc, &osm, &rts, &tlm, &tomogPicker, &stm, &normalMixer, &sob, &seamFixer, &errorDlg};
 
 	drawImage renderImage;
 	GraphicsPass renderGP;
@@ -2611,6 +2611,7 @@ private:
 		std::cout << extension << std::endl;
 		if (extension != std::string("obj")) {
 			std::cout << "File extension " << extension << " is not currently supported for models" << std::endl;
+			createErrorDialog("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for models"));
 			return;
 		}
 		objectName = objectName.substr(0, pos);
