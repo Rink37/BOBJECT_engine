@@ -432,7 +432,7 @@ private:
 			catch (...) {
 				std::cout << "Invalid file selected" << std::endl;
 				if (errorFunc != nullptr) {
-					errorFunc("FILE ERROR:", "The selected file is not a valid partial image");
+					errorFunc("FILE ERROR:", "The selected file is not a valid partial image!");
 				}
 				return;
 			}

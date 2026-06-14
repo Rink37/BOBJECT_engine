@@ -291,7 +291,6 @@ public:
 	void setup(Mesh* mesh, std::string texName, std::function<void(UIItem*)> cancelFunct, std::function<void(UIItem*)> finishFunct) {
 		fixer = new SeamFixer(mesh, textureLL, texName);
 		fixer->findAdjacentStrips();
-		//fixer->alphaOverLeft();
 		fixer->seamFixAll();
 
 		cancelFunc = cancelFunct;
@@ -377,6 +376,8 @@ private:
 
 		owner->Name = fixer->targetTexName;
 
+		textureLL->deleteMaterial("SeamFixMat");
+
 		fixer->cleanup();
 		delete fixer;
 		fixer = nullptr;
@@ -390,6 +391,8 @@ private:
 		textureLL->replacePtr(fixer->targetTex, fixer->targetTexName);
 
 		owner->Name = fixer->targetTexName;
+
+		textureLL->deleteMaterial("SeamFixMat");
 
 		fixer->cleanup();
 		delete fixer;
