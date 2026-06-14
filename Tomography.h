@@ -122,12 +122,14 @@ public:
 		canvas.push_back(getPtr(lightDirection));
 
 		lightDirection->setFloatCallback(std::bind(&TomographyLoad::setAzimuth, this, std::placeholders::_1), false);
+		lightDirection->updateArrangedPosition(canvas[0]->Items[0]->Items[0]->posx, canvas[0]->Items[0]->Items[0]->posy, canvas[0]->Items[0]->Items[0]->extentx, canvas[0]->Items[0]->Items[0]->extentx * canvas[0]->Items[0]->Items[0]->sqAxisRatio);
 		lightDirection->setHeight(this->zp + 0.01f);
 		lightDirection->setSlideValues(0.0f, 360.0f, 180.0f);
 		lightDirection->updateDisplay();
 		setAzimuth(lightDirection->getValue());
 
 		customUpdate();
+		
 		addBackground(loadList->getMaterial("UIRoundBox"));
 
 		isSetup = true;
@@ -154,7 +156,6 @@ public:
 
 		update();
 
-		lightDirection->updateArrangedPosition(canvas[0]->Items[0]->Items[0]->posx, canvas[0]->Items[0]->Items[0]->posy, canvas[0]->Items[0]->Items[0]->extentx, canvas[0]->Items[0]->Items[0]->extentx * canvas[0]->Items[0]->Items[0]->sqAxisRatio);
 		lightDirection->setSlideValues(0.0f, 360.0f, lightDirection->getValue() - angle);
 		lightDirection->updateDisplay();
 
