@@ -119,11 +119,12 @@ public:
 		canvas.push_back(getPtr(column));
 
 		lightDirection = new Rotator(visibleMat, loadedUI->posx, loadedUI->posy, loadedUI->extentx, loadedUI->extentx * loadedUI->sqAxisRatio);
-		lightDirection->setSlideValues(0.0f, 360.0f, 180.0f);
-		lightDirection->updateDisplay();
-		lightDirection->setFloatCallback(std::bind(&TomographyLoad::setAzimuth, this, std::placeholders::_1), false);
 		canvas.push_back(getPtr(lightDirection));
 
+		lightDirection->setFloatCallback(std::bind(&TomographyLoad::setAzimuth, this, std::placeholders::_1), false);
+		lightDirection->setHeight(this->zp + 0.01f);
+		lightDirection->setSlideValues(0.0f, 360.0f, 180.0f);
+		lightDirection->updateDisplay();
 		setAzimuth(lightDirection->getValue());
 
 		customUpdate();
@@ -320,7 +321,9 @@ public:
 		TextBox* diffText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 2.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		TextBox* normText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 2.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		diffText->addText("Diffuse:");
+		diffText->setHeight(this->zp + 0.01f);
 		normText->addText("Normal:");
+		normText->setHeight(this->zp + 0.02f);
 
 		buttons->addItem(getPtr(diffText));
 		buttons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, toggleDiffuse)));
@@ -457,18 +460,11 @@ private:
 		
 		vkDeviceWaitIdle(Engine::get()->device);
 		tomogLoadMenu->cleanup();
-		//delete tomogLoadMenu;
-		//tomogLoadMenu = nullptr;
 
 		imagePipelines.clear();
-
-		//update();
-
-		std::cout << "Added item" << std::endl;
 	}
 
 	void removeItem(UIItem* owner) {
-		std::cout << "Removing item" << std::endl;
 		int index = std::stoi(owner->Name);
 		vkQueueWaitIdle(Engine::get()->graphicsQueue);
 		tomographer.remove_element(index);
@@ -499,27 +495,22 @@ private:
 			int currentIndex = std::stoi(canvas[i]->Name);
 			std::cout << currentIndex << std::endl;
 			UIItem* ref = grid->Items[currentIndex];
-			std::cout << ref->posx << " " << ref->posy << std::endl;
 			canvas[i]->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extentx * 0.2f);
 			canvas[i]->updateDisplay();
 		}
 	}
 
 	void customUpdate() {
-		std::cout << "Reached custom update" << std::endl;
 		if (tomogLoadMenu != nullptr) {
 			if (tomogLoadMenu->isSetup) {
 				tomogLoadMenu->update();
 			}
 			else {
-				std::cout << "Deleting tomogLoadMenu" << std::endl;
 				delete tomogLoadMenu;
 				tomogLoadMenu = nullptr;
 			}
 		}
-		std::cout << "Updating delete buttons" << std::endl;
 		updateDeleteButtons();
-		std::cout << "Custom update finished" << std::endl;
 	}
 
 	void cancelLoad(UIItem* owner) {
@@ -528,16 +519,10 @@ private:
 		
 		vkDeviceWaitIdle(Engine::get()->device);
 		tomogLoadMenu->cleanup();
-		//delete tomogLoadMenu;
-		//tomogLoadMenu = nullptr;
 
 		imagePipelines.clear();
 
 		tomographer.remove_element(static_cast<int>(tomographer.items.size())-1);
-		
-		//update();
-
-		std::cout << "Cancelled load" << std::endl;
 	}
 
 	void updateDiffuseGen(UIItem* owner) {
