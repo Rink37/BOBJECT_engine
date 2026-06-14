@@ -418,7 +418,13 @@ private:
 		std::string fileName = winFile::OpenFileDialog();
 		if (fileName != std::string("fail")) {
 			std::string name = "Image" + std::to_string(imageCount);
-			tomographer.add_image(fileName, name + "Tex");
+			try {
+				tomographer.add_image(fileName, name + "Tex");
+			}
+			catch (...) {
+				std::cout << "Invalid file selected" << std::endl;
+				return;
+			}
 			Material* imageMat = loadList->replacePtr(new Material(tomographer.items[activeImageCount]->baseImage), name + "Mat");
 			tomogLoadMenu = new TomographyLoad(loadList);
 			if (loadCallback == nullptr) {
