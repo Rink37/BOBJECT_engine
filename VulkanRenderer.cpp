@@ -377,6 +377,18 @@ public:
 
 		isSetup = true;
 	}
+
+	void hideViewButtons() {
+		canvas[0]->Items[0]->setVisibility(false);
+		canvas[0]->Items[0]->setIsEnabled(false);
+		update();
+	}
+
+	void showViewButtons() {
+		canvas[0]->Items[0]->setVisibility(true);
+		canvas[0]->Items[0]->setIsEnabled(true);
+		update();
+	}
 };
 
 class MaterialCreator : public Widget {
@@ -2367,6 +2379,9 @@ private:
 		
 		tomogPicker.setup(finishFunc, cancelFunc);
 
+		webcamMenu.hide();
+		renderMenu.hideViewButtons();
+
 		addWidget(&tomogPicker);
 	}
 
@@ -2398,37 +2413,6 @@ private:
 		tomogActive = true;
 	}
 
-	//void toggleTomogMenu() {
-	//	if (!tomogActive && sConst->diffTex != nullptr) {
-	//		std::function<void(UIItem*)> toggleFunct = std::bind(&Application::toggleTomogMeshes, this, std::placeholders::_1);
-	//		std::function<void(UIItem*)> tomogExit = std::bind(&Application::exitTomogMenu, this, std::placeholders::_1);
-	//		
-	//		if (!tomogUI.isSetup) {
-	//			tomogUI.setup(sConst, toggleFunct, &mouseManager, tomogExit);
-	//		}
-	//		else {
-	//			tomogUI.show();
-	//		}
-			
-	//		tomographyPlane = new PlaneObject(sConst->diffTex->texWidth, sConst->diffTex->texHeight);
-	//		tomographyPlane->isVisible = true;
-	//		for (size_t i = 0; i != staticObjects.size(); i++) {
-	//			staticObjects[i].isVisible = false;
-	//		}
-	//		updateVisibleObjects();
-	//		objectMenu.hide();
-	//		surfaceMenu.hide();
-			
-	//		tomogUI.clickIdx = mouseManager.addClickListener(tomogUI.getClickCallback());
-	//		widgets.push_back(&tomogUI);
-
-	//		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
-
-	//		tomogActive = true;
-	//		updateDrawVariables();
-	//	}
-	//}
-
 	void exitTomogMenu(UIItem* owner) {
 		if (!tomogActive) {
 			return;
@@ -2439,45 +2423,48 @@ private:
 		delete tomographyPlane;
 		tomographyPlane = nullptr;
 		
-		Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
-		Texture* tomogNorm = UIElements.findTexPtr("TomogNormTex");
-		tomogNorm->isNormal = true;
-		tomogNorm->normalType = true;
-
-		TextureElements.getPtr(tomogDiff, "TomogDiffTex");
-		TextureElements.getPtr(tomogNorm, "TomogNormTex");
-
-
+		UIItem* tempItem = new spacer;
 		std::function<void(UIItem*)> addTex = textureMenu.getAddTexCallback();
 
-		std::cout << "Adding items to texture menu" << std::endl;
+		if (UIElements.checkForTexture("TomogDiffTex")) {
+			Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
+			TextureElements.getPtr(tomogDiff, "TomogDiffTex");
 
-		UIItem* tempItem = new spacer;
-		tempItem->Name = "TomogDiffTex";
-		addTex(tempItem);
-		tempItem->Name = "TomogNormTex";
-		addTex(tempItem);
+			tempItem->Name = "TomogDiffTex";
+			addTex(tempItem);
+		}
+		if (UIElements.checkForTexture("TomogNormTex")) {
+			Texture* tomogNorm = UIElements.findTexPtr("TomogNormTex");
+			tomogNorm->isNormal = true;
+			tomogNorm->normalType = true;
+
+			TextureElements.getPtr(tomogNorm, "TomogNormTex");
+
+			tempItem->Name = "TomogNormTex";
+			addTex(tempItem);
+		}
 		tempItem->cleanup();
 		delete tempItem;
 
 		tomogActive = false;
 
-		std::cout << "Showing visible objects" << std::endl;
 		for (size_t i = 0; i != staticObjects.size(); i++) {
 			staticObjects[i].isVisible = true;
 		}
 		updateVisibleObjects();
 
-		std::cout << "Removing click listener" << std::endl;
-		mouseManager.removeClickListener(tomogUI.clickIndex);
+		removeWidget(&tomogUI);
+		//mouseManager.removeClickListener(tomogUI.clickIndex);
+		//tomogUI.cleanup();
 
-		std::cout << "Cleaning up tomograpy UI" << std::endl;
-		tomogUI.cleanup();
-		if (find(widgets.begin(), widgets.end(), &tomogUI) != widgets.end()) {
-			widgets.erase(find(widgets.begin(), widgets.end(), &tomogUI));
+		webcamMenu.show();
+		renderMenu.showViewButtons();
 
-			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
-		}
+		//if (find(widgets.begin(), widgets.end(), &tomogUI) != widgets.end()) {
+		//	widgets.erase(find(widgets.begin(), widgets.end(), &tomogUI));
+
+		//	sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
+		//}
 	}
 	
 	void toggleTomogMeshes(UIItem* owner) {
