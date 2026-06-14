@@ -384,7 +384,7 @@ public:
 
 	void removeLastChar() {
 		vkDeviceWaitIdle(Engine::get()->device);
-		uint32_t index = characters.size() - 1;
+		uint32_t index = static_cast<uint32_t>(characters.size()) - 1;
 		characters[index]->cleanup();
 		delete characters[index];
 		characters.erase(characters.begin() + index);
@@ -558,6 +558,7 @@ public:
 
 	ImagePanel() {
 		itemType = IMAGEPANEL;
+		this->isWebcam = false;
 	}
 
 	void setDims(float px, float py, float ex, float ey) {
@@ -814,9 +815,9 @@ class Arrangement : public UIItem {
 public:
 	float spacing;
 
-	Arrangement() {
-		itemType = ARRANGEMENT;
-	}
+	//Arrangement() {
+	//	itemType = ARRANGEMENT;
+	//}
 
 	Arrangement(int orient, float px, float py, float ex, float ey, float spc) {
 		setDims(px, py, ex, ey, spc);

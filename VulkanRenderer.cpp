@@ -1493,7 +1493,7 @@ private:
 				cv::Mat initMat = cv::imread(fileName, cv::IMREAD_UNCHANGED);
 				loadedTexture = new imageTexture(initMat, VK_FORMAT_R8G8B8A8_SRGB);
 			}
-			textureLL->getPtr(loadedTexture, textureName);
+			textureLL->replacePtr(loadedTexture, textureName);
 			owner->Name = textureName;
 			if (updateTextureMenu != nullptr) {
 				updateTextureMenu(owner);
@@ -2390,8 +2390,6 @@ private:
 	}
 
 	void openTomogMenu(UIItem* owner) {
-		std::cout << owner->Name << std::endl;
-
 		std::function<void(UIItem*)> toggleFunct = std::bind(&Application::toggleTomogMeshes, this, std::placeholders::_1);
 		std::function<void(UIItem*)> tomogExit = std::bind(&Application::exitTomogMenu, this, std::placeholders::_1);
 
@@ -2428,7 +2426,9 @@ private:
 
 		if (UIElements.checkForTexture("TomogDiffTex")) {
 			Texture* tomogDiff = UIElements.findTexPtr("TomogDiffTex");
-			TextureElements.getPtr(tomogDiff, "TomogDiffTex");
+			
+			TextureElements.getPtr(tomogDiff->copyTexture(), "TomogDiffTex");
+			UIElements.deleteTexture("TomogDiffTex");
 
 			tempItem->Name = "TomogDiffTex";
 			addTex(tempItem);
@@ -2438,7 +2438,8 @@ private:
 			tomogNorm->isNormal = true;
 			tomogNorm->normalType = true;
 
-			TextureElements.getPtr(tomogNorm, "TomogNormTex");
+			TextureElements.getPtr(tomogNorm->copyTexture(), "TomogNormTex");
+			UIElements.deleteTexture("TomogNormTex");
 
 			tempItem->Name = "TomogNormTex";
 			addTex(tempItem);
@@ -2454,17 +2455,9 @@ private:
 		updateVisibleObjects();
 
 		removeWidget(&tomogUI);
-		//mouseManager.removeClickListener(tomogUI.clickIndex);
-		//tomogUI.cleanup();
 
 		webcamMenu.show();
 		renderMenu.showViewButtons();
-
-		//if (find(widgets.begin(), widgets.end(), &tomogUI) != widgets.end()) {
-		//	widgets.erase(find(widgets.begin(), widgets.end(), &tomogUI));
-
-		//	sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
-		//}
 	}
 	
 	void toggleTomogMeshes(UIItem* owner) {

@@ -17,11 +17,6 @@ public:
 
 	Material(std::vector<Texture*> inTextures, std::string targetShader, GraphicsPass* graphicsPass, bool isUI = false) {
 		textures = inTextures;
-		//if (textures.size() > 0) {
-		//	if (textures[0]->textureFormat == VK_FORMAT_R8_UNORM) {
-		//		isUIMat = true;
-		//	}
-		//}
 		isUIMat = isUI;
 		createMaterial(targetShader, graphicsPass);
 	}
@@ -37,16 +32,6 @@ public:
 	}
 
 	void init(Texture* defaultTex) {
-		if (!cleaned) {
-			cleanupDescriptor();
-			textures.clear();
-		}
-		textures.push_back(defaultTex);
-		createMaterial();
-	}
-
-	void init(Texture* defaultTex, bool isUI) {
-		isUIMat = isUI;
 		if (!cleaned) {
 			cleanupDescriptor();
 			textures.clear();

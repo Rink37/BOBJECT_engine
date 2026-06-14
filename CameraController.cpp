@@ -6,7 +6,7 @@ using namespace glm;
 
 void Camera::updateCamera(GLFWwindow* window) {
 	radius = glm::length(pos);
-	float scalefac = pow(radius, 2) / defaultscale;
+	float scalefac = radius * radius / defaultscale;
 	if (scalefac > 2) {
 		scalefac = 2;
 	}

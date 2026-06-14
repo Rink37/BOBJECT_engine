@@ -17,21 +17,21 @@
 
 class Camera {
 public:
-	glm::vec3 pos;
-	glm::vec3 initCenter;
+	glm::vec3 pos{};
+	glm::vec3 initCenter{};
 	glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
-	glm::mat4 view;
+	glm::mat4 view{};
 	float defaultDistance = 10.0f;
 	float distance = 5.0f;
-	float initxrot;
-	float inityrot;
+	float initxrot = 45.0f;
+	float inityrot = 10.0f;
 	float xrot = 45.0f;
-	float yrot = 0.0f;
-	double initXpos, initYpos;
-	double activeXpos, activeYpos;
+	float yrot = 10.0f;
+	double initXpos = 0.0, initYpos = 0.0;
+	double activeXpos = 0.0, activeYpos = 0.0;
 	float fov = 45.0f;
 	float defaultVelocity = 0.01f;
-	float velocity;
+	float velocity = 0.01f;
 	float radius = glm::length(pos);
 	double defaultscale = pow(glm::length(pos), 2);
 	bool isPanning = false;

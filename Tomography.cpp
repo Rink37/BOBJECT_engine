@@ -4,9 +4,9 @@
 using namespace cv;
 using namespace std;
 
-static float eucDist(Point a, Point b) {
-	return sqrtf(powf(a.x - b.x, 2) + powf(a.y - b.y, 2));
-}
+//static float eucDist(Point a, Point b) {
+//	return sqrtf(powf(float(a.x) - float(b.x), 2) + powf(float(a.y) - float(b.y), 2));
+//}
 
 const int MAX_FEATURES = 5000;
 const float GOOD_MATCH_PERCENT = 0.05f;
@@ -32,9 +32,9 @@ static void change_contrast(Mat* img, float alpha, int beta) {
 
 static vector<float> calculateCDF(Mat hist) {
 	vector<float> cdf;
-	uint32_t currentSum = 0;
+	float currentSum = 0.0f;
 	for (int i = 0; i != 256; i++) {
-		currentSum += static_cast<uint32_t>(hist.at<float>(i));
+		currentSum += hist.at<float>(i);
 		cdf.push_back(currentSum);
 	}
 	for (int i = 0; i != 256; i++) {
@@ -164,7 +164,9 @@ static float angleBetweenLines(Vec4i l1, Vec4i l2) {
 
 static Point rotate(Point a, float angle) {
 	float ang = - angle * 3.14159265f / 180.0f;
-	return Point(a.x * cos(ang) - a.y * sin(ang), a.x * sin(ang) + a.y * cos(ang));
+	float x = static_cast<float>(a.x);
+	float y = static_cast<float>(a.y);
+	return Point(x * cos(ang) - y * sin(ang), x * sin(ang) + y * cos(ang));
 }
 
 static void rotateLines(Vec4i& l1, Vec4i& l2, float angle, Point rotationCenter) {
@@ -671,6 +673,7 @@ static Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the no
 			assert(normalMatrix.size() == 1 && normalMatrix[0].size() == 3);
 
 			vector<float> normalVector = normalMatrix[0];
+			normalVector[1] *= -1.0f;
 
 			float normalLength = sqrt(normalVector[0] * normalVector[0] + normalVector[1] * normalVector[1] + normalVector[2] * normalVector[2]);
 
@@ -844,6 +847,7 @@ static std::vector<Mat> calculate_norm_diff(std::vector<TomogItem*> items) {
 			assert(normalMatrix.size() == 1 && normalMatrix[0].size() == 3);
 
 			vector<float> normalVector = normalMatrix[0];
+			normalVector[1] *= -1.0f;
 
 			float normalLength = sqrt(normalVector[0] * normalVector[0] + normalVector[1] * normalVector[1] + normalVector[2] * normalVector[2]);
 

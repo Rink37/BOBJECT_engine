@@ -16,14 +16,16 @@ struct TomogItem {
 	std::vector<float> lightDirection = {0.0f, 0.0f, 0.0f};
 	std::string name = "";
 
-	~TomogItem() {
-		if (baseImage != nullptr) {
-			baseImage->cleanup();
-		}
-		if (correctedImage != nullptr) {
-			correctedImage->cleanup();
-		}
-	}
+	//~TomogItem() {
+		//if (baseImage != nullptr) {
+		//	baseImage->cleanup();
+		//	delete baseImage;
+		//}
+	//	if (correctedImage != nullptr) {
+	//		correctedImage->cleanup();
+	//		delete correctedImage;
+	//	}
+	//}
 };
 
 class Tomographer {
