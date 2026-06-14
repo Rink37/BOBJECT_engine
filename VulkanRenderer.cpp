@@ -2008,6 +2008,9 @@ private:
 		}
 		closeTextureSettingsMenu(owner);
 
+		if (sob.errorFunc == nullptr) {
+			sob.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		}
 		sob.setup(texName, objectNames, std::bind(&Application::openSeamFixer ,this, std::placeholders::_1));
 		
 		addWidget(&sob);

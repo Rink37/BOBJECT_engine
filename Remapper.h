@@ -241,7 +241,7 @@ private:
 		if (targetName.size() == 0 || refName.size() == 0) {
 			//std::cout << "Insufficient textures to continue" << std::endl;
 			if (errorFunc != nullptr) {
-				errorFunc("FILE ERROR: ", "No reference texture has been selected!");
+				errorFunc("SELECT ERROR: ", "No reference texture has been selected!");
 			}
 			return;
 		}

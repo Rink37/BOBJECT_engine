@@ -237,7 +237,6 @@ public:
 		objSelect->setBlankText("Select an object");
 		objSelect->addOptions(objects);
 		objSelect->setSelectCallback(std::bind(&SeamObjPicker::setObject, this, std::placeholders::_1));
-		//objectName = objects[0];
 
 		totalArrangement->addItem(getPtr(objSelect));
 
@@ -249,6 +248,8 @@ public:
 		totalArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(totalArrangement));
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
 
 		isSetup = true;
 	}
@@ -266,7 +267,10 @@ private:
 
 	void finishFunc(UIItem* owner) {
 		if (objectName == "") {
-			std::cout << "No object has been selected" << std::endl;
+			//std::cout << "No object has been selected" << std::endl;
+			if (errorFunc != nullptr) {
+				errorFunc("SELECT ERROR: ", "No base object has been selected!");
+			}
 			return;
 		}
 		owner->Name = textureName;
@@ -339,6 +343,8 @@ public:
 		column->updateDisplay();
 
 		canvas.push_back(getPtr(column));
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
 
 		isSetup = true;
 	}
