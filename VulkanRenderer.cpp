@@ -969,8 +969,6 @@ public:
 			return;
 		}
 
-		std::cout << "Creating normal mixer" << std::endl;
-
 		textureName = tName;
 
 		getMesh = getMeshFunc;
@@ -997,10 +995,10 @@ public:
 		totalArrangement->addItem(getPtr(topText));
 
 		DropdownMenu* textureSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
+		textureSelect->setBlankText("Select a texture:");
 		textureSelect->addOptions(textures);
-		textureSelect->setOptionIndex(0);
 		textureSelect->setSelectCallback(std::bind(&NormalMixer::setMixTex, this, std::placeholders::_1));
-		mixTexName = textures[0];
+		//mixTexName = textures[0];
 
 		totalArrangement->addItem(getPtr(textureSelect));
 
@@ -1161,10 +1159,22 @@ private:
 	}
 
 	void mixNorms(UIItem* owner) {
-		//std::cout << textureName << " " << mixTexName << std::endl;
-
-		if (objectName == "") {
-			std::cout << "No object has been selected" << std::endl;
+		if (objectName == "" && mixTexName == "") {
+			if (errorFunc != nullptr) {
+				errorFunc("SELECT ERROR: ", "No items have been selected!");
+			}
+			return;
+		}
+		else if (objectName == "") {
+			if (errorFunc != nullptr) {
+				errorFunc("SELECT ERROR: ", "No reference object has been selected!");
+			}
+			return;
+		}
+		else if (mixTexName == "") {
+			if (errorFunc != nullptr) {
+				errorFunc("SELECT ERROR: ", "No mix texture has been selected!");
+			}
 			return;
 		}
 
@@ -2411,6 +2421,9 @@ private:
 
 		std::function<Mesh* (std::string)> getMeshFnc = std::bind(&Application::getObj, this, std::placeholders::_1);
 
+		if (normalMixer.errorFunc == nullptr) {
+			normalMixer.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		}
 		normalMixer.setup(texName, objects, getMeshFnc, std::bind(&Application::exitNormalMixer, this, std::placeholders::_1), std::bind(&Application::cancelNormalMixer, this, std::placeholders::_1));
 		addWidget(&normalMixer);
 	}
