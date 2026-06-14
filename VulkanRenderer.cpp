@@ -32,6 +32,43 @@ std::vector<TypeManager*> TypeManager::_instances;
 std::vector<MouseManager*> MouseManager::_instances;
 MouseManager mouseManager;
 
+class ErrorDialog : public Widget{
+public:
+	ErrorDialog(LoadList* assets) {
+		loadList = assets;
+	}
+
+	void setup(std::string title, std::string message, std::function<void(UIItem*)> exitCallback) {
+		if (isSetup) {
+			return;
+		}
+
+		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		
+		TextBox* titleBox = new TextBox(loadList->getFont(), 0.0f, 0.0f, 5.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
+		titleBox->addText(title);
+		TextBox* messageBox = new TextBox(loadList->getFont(), 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		messageBox->addText(message);
+
+		totalArrangement->addItem(getPtr(titleBox));
+		totalArrangement->addItem(getPtr(messageBox));
+
+		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f);
+		finishArrangement->addItem(getPtr(new spacer));
+		finishArrangement->addItem(getPtr(new Button(loadList->getMaterial("FinishBtnMat"), exitCallback)));
+
+		totalArrangement->addItem(getPtr(finishArrangement));
+
+		canvas.push_back(totalArrangement);
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
+
+		isSetup = true;
+	}
+private:
+	
+};
+
 class TextureSettings : public Widget {
 public: 
 	TextureSettings(LoadList* assets, LoadList* textureAssets) {
@@ -1772,6 +1809,7 @@ private:
 	NormalMixer normalMixer = NormalMixer(&UIElements, &TextureElements);
 	SeamObjPicker sob = SeamObjPicker(&UIElements, &TextureElements);
 	SeamFixMenu seamFixer = SeamFixMenu(&UIElements, &TextureElements);
+	ErrorDialog errorDlg = ErrorDialog(&UIElements);
 
 	bool showWidgets = true;
 
@@ -1824,6 +1862,15 @@ private:
 	glm::vec3 secondaryColour = glm::vec3(0.82f, 0.55f, 0.36f);
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
+
+	void createErrorDialog(std::string title = "ERROR", std::string message = "") {
+		errorDlg.setup(title, message, std::bind(&Application::destroyErrorDialog, this, std::placeholders::_1));
+		addWidget(&errorDlg);
+	}
+
+	void destroyErrorDialog(UIItem* owner) {
+		removeWidget(&errorDlg);
+	}
 
 	void toggleWidgets() {
 		showWidgets = !showWidgets;
