@@ -86,6 +86,13 @@ public:
 			return;
 		}
 
+		functions.clear();
+		functions.insert({ "Convert norm", transitionTypeFnc });
+		functions.insert({ "Combine norms", mixNormalsFnc });
+		functions.insert({ "Remap", remapFnc });
+		functions.insert({ "Fix seams", fixSeamsFnc });
+		
+
 		Texture* tex = textureLL->getTexture(texName);
 
 		imageName = texName;
@@ -95,52 +102,68 @@ public:
 
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 		Arrangement* exitArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
-		Arrangement* remapArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
+		//Arrangement* remapArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 		exitArrangement->addItem(getPtr(new spacer()));
 		exitArrangement->addItem(getPtr(new Button(closeMat, exitFnc)));
 
-		remapArrangement->addItem(getPtr(new spacer()));
-		Button* remapBtn = new Button(settingsMat, remapFnc);
-		remapBtn->Name = texName;
+		std::vector<std::string> functionNames{};
+
+		//remapArrangement->addItem(getPtr(new spacer()));
+		//Button* remapBtn = new Button(settingsMat, remapFnc);
+		//remapBtn->Name = texName;
+
 		if (tex->isNormal) {
-			Button* mapMixer = new Button(settingsMat, mixNormalsFnc);
-			mapMixer->Name = texName;
-			remapArrangement->addItem(getPtr(mapMixer));
+			//Button* mapMixer = new Button(settingsMat, mixNormalsFnc);
+			//mapMixer->Name = texName;
+			//remapArrangement->addItem(getPtr(mapMixer));
 
-			if (tex->normalType) {
-				Material* tsMat = loadList->getMaterial("TSBtnMat");
+			//if (tex->normalType) {
+			//	Material* tsMat = loadList->getMaterial("TSBtnMat");
 
-				Button* normalType = new Button(tsMat, transitionTypeFnc);
-				normalType->Name = texName;
+			//	Button* normalType = new Button(tsMat, transitionTypeFnc);
+			//	normalType->Name = texName;
 
-				remapArrangement->addItem(getPtr(normalType));
-			}
-			else {
-				Material* osMat = loadList->getMaterial("OSBtnMat");
+			//	remapArrangement->addItem(getPtr(normalType));
 
-				Button* normalType = new Button(osMat, transitionTypeFnc);
-				normalType->Name = texName;
+			//}
+			//else {
+			//	Material* osMat = loadList->getMaterial("OSBtnMat");
 
-				remapArrangement->addItem(getPtr(normalType));
-			}
+			//	Button* normalType = new Button(osMat, transitionTypeFnc);
+			//	normalType->Name = texName;
+
+			//	remapArrangement->addItem(getPtr(normalType));
+			//}
+			functionNames.push_back("Convert norm");
+			functionNames.push_back("Combine norms");
 		}
-		if (texName != "Webcam View") {
-			Button* seamFixBtn = new Button(settingsMat, fixSeamsFnc);
-			seamFixBtn->Name = texName;
+		//Button* seamFixBtn = new Button(settingsMat, fixSeamsFnc);
+		//seamFixBtn->Name = texName;
 
-			remapArrangement->addItem(getPtr(seamFixBtn));
-		}
-		remapArrangement->addItem(getPtr(remapBtn));
+		//remapArrangement->addItem(getPtr(seamFixBtn));
+
+		functionNames.push_back("Remap");
+		functionNames.push_back("Fix seams");
+		//remapArrangement->addItem(getPtr(remapBtn));
 
 		Material* panelMat = loadList->replacePtr(new Material(tex), "Image view");
 		bool isWebcam = (texName == std::string("Webcam View"));
 		imagePanel = new ImagePanel(panelMat, isWebcam);
 
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+
+		DropdownMenu* functionDropdown = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
+		functionDropdown->addOptions(functionNames);
+		functionDropdown->setBlankText("Choose a function:");
+		functionDropdown->setSelectCallback(std::bind(&TextureSettings::functionMap, this, std::placeholders::_1));
+
 		mainArrangement->addItem(getPtr(exitArrangement));
 		mainArrangement->addItem(getPtr(imagePanel));
-		if (texName != std::string("Webcam View")) {
-			mainArrangement->addItem(getPtr(remapArrangement));
-		}
+		//if (texName != std::string("Webcam View")) {
+		//	mainArrangement->addItem(getPtr(remapArrangement));
+		//}
+		mainArrangement->addItem(getPtr(functionDropdown));
 		mainArrangement->addItem(getPtr(new spacer()));
 		mainArrangement->arrangeItems();
 
@@ -165,6 +188,18 @@ public:
 	}
 
 private:
+	void functionMap(UIItem* owner) {
+		spacer* temp = new spacer;
+		temp->Name = imageName;
+		if (functions.count(owner->text) > 0 && functions.at(owner->text) != nullptr) {
+			functions.at(owner->text)(temp);
+		}
+		temp->cleanup();
+		delete temp;
+	}
+
+	std::unordered_map<std::string, std::function<void(UIItem*)>> functions{};
+
 	LoadList* textureLL = nullptr;
 
 	ImagePanel* imagePanel = nullptr;
@@ -2592,19 +2627,24 @@ private:
 
 	void mainLoop() {
 		while (!glfwWindowShouldClose(engine->window)) {
-			if (isTrackingFPS) {
-				updateFPSTrack();
+			try {
+				if (isTrackingFPS) {
+					updateFPSTrack();
+				}
+				glfwPollEvents();
+				keyBinds.pollRepeatEvents();
+				mouseManager.checkPositionEvents();
+				if (!inWebSettings) {
+					webcamTexture::get()->asyncUpdate();
+				}
+				else {
+					webcamTexture::get()->updateWebcam();
+				}
+				drawFrame();
 			}
-			glfwPollEvents();
-			keyBinds.pollRepeatEvents();
-			mouseManager.checkPositionEvents();
-			if (!inWebSettings) {
-				webcamTexture::get()->asyncUpdate();
+			catch (...) {
+				createErrorDialog("YOU... SHOULDN'T BE HERE", "An uncategorized error has been encountered. Let me know how you got to here!");
 			}
-			else {
-				webcamTexture::get()->updateWebcam();
-			}
-			drawFrame();
 		}
 		vkDeviceWaitIdle(engine->device);
 	}
