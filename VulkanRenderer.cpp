@@ -1051,7 +1051,10 @@ public:
 		totalArrangement->addItem(getPtr(objSelect));
 
 		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-		finishArrangement->addItem(getPtr(new Button(cancelMat, cancel)));
+		Button* cancelBtn = new Button(cancelMat, cancel);
+		cancelBtn->Name = tName;
+		
+		finishArrangement->addItem(getPtr(cancelBtn));
 		finishArrangement->addItem(getPtr(new spacer()));
 		finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&NormalMixer::mixNorms, this, std::placeholders::_1))));
 
@@ -2478,7 +2481,14 @@ private:
 	}
 
 	void cancelNormalMixer(UIItem* owner) {
+		spacer* temp = new spacer;
+		temp->Name = owner->Name;
+		
 		removeWidget(&normalMixer);
+
+		openTextureSettingsMenu(temp);
+		temp->cleanup();
+		delete temp;
 	}
 
 	void exitNormalMixer(UIItem* owner) {
@@ -2539,6 +2549,9 @@ private:
 	}
 
 	void exitTomogSelector(UIItem* owner) {
+		webcamMenu.show();
+		renderMenu.showViewButtons();
+		
 		removeWidget(&tomogPicker);
 	}
 
