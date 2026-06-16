@@ -2018,12 +2018,18 @@ private:
 		}
 		closeTextureSettingsMenu(owner);
 
+		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::closeSeamObjPicker, this, std::placeholders::_1);
+
 		if (sob.errorFunc == nullptr) {
 			sob.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
 		}
-		sob.setup(texName, objectNames, std::bind(&Application::openSeamFixer ,this, std::placeholders::_1));
+		sob.setup(texName, objectNames, std::bind(&Application::openSeamFixer ,this, std::placeholders::_1), cancelFunc);
 		
 		addWidget(&sob);
+	}
+
+	void closeSeamObjPicker(UIItem* owner) {
+		removeWidget(&sob);
 	}
 
 	void openSeamFixer(UIItem* owner) {

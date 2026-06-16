@@ -206,7 +206,7 @@ public:
 		textureLL = texLL;
 	}
 
-	void setup(std::string tName, std::vector<std::string> objects, std::function<void(UIItem*)> exitFunc) {
+	void setup(std::string tName, std::vector<std::string> objects, std::function<void(UIItem*)> exitFunc, std::function<void(UIItem*)> cancelFunc) {
 		if (isSetup) {
 			return;
 		}
@@ -225,6 +225,7 @@ public:
 		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 		Material* finishMat = loadList->getMaterial("FinishBtnMat");
+		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -241,6 +242,7 @@ public:
 		totalArrangement->addItem(getPtr(objSelect));
 
 		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+		finishArrangement->addItem(getPtr(new Button(cancelMat, cancelFunc)));
 		finishArrangement->addItem(getPtr(new spacer()));
 		finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&SeamObjPicker::finishFunc, this, std::placeholders::_1))));
 
