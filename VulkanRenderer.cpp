@@ -37,6 +37,7 @@ public:
 	ErrorDialog(LoadList* assets) {
 		loadList = assets;
 		priorityLayer = 5000;
+		this->zp = 0.0f;
 	}
 
 	void setup(std::string title, std::string message, std::function<void(UIItem*)> exitCallback) {

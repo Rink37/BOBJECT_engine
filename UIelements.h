@@ -2135,7 +2135,7 @@ struct Widget {
 	std::vector<UIImage*> transparentImages{};
 	std::vector<std::string> transparentImagePipelines{};
 
-	float posx = 0.0f, posy = 0.0f, extentx = 0.0f, extenty = 0.0f, zp = 0.0f;
+	float posx = 0.0f, posy = 0.0f, extentx = 0.0f, extenty = 0.0f, zp = 0.003f;
 private:
 	float windowPositions[4] = { 0.0f };
 	// Array of pointers which manages the actual structure of the UI
@@ -2189,11 +2189,10 @@ private:
 			}
 		}
 
-		float separation = 0.01f;
-		float pos = 0.0f;
-		//std::cout << "Starting sort" << std::endl;
+		float separation = 0.001f;
+
+		float pos = zp;
 		for (auto elem : imageHeights) {
-			//std::cout << elem.first << " " << pos << std::endl;
 			for (UIImage* image : elem.second) {
 				image->zp = pos;
 			}
