@@ -2667,6 +2667,7 @@ private:
 				createErrorDialog("YOU... SHOULDN'T BE HERE", "An uncategorized error has been encountered. Let me know how you got to here!");
 			}
 		}
+		webcamTexture::get()->interruptFrameUpdate();
 		vkDeviceWaitIdle(engine->device);
 	}
 
