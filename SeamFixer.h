@@ -242,7 +242,10 @@ public:
 		totalArrangement->addItem(getPtr(objSelect));
 
 		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-		finishArrangement->addItem(getPtr(new Button(cancelMat, cancelFunc)));
+		Button* cancelBtn = new Button(cancelMat, cancelFunc);
+		cancelBtn->Name = tName;
+		
+		finishArrangement->addItem(getPtr(cancelBtn));
 		finishArrangement->addItem(getPtr(new spacer()));
 		finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&SeamObjPicker::finishFunc, this, std::placeholders::_1))));
 

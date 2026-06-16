@@ -2065,7 +2065,14 @@ private:
 	}
 
 	void closeSeamObjPicker(UIItem* owner) {
+		spacer* temp = new spacer;
+		temp->Name = owner->Name;
+
 		removeWidget(&sob);
+		openTextureSettingsMenu(temp);
+
+		temp->cleanup();
+		delete temp;
 	}
 
 	void openSeamFixer(UIItem* owner) {
