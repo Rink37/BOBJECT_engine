@@ -1,9 +1,6 @@
 # BOBJECT Engine
 
-An engine to render traditionally painted textures onto 3D meshes in real time, as an all-in-one contained solution.
-
-> [!CAUTION]
-> Only .obj models are supported, attempting to load any other type of model will cause a crash. The engine currently has no ability to determine if an incorrect file is loaded so you will not be alerted of this crash.
+An application to render traditionally painted textures onto 3D meshes in real time, as an all-in-one contained solution. The application also features methods of processing or creating images to enable a wide variation of hand-painted texture aesthetics.
 
 > [!CAUTION]
 > This project is still in development and not fully accessible for a majority of its potential user group. Use with caution / contribute to allow for a faster progression into a more usable state
@@ -15,15 +12,18 @@ An engine to render traditionally painted textures onto 3D meshes in real time, 
 ### Windows:
 Download the latest release from the release tab.
 
-## Usage
-You can always pause the webcam view using the pause button in the top middle of the engine
+## How to hand-paint your textures
+The application contains a lot of features designed to make it relatively easy to setup painting the textures of your models with physical methods. Here is a quick-start guide!
 
-### Camera Setup
-1. Mark your canvasses corners with a single distinctive color
-2. Point your camera onto your canvas
+### Before launching the app
+1. Mark all the corners of your canvas with one specific colour (e.g. colour in the corners using a marker)
+2. Point your webcam at your canvas so that all four coloured corners are visible
 
-### Setup
-1. Launch the engine, it will detect the default webcam of your device
+### Once you've set up your webcam
+1. Launch the application and it will find all available webcams. By default the app will select the default webcam of your system, but you will have the option to change this in the next step.
+2. Load an object by clicking on the open button next to the "meshes" label at the left of the interface. You should see a screenshot of your webcam view wrapped around the object. 
+> [!NOTE]
+> At the moment, the app only supports loading .obj models, though further compatibility with other model formats is planned for the future.
 2. Drag the sliders until only the marked corners are white
 
 ### Textures
