@@ -155,10 +155,10 @@ void Webcam::setRotation(uint8_t state) {
 	targetDim = (baseWidth > baseHeight) ? baseWidth : baseHeight;
 	uint32_t smallDimension = (baseWidth < baseHeight) ? baseWidth : baseHeight;
 	
-	std::cout << sizeRatio << std::endl;
+	//std::cout << sizeRatio << std::endl;
 	sizeRatio = 1.0f / sizeRatio;
-	std::cout << sizeRatio << std::endl;
-	std::cout << std::endl;
+	// << sizeRatio << std::endl;
+	//std::cout << std::endl;
 	
 	switch (rotationState) {
 	case 0:

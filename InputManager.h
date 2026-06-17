@@ -78,12 +78,12 @@ public:
 	}
 
 	void startListening() {
-		std::cout << "Started listening" << std::endl;
+		//std::cout << "Started listening" << std::endl;
 		listening = true;
 	}
 
 	void stopListening() {
-		std::cout << "Stopped listening" << std::endl;
+		//std::cout << "Stopped listening" << std::endl;
 		listening = false;
 	}
 

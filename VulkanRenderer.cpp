@@ -83,7 +83,7 @@ public:
 			return;
 		}
 		if (!textureLL->checkForTexture(texName)) {
-			std::cout << "Texture " << texName << " does not exist in this load list" << std::endl;
+			//std::cout << "Texture " << texName << " does not exist in this load list" << std::endl;
 			return;
 		}
 
@@ -760,10 +760,10 @@ public:
 
 		std::sort(removeIndices.begin(), removeIndices.end(), [](uint32_t a, uint32_t b) {return a > b; });
 		for (uint32_t i : removeIndices) {
-			std::cout << i << " ";
+			//std::cout << i << " ";
 			existingMaterials.erase(existingMaterials.begin() + i);
 		}
-		std::cout << std::endl;
+		// << std::endl;
 
 		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		materialSelect->addOptions(existingMaterials);
@@ -1287,7 +1287,7 @@ private:
 		}
 
 		if (resultNormalType) {
-			std::cout << "Attempting to change normal map type" << std::endl;
+			//std::cout << "Attempting to change normal map type" << std::endl;
 			changeNormalMapType(textureName);
 		}
 
@@ -1315,9 +1315,9 @@ public:
 		getMesh = getMeshFunc;
 		exitCallback = exitFunc;
 
-		for (std::string objName : objects) {
-			std::cout << objName << std::endl;
-		}
+		//for (std::string objName : objects) {
+		//	std::cout << objName << std::endl;
+		//}
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		
@@ -1596,12 +1596,12 @@ private:
 				loadedTexture = new imageTexture(initMat, VK_FORMAT_R8G8B8A8_UNORM);
 				loadedTexture->isNormal = true;
 				normalType = !normalTypeToggle->activestate;
-				if (normalType) {
-					std::cout << "TS" << std::endl;
-				}
-				else {
-					std::cout << "OS" << std::endl;
-				}
+				//if (normalType) {
+				//	std::cout << "TS" << std::endl;
+				//}
+				//else {
+				//	std::cout << "OS" << std::endl;
+				//}
 				loadedTexture->normalType = normalType;
 			}
 			else {
@@ -1618,7 +1618,7 @@ private:
 			}
 		}
 		catch (...) {
-			std::cout << "Invalid texture name or extension" << std::endl;
+			//std::cout << "Invalid texture name or extension" << std::endl;
 			if (errorFunc != nullptr) {
 				std::string del = ".";
 				auto pos = fileName.find(del);
@@ -2055,7 +2055,7 @@ private:
 
 		auto it = find(widgets.begin(), widgets.end(), widget);
 		if (it != widgets.end()) {
-			std::cout << "Erasing widget" << std::endl;
+			//std::cout << "Erasing widget" << std::endl;
 			widgets.erase(it);
 
 			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
@@ -2167,7 +2167,7 @@ private:
 			frameCount++;
 			return;
 		}
-		std::cout << "FrameRate is ~" << frameCount << " FPS" << std::endl;
+		//std::cout << "FrameRate is ~" << frameCount << " FPS" << std::endl;
 		isTrackingFPS = false;
 	}
 
@@ -2746,7 +2746,7 @@ private:
 		del = ".";
 		pos = objectName.find(del);
 		std::string extension = objectName.substr(pos+1, objectName.size());
-		std::cout << extension << std::endl;
+		//std::cout << extension << std::endl;
 		if (extension != std::string("obj")) {
 			//std::cout << "File extension " << extension << " is not currently supported for models" << std::endl;
 			createErrorDialog("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for models"));

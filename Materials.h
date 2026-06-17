@@ -133,7 +133,7 @@ public:
 			if (IOval.type == 0) {
 				textureMap.insert({ IOval.name, nullptr });
 				textureOrder.push_back(IOval.name);
-				std::cout << IOval.name << std::endl;
+				//std::cout << IOval.name << std::endl;
 			}
 		}
 	}
@@ -144,7 +144,7 @@ public:
 
 	void setTexture(std::string textureChannel, Texture* newTexture) {
 		if (textureMap.count(textureChannel) == 0) {
-			std::cout << "Invalid texture channel" << std::endl;
+			//std::cout << "Invalid texture channel" << std::endl;
 			return;
 		}
 		textureMap.at(textureChannel) = newTexture;
@@ -154,7 +154,7 @@ public:
 		bool isValid = true;
 		for (auto mapElem : textureMap) {
 			if (mapElem.second == nullptr) {
-				std::cout << "Missing item at channel " << mapElem.first << std::endl;
+				//std::cout << "Missing item at channel " << mapElem.first << std::endl;
 				isValid = false;
 				break;
 			}

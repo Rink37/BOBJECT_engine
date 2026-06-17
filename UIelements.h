@@ -306,7 +306,7 @@ public:
 		modifiable = isModifiable;
 
 		if (modifiable) {
-			std::cout << "Modifiable text box created" << std::endl;
+			//std::cout << "Modifiable text box created" << std::endl;
 			typeManager = new TypeManager();
 			typeManager->initCallbacks(Engine::get()->window);
 			typeManager->setTypeCallback(std::bind(&TextBox::updateText, this, std::placeholders::_1));
@@ -1640,7 +1640,7 @@ public:
 
 	void setOptionIndex(int index) {
 		if (index >= options.size()) {
-			std::cout << "Invalid option index" << std::endl;
+			//std::cout << "Invalid option index" << std::endl;
 			return;
 		}
 		optionIndex = index;

@@ -205,7 +205,7 @@ public:
 	void setup() {
 		webCam = new Webcam(0);
 		if (!webCam->isValid) {
-			std::cout << "No valid webcams found" << std::endl;
+			//std::cout << "No valid webcams found" << std::endl;
 			texMat = cv::Mat(96, 128, CV_8UC3);
 			texMat = cv::Scalar(255, 0, 255);
 			transitionMatToImg();

@@ -259,7 +259,7 @@ static int findCornerType(Vec4i l1, Vec4i l2, Point cornerPos) {
 	}
 	float max_x_dist = (abs(a.x - cornerPos.x) > abs(b.x - cornerPos.x))? a.x - cornerPos.x: b.x - cornerPos.x;
 	float max_y_dist = (abs(a.y - cornerPos.y) > abs(b.y - cornerPos.y)) ? a.y - cornerPos.y : b.y - cornerPos.y;
-	std::cout << max_x_dist << " " << max_y_dist << std::endl;
+	//std::cout << max_x_dist << " " << max_y_dist << std::endl;
 	if (max_x_dist > 0.0f && max_y_dist > 0.0f) {
 		return 0; // Top left
 	}
@@ -293,7 +293,7 @@ static float estMaxDist(Point corner, Size imageSize, float rotation) {
 	rotateLines(line, line2, rotation, corner);
 	Point furthestCornerRotated = Point(line[0], line[1]) - corner;
 	float maxDist = max(abs(furthestCornerRotated.x), abs(furthestCornerRotated.y));
-	std::cout << "Maximum distance = " << maxDist << std::endl;
+	//std::cout << "Maximum distance = " << maxDist << std::endl;
 	return maxDist;
 }
 
@@ -694,7 +694,7 @@ static Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the no
 	for (auto elem : tomogMatrices) {
 		matrixCount++;
 	}
-	std::cout << matrixCount << std::endl;
+	//std::cout << matrixCount << std::endl;
 
 	cvtColor(normal, normal, COLOR_RGB2BGR);
 

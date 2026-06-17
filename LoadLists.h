@@ -33,7 +33,7 @@ struct LoadList {
 		if (textureAssociator.count(name) > 0) {
 			for (int i = 0; i != textureAssociator.at(name).size(); i++) {
 				std::string matName = textureAssociator.at(name)[i];
-				std::cout << "Updating material " << matName << " since it contains texture " << name << " at index " << replaceIndices[i] << std::endl;
+				//std::cout << "Updating material " << matName << " since it contains texture " << name << " at index " << replaceIndices[i] << std::endl;
 				int index = materialMap.at(matName);
 				materials[index].get()->textures[replaceIndices[i]] = replacedTex;
 				materials[index].get()->init(false);
@@ -147,7 +147,7 @@ struct LoadList {
 		if (checkForMaterial(name)) {
 			return materials.at(materialMap.at(name)).get();
 		}
-		std::cout << "Material " << name << " not found" << std::endl;
+		//std::cout << "Material " << name << " not found" << std::endl;
 		return nullptr;
 	}
 
@@ -234,7 +234,7 @@ struct LoadList {
 
 	void listMaterialsWithTex(std::string texName, std::vector<std::string>& list) {
 		if (textureAssociator.count(texName) == 0) {
-			std::cout << "No materials use texture " << texName << std::endl;
+			//std::cout << "No materials use texture " << texName << std::endl;
 			return;
 		}
 		list = textureAssociator.at(texName);

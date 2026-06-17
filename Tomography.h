@@ -419,7 +419,7 @@ private:
 				tomographer.add_image(fileName, name + "Tex");
 			}
 			catch (...) {
-				std::cout << "Invalid file selected" << std::endl;
+				//std::cout << "Invalid file selected" << std::endl;
 				if (errorFunc != nullptr) {
 					errorFunc("FILE ERROR:", "The selected file is not a valid partial image!");
 				}
@@ -500,7 +500,7 @@ private:
 		}
 		for (size_t i = 2; i != canvas.size(); i++) {
 			int currentIndex = std::stoi(canvas[i]->Name);
-			std::cout << currentIndex << std::endl;
+			//std::cout << currentIndex << std::endl;
 			UIItem* ref = grid->Items[currentIndex];
 			canvas[i]->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extentx * 0.2f);
 			canvas[i]->updateDisplay();
@@ -553,9 +553,9 @@ private:
 			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogDiffTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"));
 			renderPipeline = "TS_BF";
 		}
-		else {
-			std::cout << "Invalid configuration" << std::endl;
-		}
+		//else {
+		//	std::cout << "Invalid configuration" << std::endl;
+		//}
 	}
 };
 
