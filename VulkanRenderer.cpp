@@ -164,7 +164,9 @@ public:
 		//if (texName != std::string("Webcam View")) {
 		//	mainArrangement->addItem(getPtr(remapArrangement));
 		//}
-		mainArrangement->addItem(getPtr(functionDropdown));
+		if (texName != std::string("Webcam View")) {
+			mainArrangement->addItem(getPtr(functionDropdown));
+		}
 		mainArrangement->addItem(getPtr(new spacer()));
 		mainArrangement->arrangeItems();
 
@@ -492,7 +494,7 @@ public:
 		int optionIndex = 0;
 
 		std::vector<std::string> materialOptions{};
-		std::vector<std::string> invalidMatOptions = {"UI", "UIGray", "UIText", "UV", "W"};
+		std::vector<std::string> invalidMatOptions = {"UI", "UIGray", "UIText", "UV", "W", "UIRoundBox"};
 		for (auto elem : boundPass->pipelineMap) {
 			if (find(invalidMatOptions.begin(), invalidMatOptions.end(), elem.first) != invalidMatOptions.end()) {
 				continue;
@@ -739,22 +741,35 @@ public:
 		Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 		int index = 0;
-		int optionIndex = 0;
+		int optionIndex = -1;
 
 		std::vector<std::string> existingMaterials{};
 		textureLL->listMaterials(existingMaterials);
 
-		for (std::string elem : existingMaterials) {
-			if (elem == obj->materialName) {
-				optionIndex = index;
-				break;
+		std::vector<uint32_t> removeIndices{};
+
+		for (uint32_t i = 0; i != existingMaterials.size(); i++) {
+			std::string elem = existingMaterials[i];
+			if (elem.substr(elem.size() - 5, elem.size() - 1) == "_flat") {
+				removeIndices.push_back(i);
 			}
-			index++;
+			if (elem == obj->materialName && optionIndex == -1) {
+				optionIndex = i;
+			}
 		}
+
+		std::sort(removeIndices.begin(), removeIndices.end(), [](uint32_t a, uint32_t b) {return a > b; });
+		for (uint32_t i : removeIndices) {
+			std::cout << i << " ";
+			existingMaterials.erase(existingMaterials.begin() + i);
+		}
+		std::cout << std::endl;
 
 		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		materialSelect->addOptions(existingMaterials);
-		materialSelect->setOptionIndex(optionIndex);
+		if (optionIndex != -1) {
+			materialSelect->setOptionIndex(optionIndex);
+		}
 		materialSelect->setSelectCallback(std::bind(&ObjectSettingsMenu::selectMaterialCallback, this, std::placeholders::_1));
 
 		matSelPtr = getPtr(materialSelect);
@@ -826,7 +841,6 @@ private:
 		std::vector<std::string> options = static_cast<DropdownMenu*>(matSelPtr)->options;
 		if (find(options.begin(), options.end(), obj->materialName) == options.end()) {
 			matSelPtr->addOption(obj->materialName);
-			matSelPtr->addOption(obj->materialName + "_flat");
 			options = static_cast<DropdownMenu*>(matSelPtr)->options;
 		}
 
