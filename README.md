@@ -72,43 +72,61 @@ Clicking on one of the material options will change the material menu so that yo
 
 In the middle of the object settings menu, you will see another dropdown menu, which allows you to quickly swap between each of the materials that you've created during your current session. All materials except the "Webcam" material can be modified by clicking the settings button next to the "MATERIAL:" label; this will let you change the texture assigned to each channel in the material. 
 
-### Generate and Translate Normal Maps
-The normal map component can also generate maps from the object. The object-space (OS) map of the mesh normals is generated automatically, but any OS map can be converted to a tangent-space (TS) map by clicking the button marked 'OS' so that it changes to 'TS'. This function can also be inverted, allowing conversion from a TS map to an OS map by clicking the button again.
+## Image Creation Tools
 
-> [!Note]
-> This function has no ability to determine what type of normal is loaded and has no option to change the type of the normal after it has been loaded. Users must set the OS/TS button to the correct state before loading a map of either type, otherwise lighting and space translation functions will not work as expected.
+The application also features a few different ways of modifying images to help you create 3D models rendered in more interesting ways. All image modification operations are called from the texture settings menu which is accessed by clicking on the settings button next to the label for each texture in the texture menu. This will bring up a menu which lets you view the texture and which contains a dropdown menu prompting you to select a function, each of which is an image processing operation which can be performed. The operations available to each texture may differ based on the type of image that they are. 
 
-### Remap Normals to Match Diffuse Brushstrokes
-The app contains an algorithm which can be used to 'remap' an object-space normal so that individual brushstrokes in the diffuse appear flatly lit. This process is used to imitate the effect of hand-painted normals but to ensure that the normal vectors are correct to a model and appear to match with a diffuse. To use this function, load a diffuse image for your model (the webcam view will not work) and generate an OS normal map. Then, clicking the 'Diff->Norm' button will open a new UI panel where you can use sliders to modify the parameters of the algorithm, and then hitting finish closes the remap menu and applies the map as your current OS map, which can then be saved. 
+All texture modification processes will automatically update textures and any materials which use them, so it is recommended that you apply textures to objects via materials before modifying them so that you can easily tell what effect the filtering algorithms are having on the appearance of the object. 
 
-The function of the sliders is as follows:
+### Remap Images to Match Brushstrokes
+The app contains three different algorithms which can be used to 'remap' an arbitrary image so that the colours are constant across the area of each brushstroke. These algorithms were designed to be used on normal maps so that the user could produce normal maps which are flattened across the brush area, making the normal map look hand-painted as well as the diffuse. However, the algorithms are generic - you can use them as you wish! 
 
-1. Search Size: Modifies the area that is searched over when seeking brushstrokes - smaller values lead to smaller individually lit brushstrokes and vice-versa. This parameter should be adjusted until the light doesn't appear to be broken up over the surface of each brushstroke.
-2. Noise Removal: Modifies the amount of detail noise (e.g. canvas texture, shadows) which is ignored in the diffuse map. Smaller values will result in more harshly broken up brushstrokes than larger values.
-3. Edge Sharpness: Modifies how sharp the border between brushstrokes is. Smaller values lead to smoother transitions between brushstrokes and vice versa. 
-4. Stroke Flatness: Modifies the extent to which each stroke is flattened - smaller values mean that the brushstrokes will appear more rounded and higher values make the brushstrokes appear more uniformly lit.
-5. Flatten Threshold: Modifies the threshold which the system uses to separate faces that are flattened. Smaller values lead to smaller flattened areas, whereas larger values lead to flattening being performed over larger distances. However, when the value is too large this can also lead to 'bleed' where adjacent similar colours are flattened to face in the same direction as each other rather than unique stroke specific directions.
+Using the remapper will first open a menu prompting you to select a reference texture: this is the texture containing the brushstrokes which you will attempt to match the structure of the current texture to. Once a texture has been selected, clicking the finish button will bring up the main remapper menu. In this menu, the most important components are the three buttons beneath the image viewer. The arrow buttons allow you to cycle through the different algorithms, and the button in the middle toggles whether the remapped image should be normalized or not.
 
->[!Note]
-> The remapping algorithm currently has a maximum diffuse height resolution limit of 1024px due to the risks of GPU timeout when using some of the more complex compute shaders used in the remap pipeline. Larger diffuse images can be loaded and will not cause issues, but the remapper will downscale them before performing any filtering and then upscale them to the original dimensions after, yielding no quality improvement from larger diffuse images. 
+A brief description of each of the three algorithms is as follows (starting on the default and listing in the order you would see by clicking the right button repeatedly):
+1. The "Iterative" algorithm: this algorithm averages only small pixel groups based on colour similarity in the references, but it will repeat this averaging many times over to spread averaged values further. PROS: The results can be very high quality, CONS: High quality results can take a while to process properly.  
+2. The "Coord mapped" algorithm: this algorithm functions similarly to the iterative algorithm, but instead of averaging colours in your texture we average image positions to find the central coordinate of each brushstroke and set each pixel to be the centroid value. Then in the final step we read the value from the texture at each centroid, and paste that value over all pixels with the same centroid value. PROS: This system isn't prone to averaging errors - e.g remapping a height map will not result in midpoint heights if not wanted, CONS: The colours are not averaged, so the algorithm is highly prone to random noise errors. 
+3. The "Kuwahara-based" algorithm: this algorithm uses the kuwahara filter to average pixel colours across brushstrokes very effectively and produce clear borders between remapped brushstroke areas. PROS: Very flat, consistent colours across brushstrokes, CONS: Resolution limit of 1024px, lack of fine detail in borders between brushstrokes. 
+
+Each of these algorithms have multiple parameters which you can modify using the sliders in the menu. Describing the effect of each parameter on each algorithm will make this description become far too large, so I won't go into any detail here. In the future I will probably create better documentation to describe exactly what each does, but for now you'll have to figure out what each of them do by playing with the system for yourself!
+
+### Fix the Seams in a Texture
+
+This is the newest function provided by the application, giving users the ability to fix seams in their hand painted textures. In this context a seam refers to an area where two unconnected parts of the UV map join in the 3D model. This appears on your models as sudden sharp jumps between two different areas of the painted map, which doesn't match with the aesthetic of the rest of the piece. The seam fixer aims to address this by copying image data from one side of the seam to the other so that the texture appears to continue across the seam rather than jumping suddenly. 
+
+Because this function is entirely based on the mesh settings, clicking on the seam fixing function will open a menu prompting you to select the mesh you want to fix seams with. Once a mesh is selected, clicking finish will bring you to the main menu for the seam fixer. Since this algorithm is fairly new, there are limited options for user-control. Currently, this menu features a toggle button which lets you switch which side of each seam is copied from and which side is copied to. There is no support for modifying individual seams currently, though this functionality is planned for the future. The seam fixer menu also features a slider which lets you specify the blending distance - a larger distance means that more image data will be copied from one side to another, making the border smoother. 
+
+> [!WARNING]
+> The current seam fixer implementation assumes that the painted map extends beyond the edges of the UV islands. If this is not the case, the seam fixer will not work - rather, it will make the result worse. I plan to produce alternate options in the future which address this assumption. 
+
+### Generate and Modify Normal Maps
+
+The application features support for generating object-space maps directly from a loaded mesh. To create an object-space map from a mesh, open the object settings menu using the settings icon next to the model label then click the plus button at the bottom right of the window. This will create an object-space map labelled as {object name}_OSNorm, which will be added into the texture menu. 
+
+Normal maps also have access to a few normal-specific image processing options: map space transitioning and map mixing. Both of these options are accessed the same as any other image processing operation, but will only appear if a texture has been correctly configured as a normal. 
+
+The map space transitioning option is used to change the space of a normal map from OS to TS or TS to OS. This operation requires you to select the object which the maps are specific to, since the mesh normals are used to guide the transition. You will have the option to specify whether this operation changes the texture that you use the operation on, or if the system will create a new texture to be added to the texture menu. This is configured by toggling the button next to the "In place?" label in the operation menu. If the icon is a solid circle, the operation will overwrite the texture, but if the icon is empty the system will create a new texture named {Normal map name}_{New type} (e.g. a normal map named "Normal" which is OS by default will be used to create a texture labelled "Normal_TS").
+
+Normal map mixing is what it sounds like - combining the effects of two normal maps into a single normal (e.g. if you had one normal map which created a design on a surface, and another which added smaller details like scratches or dirt you could mix them to produce a dirty/scratched design). Calling this operation on a normal map will open a menu asking you to specify which object your normals are relative to. This mesh is necessary because the normal map space transition operation needs to be called during the mixing process. The menu will also ask you to specify what other normal map you want to mix your normal with. Once both have been selected, click the "Finish" button to replace the original normal with the mixed one.
+
+> [!Warning]
+> The normal mixer will modify the original texture which the operation is called on. If you want to save the normal before it is mixed as well as after, save the image before calling the normal mixing functionality. 
 
 ### Extract physical canvas surface details
 The application contains basic 3D scanning functionality which is designed to calculate diffuse and normal maps that describe the physical canvas surface using multiple photos of the canvas with the light source in multiple different locations. This functionality can be used to produce diffuse maps with no shadows produced by surface details or to create normals that digitally reproduce the lighting effects of the painting surface details.
 
-This functionality can be toggled by pressing the "T"  key while a diffuse map is loaded in the surface menu. This diffuse map is used as a template reference which all other loaded images are matched to, so it needs to be a complete picture of the scan which is correctly aligned with the UV map. When the tomography menu is open, individual scans of the painting with different light angles can be loaded (which don't need to contain the entire canvas, since the matching functionality works with an incomplete image). When an image has been loaded, you'll need to drag the button which appears over the image until it matches the position of the light relative to the image. The slider to the right is used to set the angle of the light above the surface of the canvas. Hitting the 'update' button will then correct the loaded image so that it matches the shape of the reference diffuse (and will rotate the light position slider by the same amount). Then hitting 'finish' will add the image to the set of images used in the map generation. 
+This functionality can be accessed by pressing the settings icon next to the label "Extract from painting" at the top of the texture list in the texture menu. Clicking on this button will produce a menu asking you to select a reference texture. This texture is used as a template reference which all other loaded images are matched to, so it needs to be a complete picture of the painting which is correctly aligned with the UV map. Once this texture has been selected, click the finish button to reach the next step of the process.
+
+When the tomography menu is open, individual scans of the painting with different light angles can be loaded (which don't need to contain the entire canvas, since the matching functionality works with an incomplete image). When an image has been loaded, you'll need to drag the button which appears over the image until it matches the position of the light relative to the image. The slider to the right is used to set the angle of the light above the surface of the canvas. Hitting the 'update' button will then correct the loaded image so that it matches the shape of the reference diffuse (and will rotate the light position slider by the same amount). Then hitting 'finish' will add the image to the set of images used in the map generation. 
 
 Once a reasonable set of images has been loaded, use the checkboxes next to the image type labels to specify what maps should be generated, then hit 'update' to perform map generation. Once this process is finished, the material applied to the mesh/plane in the tomography menu will be changed to use the newly generated maps. When you are happy with the generated maps, hit 'finish' and the menu will close and the maps will be applied to the main surface menu.
 
 >[!Note]
 > Matching images to the template is not always successful, and won't work for some images. The matching algorithm will produce the same result each time so the problem can't be solved by attempting the same thing again - simply remove these images from the set either by cancelling them in the load stage or by deleting them from the image table by hitting the 'X' icon.
 
-## FAQ
-
-**Can the webcam device be changed?** — No, not yet, though this is something I aim to add soon.
-
 ## TODO
-- [x] Remapping normals using the diffuse texture.
-- [x] Converting a tangent space map while the 'TS' icon is active to an object space map
-- [ ] Changeable webcam devices
-- [x] Basic tomography functionality to extract information about the physical surface of the painting to be used in rendering
 - [ ] Add automatic light source detection in the tomography menu to avoid manually setting light direction
+- [ ] Add alternate seam fixer options
+- [ ] Create better documentation of remapper algorithm parameters
+- [ ] Streamline the material creation process
+- [ ] Add functionality for saving/loading of sessions
