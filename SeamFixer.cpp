@@ -1625,6 +1625,12 @@ void SeamFixer::seamFixAll() {
 		commandBuffer = drawColourMap(commandBuffer, &colourMap, colourMesh);
 		commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, alphaMesh);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
+
+		if (useRemapper) {
+			commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+			remapper->performRemap(commandBuffer);
+			std::cout << "Here" << std::endl;
+		}
 		alphaOverMap(&colourMap, &alphaMap, writeTex);
 	}
 	Texture* res = writeTex->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);

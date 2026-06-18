@@ -176,7 +176,6 @@ public:
 		textureLL->listTextures(availableTextures);
 
 		if (std::find(availableTextures.begin(), availableTextures.end(), targetName) == availableTextures.end()) {
-			//std::cout << "The target texture provided is not a valid texture in the set" << std::endl;
 			if (errorFunc != nullptr) {
 				errorFunc("FILE ERROR: ", "The target texture is not valid!");
 			}

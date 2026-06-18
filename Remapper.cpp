@@ -223,7 +223,6 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 
 		filteredTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		filteredTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		//filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		break;
 	case (ITERATIVE_COORDMAP):
 		Engine::get()->endSingleTimeComputeCommand(commandBuffer);
@@ -267,7 +266,6 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 		}
 		filteredTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		filteredTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		//filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		break;
 	}
 }

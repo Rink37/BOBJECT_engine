@@ -5,6 +5,7 @@
 #include"Materials.h"
 #include"LoadLists.h"
 #include"UIelements.h"
+#include"Remapper.h"
 
 //#include"include/BakedImages.h"
 
@@ -158,12 +159,33 @@ public:
 			strip.rightAlphaMesh.cleanup();
 			strip.rightMesh.cleanup();
 		}
+
+		if (remapper != nullptr) {
+			remapper->cleanup();
+		}
+	}
+
+	void createRemapper() {
+		if (targetTex == nullptr) {
+			return;
+		}
+		useRemapper = true;
+		if (alphaMap.cleaned) {
+			prepMap(&alphaMap);
+			createAlphaWritePipeline(&alphaMap);
+		}
+		remapper = new RemapBackend();
+		remapper->setup();
+		remapper->createReferenceMaps(targetTex, alphaMap.colour);
 	}
 
 	std::string targetTexName = "";
 	Texture* targetTex = nullptr;
 
 private:
+	bool useRemapper = false;
+	RemapBackend* remapper = nullptr;
+
 	Mesh* target = nullptr;
 
 	OverlayMap colourMap{};
@@ -332,6 +354,9 @@ public:
 
 		column->addItem(getPtr(sizeSlide));
 
+		Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
+		column->addItem(getPtr(new Button(settingsMat, std::bind(&SeamFixMenu::activateRemapper, this, std::placeholders::_1))));
+
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
 		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
@@ -362,6 +387,12 @@ private:
 
 	std::function<void(UIItem*)> cancelFunc = nullptr;
 	std::function<void(UIItem*)> finishFunc = nullptr;
+
+	void activateRemapper(UIItem* owner) {
+		fixer->createRemapper();
+		fixer->seamFixAll();
+		std::cout << "Break" << std::endl;
+	}
 
 	void setSize(float distance) {
 		fixer->updateSeamMeshes(distance);
