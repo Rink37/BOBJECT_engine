@@ -175,8 +175,6 @@ public:
 			createAlphaWritePipeline(&alphaMap);
 		}
 		remapper = new RemapBackend();
-		remapper->setup();
-		remapper->createReferenceMaps(targetTex, alphaMap.colour);
 	}
 
 	std::string targetTexName = "";
@@ -218,7 +216,7 @@ private:
 	VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, Mesh*);
 
 	void alphaOverMap(bool);
-	void alphaOverMap(OverlayMap*, OverlayMap*, Texture*);
+	void alphaOverMap(Texture*, Texture*, Texture*);
 };
 
 class SeamObjPicker : public Widget {

@@ -964,7 +964,7 @@ void SeamFixer::prepMap(OverlayMap* map) {
 	map->colour->mipLevels = 1;
 	map->colour->textureFormat = VK_FORMAT_R8G8B8A8_SRGB;
 	map->colour->textureLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	map->colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	map->colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	map->colour->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	map->colour->textureImageView = map->colour->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
@@ -1519,7 +1519,7 @@ VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, bool isRi
 
 VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, OverlayMap* map, Mesh* mesh) {
 	VkClearValue clearValues[1] = {};
-	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+	clearValues[0].color = { {0.0f, 0.0f, 1.0f/255.0f, 1.0f} };
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1581,18 +1581,14 @@ void SeamFixer::alphaOverMap(bool isRight) {
 	alphaOver.cleanup();
 }
 
-void SeamFixer::alphaOverMap(OverlayMap* cMap, OverlayMap* aMap, Texture* texInFlight) {
-	Texture* seamMap = cMap->colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
-	Texture* seamAlpha = aMap->colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+void SeamFixer::alphaOverMap(Texture* cMap, Texture* aMap, Texture* texInFlight) {
+	Texture* seamMap = cMap->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+	Texture* seamAlpha = aMap->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
 
 	filter alphaOver(std::vector<Texture*>{texInFlight, seamMap, seamAlpha}, new IPALPHAOVERSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 	alphaOver.filterImage();
 
 	vkDeviceWaitIdle(Engine::get()->device);
-
-	//texInFlight->getCVMat();
-	//cv::imshow("Result", texInFlight->texMat);
-	//cv::waitKey(0);
 
 	seamMap->cleanup();
 	seamAlpha->cleanup();
@@ -1624,14 +1620,28 @@ void SeamFixer::seamFixAll() {
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawColourMap(commandBuffer, &colourMap, colourMesh);
 		commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, alphaMesh);
-		Engine::get()->endSingleTimeCommands(commandBuffer);
+		
 
-		if (useRemapper) {
-			commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
-			remapper->performRemap(commandBuffer);
-			std::cout << "Here" << std::endl;
+		if (useRemapper && remapper != nullptr) {
+			Engine::get()->endSingleTimeCommands(commandBuffer);
+			
+			remapper->cleanup();
+
+			remapper->setup();
+			remapper->toggleNormalization();
+			remapper->createReferenceMaps(targetTex, alphaMap.colour);
+			
+			//remapper->filteredTarget->getCVMat();
+			//cv::imshow("remapped alpha", remapper->filteredTarget->texMat);
+			//cv::waitKey(0);
+			//remapper->filteredTarget->destroyCVMat();
+
+			alphaOverMap(colourMap.colour, remapper->filteredTarget, writeTex);
 		}
-		alphaOverMap(&colourMap, &alphaMap, writeTex);
+		else {
+			Engine::get()->endSingleTimeCommands(commandBuffer);
+			alphaOverMap(colourMap.colour, alphaMap.colour, writeTex);
+		}
 	}
 	Texture* res = writeTex->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
 	textureLL->replacePtr(res, targetTexName);

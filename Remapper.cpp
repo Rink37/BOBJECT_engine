@@ -23,6 +23,15 @@ void RemapBackend::createReferenceMaps(Texture* refTex, Texture* targetTex) {
 	uint32_t height = baseHeight;
 	uint32_t width = baseWidth;
 
+	if (baseRef != nullptr) {
+		baseRef->cleanup();
+		delete baseRef;
+	}
+	if (baseTarget != nullptr) {
+		baseTarget->cleanup();
+		delete baseTarget;
+	}
+
 	switch (method) {
 	case (KUWAHARA):
 		if (height > 1024) {
@@ -64,7 +73,7 @@ void RemapBackend::createReferenceMaps(Texture* refTex, Texture* targetTex) {
 
 		if (filteredTarget != nullptr) {
 			filteredTarget->cleanup();
-			filteredTarget = nullptr;
+			delete filteredTarget;
 		}
 
 		referenceKuwahara->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -89,7 +98,12 @@ void RemapBackend::createReferenceMaps(Texture* refTex, Texture* targetTex) {
 		}
 		SobelCombined->filterImage();
 
+		if (filteredTarget != nullptr) {
+			filteredTarget->cleanup();
+			delete filteredTarget;
+		}
 		filteredTarget = baseTarget->copyTexture();
+
 		if (Averager == nullptr) {
 			Averager = new filter(std::vector<Texture*>{filteredTarget, SobelCombined->filterTarget[0]}, new ITERATIVEAVERAGERSHADER, VK_FORMAT_R8G8B8A8_UNORM, paramBuffer, sizeof(RemapParamObject));
 		}
@@ -99,7 +113,6 @@ void RemapBackend::createReferenceMaps(Texture* refTex, Texture* targetTex) {
 
 		filteredTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		filteredTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		//filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		break;
 	case (ITERATIVE_COORDMAP):
 		baseRef = refTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
@@ -135,7 +148,7 @@ void RemapBackend::createReferenceMaps(Texture* refTex, Texture* targetTex) {
 
 		if (filteredTarget != nullptr) {
 			filteredTarget->cleanup();
-			filteredTarget = nullptr;
+			delete filteredTarget;
 		}
 
 		coordReader->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -282,30 +295,53 @@ void RemapBackend::cleanup() {
 		filteredTarget = nullptr;
 	}
 
-	switch (method) {
-	case (KUWAHARA):
-		Kuwahara->cleanup();
-		gradRemap->cleanup();
-		referenceKuwahara->cleanup();
-		Averager->cleanup();
-		break;
-	case (ITERATIVE_COORDMAP):
-		coordMapCreator->cleanup();
-		coordAverager->cleanup();
-		coordReader->cleanup();
-		break;
-	case (ITERATIVE):
-		Averager->cleanup();
-		break;
-	default:
-		break;
+	if (colourConverter != nullptr) {
+		switch (method) {
+		case (KUWAHARA):
+			Kuwahara->cleanup();
+			delete Kuwahara;
+			Kuwahara = nullptr;
+			gradRemap->cleanup();
+			delete gradRemap;
+			gradRemap = nullptr;
+			referenceKuwahara->cleanup();
+			delete referenceKuwahara;
+			referenceKuwahara = nullptr;
+			Averager->cleanup();
+			delete Averager;
+			Averager = nullptr;
+			break;
+		case (ITERATIVE_COORDMAP):
+			coordMapCreator->cleanup();
+			delete coordMapCreator;
+			coordMapCreator = nullptr;
+			coordAverager->cleanup();
+			delete coordAverager;
+			coordAverager = nullptr;
+			coordReader->cleanup();
+			delete coordReader;
+			coordReader = nullptr;
+			break;
+		case (ITERATIVE):
+			Averager->cleanup();
+			delete Averager;
+			Averager = nullptr;
+			break;
+		default:
+			break;
+		}
+		colourConverter->cleanup();
+		delete colourConverter;
+		colourConverter = nullptr;
+		SobelCombined->cleanup();
+		delete SobelCombined;
+		SobelCombined = nullptr;
 	}
-	colourConverter->cleanup();
-	SobelCombined->cleanup();
 	
-	
-	vkDestroyBuffer(Engine::get()->device, paramBuffer, nullptr);
-	vkFreeMemory(Engine::get()->device, paramBufferMemory, nullptr);
+	if (paramBuffer != nullptr) {
+		vkDestroyBuffer(Engine::get()->device, paramBuffer, nullptr);
+		vkFreeMemory(Engine::get()->device, paramBufferMemory, nullptr);
+	}
 }
 
 void RemapUI::fullRemap(Texture* refTex, Texture* targetTex) {
