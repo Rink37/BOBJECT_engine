@@ -73,9 +73,9 @@ public:
 		bool cleaned = true;
 	};
 
-	void updateSeamMeshes(float);
+	void updateSeamMeshes(float distance = 0.01f, bool updateColour = false);
 
-	void createSeamMeshes(SeamStrip&, float);
+	void createSeamMeshes(SeamStrip&, float, bool);
 	void findAdjacentStrips();
 	void getStripChain(SeamStrip&, uint32_t, std::vector<std::array<uint32_t, 2>>&, std::vector<uint32_t>&);
 
@@ -318,6 +318,10 @@ public:
 		fixer->findAdjacentStrips();
 		fixer->seamFixAll();
 
+		fixer->updateSeamMeshes(0.05f, true);
+		fixer->updateSeamMeshes(0.01f);
+		fixer->seamFixAll();
+
 		cancelFunc = cancelFunct;
 		finishFunc = finishFunct;
 
@@ -393,7 +397,7 @@ private:
 	}
 
 	void setSize(float distance) {
-		fixer->updateSeamMeshes(distance);
+		fixer->updateSeamMeshes(distance, false);
 		fixer->seamFixAll();
 	}
 	

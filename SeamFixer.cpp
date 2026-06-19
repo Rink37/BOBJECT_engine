@@ -302,13 +302,16 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 	//std::cout << strip.leftIndices.size() << " " << strip.rightIndices.size() << std::endl;
 }
 
-void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
-	strip.leftMesh.vertices.clear();
-	strip.leftMesh.indices.clear();
+void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool updateColour = true) {
+	
+	if (updateColour) {
+		strip.leftMesh.vertices.clear();
+		strip.leftMesh.indices.clear();
+		strip.rightMesh.vertices.clear();
+		strip.rightMesh.indices.clear();
+	}
 	strip.leftAlphaMesh.vertices.clear();
 	strip.leftAlphaMesh.indices.clear();
-	strip.rightMesh.vertices.clear();
-	strip.rightMesh.indices.clear();
 	strip.rightAlphaMesh.vertices.clear();
 	strip.rightAlphaMesh.indices.clear();
 
@@ -667,8 +670,10 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
 		L_center.normal = glm::vec3(0.0f);
 		L_center.texCoord = glm::vec2(0.0f);
 
-		strip.leftMesh.vertices.push_back(L_out);
-		strip.leftMesh.vertices.push_back(L_center);
+		if (updateColour) {
+			strip.leftMesh.vertices.push_back(L_out);
+			strip.leftMesh.vertices.push_back(L_center);
+		}
 
 		strip.leftAlphaMesh.vertices.push_back(L_out);
 		strip.leftAlphaMesh.vertices.push_back(L_center);
@@ -684,8 +689,10 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
 		R_center.normal = glm::vec3(0.0f);
 		R_center.texCoord = glm::vec2(vertices[strip.leftIndices[i]].texCoord.x, vertices[strip.leftIndices[i]].texCoord.y);
 
-		strip.rightMesh.vertices.push_back(R_in);
-		strip.rightMesh.vertices.push_back(R_center);
+		if (updateColour) {
+			strip.rightMesh.vertices.push_back(R_in);
+			strip.rightMesh.vertices.push_back(R_center);
+		}
 	}
 
 	for (uint32_t i = 0; i != strip.leftIndices.size(); i++) {
@@ -716,8 +723,10 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
 		L_center.normal = glm::vec3(0.0f);
 		L_center.texCoord = glm::vec2(0.0f);
 
-		strip.leftMesh.vertices.push_back(L_center);
-		strip.leftMesh.vertices.push_back(L_in);
+		if (updateColour) {
+			strip.leftMesh.vertices.push_back(L_center);
+			strip.leftMesh.vertices.push_back(L_in);
+		}
 
 		strip.leftAlphaMesh.vertices.push_back(L_center);
 		strip.leftAlphaMesh.vertices.push_back(L_in);
@@ -732,8 +741,10 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
 		R_out.normal = glm::vec3(0.0f);
 		R_out.texCoord = glm::vec2(coord.x, coord.y);
 
-		strip.rightMesh.vertices.push_back(R_center);
-		strip.rightMesh.vertices.push_back(R_out);
+		if (updateColour) {
+			strip.rightMesh.vertices.push_back(R_center);
+			strip.rightMesh.vertices.push_back(R_out);
+		}
 	}
 
 	uint32_t index = 0;
@@ -758,12 +769,15 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
 		//cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
 		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
 
-		strip.rightMesh.vertices.at(index).pos = glm::vec3(coord.x, coord.y, 0.0f);
-		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(coord.x, coord.y);
-		index++;
-		strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
-		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y);
-		index++;
+		if (updateColour) {
+			strip.rightMesh.vertices.at(index).pos = glm::vec3(coord.x, coord.y, 0.0f);
+			strip.leftMesh.vertices.at(index).texCoord = glm::vec2(coord.x, coord.y);
+			index++;
+			strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
+			strip.leftMesh.vertices.at(index).texCoord = glm::vec2(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y);
+			index++;
+		}
+		
 
 		Vertex R_in_Alpha{};
 		R_in_Alpha.pos = glm::vec3(coord.x, coord.y, 0.0f);
@@ -798,12 +812,14 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
 		//cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
 		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
 
-		strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
-		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y);
-		index++;
-		strip.rightMesh.vertices.at(index).pos = glm::vec3(coord.x, coord.y, 0.0f);
-		strip.leftMesh.vertices.at(index).texCoord = glm::vec2(coord.x, coord.y);
-		index++;
+		if (updateColour) {
+			strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
+			strip.leftMesh.vertices.at(index).texCoord = glm::vec2(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y);
+			index++;
+			strip.rightMesh.vertices.at(index).pos = glm::vec3(coord.x, coord.y, 0.0f);
+			strip.leftMesh.vertices.at(index).texCoord = glm::vec2(coord.x, coord.y);
+			index++;
+		}
 
 		Vertex R_center_Alpha{};
 		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
@@ -835,13 +851,16 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
 		}
 	}
 
-	strip.leftMesh.indices = stripIndices;
+	if (updateColour) {
+		strip.leftMesh.indices = stripIndices;
+		strip.rightMesh.indices = stripIndices;
+
+		strip.leftMesh.setup();
+		strip.rightMesh.setup();
+	}
 	strip.leftAlphaMesh.indices = stripIndices;
-	strip.rightMesh.indices = stripIndices;
 	strip.rightAlphaMesh.indices = stripIndices;
 
-	strip.leftMesh.setup();
-	strip.rightMesh.setup();
 	strip.leftAlphaMesh.setup();
 	strip.rightAlphaMesh.setup();
 
@@ -849,16 +868,18 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f) {
 	//cv::waitKey(0);
 }
 
-void SeamFixer::updateSeamMeshes(float distance = 0.01f) {
+void SeamFixer::updateSeamMeshes(float distance, bool updateColour) {
 	vkDeviceWaitIdle(Engine::get()->device);
 
 	for (SeamStrip& strip : seamStrips) {
+		if (updateColour) {
+			strip.leftMesh.cleanup();
+			strip.rightMesh.cleanup();
+		}
 		strip.leftAlphaMesh.cleanup();
-		strip.leftMesh.cleanup();
 		strip.rightAlphaMesh.cleanup();
-		strip.rightMesh.cleanup();
 
-		createSeamMeshes(strip, distance);
+		createSeamMeshes(strip, distance, updateColour);
 	}
 }
 
