@@ -315,18 +315,19 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 	strip.rightAlphaMesh.vertices.clear();
 	strip.rightAlphaMesh.indices.clear();
 
-	//cv::Mat demoMatDupe = targetTex->texMat.clone();
+	cv::Mat demoMatDupe = targetTex->texMat.clone();
 	uint32_t width = targetTex->texWidth;
 	uint32_t height = targetTex->texHeight;
 
 	// First we do the left hand mesh
-	// I'll start just by plotting points but later we can make this into an actual mesh
 
 	std::map<uint32_t, std::vector<glm::vec2>> L_out{};
 	std::map<uint32_t, std::vector<glm::vec2>> L_in{};
 
 	std::vector<Vertex> vertices = target->vertices;
 	std::vector<uint32_t> indices = target->indices;
+
+	//uint32_t colour = 10;
 
 	for (uint32_t i = 0; i != strip.leftIndices.size() - 1; i++) {
 		uint32_t index_1 = strip.leftIndices[i];
@@ -335,8 +336,8 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 		glm::vec2 texCoord_0 = vertices[index_1].texCoord;
 		glm::vec2 texCoord_1 = vertices[index_2].texCoord;
 
-		std::vector<uint32_t> Occurences_0{};
-		std::vector<uint32_t> Occurences_1{};
+		std::vector<uint32_t> Occurences_0{}; // all places where index_1 appears in indices
+		std::vector<uint32_t> Occurences_1{}; // all places where index_2 appears in indices
 
 		auto it_0 = find(indices.begin(), indices.end(), index_1);
 		auto it_1 = find(indices.begin(), indices.end(), index_2);
@@ -349,20 +350,22 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 			it_1 = find(it_1 + 1, indices.end(), index_2);
 		}
 
-		std::set<uint32_t> connectedIndices{};
+		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_0{}; // all indices that touch index_1
+		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_1{}; // all indices that touch index_2
+
 		for (uint32_t j : Occurences_0) {
 			switch (j % 3) {
 			case (0):
-				connectedIndices.insert(j + 1);
-				connectedIndices.insert(j + 2);
+				connectedIndices_0.insert({ j, j + 1 });
+				connectedIndices_0.insert({ j, j + 2 });
 				break;
 			case (1):
-				connectedIndices.insert(j - 1);
-				connectedIndices.insert(j + 1);
+				connectedIndices_0.insert({ j, j - 1 });
+				connectedIndices_0.insert({ j, j + 1 });
 				break;
 			case (2):
-				connectedIndices.insert(j - 2);
-				connectedIndices.insert(j - 1);
+				connectedIndices_0.insert({ j, j - 2 });
+				connectedIndices_0.insert({ j, j - 1 });
 				break;
 			default:
 				break;
@@ -372,45 +375,123 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 		for (uint32_t j : Occurences_1) {
 			switch (j % 3) {
 			case (0):
-				connectedIndices.insert(j + 1);
-				connectedIndices.insert(j + 2);
+				connectedIndices_1.insert({ j, j + 1 });
+				connectedIndices_1.insert({ j, j + 2 });
 				break;
 			case (1):
-				connectedIndices.insert(j - 1);
-				connectedIndices.insert(j + 1);
+				connectedIndices_1.insert({ j, j - 1 });
+				connectedIndices_1.insert({ j, j + 1 });
 				break;
 			case (2):
-				connectedIndices.insert(j - 2);
-				connectedIndices.insert(j - 1);
+				connectedIndices_1.insert({ j, j - 2 });
+				connectedIndices_1.insert({ j, j - 1 });
 				break;
 			default:
 				break;
 			}
+		}
+
+		std::vector<uint32_t> connectedIndices{}; // This should represent the four indices in the square
+
+		// We now want to find the triangle containing both index_1 and index_2
+
+		for (std::pair<uint32_t, uint32_t> pair_0 : connectedIndices_0) {
+			for (std::pair<uint32_t, uint32_t> pair_1 : connectedIndices_1) {
+				if (pair_0.second == pair_1.second) {
+					connectedIndices.push_back(pair_0.first);
+					connectedIndices.push_back(pair_1.first);
+					connectedIndices.push_back(pair_0.second);
+					break;
+				}
+			}
+		}
+
+		//std::cout << connectedIndices.size() << std::endl;
+
+		// Now we want to find the final index i.e. the index which is connected to both one of index_1 or index_2 and the triangle index we just found
+
+		std::vector<uint32_t> Occurrences_2{};
+		uint32_t index_3 = indices[connectedIndices[2]];
+		auto it_2 = find(indices.begin(), indices.end(), index_3);
+		while (it_2 != indices.end()) {
+			Occurrences_2.push_back(it_2 - indices.begin());
+			it_2 = find(it_2 + 1, indices.end(), index_3);
+		}
+
+		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_2{}; // all indices that touch index_2
+
+		for (uint32_t j : Occurrences_2) {
+			switch (j % 3) {
+			case (0):
+				connectedIndices_2.insert({ j, j + 1 });
+				connectedIndices_2.insert({ j, j + 2 });
+				break;
+			case (1):
+				connectedIndices_2.insert({ j, j - 1 });
+				connectedIndices_2.insert({ j, j + 1 });
+				break;
+			case (2):
+				connectedIndices_2.insert({ j, j - 2 });
+				connectedIndices_2.insert({ j, j - 1 });
+				break;
+			default:
+				break;
+			}
+		}
+
+		std::vector<std::pair<uint32_t, uint32_t>> candidates{};
+
+		for (std::pair<uint32_t, uint32_t> pair_0 : connectedIndices_0) {
+			for (std::pair<uint32_t, uint32_t> pair_2 : connectedIndices_2) {
+				if (pair_0.second == pair_2.second && pair_0.second != index_2) {
+					candidates.push_back({ index_1, pair_0.second });
+				}
+			}
+		}
+
+		for (std::pair<uint32_t, uint32_t> pair_1 : connectedIndices_1) {
+			for (std::pair<uint32_t, uint32_t> pair_2 : connectedIndices_2) {
+				if (pair_1.second == pair_2.second && pair_1.second != index_1) {
+					candidates.push_back({ index_2, pair_1.second });
+				}
+			}
+		}
+
+		float minDistance = 10000.0f;
+		uint32_t bestCandidate = 0;
+		for (std::pair<uint32_t, uint32_t> pair : candidates) {
+			float dist = 0.0f;
+			if (pair.first == index_1) {
+				dist = glm::length(texCoord_1 - vertices[indices[pair.second]].texCoord);
+			}
+			else {
+				dist = glm::length(texCoord_0 - vertices[indices[pair.second]].texCoord);
+			}
+			if (dist < minDistance && dist != 0.0f) {
+				minDistance = dist;
+				std::cout << "Distance = " << minDistance << std::endl;
+				bestCandidate = pair.second;
+			}
+		}
+
+		if (bestCandidate != 0) {
+			connectedIndices.push_back(bestCandidate);
 		}
 
 		glm::vec2 thirdCoord{ 0, 0 };
 
-		for (uint32_t j : Occurences_0) {
-			auto it = find(connectedIndices.begin(), connectedIndices.end(), j);
-			if (it != connectedIndices.end()) {
-				connectedIndices.erase(it);
-			}
-		}
-
-		for (uint32_t j : Occurences_1) {
-			auto it = find(connectedIndices.begin(), connectedIndices.end(), j);
-			if (it != connectedIndices.end()) {
-				connectedIndices.erase(it);
-			}
-		}
-
 		for (uint32_t j : connectedIndices) {
 			thirdCoord += vertices[indices[j]].texCoord;
+			//cv::circle(demoMatDupe, cv::Point(vertices[indices[j]].texCoord.x * width, vertices[indices[j]].texCoord.y * height), 5, cv::Scalar(colour, 0, 255), -1);
 		}
+
+		//colour += 10;
+
+		//std::cout << connectedIndices.size() << std::endl;
 
 		thirdCoord /= connectedIndices.size();
 
-		//cv::circle(demoMatDupe, cv::Point(thirdCoord.x * width, thirdCoord.y * height), 5, cv::Scalar(0, 0, 255), -1);
+		cv::circle(demoMatDupe, cv::Point(thirdCoord.x * width, thirdCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
 
 		float gradient = static_cast<float>(texCoord_1.y - texCoord_0.y) / static_cast<float>(texCoord_1.x - texCoord_0.x);
 		float invGradient = -1.0f / gradient;
@@ -483,6 +564,8 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 	std::map<uint32_t, std::vector<glm::vec2>> R_out{};
 	std::map<uint32_t, std::vector<glm::vec2>> R_in{};
 
+	//colour = 10;
+
 	for (uint32_t i = 0; i != strip.rightIndices.size() - 1; i++) {
 		uint32_t index_1 = strip.rightIndices[i];
 		uint32_t index_2 = strip.rightIndices[i + 1];
@@ -504,20 +587,22 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 			it_1 = find(it_1 + 1, indices.end(), index_2);
 		}
 
-		std::set<uint32_t> connectedIndices{};
+		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_0{}; // all indices that touch index_1
+		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_1{}; // all indices that touch index_2
+
 		for (uint32_t j : Occurences_0) {
 			switch (j % 3) {
 			case (0):
-				connectedIndices.insert(j + 1);
-				connectedIndices.insert(j + 2);
+				connectedIndices_0.insert({ j, j + 1 });
+				connectedIndices_0.insert({ j, j + 2 });
 				break;
 			case (1):
-				connectedIndices.insert(j - 1);
-				connectedIndices.insert(j + 1);
+				connectedIndices_0.insert({ j, j - 1 });
+				connectedIndices_0.insert({ j, j + 1 });
 				break;
 			case (2):
-				connectedIndices.insert(j - 2);
-				connectedIndices.insert(j - 1);
+				connectedIndices_0.insert({ j, j - 2 });
+				connectedIndices_0.insert({ j, j - 1 });
 				break;
 			default:
 				break;
@@ -527,45 +612,123 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 		for (uint32_t j : Occurences_1) {
 			switch (j % 3) {
 			case (0):
-				connectedIndices.insert(j + 1);
-				connectedIndices.insert(j + 2);
+				connectedIndices_1.insert({ j, j + 1 });
+				connectedIndices_1.insert({ j, j + 2 });
 				break;
 			case (1):
-				connectedIndices.insert(j - 1);
-				connectedIndices.insert(j + 1);
+				connectedIndices_1.insert({ j, j - 1 });
+				connectedIndices_1.insert({ j, j + 1 });
 				break;
 			case (2):
-				connectedIndices.insert(j - 2);
-				connectedIndices.insert(j - 1);
+				connectedIndices_1.insert({ j, j - 2 });
+				connectedIndices_1.insert({ j, j - 1 });
 				break;
 			default:
 				break;
 			}
 		}
 
+		std::vector<uint32_t> connectedIndices{}; // This should represent the four indices in the square
+
+		// We now want to find any indices present in both sets but excluding index_1 and index_2
+
+		for (std::pair<uint32_t, uint32_t> pair_0 : connectedIndices_0) {
+			for (std::pair<uint32_t, uint32_t> pair_1 : connectedIndices_1) {
+				if (pair_0.second == pair_1.second) {
+					connectedIndices.push_back(pair_0.first);
+					connectedIndices.push_back(pair_1.first);
+					connectedIndices.push_back(pair_0.second);
+					break;
+				}
+			}
+		}
+
+		//std::cout << connectedIndices.size() << std::endl;
+
+		// Now we want to find the final index i.e. the index which is connected to both one of index_1 or index_2 and the triangle index we just found
+
+		std::vector<uint32_t> Occurrences_2{};
+		uint32_t index_3 = indices[connectedIndices[2]];
+		auto it_2 = find(indices.begin(), indices.end(), index_3);
+		while (it_2 != indices.end()) {
+			Occurrences_2.push_back(it_2 - indices.begin());
+			it_2 = find(it_2 + 1, indices.end(), index_3);
+		}
+
+		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_2{}; // all indices that touch index_2
+
+		for (uint32_t j : Occurrences_2) {
+			switch (j % 3) {
+			case (0):
+				connectedIndices_2.insert({ j, j + 1 });
+				connectedIndices_2.insert({ j, j + 2 });
+				break;
+			case (1):
+				connectedIndices_2.insert({ j, j - 1 });
+				connectedIndices_2.insert({ j, j + 1 });
+				break;
+			case (2):
+				connectedIndices_2.insert({ j, j - 2 });
+				connectedIndices_2.insert({ j, j - 1 });
+				break;
+			default:
+				break;
+			}
+		}
+
+		std::vector<std::pair<uint32_t, uint32_t>> candidates{};
+
+		for (std::pair<uint32_t, uint32_t> pair_0 : connectedIndices_0) {
+			for (std::pair<uint32_t, uint32_t> pair_2 : connectedIndices_2) {
+				if (pair_0.second == pair_2.second && pair_0.second != index_2) {
+					candidates.push_back({ index_1, pair_0.second });
+				}
+			}
+		}
+
+		for (std::pair<uint32_t, uint32_t> pair_1 : connectedIndices_1) {
+			for (std::pair<uint32_t, uint32_t> pair_2 : connectedIndices_2) {
+				if (pair_1.second == pair_2.second && pair_1.second != index_1) {
+					candidates.push_back({ index_2, pair_1.second });
+				}
+			}
+		}
+
+		float minDistance = 10000.0f;
+		uint32_t bestCandidate = 0;
+		for (std::pair<uint32_t, uint32_t> pair : candidates) {
+			float dist = 0.0f;
+			if (pair.first == index_1) {
+				dist = glm::length(texCoord_1 - vertices[indices[pair.second]].texCoord);
+			}
+			else {
+				dist = glm::length(texCoord_0 - vertices[indices[pair.second]].texCoord);
+			}
+			if (dist < minDistance && dist != 0.0f) {
+				minDistance = dist;
+				std::cout << "Distance = " << minDistance << std::endl;
+				bestCandidate = pair.second;
+			}
+		}
+
+		if (bestCandidate != 0) {
+			connectedIndices.push_back(bestCandidate);
+		}
+		
 		glm::vec2 thirdCoord{ 0, 0 };
-
-		for (uint32_t j : Occurences_0) {
-			auto it = find(connectedIndices.begin(), connectedIndices.end(), j);
-			if (it != connectedIndices.end()) {
-				connectedIndices.erase(it);
-			}
-		}
-
-		for (uint32_t j : Occurences_1) {
-			auto it = find(connectedIndices.begin(), connectedIndices.end(), j);
-			if (it != connectedIndices.end()) {
-				connectedIndices.erase(it);
-			}
-		}
 
 		for (uint32_t j : connectedIndices) {
 			thirdCoord += vertices[indices[j]].texCoord;
+			//cv::circle(demoMatDupe, cv::Point(vertices[indices[j]].texCoord.x * width, vertices[indices[j]].texCoord.y* height), 5, cv::Scalar(colour, 0, 255), -1);
 		}
+
+		//colour += 10;
+
+		//std::cout << connectedIndices.size() << std::endl;
 
 		thirdCoord /= connectedIndices.size();
 
-		//cv::circle(demoMatDupe, cv::Point(thirdCoord.x * width, thirdCoord.y * height), 5, cv::Scalar(0, 0, 255), -1);
+		//cv::circle(demoMatDupe, cv::Point(thirdCoord.x * width, thirdCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
 
 		float gradient = static_cast<float>(texCoord_1.y - texCoord_0.y) / static_cast<float>(texCoord_1.x - texCoord_0.x);
 		float invGradient = -1.0f / gradient;
@@ -658,8 +821,8 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 			coord.x = second[0].x;// *width;
 			coord.y = second[0].y;// *height;
 		}
-		//cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
-		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[i]].texCoord.x * width, vertices[strip.leftIndices[i]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(coord.x * width, coord.y * height), 5, cv::Scalar(255, 0, 0), -1);
 
 		Vertex L_out{};
 		L_out.pos = glm::vec3(coord.x, coord.y, 0.0f);
@@ -711,8 +874,8 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 			coord.x = second[0].x;// *width;
 			coord.y = second[0].y;// *height;
 		}
-		//cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[elem.first]].texCoord.x * width, vertices[strip.leftIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
-		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(vertices[strip.leftIndices[i]].texCoord.x * width, vertices[strip.leftIndices[i]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(coord.x * width, coord.y * height), 5, cv::Scalar(0, 255, 0), -1);
 
 		Vertex L_in{};
 		L_in.pos = glm::vec3(coord.x, coord.y, 0.0f);
@@ -766,8 +929,8 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 			coord.x = second[0].x;// *width;
 			coord.y = second[0].y;// *height;
 		}
-		//cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
-		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(255, 0, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[i]].texCoord.x * width, vertices[strip.rightIndices[i]].texCoord.y * height), 5, cv::Scalar(255, 0, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(coord.x * width, coord.y * height), 5, cv::Scalar(255, 0, 0), -1);
 
 		if (updateColour) {
 			strip.rightMesh.vertices.at(index).pos = glm::vec3(coord.x, coord.y, 0.0f);
@@ -809,8 +972,8 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 			coord.x = second[0].x;// *width;
 			coord.y = second[0].y;// *height;
 		}
-		//cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[elem.first]].texCoord.x * width, vertices[strip.rightIndices[elem.first]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
-		//cv::circle(demoMatDupe, coord, 5, cv::Scalar(0, 255, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[i]].texCoord.x * width, vertices[strip.rightIndices[i]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(coord.x * width, coord.x * height), 5, cv::Scalar(0, 255, 0), -1);
 
 		if (updateColour) {
 			strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
