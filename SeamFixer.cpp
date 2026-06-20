@@ -18,19 +18,19 @@ void findLocalIndices(std::vector<uint32_t>& localIndices, std::vector<uint32_t>
 	}
 
 	for (uint32_t i = 0; i != indexOccurrences.size(); i++) {
-		uint32_t L_Index = indexOccurrences[i];
-		switch (L_Index % 3) {
+		uint32_t index = indexOccurrences[i];
+		switch (index % 3) {
 		case (0):
-			localIndices.push_back(indices[L_Index + 1]);
-			localIndices.push_back(indices[L_Index + 2]);
+			localIndices.push_back(indices[index + 1]);
+			localIndices.push_back(indices[index + 2]);
 			break;
 		case (1):
-			localIndices.push_back(indices[L_Index - 1]);
-			localIndices.push_back(indices[L_Index + 1]);
+			localIndices.push_back(indices[index - 1]);
+			localIndices.push_back(indices[index + 1]);
 			break;
 		case (2):
-			localIndices.push_back(indices[L_Index - 2]);
-			localIndices.push_back(indices[L_Index - 1]);
+			localIndices.push_back(indices[index - 2]);
+			localIndices.push_back(indices[index - 1]);
 			break;
 		default:
 			break;
@@ -302,6 +302,35 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 	//std::cout << strip.leftIndices.size() << " " << strip.rightIndices.size() << std::endl;
 }
 
+void findSeamMeshLocalIndices(std::set<std::pair<uint32_t, uint32_t>>& localIndices, std::vector<uint32_t> indices, uint32_t index) {
+	std::vector<uint32_t> Occurrences{};
+	
+	auto it = find(indices.begin(), indices.end(), index);
+	while (it != indices.end()) {
+		Occurrences.push_back(it - indices.begin());
+		it = find(it + 1, indices.end(), index);
+	}
+
+	for (uint32_t j : Occurrences) {
+		switch (j % 3) {
+		case (0):
+			localIndices.insert({ j, j + 1 });
+			localIndices.insert({ j, j + 2 });
+			break;
+		case (1):
+			localIndices.insert({ j, j - 1 });
+			localIndices.insert({ j, j + 1 });
+			break;
+		case (2):
+			localIndices.insert({ j, j - 2 });
+			localIndices.insert({ j, j - 1 });
+			break;
+		default:
+			break;
+		}
+	}
+}
+
 void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool updateColour = true) {
 	
 	if (updateColour) {
@@ -336,60 +365,11 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 		glm::vec2 texCoord_0 = vertices[index_1].texCoord;
 		glm::vec2 texCoord_1 = vertices[index_2].texCoord;
 
-		std::vector<uint32_t> Occurences_0{}; // all places where index_1 appears in indices
-		std::vector<uint32_t> Occurences_1{}; // all places where index_2 appears in indices
-
-		auto it_0 = find(indices.begin(), indices.end(), index_1);
-		auto it_1 = find(indices.begin(), indices.end(), index_2);
-		while (it_0 != indices.end()) {
-			Occurences_0.push_back(it_0 - indices.begin());
-			it_0 = find(it_0 + 1, indices.end(), index_1);
-		}
-		while (it_1 != indices.end()) {
-			Occurences_1.push_back(it_1 - indices.begin());
-			it_1 = find(it_1 + 1, indices.end(), index_2);
-		}
-
 		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_0{}; // all indices that touch index_1
 		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_1{}; // all indices that touch index_2
 
-		for (uint32_t j : Occurences_0) {
-			switch (j % 3) {
-			case (0):
-				connectedIndices_0.insert({ j, j + 1 });
-				connectedIndices_0.insert({ j, j + 2 });
-				break;
-			case (1):
-				connectedIndices_0.insert({ j, j - 1 });
-				connectedIndices_0.insert({ j, j + 1 });
-				break;
-			case (2):
-				connectedIndices_0.insert({ j, j - 2 });
-				connectedIndices_0.insert({ j, j - 1 });
-				break;
-			default:
-				break;
-			}
-		}
-
-		for (uint32_t j : Occurences_1) {
-			switch (j % 3) {
-			case (0):
-				connectedIndices_1.insert({ j, j + 1 });
-				connectedIndices_1.insert({ j, j + 2 });
-				break;
-			case (1):
-				connectedIndices_1.insert({ j, j - 1 });
-				connectedIndices_1.insert({ j, j + 1 });
-				break;
-			case (2):
-				connectedIndices_1.insert({ j, j - 2 });
-				connectedIndices_1.insert({ j, j - 1 });
-				break;
-			default:
-				break;
-			}
-		}
+		findSeamMeshLocalIndices(connectedIndices_0, indices, index_1);
+		findSeamMeshLocalIndices(connectedIndices_1, indices, index_2);
 
 		std::vector<uint32_t> connectedIndices{}; // This should represent the four indices in the square
 
@@ -406,38 +386,12 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 			}
 		}
 
-		//std::cout << connectedIndices.size() << std::endl;
-
 		// Now we want to find the final index i.e. the index which is connected to both one of index_1 or index_2 and the triangle index we just found
 
-		std::vector<uint32_t> Occurrences_2{};
 		uint32_t index_3 = indices[connectedIndices[2]];
-		auto it_2 = find(indices.begin(), indices.end(), index_3);
-		while (it_2 != indices.end()) {
-			Occurrences_2.push_back(it_2 - indices.begin());
-			it_2 = find(it_2 + 1, indices.end(), index_3);
-		}
 
 		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_2{}; // all indices that touch index_2
-
-		for (uint32_t j : Occurrences_2) {
-			switch (j % 3) {
-			case (0):
-				connectedIndices_2.insert({ j, j + 1 });
-				connectedIndices_2.insert({ j, j + 2 });
-				break;
-			case (1):
-				connectedIndices_2.insert({ j, j - 1 });
-				connectedIndices_2.insert({ j, j + 1 });
-				break;
-			case (2):
-				connectedIndices_2.insert({ j, j - 2 });
-				connectedIndices_2.insert({ j, j - 1 });
-				break;
-			default:
-				break;
-			}
-		}
+		findSeamMeshLocalIndices(connectedIndices_2, indices, index_3);
 
 		std::vector<std::pair<uint32_t, uint32_t>> candidates{};
 
@@ -469,7 +423,6 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 			}
 			if (dist < minDistance && dist != 0.0f) {
 				minDistance = dist;
-				std::cout << "Distance = " << minDistance << std::endl;
 				bestCandidate = pair.second;
 			}
 		}
@@ -484,10 +437,6 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 			thirdCoord += vertices[indices[j]].texCoord;
 			//cv::circle(demoMatDupe, cv::Point(vertices[indices[j]].texCoord.x * width, vertices[indices[j]].texCoord.y * height), 5, cv::Scalar(colour, 0, 255), -1);
 		}
-
-		//colour += 10;
-
-		//std::cout << connectedIndices.size() << std::endl;
 
 		thirdCoord /= connectedIndices.size();
 
@@ -564,8 +513,6 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 	std::map<uint32_t, std::vector<glm::vec2>> R_out{};
 	std::map<uint32_t, std::vector<glm::vec2>> R_in{};
 
-	//colour = 10;
-
 	for (uint32_t i = 0; i != strip.rightIndices.size() - 1; i++) {
 		uint32_t index_1 = strip.rightIndices[i];
 		uint32_t index_2 = strip.rightIndices[i + 1];
@@ -573,60 +520,11 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 		glm::vec2 texCoord_0 = vertices[index_1].texCoord;
 		glm::vec2 texCoord_1 = vertices[index_2].texCoord;
 
-		std::vector<uint32_t> Occurences_0{};
-		std::vector<uint32_t> Occurences_1{};
-
-		auto it_0 = find(indices.begin(), indices.end(), index_1);
-		auto it_1 = find(indices.begin(), indices.end(), index_2);
-		while (it_0 != indices.end()) {
-			Occurences_0.push_back(it_0 - indices.begin());
-			it_0 = find(it_0 + 1, indices.end(), index_1);
-		}
-		while (it_1 != indices.end()) {
-			Occurences_1.push_back(it_1 - indices.begin());
-			it_1 = find(it_1 + 1, indices.end(), index_2);
-		}
-
 		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_0{}; // all indices that touch index_1
 		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_1{}; // all indices that touch index_2
 
-		for (uint32_t j : Occurences_0) {
-			switch (j % 3) {
-			case (0):
-				connectedIndices_0.insert({ j, j + 1 });
-				connectedIndices_0.insert({ j, j + 2 });
-				break;
-			case (1):
-				connectedIndices_0.insert({ j, j - 1 });
-				connectedIndices_0.insert({ j, j + 1 });
-				break;
-			case (2):
-				connectedIndices_0.insert({ j, j - 2 });
-				connectedIndices_0.insert({ j, j - 1 });
-				break;
-			default:
-				break;
-			}
-		}
-
-		for (uint32_t j : Occurences_1) {
-			switch (j % 3) {
-			case (0):
-				connectedIndices_1.insert({ j, j + 1 });
-				connectedIndices_1.insert({ j, j + 2 });
-				break;
-			case (1):
-				connectedIndices_1.insert({ j, j - 1 });
-				connectedIndices_1.insert({ j, j + 1 });
-				break;
-			case (2):
-				connectedIndices_1.insert({ j, j - 2 });
-				connectedIndices_1.insert({ j, j - 1 });
-				break;
-			default:
-				break;
-			}
-		}
+		findSeamMeshLocalIndices(connectedIndices_0, indices, index_1);
+		findSeamMeshLocalIndices(connectedIndices_1, indices, index_2);
 
 		std::vector<uint32_t> connectedIndices{}; // This should represent the four indices in the square
 
@@ -643,38 +541,12 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 			}
 		}
 
-		//std::cout << connectedIndices.size() << std::endl;
-
 		// Now we want to find the final index i.e. the index which is connected to both one of index_1 or index_2 and the triangle index we just found
 
-		std::vector<uint32_t> Occurrences_2{};
 		uint32_t index_3 = indices[connectedIndices[2]];
-		auto it_2 = find(indices.begin(), indices.end(), index_3);
-		while (it_2 != indices.end()) {
-			Occurrences_2.push_back(it_2 - indices.begin());
-			it_2 = find(it_2 + 1, indices.end(), index_3);
-		}
 
 		std::set<std::pair<uint32_t, uint32_t>> connectedIndices_2{}; // all indices that touch index_2
-
-		for (uint32_t j : Occurrences_2) {
-			switch (j % 3) {
-			case (0):
-				connectedIndices_2.insert({ j, j + 1 });
-				connectedIndices_2.insert({ j, j + 2 });
-				break;
-			case (1):
-				connectedIndices_2.insert({ j, j - 1 });
-				connectedIndices_2.insert({ j, j + 1 });
-				break;
-			case (2):
-				connectedIndices_2.insert({ j, j - 2 });
-				connectedIndices_2.insert({ j, j - 1 });
-				break;
-			default:
-				break;
-			}
-		}
+		findSeamMeshLocalIndices(connectedIndices_2, indices, index_3);
 
 		std::vector<std::pair<uint32_t, uint32_t>> candidates{};
 
@@ -1813,8 +1685,13 @@ void SeamFixer::seamFixAll() {
 
 			remapper->setup();
 			remapper->toggleNormalization();
-			remapper->createReferenceMaps(targetTex, alphaMap.colour);
+			remapper->createReferenceMaps(colourMap.colour, alphaMap.colour);
 			
+			//colourMap.colour->getCVMat();
+			//cv::imshow("remapped alpha", colourMap.colour->texMat);
+			//cv::waitKey(0);
+			//colourMap.colour->destroyCVMat();
+
 			//remapper->filteredTarget->getCVMat();
 			//cv::imshow("remapped alpha", remapper->filteredTarget->texMat);
 			//cv::waitKey(0);

@@ -318,7 +318,7 @@ public:
 		fixer->findAdjacentStrips();
 		fixer->seamFixAll();
 
-		fixer->updateSeamMeshes(0.05f, true);
+		fixer->updateSeamMeshes(0.025f, true);
 		fixer->updateSeamMeshes(0.01f);
 		fixer->seamFixAll();
 
