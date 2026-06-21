@@ -86,6 +86,7 @@ public:
 				seam.isRight = isRight;
 			}
 		}
+		this->isRight = isRight;
 	}
 
 	void alphaOverRight() {
@@ -182,6 +183,7 @@ public:
 
 private:
 	bool useRemapper = false;
+	bool isRight = true;
 	RemapBackend* remapper = nullptr;
 
 	Mesh* target = nullptr;
@@ -200,9 +202,16 @@ private:
 	std::vector<OverlayMap*> alphaMaps{ &leftAlpha, &rightAlpha };
 
 	std::vector<SeamStrip> seamStrips{};
+	std::vector<std::vector<uint32_t>> sortedSeamStrips{};
+	std::vector<std::vector<Mesh*>> sortedLeftMeshes{};
+	std::vector<std::vector<Mesh*>> sortedRightMeshes{};
+	std::vector<std::vector<Mesh*>> sortedLeftAlphaMeshes{};
+	std::vector<std::vector<Mesh*>> sortedRightAlphaMeshes{};
 
 	uint32_t width = 0;
 	uint32_t height = 0;
+
+	void packSeamStrips();
 
 	void sortSeamIndices(SeamStrip&);
 	void prepMap(OverlayMap*);
@@ -211,9 +220,11 @@ private:
 	void createAlphaWritePipeline(OverlayMap*);
 	VkCommandBuffer drawColourMap(VkCommandBuffer, bool);
 	VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*, Mesh*);
+	VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*, std::vector<Mesh*>);
 
 	VkCommandBuffer drawAlphaMap(VkCommandBuffer, bool);
 	VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, Mesh*);
+	VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, std::vector<Mesh*>);
 
 	void alphaOverMap(bool);
 	void alphaOverMap(Texture*, Texture*, Texture*);

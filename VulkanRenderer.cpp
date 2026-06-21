@@ -2677,7 +2677,8 @@ private:
 				}
 				drawFrame();
 			}
-			catch (...) {
+			catch (const exception& e) {
+				std::cout << e.what() << std::endl;
 				createErrorDialog("YOU... SHOULDN'T BE HERE", "An uncategorized error has been encountered. Let me know how you got to here!");
 			}
 		}

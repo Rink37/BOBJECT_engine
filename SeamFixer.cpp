@@ -309,7 +309,7 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 	strip.leftIndices = newLeftIndices;
 	strip.rightIndices = newRightIndices;
 
-	std::cout << strip.leftIndices.size() << " " << strip.rightIndices.size() << std::endl;
+	//std::cout << strip.leftIndices.size() << " " << strip.rightIndices.size() << std::endl;
 }
 
 void findSeamMeshLocalIndices(std::set<std::pair<uint32_t, uint32_t>>& localIndices, std::vector<uint32_t> indices, uint32_t index) {
@@ -343,10 +343,7 @@ void findSeamMeshLocalIndices(std::set<std::pair<uint32_t, uint32_t>>& localIndi
 
 void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<uint32_t> stripIndices, float distance, std::map<uint32_t, std::vector<glm::vec2>>& in, std::map<uint32_t, std::vector<glm::vec2>>& out, bool closed) {
 	size_t size = stripIndices.size() - 1;
-	if (closed) {
-		std::cout << "The strip should be closed" << std::endl;
-	}
-	else if (stripIndices[0] == stripIndices[size]) {
+	if (!closed && stripIndices[0] == stripIndices[size]) {
 		size -= 1;
 	}
 	
@@ -474,9 +471,9 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 			out.insert({ index_1, std::vector<glm::vec2>{outCoord} });
 		}
 		else {
-			if (closed) {
-				std::cout << index_1 << " was found in out" << std::endl;
-			}
+			//if (closed) {
+			//	std::cout << index_1 << " was found in out" << std::endl;
+			//}
 			out.at(index_1).push_back(outCoord);
 		}
 
@@ -484,9 +481,9 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 			in.insert({ index_1, std::vector<glm::vec2>{ inCoord} });
 		}
 		else {
-			if (closed) {
-				std::cout << index_1 << " was found in in" << std::endl;
-			}
+			//if (closed) {
+			//	std::cout << index_1 << " was found in in" << std::endl;
+			//}
 			in.at(index_1).push_back(inCoord);
 		}
 
@@ -506,9 +503,9 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 			out.insert({ index_2, std::vector<glm::vec2>{ outCoord } });
 		}
 		else {
-			if (closed) {
-				std::cout << index_2 << " was found in out" << std::endl;
-			}
+			//if (closed) {
+			//	std::cout << index_2 << " was found in out" << std::endl;
+			//}
 			out.at(index_2).push_back(outCoord);
 		}
 
@@ -516,9 +513,9 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 			in.insert({ index_2, std::vector<glm::vec2>{ inCoord } });
 		}
 		else {
-			if (closed) {
-				std::cout << index_2 << " was found in in" << std::endl;
-			}
+			//if (closed) {
+			//	std::cout << index_2 << " was found in in" << std::endl;
+			//}
 			in.at(index_2).push_back(inCoord);
 		}
 	}
@@ -897,6 +894,288 @@ void SeamFixer::findAdjacentStrips() {
 
 	//cv::imshow("Seam checker", demoMat);
 	//cv::waitKey(0);
+
+	packSeamStrips();
+}
+
+bool doLinesIntersect(glm::vec4 a, glm::vec4 b) {
+	if (a == b) {
+		//std::cout << "Intersect : Lines are equal" << std::endl;
+		return true;
+	}
+
+	if (std::max(a[0], a[2]) < std::min(b[0], b[2]) || std::max(b[0], b[2]) < std::min(a[0], a[2])) {
+	//	std::cout << "No intersect: x intervals don't overlap" << std::endl;
+		return false;
+	}
+
+	if (std::max(a[1], a[3]) < std::min(b[1], b[3]) || std::max(b[1], b[3]) < std::min(a[1], a[3])) {
+	//	std::cout << "No intersect: y intervals don't overlap" << std::endl;
+		return false;
+	}
+
+	// We find the equations of the lines
+	float a_m = (a[0] - a[2] == 0.0f) ? 1000.0f : (a[1] - a[3]) / (a[0] - a[2]);
+	float b_m = (b[0] - b[2] == 0.0f) ? 1000.0f : (b[1] - b[3]) / (b[0] - b[2]);
+	if (a_m == b_m) {
+	//	std::cout << "No intersect: lines are parallel" << std::endl;
+		return false; // The lines are parallel
+	}
+	float a_c = a[1] - a_m * a[0];
+	float b_c = b[1] - b_m * b[0];
+
+	// We find the x coordinate at which both lines will intersect
+	float x_intersect = (b_c - a_c) / (a_m - b_m);
+
+	// Finally we check if this x coordinate is within the bounds of both lines
+	if (x_intersect < std::max(std::min(a[0], a[1]), std::min(b[0], b[1])) || x_intersect > std::min(std::max(a[0], a[1]), std::max(b[0], b[1]))) {
+	//	std::cout << "No intersect: intersection point outside of line bounds" << std::endl;
+		return false; // the intersection is outside the bounds of the lines
+	}
+
+	//std::cout << a[0] << " " << a[1] << " " << a[2] << " " << a[3] << std::endl;
+	//std::cout << b[0] << " " << b[1] << " " << b[2] << " " << b[3] << std::endl;
+	//std::cout << "Intersect" << std::endl;
+	return true;
+}
+
+bool doMeshesOverlap(Mesh* a, Mesh* b) {
+	glm::vec2 a_TL{ a->vertices[0].pos[0], a->vertices[0].pos[1] };
+	glm::vec2 a_BR{ a->vertices[0].pos[0], a->vertices[0].pos[1] };
+
+	for (uint32_t i = 0; i != a->vertices.size(); i++) {
+		if (a->vertices[i].pos[0] < a_TL[0]) {
+			a_TL[0] = a->vertices[i].pos[0];
+		}
+		if (a->vertices[i].pos[0] > a_BR[0]) {
+			a_BR[0] = a->vertices[i].pos[0];
+		}
+		if (a->vertices[i].pos[1] < a_BR[1]) {
+			a_BR[0] = a->vertices[i].pos[1];
+		}
+		if (a->vertices[i].pos[1] > a_TL[1]) {
+			a_TL[1] = a->vertices[i].pos[1];
+		}
+	}
+
+	glm::vec2 b_TL{ b->vertices[0].pos[0], b->vertices[0].pos[1] };
+	glm::vec2 b_BR{ b->vertices[0].pos[0], b->vertices[0].pos[1] };
+
+	for (uint32_t i = 0; i != b->vertices.size(); i++) {
+		if (b->vertices[i].pos[0] < b_TL[0]) {
+			b_TL[0] = b->vertices[i].pos[0];
+		}
+		if (b->vertices[i].pos[0] > b_BR[0]) {
+			b_BR[0] = b->vertices[i].pos[0];
+		}
+		if (b->vertices[i].pos[1] < b_BR[1]) {
+			b_BR[0] = b->vertices[i].pos[1];
+		}
+		if (b->vertices[i].pos[1] > b_TL[1]) {
+			b_TL[1] = b->vertices[i].pos[1];
+		}
+	}
+
+	//std::cout << "Checking bounding boxes" << std::endl;
+
+	if (b_TL[0] > a_BR[0] || b_BR[0] < a_TL[0] || b_TL[1] < a_BR[1] || b_BR[1] > a_TL[1]) {
+		// If the bounding boxes don't overlap then the meshes won't overlap
+		return false;
+	}
+
+	//std::cout << "Comparing triangles" << std::endl;
+
+	size_t aSize = std::floor(a->indices.size() / 3) * 3;
+	size_t bSize = std::floor(b->indices.size() / 3) * 3;
+	for (uint32_t i = 0; i != aSize; i += 3) {
+		//std::cout << i << std::endl;
+		uint32_t a_i = a->indices[i];
+		glm::vec4 a_1{ a->vertices[a_i].pos[0], a->vertices[a_i].pos[1], a->vertices[a_i + 1].pos[0], a->vertices[a_i + 1].pos[1] };
+		glm::vec4 a_2{ a->vertices[a_i+1].pos[0], a->vertices[a_i+1].pos[1], a->vertices[a_i + 2].pos[0], a->vertices[a_i + 2].pos[1] };
+		glm::vec4 a_3{ a->vertices[a_i+2].pos[0], a->vertices[a_i+2].pos[1], a->vertices[a_i].pos[0], a->vertices[a_i].pos[1] };
+		for (uint32_t j = 0; j != bSize; j += 3) {
+
+			uint32_t b_i = b->indices[j];
+			glm::vec4 b_1{ b->vertices[b_i].pos[0], b->vertices[b_i].pos[1], b->vertices[b_i + 1].pos[0], b->vertices[b_i + 1].pos[1] };
+			glm::vec4 b_2{ b->vertices[b_i + 1].pos[0], b->vertices[b_i + 1].pos[1], b->vertices[b_i + 2].pos[0], b->vertices[b_i + 2].pos[1] };
+			glm::vec4 b_3{ b->vertices[b_i + 2].pos[0], b->vertices[b_i + 2].pos[1], b->vertices[b_i].pos[0], b->vertices[b_i].pos[1] };
+
+			if (doLinesIntersect(a_1, b_1) || doLinesIntersect(a_1, b_2) || doLinesIntersect(a_1, b_3)) {
+				return true;
+			}
+			if (doLinesIntersect(a_2, b_1) || doLinesIntersect(a_2, b_2) || doLinesIntersect(a_2, b_3)) {
+				return true;
+			}
+			if (doLinesIntersect(a_3, b_1) || doLinesIntersect(a_3, b_2) || doLinesIntersect(a_3, b_3)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool doStripsOverlap(SeamStrip* a, SeamStrip* b) {
+	if (doMeshesOverlap(&a->leftMesh, &b->leftMesh)) {
+		//std::cout << "Right meshes overlap" << std::endl;
+		return true;
+	}
+	if (doMeshesOverlap(&a->rightMesh, &b->rightMesh)) {
+		//std::cout << "Right meshes overlap" << std::endl;
+		return true;
+	}
+	return false;
+}
+
+void SeamFixer::packSeamStrips() {
+	// Attempts to condense non-overlapping seam strips into a smaller subset of seam strips
+	
+	sortedSeamStrips.clear();
+
+	std::map<uint32_t, std::vector<uint32_t>> separated_strips{}; // maps each strip index to the set of indexed strips that the strip does not overlap with
+	std::map<uint32_t, std::vector<uint32_t>> intersecting_strips{};
+
+	for (uint32_t i = 0; i != seamStrips.size(); i++) {
+		separated_strips.insert({ i, std::vector<uint32_t>{} });
+		for (uint32_t j = 0; j != seamStrips.size(); j++) {
+			if (intersecting_strips.count(j) != 0){
+				if (find(intersecting_strips.at(j).begin(), intersecting_strips.at(j).end(), i) != intersecting_strips.at(j).end()) {
+					continue;
+				}
+			}
+			if (j != i && !doStripsOverlap(&seamStrips[i], &seamStrips[j])) {
+				bool can_be_inserted = true;
+				for (uint32_t k : separated_strips.at(i)) {
+					if (intersecting_strips.count(k) != 0) {
+						if (find(intersecting_strips.at(k).begin(), intersecting_strips.at(k).end(), j) != intersecting_strips.at(k).end()) {
+							std::cout << j << " cannot be inserted because it intersects with " << k << std::endl;
+							can_be_inserted = false;
+							break;
+						}
+						else {
+							if (doStripsOverlap(&seamStrips[k], &seamStrips[j])) {
+								std::cout << "Strips " << k << " and " << j << " overlap" << std::endl;
+								if (intersecting_strips.count(k) == 0) {
+									intersecting_strips.insert({ k, std::vector<uint32_t>{j} });
+								}
+								else {
+									intersecting_strips.at(k).push_back(j);
+								}
+								if (intersecting_strips.count(j) == 0) {
+									intersecting_strips.insert({ j, std::vector<uint32_t>{k} });
+								}
+								else {
+									intersecting_strips.at(j).push_back(k);
+								}
+								can_be_inserted = false;
+								break;
+							}
+						}
+					}
+					else {
+						if (doStripsOverlap(&seamStrips[k], &seamStrips[j])) {
+							std::cout << "Strips " << k << " and " << j << " overlap" << std::endl;
+							if (intersecting_strips.count(k) == 0) {
+								intersecting_strips.insert({ k, std::vector<uint32_t>{j} });
+							}
+							else {
+								intersecting_strips.at(k).push_back(j);
+							}
+							if (intersecting_strips.count(j) == 0) {
+								intersecting_strips.insert({ j, std::vector<uint32_t>{k} });
+							}
+							else {
+								intersecting_strips.at(j).push_back(k);
+							}
+							can_be_inserted = false;
+							break;
+						}
+					}
+				}
+				if (can_be_inserted) {
+					std::cout << "Inserting " << j << " into " << i << std::endl;
+					separated_strips.at(i).push_back(j);
+				}
+			}
+			else if (j != i) {
+				std::cout << "Strips " << i << " and " << j << " overlap" << std::endl;
+				if (intersecting_strips.count(i) == 0) {
+					intersecting_strips.insert({ i, std::vector<uint32_t>{j} });
+				}
+				else {
+					intersecting_strips.at(i).push_back(j);
+				}
+				if (intersecting_strips.count(j) == 0) {
+					intersecting_strips.insert({ j, std::vector<uint32_t>{i} });
+				}
+				else {
+					intersecting_strips.at(j).push_back(i);
+				}
+			}
+		}
+	}
+
+	for (auto elem: separated_strips) {
+		std::cout << elem.first << ": ";
+		for (uint32_t j = 0; j != elem.second.size(); j++) {
+			std::cout << elem.second[j] << " ";
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+
+	std::vector<bool> consumed(seamStrips.size(), false);
+
+	while (find(consumed.begin(), consumed.end(), false) != consumed.end()) {
+		uint32_t largestIndex = 0;
+		uint32_t largestIndexCount = 0;
+		for (auto elem : separated_strips) {
+			if (consumed[elem.first]) {
+				continue;
+			}
+			uint32_t count = 0;
+			for (uint32_t i : elem.second) {
+				if (!consumed[i]) {
+					count++;
+				}
+			}
+			if (count >= largestIndexCount) {
+				largestIndexCount = count;
+				largestIndex = elem.first;
+			}
+		}
+		//std::cout << largestIndex << std::endl;
+		std::vector<uint32_t> stripSetIndices{};
+		stripSetIndices.push_back(largestIndex);
+		consumed[largestIndex] = true;
+		for (uint32_t i : separated_strips.at(largestIndex)) {
+			if (!consumed[i]) {
+				stripSetIndices.push_back(i);
+				consumed[i] = true;
+			}
+		}
+		sortedSeamStrips.push_back(stripSetIndices);
+		separated_strips.erase(largestIndex);
+	}
+	for (uint32_t i = 0; i != sortedSeamStrips.size(); i++) {
+		std::vector<Mesh*> rightMeshes{};
+		std::vector<Mesh*> leftMeshes{};
+		std::vector<Mesh*> rightAlphaMeshes{};
+		std::vector<Mesh*> leftAlphaMeshes{};
+		for (uint32_t j = 0; j != sortedSeamStrips[i].size(); j++) {
+			std::cout << sortedSeamStrips[i][j] << " ";
+			leftMeshes.push_back(&seamStrips[sortedSeamStrips[i][j]].leftMesh);
+			rightMeshes.push_back(&seamStrips[sortedSeamStrips[i][j]].rightMesh);
+			leftAlphaMeshes.push_back(&seamStrips[sortedSeamStrips[i][j]].leftAlphaMesh);
+			rightAlphaMeshes.push_back(&seamStrips[sortedSeamStrips[i][j]].rightAlphaMesh);
+		}
+		std::cout << std::endl;
+		sortedLeftMeshes.push_back(leftMeshes);
+		sortedLeftAlphaMeshes.push_back(leftAlphaMeshes);
+		sortedRightMeshes.push_back(rightMeshes);
+		sortedRightAlphaMeshes.push_back(rightAlphaMeshes);
+	}
+	std::cout << std::endl;
 }
 
 void SeamFixer::prepMap(OverlayMap* map) {
@@ -1372,6 +1651,10 @@ VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, bool isR
 }
 
 VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, OverlayMap* map, Mesh* mesh) {
+	return drawColourMap(commandbuffer, map, std::vector<Mesh*>{mesh});
+};
+
+VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, OverlayMap* map, std::vector<Mesh*> meshes) {
 	VkClearValue clearValues[1] = {};
 	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
 
@@ -1402,17 +1685,19 @@ VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, OverlayM
 
 	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipeline);
 
-	VkBuffer vertexBuffers[] = { mesh->vertexBuffer };
-	VkDeviceSize offsets[] = { 0 };
+	for (Mesh* mesh:meshes) {
+		VkBuffer vertexBuffers[] = { mesh->vertexBuffer };
+		VkDeviceSize offsets[] = { 0 };
 
-	vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
+		vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
 
-	vkCmdBindIndexBuffer(commandbuffer, mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(commandbuffer, mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-	vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipelineLayout, 0, 1, &map->descriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipelineLayout, 0, 1, &map->descriptorSet, 0, nullptr);
 
-	vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
-
+		vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
+	}
+	
 	vkCmdEndRenderPass(commandbuffer);
 
 	return commandbuffer;
@@ -1481,8 +1766,12 @@ VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, bool isRi
 }
 
 VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, OverlayMap* map, Mesh* mesh) {
+	return drawAlphaMap(commandbuffer, map, std::vector<Mesh*>{mesh});
+}
+
+VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, OverlayMap* map, std::vector<Mesh*> meshes) {
 	VkClearValue clearValues[1] = {};
-	clearValues[0].color = { {0.0f, 0.0f, 1.0f/255.0f, 1.0f} };
+	clearValues[0].color = { {0.0f, 0.0f, 1.0f / 255.0f, 1.0f} };
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1511,14 +1800,16 @@ VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, OverlayMa
 
 	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipeline);
 
-	VkBuffer vertexBuffers[] = { mesh->vertexBuffer };
-	VkDeviceSize offsets[] = { 0 };
+	for (Mesh* mesh : meshes) {
+		VkBuffer vertexBuffers[] = { mesh->vertexBuffer };
+		VkDeviceSize offsets[] = { 0 };
 
-	vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
+		vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
 
-	vkCmdBindIndexBuffer(commandbuffer, mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(commandbuffer, mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-	vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
+	}
 
 	vkCmdEndRenderPass(commandbuffer);
 
@@ -1569,20 +1860,20 @@ void SeamFixer::seamFixAll() {
 		createAlphaWritePipeline(&alphaMap);
 	}
 	Texture* writeTex = targetTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
-	for (SeamStrip & seam : seamStrips) {
-		Mesh* colourMesh = nullptr;
-		Mesh* alphaMesh = nullptr;
-		if (seam.isRight) {
-			colourMesh = &seam.rightMesh;
-			alphaMesh = &seam.rightAlphaMesh;
+	for (uint32_t i = 0; i != sortedLeftMeshes.size(); i++) {
+		std::vector<Mesh*> colourMeshes{};
+		std::vector<Mesh*> alphaMeshes{};
+		if (isRight) {
+			colourMeshes = sortedRightMeshes[i];
+			alphaMeshes = sortedRightAlphaMeshes[i];
 		}
 		else {
-			colourMesh = &seam.leftMesh;
-			alphaMesh = &seam.leftAlphaMesh;
+			colourMeshes = sortedLeftMeshes[i];
+			alphaMeshes = sortedLeftAlphaMeshes[i];
 		}
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-		commandBuffer = drawColourMap(commandBuffer, &colourMap, colourMesh);
-		commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, alphaMesh);
+		commandBuffer = drawColourMap(commandBuffer, &colourMap, colourMeshes);
+		commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, alphaMeshes);
 		
 
 		if (useRemapper && remapper != nullptr) {
@@ -1594,8 +1885,6 @@ void SeamFixer::seamFixAll() {
 			remapper->toggleNormalization();
 			remapper->createReferenceMaps(colourMap.colour, alphaMap.colour);
 			
-			//std::cout << seam.leftClosed << " " << seam.rightClosed << std::endl;
-
 			//colourMap.colour->getCVMat();
 			//cv::imshow("remapped alpha", colourMap.colour->texMat);
 			//cv::waitKey(0);
