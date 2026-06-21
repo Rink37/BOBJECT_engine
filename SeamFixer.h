@@ -379,6 +379,15 @@ public:
 
 		isSetup = true;
 	}
+
+	void cleanupSubClasses() {
+		if (fixer != nullptr) {
+			fixer->cleanup();
+			delete fixer;
+			fixer = nullptr;
+		}
+	}
+
 private:
 	LoadList* textureLL = nullptr;
 
@@ -393,7 +402,6 @@ private:
 	void activateRemapper(UIItem* owner) {
 		fixer->createRemapper();
 		fixer->seamFixAll();
-		std::cout << "Break" << std::endl;
 	}
 
 	void setSize(float distance) {

@@ -288,18 +288,28 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 			newRightIndices.push_back(strip.rightIndices[i]);
 		}
 	}
-	if (strip.leftClosed && newLeftIndices.size() < newRightIndices.size()) {
+	if (strip.leftClosed){ // && newLeftIndices.size() < newRightIndices.size()) {
 		//std::cout << "Left seam appears to be closed" << std::endl;
 		newLeftIndices.push_back(strip.leftIndices[sortedSeamPositions[0]]);
 	}
-	if (strip.rightClosed && newRightIndices.size() < newLeftIndices.size()) {
+	if (strip.rightClosed){ //&& newRightIndices.size() < newLeftIndices.size()) {
 		//std::cout << "Right seam appears to be closed" << std::endl;
 		newRightIndices.push_back(strip.rightIndices[sortedSeamPositions[0]]);
 	}
+
+	if (newLeftIndices.size() != newRightIndices.size()) {
+		if (newLeftIndices.size() < newRightIndices.size()) {
+			newLeftIndices.push_back(strip.leftIndices[sortedSeamPositions[0]]);
+		}
+		if (newRightIndices.size() < newLeftIndices.size()) {
+			newRightIndices.push_back(strip.rightIndices[sortedSeamPositions[0]]);
+		}
+	}
+
 	strip.leftIndices = newLeftIndices;
 	strip.rightIndices = newRightIndices;
 
-	//std::cout << strip.leftIndices.size() << " " << strip.rightIndices.size() << std::endl;
+	std::cout << strip.leftIndices.size() << " " << strip.rightIndices.size() << std::endl;
 }
 
 void findSeamMeshLocalIndices(std::set<std::pair<uint32_t, uint32_t>>& localIndices, std::vector<uint32_t> indices, uint32_t index) {
@@ -331,10 +341,27 @@ void findSeamMeshLocalIndices(std::set<std::pair<uint32_t, uint32_t>>& localIndi
 	}
 }
 
-void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<uint32_t> stripIndices, float distance, std::map<uint32_t, std::vector<glm::vec2>>& in, std::map<uint32_t, std::vector<glm::vec2>>& out) {
-	for (uint32_t i = 0; i != stripIndices.size() - 1; i++) {
+void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<uint32_t> stripIndices, float distance, std::map<uint32_t, std::vector<glm::vec2>>& in, std::map<uint32_t, std::vector<glm::vec2>>& out, bool closed) {
+	size_t size = stripIndices.size() - 1;
+	if (closed) {
+		std::cout << "The strip should be closed" << std::endl;
+	}
+	else if (stripIndices[0] == stripIndices[size]) {
+		size -= 1;
+	}
+	
+	//for (uint32_t i = 0; i != size+1; i++) {
+	//	std::cout << stripIndices[i] << " ";
+	//}
+	//std::cout << std::endl;
+	
+	for (uint32_t i = 0; i != size; i++) {
 		uint32_t index_1 = stripIndices[i];
-		uint32_t index_2 = stripIndices[i + 1];
+		uint32_t index_2 = stripIndices[i + 1];	
+
+		//if (closed && (i == 0 || i == size - 1)) {
+		//	std::cout << i << " " << index_1 << " " << index_2 << std::endl;
+		//}
 
 		glm::vec2 texCoord_0 = vertices[index_1].texCoord;
 		glm::vec2 texCoord_1 = vertices[index_2].texCoord;
@@ -447,6 +474,9 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 			out.insert({ index_1, std::vector<glm::vec2>{outCoord} });
 		}
 		else {
+			if (closed) {
+				std::cout << index_1 << " was found in out" << std::endl;
+			}
 			out.at(index_1).push_back(outCoord);
 		}
 
@@ -454,6 +484,9 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 			in.insert({ index_1, std::vector<glm::vec2>{ inCoord} });
 		}
 		else {
+			if (closed) {
+				std::cout << index_1 << " was found in in" << std::endl;
+			}
 			in.at(index_1).push_back(inCoord);
 		}
 
@@ -473,6 +506,9 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 			out.insert({ index_2, std::vector<glm::vec2>{ outCoord } });
 		}
 		else {
+			if (closed) {
+				std::cout << index_2 << " was found in out" << std::endl;
+			}
 			out.at(index_2).push_back(outCoord);
 		}
 
@@ -480,6 +516,9 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 			in.insert({ index_2, std::vector<glm::vec2>{ inCoord } });
 		}
 		else {
+			if (closed) {
+				std::cout << index_2 << " was found in in" << std::endl;
+			}
 			in.at(index_2).push_back(inCoord);
 		}
 	}
@@ -487,6 +526,8 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 
 void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool updateColour = true) {
 	
+	//std::cout << "Creating seam meshes!" << std::endl;
+
 	if (updateColour) {
 		strip.leftMesh.vertices.clear();
 		strip.leftMesh.indices.clear();
@@ -510,12 +551,18 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 	std::map<uint32_t, std::vector<glm::vec2>> L_out{};
 	std::map<uint32_t, std::vector<glm::vec2>> L_in{};
 
-	getSeamIO(vertices, indices, strip.leftIndices, distance, L_in, L_out);
+	getSeamIO(vertices, indices, strip.leftIndices, distance, L_in, L_out, strip.leftClosed);
+
+	//std::cout << "Got left seam IO" << std::endl;
 
 	std::map<uint32_t, std::vector<glm::vec2>> R_out{};
 	std::map<uint32_t, std::vector<glm::vec2>> R_in{};
 
-	getSeamIO(vertices, indices, strip.rightIndices, distance, R_in, R_out);
+	getSeamIO(vertices, indices, strip.rightIndices, distance, R_in, R_out, strip.rightClosed);
+
+	//std::cout << "Got right seam IO" << std::endl;
+
+	//std::cout << "Got seam IO" << std::endl;
 
 	// Now we need to construct meshes for the seams based on our results
 	// Constructing the vertex positions is a simple matter of copying the positions; for each mesh we have two strips of vertices, one for the 'in' region and another for the 'out' region
@@ -630,7 +677,6 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 
 	uint32_t index = 0;
 
-	//for (auto elem : R_in) {
 	for (uint32_t i = 0; i != strip.rightIndices.size(); i++) {
 		std::vector<glm::vec2> second = R_in.at(strip.rightIndices[i]);
 		glm::vec2 coord{ 0.0f, 0.0f };
@@ -691,7 +737,7 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 			coord.y = second[0].y;// *height;
 		}
 		//cv::circle(demoMatDupe, cv::Point(vertices[strip.rightIndices[i]].texCoord.x * width, vertices[strip.rightIndices[i]].texCoord.y * height), 5, cv::Scalar(0, 255, 0), -1);
-		//cv::circle(demoMatDupe, cv::Point(coord.x * width, coord.x * height), 5, cv::Scalar(0, 255, 0), -1);
+		//cv::circle(demoMatDupe, cv::Point(coord.x * width, coord.y * height), 5, cv::Scalar(0, 255, 0), -1);
 
 		if (updateColour) {
 			strip.rightMesh.vertices.at(index).pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
@@ -747,6 +793,8 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 
 	//cv::imshow("Tex coord points", demoMatDupe);
 	//cv::waitKey(0);
+
+	//std::cout << "Finished" << std::endl;
 }
 
 void SeamFixer::updateSeamMeshes(float distance, bool updateColour) {
@@ -805,7 +853,6 @@ void SeamFixer::findAdjacentStrips() {
 		sortSeamIndices(newSeamStrip);
 
 		if (newSeamStrip.leftIndices.size() <= 1) {
-			//std::cout << "Seam not found" << std::endl;
 			seamVertexPairs[0] = std::array<uint32_t, 2>{ 0,0 };
 			seamVertexPairs.erase(remove(seamVertexPairs.begin(), seamVertexPairs.end(), std::array<uint32_t, 2>{0, 0}), seamVertexPairs.end());
 			continue;
@@ -821,6 +868,18 @@ void SeamFixer::findAdjacentStrips() {
 		//	cv::circle(demoMat, cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height), 5, cv::Scalar(0, 255 * static_cast<float>(j) / static_cast<float>(newSeamStrip.rightIndices.size()), 0), -1);
 		//}
 
+		//std::cout << newSeamStrip.leftClosed << std::endl;
+		//for (std::uint32_t i : newSeamStrip.leftIndices) {
+		//	std::cout << i << " ";
+		//}
+		//std::cout << std::endl;
+		//std::cout << newSeamStrip.rightClosed << std::endl;
+		//for (std::uint32_t i : newSeamStrip.rightIndices) {
+		//	std::cout << i << " ";
+		//}
+		//std::cout << std::endl;
+		//std::cout << std::endl;
+
 		createSeamMeshes(newSeamStrip);
 
 		sort(chainIndices.begin(), chainIndices.end());
@@ -833,6 +892,8 @@ void SeamFixer::findAdjacentStrips() {
 
 		seamStrips.push_back(newSeamStrip);
 	}
+
+	std::cout << "Created all seam meshes" << std::endl;
 
 	//cv::imshow("Seam checker", demoMat);
 	//cv::waitKey(0);
@@ -1533,6 +1594,8 @@ void SeamFixer::seamFixAll() {
 			remapper->toggleNormalization();
 			remapper->createReferenceMaps(colourMap.colour, alphaMap.colour);
 			
+			//std::cout << seam.leftClosed << " " << seam.rightClosed << std::endl;
+
 			//colourMap.colour->getCVMat();
 			//cv::imshow("remapped alpha", colourMap.colour->texMat);
 			//cv::waitKey(0);
