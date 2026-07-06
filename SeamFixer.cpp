@@ -1180,24 +1180,6 @@ void SeamFixer::packSeamStrips() {
 
 void SeamFixer::prepMap(OverlayMap* map) {
 
-	//OverlayMap* map = nullptr;
-	//if (alpha) {
-	//	if (isRight) {
-	//		map = alphaMaps[1];
-	//	}
-	//	else {
-	//		map = alphaMaps[0];
-	//	}
-	//}
-	//else {
-	//	if (isRight) {
-	//		map = maps[1];
-	//	}
-	//	else {
-	//		map = maps[0];
-	//	}
-	//}
-
 	map->colour = new Texture;
 
 	map->colour->texWidth = width;
@@ -1271,8 +1253,6 @@ void SeamFixer::prepMap(OverlayMap* map) {
 
 void SeamFixer::prepareColourDescriptor(OverlayMap* map) {
 
-	//OverlayMap* map = (isRight) ? maps[1] : maps[0];
-
 	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
 	samplerLayoutBinding.binding = 0;
 	samplerLayoutBinding.descriptorCount = 1;
@@ -1335,8 +1315,6 @@ void SeamFixer::prepareColourDescriptor(OverlayMap* map) {
 
 void SeamFixer::createTexWritePipeline(OverlayMap* map) {
 	shaderData* sD = new SEAMFIX_COLOURSHADER;
-
-	//OverlayMap* map = (isRight) ? maps[1] : maps[0];
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -1461,8 +1439,6 @@ void SeamFixer::createTexWritePipeline(OverlayMap* map) {
 
 void SeamFixer::createAlphaWritePipeline(OverlayMap* map) {
 	shaderData* sD = new SEAMFIX_ALPHASHADER;
-
-	//OverlayMap* map = (isRight) ? alphaMaps[1] : alphaMaps[0];
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
