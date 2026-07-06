@@ -73,9 +73,9 @@ public:
 		bool cleaned = true;
 	};
 
-	void updateSeamMeshes(float distance = 0.01f, bool updateColour = false);
+	void updateSeamMeshes(float distance = 0.01f, bool updateColour = false, bool smoothOutside = false);
 
-	void createSeamMeshes(SeamStrip&, float, bool);
+	void createSeamMeshes(SeamStrip&, float, bool, bool smoothOutside);
 	void findAdjacentStrips();
 	void getStripChain(SeamStrip&, uint32_t, std::vector<std::array<uint32_t, 2>>&, std::vector<uint32_t>&);
 
@@ -181,10 +181,14 @@ public:
 	std::string targetTexName = "";
 	Texture* targetTex = nullptr;
 
+	void createDemoImages(std::string);
+
 private:
 	bool useRemapper = false;
 	bool isRight = true;
 	RemapBackend* remapper = nullptr;
+
+	float stripSize = 0.0f;
 
 	Mesh* target = nullptr;
 
@@ -370,6 +374,8 @@ public:
 		Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
 		column->addItem(getPtr(new Button(settingsMat, std::bind(&SeamFixMenu::activateRemapper, this, std::placeholders::_1))));
 
+		column->addItem(getPtr(new Button(settingsMat, std::bind(&SeamFixMenu::createDemoMaps, this, std::placeholders::_1))));
+
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
 		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
@@ -424,6 +430,10 @@ private:
 		currentDirection = owner->activestate;
 		fixer->setSeamDirections(currentDirection);
 		fixer->seamFixAll();
+	}
+
+	void createDemoMaps(UIItem* owner) {
+		fixer->createDemoImages(fixer->targetTexName);
 	}
 
 	void finish(UIItem* owner) {

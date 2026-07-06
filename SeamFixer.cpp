@@ -342,6 +342,7 @@ void findSeamMeshLocalIndices(std::set<std::pair<uint32_t, uint32_t>>& localIndi
 }
 
 void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<uint32_t> stripIndices, float distance, std::map<uint32_t, std::vector<glm::vec2>>& in, std::map<uint32_t, std::vector<glm::vec2>>& out, bool closed) {
+	
 	size_t size = stripIndices.size() - 1;
 	if (!closed && stripIndices[0] == stripIndices[size]) {
 		size -= 1;
@@ -521,9 +522,11 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 	}
 }
 
-void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool updateColour = true) {
+void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool updateColour = true, bool smoothOutside = false) {
 	
 	//std::cout << "Creating seam meshes!" << std::endl;
+
+	stripSize = distance;
 
 	if (updateColour) {
 		strip.leftMesh.vertices.clear();
@@ -557,15 +560,13 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 
 	getSeamIO(vertices, indices, strip.rightIndices, distance, R_in, R_out, strip.rightClosed);
 
-	//std::cout << "Got right seam IO" << std::endl;
-
-	//std::cout << "Got seam IO" << std::endl;
-
 	// Now we need to construct meshes for the seams based on our results
 	// Constructing the vertex positions is a simple matter of copying the positions; for each mesh we have two strips of vertices, one for the 'in' region and another for the 'out' region
 	// Both strips will share the vertices along the seam but it is easier to just create duplicates of these vertices so that both strips are separate
 	// The challenge is in setting the texture coordinates: they need to be the position of the vertices in the opposite mesh on the opposite region
 	// For example, the texture coordinates of the 'out' strip of the left mesh need to be the same as the positions of the 'in' strip of the right mesh
+
+	float outsideTexCoord = (smoothOutside) ? 1.0f : 0.0f;
 
 	for (uint32_t i = 0; i != strip.leftIndices.size(); i++) {
 		std::vector<glm::vec2> second = L_out.at(strip.leftIndices[i]);
@@ -589,7 +590,7 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 		Vertex L_out{};
 		L_out.pos = glm::vec3(coord.x, coord.y, 0.0f);
 		L_out.normal = glm::vec3(0.0f);
-		L_out.texCoord = glm::vec2(0.0f, 0.0f);
+		L_out.texCoord = glm::vec2(0.0f, outsideTexCoord);
 		Vertex L_center{};
 		L_center.pos = glm::vec3(vertices[strip.leftIndices[i]].texCoord.x, vertices[strip.leftIndices[i]].texCoord.y, 0.0f);
 		L_center.normal = glm::vec3(0.0f);
@@ -752,7 +753,7 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 		Vertex R_out_Alpha{};
 		R_out_Alpha.pos = glm::vec3(coord.x, coord.y, 0.0f);
 		R_out_Alpha.normal = glm::vec3(0.0f);
-		R_out_Alpha.texCoord = glm::vec2(0.0f);
+		R_out_Alpha.texCoord = glm::vec2(0.0f, outsideTexCoord);
 
 		strip.rightAlphaMesh.vertices.push_back(R_center_Alpha);
 		strip.rightAlphaMesh.vertices.push_back(R_out_Alpha);
@@ -794,8 +795,10 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.01f, bool 
 	//std::cout << "Finished" << std::endl;
 }
 
-void SeamFixer::updateSeamMeshes(float distance, bool updateColour) {
+void SeamFixer::updateSeamMeshes(float distance, bool updateColour, bool smoothOutside) {
 	vkDeviceWaitIdle(Engine::get()->device);
+
+	stripSize = distance;
 
 	for (SeamStrip& strip : seamStrips) {
 		if (updateColour) {
@@ -805,7 +808,7 @@ void SeamFixer::updateSeamMeshes(float distance, bool updateColour) {
 		strip.leftAlphaMesh.cleanup();
 		strip.rightAlphaMesh.cleanup();
 
-		createSeamMeshes(strip, distance, updateColour);
+		createSeamMeshes(strip, distance, updateColour, smoothOutside);
 	}
 }
 
@@ -1824,6 +1827,138 @@ void SeamFixer::alphaOverMap(Texture* cMap, Texture* aMap, Texture* texInFlight)
 	seamAlpha->cleanup();
 	alphaOver.cleanup(false);
 };
+
+void SeamFixer::createDemoImages(std::string baseName) {
+	// Image with strips in a separate image
+
+	std::vector<Mesh*> rightColourMeshes{};
+	std::vector<Mesh*> rightAlphaMeshes{};
+
+	std::vector<Mesh*> leftColourMeshes{};
+	std::vector<Mesh*> leftAlphaMeshes{};
+
+	std::vector<Mesh*> outsideMeshes{};
+	std::vector<Mesh*> insideMeshes{};
+
+	updateSeamMeshes(stripSize, false, true);
+	
+	for (uint32_t i = 0; i != seamStrips.size(); i++) {
+		Mesh* rightOutsideMesh = new Mesh();
+		Mesh* leftOutsideMesh = new Mesh();
+
+		Mesh* rightInsideMesh = new Mesh();
+		Mesh* leftInsideMesh = new Mesh();
+		
+		rightColourMeshes.push_back(&seamStrips[i].rightMesh);
+		rightAlphaMeshes.push_back(&seamStrips[i].rightAlphaMesh);
+
+		size_t rSize = seamStrips[i].rightMesh.indices.size() / 2;
+		size_t lSize = seamStrips[i].leftMesh.indices.size() / 2;
+
+		rightOutsideMesh->vertices = seamStrips[i].rightMesh.vertices;
+		rightInsideMesh->vertices = seamStrips[i].rightMesh.vertices;
+
+		leftOutsideMesh->vertices = seamStrips[i].leftMesh.vertices;
+		leftInsideMesh->vertices = seamStrips[i].leftMesh.vertices;
+		
+		for (uint32_t j = 0; j != rSize; j++) {
+			rightOutsideMesh->indices.push_back(seamStrips[i].rightMesh.indices[j]);
+			rightInsideMesh->indices.push_back(seamStrips[i].rightMesh.indices[j + rSize]);
+		}
+			
+		leftColourMeshes.push_back(&seamStrips[i].leftMesh);
+		leftAlphaMeshes.push_back(&seamStrips[i].leftAlphaMesh);
+
+		for (uint32_t j = 0; j != lSize; j++) {
+			leftOutsideMesh->indices.push_back(seamStrips[i].leftMesh.indices[j]);
+			leftInsideMesh->indices.push_back(seamStrips[i].leftMesh.indices[j + lSize]);
+		}
+
+		rightOutsideMesh->setup();
+		rightInsideMesh->setup();
+
+		leftOutsideMesh->setup();
+		leftInsideMesh->setup();
+
+		insideMeshes.push_back(leftInsideMesh);
+		insideMeshes.push_back(rightInsideMesh);
+
+		outsideMeshes.push_back(leftOutsideMesh);
+		outsideMeshes.push_back(rightOutsideMesh);
+	}
+
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+	commandBuffer = drawColourMap(commandBuffer, &colourMap, rightColourMeshes);
+	commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, rightAlphaMeshes);
+	Engine::get()->endSingleTimeCommands(commandBuffer);
+
+	Texture* rightCol = colourMap.colour->copyTexture();
+	Texture* rightAlpha = alphaMap.colour->copyTexture();
+
+	rightCol->getCVMat();
+	rightAlpha->getCVMat();
+
+	cv::Mat rC = rightCol->texMat.clone();
+	cv::Mat rA = rightAlpha->texMat.clone();
+
+	cv::Mat rThresh;
+	cv::cvtColor(rC, rThresh, cv::COLOR_BGR2GRAY);
+	cv::threshold(rThresh, rThresh, 0, 255, cv::THRESH_BINARY);
+
+	cv::imwrite(baseName + std::string("_R_Strips.jpg"), rC);
+	cv::imwrite(baseName + std::string("_R_SolidAlpha.jpg"), rThresh);
+	cv::imwrite(baseName + std::string("_R_BlendAlpha.jpg"), rA);
+
+	commandBuffer = Engine::get()->beginSingleTimeCommands();
+	commandBuffer = drawColourMap(commandBuffer, &colourMap, leftColourMeshes);
+	commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, leftAlphaMeshes);
+	Engine::get()->endSingleTimeCommands(commandBuffer);
+
+	Texture* leftCol = colourMap.colour->copyTexture();
+	Texture* leftAlpha = alphaMap.colour->copyTexture();
+
+	leftCol->getCVMat();
+	leftAlpha->getCVMat();
+
+	cv::Mat lC = leftCol->texMat.clone();
+	cv::Mat lA = leftAlpha->texMat.clone();
+
+	cv::Mat lThresh;
+	cv::cvtColor(lC, lThresh, cv::COLOR_BGR2GRAY);
+	cv::threshold(lThresh, lThresh, 0, 255, cv::THRESH_BINARY);
+
+	cv::imwrite(baseName + std::string("_L_Strips.jpg"), lC);
+	cv::imwrite(baseName + std::string("_L_SolidAlpha.jpg"), lThresh);
+	cv::imwrite(baseName + std::string("_L_BlendAlpha.jpg"), lA);
+
+	commandBuffer = Engine::get()->beginSingleTimeCommands();
+	commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, outsideMeshes);
+	Engine::get()->endSingleTimeCommands(commandBuffer);
+
+	Texture* outsideAlpha = alphaMap.colour->copyTexture();
+	outsideAlpha->getCVMat();
+
+	cv::Mat outsideThresh;
+	cv::cvtColor(outsideAlpha->texMat, outsideThresh, cv::COLOR_BGR2GRAY);
+	cv::threshold(outsideThresh, outsideThresh, 1, 255, cv::THRESH_BINARY);
+
+	cv::imwrite(baseName + std::string("_OutsideAlpha.jpg"), outsideThresh);
+
+	commandBuffer = Engine::get()->beginSingleTimeCommands();
+	commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, insideMeshes);
+	Engine::get()->endSingleTimeCommands(commandBuffer);
+
+	Texture* insideAlpha = alphaMap.colour->copyTexture();
+	insideAlpha->getCVMat();
+
+	cv::Mat insideThresh;
+	cv::cvtColor(insideAlpha->texMat, insideThresh, cv::COLOR_BGR2GRAY);
+	cv::threshold(insideThresh, insideThresh, 1, 255, cv::THRESH_BINARY);
+
+	cv::imwrite(baseName + std::string("_InsideAlpha.jpg"), insideThresh);
+
+	updateSeamMeshes(stripSize, false, false);
+}
 
 void SeamFixer::seamFixAll() {
 	if (colourMap.cleaned) {
