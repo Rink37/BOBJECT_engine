@@ -89,6 +89,7 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 	// We need to modify this so that it's based on the layout of both the left and right indices
 	std::map<uint32_t, std::vector<uint32_t>> localIndicesMap{};
 	std::map<uint32_t, std::vector<uint32_t>> rightLocalIndicesMap{};
+	std::cout << strip.rightIndices.size() << " " << strip.leftIndices.size() << std::endl;
 	for (uint32_t i = 0; i != strip.leftIndices.size(); i++) {
 		std::vector<uint32_t> localIndices{};
 		localIndicesMap.insert({ i, std::vector<uint32_t>{} });
@@ -114,13 +115,13 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 			return;
 		}
 	}
-	bool closed = true;
+	//bool closed = true;
 	uint32_t currentIndex = 0;
 	for (auto elem : localIndicesMap) {
 		if (elem.second.size() == 1 || rightLocalIndicesMap.at(elem.first).size() == 1) {
-			closed = false;
-			strip.leftClosed = !(elem.second.size() == 1);
-			strip.rightClosed = !(rightLocalIndicesMap.at(elem.first).size() == 1);
+	//		closed = false;
+	//		strip.leftClosed = !(elem.second.size() == 1);
+	//		strip.rightClosed = !(rightLocalIndicesMap.at(elem.first).size() == 1);
 			currentIndex = elem.first;
 			break;
 		}
@@ -212,28 +213,28 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 
 	std::vector<uint32_t> newLeftIndices{};
 	std::vector<uint32_t> newRightIndices{};
-	if ((strip.leftClosed && strip.rightClosed) || (!strip.leftClosed && !strip.rightClosed)) {
-		for (uint32_t i : sortedSeamPositions) {
-			newLeftIndices.push_back(strip.leftIndices[i]);
-			newRightIndices.push_back(strip.rightIndices[i]);
-		}
+	//if ((strip.leftClosed && strip.rightClosed) || (!strip.leftClosed && !strip.rightClosed)) {
+	for (uint32_t i : sortedSeamPositions) {
+		newLeftIndices.push_back(strip.leftIndices[i]);
+		newRightIndices.push_back(strip.rightIndices[i]);
 	}
-	else {
-		for (uint32_t i : sortedSeamPositions) {
-			newLeftIndices.push_back(strip.leftIndices[i]);
-		}
-		for (uint32_t i : rightSortedSeamPositions) {
-			newRightIndices.push_back(strip.rightIndices[i]);
-		}
-	}
-	if (strip.leftClosed){ // && newLeftIndices.size() < newRightIndices.size()) {
-		//std::cout << "Left seam appears to be closed" << std::endl;
-		newLeftIndices.push_back(strip.leftIndices[sortedSeamPositions[0]]);
-	}
-	if (strip.rightClosed){ //&& newRightIndices.size() < newLeftIndices.size()) {
-		//std::cout << "Right seam appears to be closed" << std::endl;
-		newRightIndices.push_back(strip.rightIndices[sortedSeamPositions[0]]);
-	}
+	//}
+	//else {
+	//	for (uint32_t i : sortedSeamPositions) {
+	//		newLeftIndices.push_back(strip.leftIndices[i]);
+	//	}
+	//	for (uint32_t i : rightSortedSeamPositions) {
+	//		newRightIndices.push_back(strip.rightIndices[i]);
+	//	}
+	//}
+	//if (strip.leftClosed){ // && newLeftIndices.size() < newRightIndices.size()) {
+	//	//std::cout << "Left seam appears to be closed" << std::endl;
+	//	newLeftIndices.push_back(strip.leftIndices[sortedSeamPositions[0]]);
+	//}
+	//if (strip.rightClosed){ //&& newRightIndices.size() < newLeftIndices.size()) {
+	//	//std::cout << "Right seam appears to be closed" << std::endl;
+	//	newRightIndices.push_back(strip.rightIndices[sortedSeamPositions[0]]);
+	//}
 
 	if (newLeftIndices.size() != newRightIndices.size()) {
 		if (newLeftIndices.size() < newRightIndices.size()) {
@@ -286,6 +287,8 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 	if (!closed && stripIndices[0] == stripIndices[size]) {
 		size -= 1;
 	}
+
+	std::cout << "Size: " << size << std::endl;
 	
 	for (uint32_t i = 0; i != size; i++) {
 		uint32_t index_1 = stripIndices[i];
@@ -517,6 +520,14 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.025f, bool
 	getSeamIO(vertices, indices, strip.rightIndices, distance, R_in, R_out, strip.rightClosed);
 
 	std::cout << "Got right seam IO" << std::endl;
+
+	std::cout << L_in.size() << " " << L_out.size() << " " << R_in.size() << " " << R_out.size() << std::endl;
+	if (strip.leftClosed) {
+		std::cout << "Left closed" << std::endl;
+	}
+	if (strip.rightClosed) {
+		std::cout << "Right closed" << std::endl;
+	}
 
 	// Now we need to construct meshes for the seams based on our results
 	// Constructing the vertex positions is a simple matter of copying the positions; for each mesh we have two strips of vertices, one for the 'in' region and another for the 'out' region
@@ -789,17 +800,42 @@ void SeamFixer::findAdjacentStrips() {
 	std::vector<Vertex> vertices = target->vertices;
 
 	std::vector<std::array<uint32_t, 2>> seamVertexPairs{};
-	std::unordered_map<glm::vec3, uint32_t> uniquePositions{};
+	std::unordered_map<glm::vec3, std::vector<uint32_t>> uniquePositions{};
 	
 	for (uint32_t i = 0; i != vertices.size(); i++) {
 		if (uniquePositions.count(vertices[i].pos) == 0) {
-			uniquePositions.insert({ vertices[i].pos, i });
+			uniquePositions.insert({ vertices[i].pos, std::vector<uint32_t>{i} });
 		}
 		else {
-			if (vertices[uniquePositions.at(vertices[i].pos)].texCoord != vertices[i].texCoord) {
-				seamVertexPairs.push_back(std::array<uint32_t, 2>{uniquePositions.at(vertices[i].pos), i});
+			uniquePositions.at(vertices[i].pos).push_back(i);
+			//if (vertices[uniquePositions.at(vertices[i].pos)].texCoord != vertices[i].texCoord) {
+			//	seamVertexPairs.push_back(std::array<uint32_t, 2>{uniquePositions.at(vertices[i].pos), i});
+			//}
+		}
+	}
+
+	for (auto it = uniquePositions.begin(); it != uniquePositions.end();) {
+		if (it->second.size() == 1) {
+			it = uniquePositions.erase(it);
+		}
+		else {
+			it++;
+		}
+	}
+
+	// Now uniquePositions contains the set of all positions which share multiple vertices
+	for (auto elem : uniquePositions) {
+		//std::vector<std::array<uint32_t, 2>> seamVertexCandidates{};
+		for (uint32_t i = 0; i != elem.second.size(); i++) {
+			for (uint32_t j = 0; j != elem.second.size(); j++) {
+				if (i != j && vertices[elem.second[i]].texCoord != vertices[elem.second[j]].texCoord) {
+					if (find(seamVertexPairs.begin(), seamVertexPairs.end(), std::array<uint32_t, 2>{elem.second[j], elem.second[i]}) == seamVertexPairs.end()) {
+						seamVertexPairs.push_back(std::array<uint32_t, 2>{elem.second[i], elem.second[j]});
+					}
+				}
 			}
 		}
+		//seamVertexPairs.insert(seamVertexPairs.end(), seamVertexCandidates.begin(), seamVertexCandidates.end());
 	}
 
 	// We should now have a vector containing the indices of all pairs of vertices that mark the seams of the UV map
@@ -810,6 +846,7 @@ void SeamFixer::findAdjacentStrips() {
 		targetTex->getCVMat();
 	}
 	cv::Mat demoMat = targetTex->texMat.clone();
+	cv::resize(demoMat, demoMat, cv::Size(), 0.25f, 0.25f);
 
 	width = targetTex->texWidth;
 	height = targetTex->texHeight;
@@ -840,6 +877,8 @@ void SeamFixer::findAdjacentStrips() {
 			cv::Point L = cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height);
 			i = newSeamStrip.rightIndices[j];
 			cv::Point R = cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height);
+			L *= 0.25f;
+			R *= 0.25f;
 			cv::circle(demoMat, L, 5, cv::Scalar(255 * static_cast<float>(j) / static_cast<float>(newSeamStrip.leftIndices.size()), 0, 0), -1);
 			cv::circle(demoMat, R, 5, cv::Scalar(0, 255 * static_cast<float>(j) / static_cast<float>(newSeamStrip.rightIndices.size()), 0), -1);
 			cv::line(demoMat, L, R, cv::Scalar(0, 0, 0), 1);
