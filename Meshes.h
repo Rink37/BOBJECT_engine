@@ -83,6 +83,7 @@ public:
 
 	void setMat(Material* m, std::string shader) {
 		mat = m;
+		unlitMat = m;
 		shaderName = shader;
 	}
 

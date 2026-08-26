@@ -374,6 +374,7 @@ void RemapUI::sharpnessCallback(float sharpness) {
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 }
+
 void RemapUI::hardnessCallback(float hardness) {
 	remapper->setKuwaharaHardness(hardness);
 	

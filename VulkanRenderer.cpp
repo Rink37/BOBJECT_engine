@@ -1756,12 +1756,26 @@ private:
 		std::string textureName = owner->Name;
 
 		Texture* texToSave = textureLoadList->getTexture(textureName);
-		texToSave->getCVMat();
+		Texture* sRGBTex = nullptr;
+		if (texToSave->textureFormat == VK_FORMAT_R8G8B8A8_UNORM) {
+			sRGBTex = texToSave->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, texToSave->textureLayout, VK_IMAGE_USAGE_TRANSFER_DST_BIT, texToSave->textureTiling, 0);
+		}
 		string saveName = winFile::SaveFileDialog();
 		if (saveName != string("fail")) {
-			imwrite(saveName, texToSave->texMat);
+			if (sRGBTex == nullptr) {
+				texToSave->getCVMat();
+				imwrite(saveName, texToSave->texMat);
+			}
+			else {
+				sRGBTex->getCVMat();
+				imwrite(saveName, sRGBTex->texMat);
+			}
 		}
 		texToSave->destroyCVMat();
+		if (sRGBTex != nullptr) {
+			sRGBTex->cleanup();
+			delete sRGBTex;
+		}
 	}
 
 	UIItem* TextureButtons = nullptr;
@@ -2747,9 +2761,7 @@ private:
 		del = ".";
 		pos = objectName.find(del);
 		std::string extension = objectName.substr(pos+1, objectName.size());
-		//std::cout << extension << std::endl;
 		if (extension != std::string("obj")) {
-			//std::cout << "File extension " << extension << " is not currently supported for models" << std::endl;
 			createErrorDialog("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for models"));
 			return;
 		}
