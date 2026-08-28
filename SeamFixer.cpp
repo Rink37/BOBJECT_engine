@@ -808,9 +808,6 @@ void SeamFixer::findAdjacentStrips() {
 		}
 		else {
 			uniquePositions.at(vertices[i].pos).push_back(i);
-			//if (vertices[uniquePositions.at(vertices[i].pos)].texCoord != vertices[i].texCoord) {
-			//	seamVertexPairs.push_back(std::array<uint32_t, 2>{uniquePositions.at(vertices[i].pos), i});
-			//}
 		}
 	}
 
@@ -825,17 +822,13 @@ void SeamFixer::findAdjacentStrips() {
 
 	// Now uniquePositions contains the set of all positions which share multiple vertices
 	for (auto elem : uniquePositions) {
-		//std::vector<std::array<uint32_t, 2>> seamVertexCandidates{};
 		for (uint32_t i = 0; i != elem.second.size(); i++) {
 			for (uint32_t j = 0; j != elem.second.size(); j++) {
-				if (i != j && vertices[elem.second[i]].texCoord != vertices[elem.second[j]].texCoord) {
-					if (find(seamVertexPairs.begin(), seamVertexPairs.end(), std::array<uint32_t, 2>{elem.second[j], elem.second[i]}) == seamVertexPairs.end()) {
-						seamVertexPairs.push_back(std::array<uint32_t, 2>{elem.second[i], elem.second[j]});
-					}
+				if (i != j) {
+					seamVertexPairs.push_back(std::array<uint32_t, 2>{elem.second[i], elem.second[j]});	
 				}
 			}
 		}
-		//seamVertexPairs.insert(seamVertexPairs.end(), seamVertexCandidates.begin(), seamVertexCandidates.end());
 	}
 
 	// We should now have a vector containing the indices of all pairs of vertices that mark the seams of the UV map
@@ -853,17 +846,23 @@ void SeamFixer::findAdjacentStrips() {
 
 	cv::Mat cleanDemoMat = demoMat.clone();
 
+	for (auto pair : seamVertexPairs) {
+		cv::Point L = cv::Point(vertices[pair[0]].texCoord.x * width, vertices[pair[0]].texCoord.y * height);
+		cv::Point R = cv::Point(vertices[pair[1]].texCoord.x * width, vertices[pair[1]].texCoord.y * height);
+		cv::circle(demoMat, L * 0.25f, 5, cv::Scalar(255, 0, 0), -1);
+		cv::circle(demoMat, R * 0.25f, 5, cv::Scalar(0, 255, 0), -1);
+	}
+
+	cv::imshow("Pairs", demoMat);
+	cv::waitKey(0);
+
+	demoMat = cleanDemoMat.clone();
+
 	while (seamVertexPairs.size() > 1) {
 		SeamStrip newSeamStrip;
 		std::vector<uint32_t> chainIndices{};
 
-		std::cout << "Getting strip chain" << std::endl;
-		
 		getStripChain(newSeamStrip, 0, seamVertexPairs, chainIndices);
-		
-		std::cout << std::endl;
-
-		std::cout << "Attempting to sort seam indices" << std::endl;
 		sortSeamIndices(newSeamStrip);
 
 		if (newSeamStrip.leftIndices.size() <= 1) {
@@ -872,49 +871,61 @@ void SeamFixer::findAdjacentStrips() {
 			continue;
 		}
 
-		for (uint32_t j = 0; j != newSeamStrip.leftIndices.size(); j++) {
-			uint32_t i = newSeamStrip.leftIndices[j];
-			cv::Point L = cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height);
-			i = newSeamStrip.rightIndices[j];
-			cv::Point R = cv::Point(vertices[i].texCoord.x * width, vertices[i].texCoord.y * height);
-			L *= 0.25f;
-			R *= 0.25f;
-			cv::circle(demoMat, L, 5, cv::Scalar(255 * static_cast<float>(j) / static_cast<float>(newSeamStrip.leftIndices.size()), 0, 0), -1);
-			cv::circle(demoMat, R, 5, cv::Scalar(0, 255 * static_cast<float>(j) / static_cast<float>(newSeamStrip.rightIndices.size()), 0), -1);
-			cv::line(demoMat, L, R, cv::Scalar(0, 0, 0), 1);
-		}
-
-		//std::cout << newSeamStrip.leftClosed << std::endl;
-		//for (std::uint32_t i : newSeamStrip.leftIndices) {
-		//	std::cout << i << " ";
-		//}
-		//std::cout << std::endl;
-		//std::cout << newSeamStrip.rightClosed << std::endl;
-		//for (std::uint32_t i : newSeamStrip.rightIndices) {
-		//	std::cout << i << " ";
-		//}
-		//std::cout << std::endl;
-		//std::cout << std::endl;
-
-		std::cout << "Creating seam meshes" << std::endl;
-		createSeamMeshes(newSeamStrip);
-		std::cout << "Finished creating seam meshes" << std::endl;
+		seamStrips.push_back(newSeamStrip);
 
 		sort(chainIndices.begin(), chainIndices.end());
 		uint32_t sub = 0;
 		for (uint32_t i : chainIndices) {
 			if (i < seamVertexPairs.size()) {
 				seamVertexPairs[i] = std::array<uint32_t, 2>{ 0,0 };
-			}	
+			}
 		}
 
 		seamVertexPairs.erase(remove(seamVertexPairs.begin(), seamVertexPairs.end(), std::array<uint32_t, 2>{0, 0}), seamVertexPairs.end());
+	}
 
-		seamStrips.push_back(newSeamStrip);
+	for (uint32_t i = 0; i != seamStrips.size(); i++) {
+		if (seamStrips[i].leftIndices.size() == 0) {
+			continue;
+		}
+		glm::vec2 texCoord = vertices[seamStrips[i].leftIndices[0]].texCoord;
+		for (uint32_t j = 0; j != seamStrips.size(); j++) {
+			if (seamStrips[i].rightIndices.size() == 0) {
+				continue;
+			}
+			for (uint32_t k = 0; k != seamStrips[j].rightIndices.size(); k++) {
+				std::cout << i << " " << j << " " << k << std::endl;
+				if (vertices[seamStrips[j].rightIndices[k]].texCoord == texCoord) {
+					std::vector<uint32_t> rightIndices_copy = seamStrips[j].rightIndices;
+					seamStrips[j].rightIndices = seamStrips[j].leftIndices;
+					seamStrips[j].leftIndices = rightIndices_copy;
+					break;
+				}
+			}
+		}
+	}
+
+	for (uint32_t i = 0; i != seamStrips.size(); i++){
+		for (uint32_t j = 0; j != seamStrips[i].leftIndices.size(); j++) {
+			uint32_t k = seamStrips[i].leftIndices[j];
+			cv::Point L = cv::Point(vertices[k].texCoord.x * width, vertices[k].texCoord.y * height);
+			k = seamStrips[i].rightIndices[j];
+			cv::Point R = cv::Point(vertices[k].texCoord.x * width, vertices[k].texCoord.y * height);
+			L *= 0.25f;
+			R *= 0.25f;
+			cv::circle(demoMat, L, 5, cv::Scalar(255 * static_cast<float>(j) / static_cast<float>(seamStrips[i].leftIndices.size()), 0, 0), -1);
+			cv::circle(demoMat, R, 5, cv::Scalar(0, 255 * static_cast<float>(j) / static_cast<float>(seamStrips[i].rightIndices.size()), 0), -1);
+			cv::line(demoMat, L, R, cv::Scalar(0, 0, 0), 1);
+		}
+
+		std::cout << "Creating seam meshes" << std::endl;
+		createSeamMeshes(seamStrips[i]);
+		std::cout << "Finished creating seam meshes" << std::endl;
+
+		//seamStrips.push_back(newSeamStrip);
 
 		cv::imshow("Seam checker", demoMat);
 		cv::waitKey(0);
-
 		demoMat = cleanDemoMat.clone();
 
 		std::cout << "Seam done" << std::endl;
