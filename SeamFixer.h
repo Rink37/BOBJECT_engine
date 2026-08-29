@@ -155,11 +155,15 @@ public:
 		alphaMap.cleanup();
 
 		for (SeamStrip strip : seamStrips) {
-			strip.leftAlphaMesh.cleanup();
-			strip.leftMesh.cleanup();
+			if (!strip.directionLocked) {
+				strip.leftAlphaMesh.cleanup();
+				strip.leftMesh.cleanup();
+			}
 			strip.rightAlphaMesh.cleanup();
 			strip.rightMesh.cleanup();
 		}
+
+		seamStrips.clear();
 
 		if (remapper != nullptr) {
 			remapper->cleanup();

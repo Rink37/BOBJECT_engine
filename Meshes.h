@@ -18,6 +18,9 @@ struct Mesh {
 	std::vector<uint32_t> uniqueTexindices{};
 
 	virtual void setup() {
+		if (!cleaned) {
+			cleanup();
+		}
 		createVertexBuffer();
 		createIndexBuffer();
 		cleaned = false;
