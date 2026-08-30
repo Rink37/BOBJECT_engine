@@ -57,7 +57,6 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	if (!supportsBlit && (width != texWidth || height != texHeight)) {
 		// Not ideal - a GPU implementation of changing image size without blit functionality would be better
-		//std::cout << "Performing rescaling through cv Mat conversion" << std::endl;
 		getCVMat();
 		cv::resize(texMat, copy->texMat, Size(width, height));
 		copy->transitionMatToImg();
@@ -67,6 +66,63 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	}
 
 	copy->createImage(VK_SAMPLE_COUNT_1_BIT, memFlags);
+
+	transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+
+	transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
+
+	//if (textureLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+	//}
+	//else {
+		// This is a bit of a quick fix - I just need to add this transition to the list of valid transitions in the function 
+	//	transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, this->mipLevels);
+	//	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
+	//}
+
+	Texture* resolvedTexture = nullptr;
+
+	if (textureSamples != VK_SAMPLE_COUNT_1_BIT) {
+		resolvedTexture = new Texture;
+
+		resolvedTexture->textureFormat = textureFormat;
+		resolvedTexture->texWidth = texWidth;
+		resolvedTexture->texHeight = texHeight;
+		resolvedTexture->textureTiling = textureTiling;
+		resolvedTexture->textureUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		resolvedTexture->mipLevels = this->mipLevels;
+		resolvedTexture->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+		resolvedTexture->createImage(VK_SAMPLE_COUNT_1_BIT, memFlags);
+
+		VkCommandBuffer resolveCmd = Engine::get()->beginSingleTimeCommands();
+
+		VkOffset3D srcResolveSize;
+		srcResolveSize.x = 0;
+		srcResolveSize.y = 0;
+		srcResolveSize.z = 0;
+		VkOffset3D dstResolveSize;
+		dstResolveSize.x = 0;
+		dstResolveSize.y = 0;
+		dstResolveSize.z = 0;
+		VkExtent3D resolveExtent;
+		resolveExtent.width = texWidth;
+		resolveExtent.height = texHeight;
+		resolveExtent.depth = 1;
+		VkImageResolve imageResolveRegion{};
+		imageResolveRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageResolveRegion.srcSubresource.layerCount = 1;
+		imageResolveRegion.srcOffset = srcResolveSize;
+		imageResolveRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageResolveRegion.dstSubresource.layerCount = 1;
+		imageResolveRegion.dstOffset = dstResolveSize;
+		imageResolveRegion.extent = resolveExtent;
+
+		vkCmdResolveImage(resolveCmd, textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, resolvedTexture->textureImage, resolvedTexture->textureLayout, 1, &imageResolveRegion);
+
+		Engine::get()->endSingleTimeCommands(resolveCmd);
+
+		transitionImageLayout(resolvedTexture->textureImage, resolvedTexture->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
+	}
 
 	VkCommandBuffer copyCmd;
 
@@ -88,17 +144,6 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 		throw runtime_error("failed to begin recording command buffer!");
 	}
 
-	transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-
-	if (textureLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-		transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
-	}
-	else {
-		// This is a bit of a quick fix - I just need to add this transition to the list of valid transitions in the function 
-		transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, this->mipLevels);
-		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
-	}
-
 	if (supportsBlit)
 	{
 		VkOffset3D srcBlitSize;
@@ -117,13 +162,24 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 		imageBlitRegion.dstSubresource.layerCount = 1;
 		imageBlitRegion.dstOffsets[1] = dstBlitSize;
 
-		vkCmdBlitImage(
-			copyCmd,
-			textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			copy->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1,
-			&imageBlitRegion,
-			VK_FILTER_NEAREST);
+		if (textureSamples != VK_SAMPLE_COUNT_1_BIT) {
+			vkCmdBlitImage(
+				copyCmd,
+				resolvedTexture->textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				copy->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&imageBlitRegion,
+				VK_FILTER_NEAREST);
+		}
+		else {
+			vkCmdBlitImage(
+				copyCmd,
+				textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				copy->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&imageBlitRegion,
+				VK_FILTER_NEAREST);
+		}
 	}
 	else
 	{
@@ -138,12 +194,22 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 		imageCopyRegion.extent.height = texHeight;
 		imageCopyRegion.extent.depth = 1;
 
-		vkCmdCopyImage(
-			copyCmd,
-			textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			copy->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1,
-			&imageCopyRegion);
+		if (textureSamples != VK_SAMPLE_COUNT_1_BIT) {
+			vkCmdCopyImage(
+				copyCmd,
+				resolvedTexture->textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				copy->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&imageCopyRegion);
+		}
+		else {
+			vkCmdCopyImage(
+				copyCmd,
+				textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				copy->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&imageCopyRegion);
+		}
 	}
 
 	if (vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
@@ -175,6 +241,11 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 		transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, mipLevels);
 	}
 	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, this->mipLevels);
+
+	if (resolvedTexture != nullptr) {
+		resolvedTexture->cleanup();
+		delete resolvedTexture;
+	}
 
 	return copy;
 }
@@ -287,6 +358,8 @@ VkImageView Texture::createImageView(VkImageAspectFlags aspectFlags) {
 
 void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlags properties) {
 	
+	textureSamples = numSamples;
+
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -302,7 +375,7 @@ void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlag
 
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	imageInfo.samples = numSamples;
+	imageInfo.samples = textureSamples;
 
 	if (vkCreateImage(Engine::get()->device, &imageInfo, nullptr, &textureImage) != VK_SUCCESS) {
 		throw runtime_error("failed to create image!");
@@ -636,7 +709,7 @@ void Texture::getCVMat() {
 	}
 
 	dst->cleanup();
-
+	delete dst;
 }
 
 void Texture::transitionMatToImg() {

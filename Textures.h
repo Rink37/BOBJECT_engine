@@ -26,6 +26,9 @@ struct Texture {
 	VkImageUsageFlags textureUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	VkImageTiling textureTiling = VK_IMAGE_TILING_OPTIMAL;
 	VkMemoryPropertyFlags textureMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+	VkSampleCountFlagBits textureSamples = VK_SAMPLE_COUNT_1_BIT;
+
 	uint32_t mipLevels = 0;
 
 	bool isNormal = false;

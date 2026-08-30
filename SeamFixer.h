@@ -37,6 +37,9 @@ public:
 		//targetTex->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
+	Texture* depth = nullptr;
+	Texture* attachment = nullptr;
+
 	struct OverlayMap {
 		VkFramebuffer frameBuffer = nullptr;
 		VkRenderPass renderPass = nullptr;
@@ -146,6 +149,13 @@ public:
 	}
 
 	void cleanup() {
+		
+		depth->cleanup();
+		delete depth;
+
+		attachment->cleanup();
+		delete attachment;
+		
 		leftMap.cleanup();
 		leftAlpha.cleanup();
 		rightMap.cleanup();

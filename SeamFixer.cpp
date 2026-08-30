@@ -555,11 +555,11 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.025f, bool
 		cv::circle(demoMatDupe, cv::Point(coord.x * width, coord.y * height), 5, cv::Scalar(255, 0, 0), -1);
 
 		Vertex L_out{};
-		L_out.pos = glm::vec3(coord.x, coord.y, 0.0f);
+		L_out.pos = glm::vec3(coord.x, coord.y, 0.01f);
 		L_out.normal = glm::vec3(0.0f);
 		L_out.texCoord = glm::vec2(0.0f, outsideTexCoord);
 		Vertex L_center{};
-		L_center.pos = glm::vec3(vertices[strip.leftIndices[i]].texCoord.x, vertices[strip.leftIndices[i]].texCoord.y, 0.0f);
+		L_center.pos = glm::vec3(vertices[strip.leftIndices[i]].texCoord.x, vertices[strip.leftIndices[i]].texCoord.y, 0.01f);
 		L_center.normal = glm::vec3(0.0f);
 		L_center.texCoord = glm::vec2(0.0f);
 
@@ -612,7 +612,7 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.025f, bool
 		L_in.normal = glm::vec3(0.0f);
 		L_in.texCoord = glm::vec2(0.0f, 1.0f);
 		Vertex L_center{};
-		L_center.pos = glm::vec3(vertices[strip.leftIndices[i]].texCoord.x, vertices[strip.leftIndices[i]].texCoord.y, 0.0f);
+		L_center.pos = glm::vec3(vertices[strip.leftIndices[i]].texCoord.x, vertices[strip.leftIndices[i]].texCoord.y, 0.01f);
 		L_center.normal = glm::vec3(0.0f);
 		L_center.texCoord = glm::vec2(0.0f);
 
@@ -676,7 +676,7 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.025f, bool
 		R_in_Alpha.normal = glm::vec3(0.0f);
 		R_in_Alpha.texCoord = glm::vec2(0.0f, 1.0f);
 		Vertex R_center_Alpha{};
-		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
+		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.01f);
 		R_center_Alpha.normal = glm::vec3(0.0f);
 		R_center_Alpha.texCoord = glm::vec2(0.0f);
 
@@ -714,11 +714,11 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.025f, bool
 		}
 
 		Vertex R_center_Alpha{};
-		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.0f);
+		R_center_Alpha.pos = glm::vec3(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y, 0.01f);
 		R_center_Alpha.normal = glm::vec3(0.0f);
 		R_center_Alpha.texCoord = glm::vec2(0.0f);
 		Vertex R_out_Alpha{};
-		R_out_Alpha.pos = glm::vec3(coord.x, coord.y, 0.0f);
+		R_out_Alpha.pos = glm::vec3(coord.x, coord.y, 0.01f);
 		R_out_Alpha.normal = glm::vec3(0.0f);
 		R_out_Alpha.texCoord = glm::vec2(0.0f, outsideTexCoord);
 
@@ -1247,6 +1247,8 @@ void SeamFixer::prepMap(OverlayMap* map) {
 
 	map->colour = new Texture;
 
+	VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_2_BIT;
+
 	map->colour->texWidth = width;
 	map->colour->texHeight = height;
 	map->colour->texChannels = 4;
@@ -1255,38 +1257,131 @@ void SeamFixer::prepMap(OverlayMap* map) {
 	map->colour->textureLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	map->colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
-	map->colour->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	map->colour->createImage(sampleCount, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	map->colour->textureImageView = map->colour->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-	std::array<VkAttachmentDescription, 1> attachmentDescriptions = {};
-	attachmentDescriptions[0].format = VK_FORMAT_R8G8B8A8_SRGB;
-	attachmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
-	attachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	attachmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	attachmentDescriptions[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	attachmentDescriptions[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	if (attachment == nullptr) {
+		attachment = new Texture;
 
-	VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+		attachment->texWidth = width;
+		attachment->texHeight = height;
+		attachment->texChannels = 4;
+		attachment->mipLevels = 1;
+		attachment->textureFormat = VK_FORMAT_R8G8B8A8_SRGB;
+		attachment->textureLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		attachment->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
-	VkSubpassDescription subpassDescription = {};
-	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpassDescription.colorAttachmentCount = 1;
-	subpassDescription.pColorAttachments = &colorReference;
+		attachment->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		attachment->textureImageView = attachment->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	}
+
+	if (depth == nullptr) {
+		VkFormat depthFormat = Engine::get()->findDepthFormat();
+		depth = new Texture;
+
+		depth->texWidth = width;
+		depth->texHeight = height;
+		depth->texChannels = 1;
+		depth->mipLevels = 1;
+		depth->textureFormat = depthFormat;
+		depth->textureLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+		depth->textureUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		depth->createImage(sampleCount, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		depth->textureImageView = depth->createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
+	}
+
+	//std::array<VkAttachmentDescription, 1> attachmentDescriptions = {};
+	//attachmentDescriptions[0].format = VK_FORMAT_R8G8B8A8_SRGB;
+	//attachmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
+	//attachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	//attachmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	//attachmentDescriptions[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	//attachmentDescriptions[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	//attachmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	//attachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentDescription colorAttachment{};
+	colorAttachment.format = VK_FORMAT_R8G8B8A8_SRGB;
+	colorAttachment.samples = sampleCount;
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentDescription depthAttachment{};
+	depthAttachment.format = Engine::get()->findDepthFormat();
+	depthAttachment.samples = sampleCount;
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentDescription colourAttachmentResolve{};
+	colourAttachmentResolve.format = VK_FORMAT_R8G8B8A8_SRGB;
+	colourAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+	colourAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colourAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colourAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colourAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colourAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colourAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference colorAttachmentRef{};
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference depthAttachmentRef{};
+	depthAttachmentRef.attachment = 1;
+	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference colourAttachmentResolveRef{};
+	colourAttachmentResolveRef.attachment = 2;
+	colourAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass{};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorAttachmentRef;
+	subpass.pDepthStencilAttachment = &depthAttachmentRef;
+	subpass.pResolveAttachments = &colourAttachmentResolveRef;
 
 	VkSubpassDependency dependency{};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependency.dstSubpass = 0;
 
-	VkRenderPassCreateInfo renderPassInfo = {};
+	std::array<VkAttachmentDescription, 3> rpAttachments = { colorAttachment, depthAttachment, colourAttachmentResolve };
+	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
-	renderPassInfo.pAttachments = attachmentDescriptions.data();
+	renderPassInfo.attachmentCount = static_cast<uint32_t>(rpAttachments.size());
+	renderPassInfo.pAttachments = rpAttachments.data();
 	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpassDescription;
+	renderPassInfo.pSubpasses = &subpass;
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
+
+	//VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+
+	//VkSubpassDescription subpassDescription = {};
+	//subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	//subpassDescription.colorAttachmentCount = 1;
+	//subpassDescription.pColorAttachments = &colorReference;
+
+	//VkSubpassDependency dependency{};
+	//dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	//dependency.dstSubpass = 0;
+
+	//VkRenderPassCreateInfo renderPassInfo = {};
+	//renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	//renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
+	//renderPassInfo.pAttachments = attachmentDescriptions.data();
+	//renderPassInfo.subpassCount = 1;
+	//renderPassInfo.pSubpasses = &subpassDescription;
+	//renderPassInfo.dependencyCount = 1;
+	//renderPassInfo.pDependencies = &dependency;
 
 	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 	dependency.srcAccessMask = 0;
@@ -1297,14 +1392,22 @@ void SeamFixer::prepMap(OverlayMap* map) {
 		throw std::runtime_error("Failed to create render pass");
 	}
 
-	VkImageView attachments[1] = {};
-	attachments[0] = map->colour->textureImageView;
+	//VkImageView attachments[1] = {};
+	//attachments[0] = map->colour->textureImageView;
+
+	std::array<VkImageView, 3> attachments = {
+		map->colour->textureImageView,
+		depth->textureImageView,
+		attachment->textureImageView
+	};
 
 	VkFramebufferCreateInfo fbufCreateInfo = {};
 	fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	fbufCreateInfo.renderPass = map->renderPass;
-	fbufCreateInfo.attachmentCount = 1;
-	fbufCreateInfo.pAttachments = attachments;
+	//fbufCreateInfo.attachmentCount = 1;
+	//fbufCreateInfo.pAttachments = attachments;
+	fbufCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+	fbufCreateInfo.pAttachments = attachments.data();
 	fbufCreateInfo.width = map->colour->texWidth;
 	fbufCreateInfo.height = map->colour->texHeight;
 	fbufCreateInfo.layers = 1;
@@ -1402,13 +1505,22 @@ void SeamFixer::createTexWritePipeline(OverlayMap* map) {
 	viewportState.viewportCount = 1;
 	viewportState.scissorCount = 1;
 
-	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+	VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_2_BIT;
 
 	VkPipelineMultisampleStateCreateInfo multisampling{};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multisampling.sampleShadingEnable = VK_TRUE;
-	multisampling.rasterizationSamples = msaaSamples;
+	multisampling.sampleShadingEnable = VK_FALSE;
+	multisampling.rasterizationSamples = sampleCount;
 	multisampling.minSampleShading = .2f;
+
+	VkPipelineDepthStencilStateCreateInfo depthStencil{};
+	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencil.depthTestEnable = VK_TRUE;
+	depthStencil.depthWriteEnable = VK_TRUE;
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencil.depthBoundsTestEnable = VK_FALSE;
+	depthStencil.minDepthBounds = 0.0f;
+	depthStencil.maxDepthBounds = 1.0f;
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -1489,6 +1601,7 @@ void SeamFixer::createTexWritePipeline(OverlayMap* map) {
 	pipelineInfo.renderPass = map->renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	pipelineInfo.pDepthStencilState = &depthStencil;
 
 	if (vkCreateGraphicsPipelines(Engine::get()->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &map->pipeline) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create graphics pipeline!");
@@ -1526,13 +1639,22 @@ void SeamFixer::createAlphaWritePipeline(OverlayMap* map) {
 	viewportState.viewportCount = 1;
 	viewportState.scissorCount = 1;
 
-	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+	VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_2_BIT;
 
 	VkPipelineMultisampleStateCreateInfo multisampling{};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multisampling.sampleShadingEnable = VK_TRUE;
-	multisampling.rasterizationSamples = msaaSamples;
+	multisampling.sampleShadingEnable = VK_FALSE;
+	multisampling.rasterizationSamples = sampleCount;
 	multisampling.minSampleShading = .2f;
+
+	VkPipelineDepthStencilStateCreateInfo depthStencil{};
+	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencil.depthTestEnable = VK_TRUE;
+	depthStencil.depthWriteEnable = VK_TRUE;
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencil.depthBoundsTestEnable = VK_FALSE;
+	depthStencil.minDepthBounds = 0.0f;
+	depthStencil.maxDepthBounds = 1.0f;
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -1612,6 +1734,7 @@ void SeamFixer::createAlphaWritePipeline(OverlayMap* map) {
 	pipelineInfo.renderPass = map->renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	pipelineInfo.pDepthStencilState = &depthStencil;
 
 	if (vkCreateGraphicsPipelines(Engine::get()->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &map->pipeline) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create graphics pipeline!");
@@ -1629,8 +1752,8 @@ VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, bool isR
 
 	OverlayMap* map = (isRight) ? maps[1] : maps[0];
 
-	VkClearValue clearValues[1] = {};
-	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+	//VkClearValue clearValues[1] = {};
+	//clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1638,8 +1761,15 @@ VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, bool isR
 	renderPassBeginInfo.framebuffer = map->frameBuffer;
 	renderPassBeginInfo.renderArea.extent.width = map->colour->texWidth;
 	renderPassBeginInfo.renderArea.extent.height = map->colour->texHeight;
-	renderPassBeginInfo.clearValueCount = 1;
-	renderPassBeginInfo.pClearValues = clearValues;
+	//renderPassBeginInfo.clearValueCount = 1;
+	//renderPassBeginInfo.pClearValues = clearValues;
+
+	std::array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassBeginInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1696,8 +1826,8 @@ VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, OverlayM
 };
 
 VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, OverlayMap* map, std::vector<Mesh*> meshes) {
-	VkClearValue clearValues[1] = {};
-	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+	//VkClearValue clearValues[1] = {};
+	//clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1705,8 +1835,15 @@ VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, OverlayM
 	renderPassBeginInfo.framebuffer = map->frameBuffer;
 	renderPassBeginInfo.renderArea.extent.width = map->colour->texWidth;
 	renderPassBeginInfo.renderArea.extent.height = map->colour->texHeight;
-	renderPassBeginInfo.clearValueCount = 1;
-	renderPassBeginInfo.pClearValues = clearValues;
+	//renderPassBeginInfo.clearValueCount = 1;
+	//renderPassBeginInfo.pClearValues = clearValues;
+
+	std::array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassBeginInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1748,8 +1885,8 @@ VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, bool isRi
 
 	OverlayMap* map = (isRight) ? alphaMaps[1] : alphaMaps[0];
 
-	VkClearValue clearValues[1] = {};
-	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+	//VkClearValue clearValues[1] = {};
+	//clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1757,8 +1894,15 @@ VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, bool isRi
 	renderPassBeginInfo.framebuffer = map->frameBuffer;
 	renderPassBeginInfo.renderArea.extent.width = map->colour->texWidth;
 	renderPassBeginInfo.renderArea.extent.height = map->colour->texHeight;
-	renderPassBeginInfo.clearValueCount = 1;
-	renderPassBeginInfo.pClearValues = clearValues;
+	//renderPassBeginInfo.clearValueCount = 1;
+	//renderPassBeginInfo.pClearValues = clearValues;
+
+	std::array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = { {0.0f, 0.0f, 1.0f / 255.0f, 1.0f} };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassBeginInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1811,8 +1955,8 @@ VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, OverlayMa
 }
 
 VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, OverlayMap* map, std::vector<Mesh*> meshes) {
-	VkClearValue clearValues[1] = {};
-	clearValues[0].color = { {0.0f, 0.0f, 1.0f / 255.0f, 1.0f} };
+	//VkClearValue clearValues[1] = {};
+	//clearValues[0].color = { {0.0f, 0.0f, 1.0f / 255.0f, 1.0f} };
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1820,8 +1964,15 @@ VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, OverlayMa
 	renderPassBeginInfo.framebuffer = map->frameBuffer;
 	renderPassBeginInfo.renderArea.extent.width = map->colour->texWidth;
 	renderPassBeginInfo.renderArea.extent.height = map->colour->texHeight;
-	renderPassBeginInfo.clearValueCount = 1;
-	renderPassBeginInfo.pClearValues = clearValues;
+	//renderPassBeginInfo.clearValueCount = 1;
+	//renderPassBeginInfo.pClearValues = clearValues;
+
+	std::array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = { {0.0f, 0.0f, 1.0f / 255.0f, 1.0f} };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassBeginInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
