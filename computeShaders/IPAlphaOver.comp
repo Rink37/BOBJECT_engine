@@ -12,7 +12,14 @@ void main(){
 	vec4 seamFixPix = imageLoad(seamFixImage, pixelCoords);
 	vec4 alpha = imageLoad(seamFixAlpha, pixelCoords);
 
+	alpha.g = alpha.r;
+	alpha.b = alpha.r;
+
 	pixel.rgb = pixel.rgb * (1.0 - alpha.rgb) + seamFixPix.rgb * alpha.rgb;
+	
+	if (pixel.r < 1.5/255.0 && pixel.r < 1.5/255.0 && pixel.b < 1.5/255.0){
+		pixel.rgb = vec3(0.0, 0.0, 0.05);
+	}
 
 	imageStore(baseImage, pixelCoords, pixel);
 }

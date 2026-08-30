@@ -56,6 +56,7 @@ struct Texture {
 	Texture* copyTexture();
 	Texture* copyTexture(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, uint32_t);
 	Texture* copyTexture(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, uint32_t, uint32_t, uint32_t);
+	Texture* copyTexture(uint32_t, uint32_t);
 
 	virtual void setup() {
 		if (texWidth == 0) {

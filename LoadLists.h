@@ -40,7 +40,7 @@ struct LoadList {
 					continue;
 				}
 				std::string matName = textureAssociator.at(name)[i];
-				std::cout << "Updating material " << matName << " since it contains texture " << name << " at index " << replaceIndices[i] << std::endl;
+				//std::cout << "Updating material " << matName << " since it contains texture " << name << " at index " << replaceIndices[i] << std::endl;
 				int index = materialMap.at(matName);
 				materials[index].get()->textures[replaceIndices[i]] = replacedTex;
 				materials[index].get()->init(false);

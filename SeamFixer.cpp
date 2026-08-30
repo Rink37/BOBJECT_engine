@@ -79,7 +79,7 @@ void SeamFixer::getStripChain(SeamStrip& strip, uint32_t nodeIndex, std::vector<
 	if (chainIndices.size() > 0) {
 		for (uint32_t i : chainIndices) {
 			getStripChain(strip, i, vertexPairs, deleteIndices);
-			std::cout << i << " ";
+			//std::cout << i << " ";
 		}
 	}
 }
@@ -89,7 +89,7 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 	// We need to modify this so that it's based on the layout of both the left and right indices
 	std::map<uint32_t, std::vector<uint32_t>> localIndicesMap{};
 	std::map<uint32_t, std::vector<uint32_t>> rightLocalIndicesMap{};
-	std::cout << strip.rightIndices.size() << " " << strip.leftIndices.size() << std::endl;
+	//std::cout << strip.rightIndices.size() << " " << strip.leftIndices.size() << std::endl;
 	for (uint32_t i = 0; i != strip.leftIndices.size(); i++) {
 		std::vector<uint32_t> localIndices{};
 		localIndicesMap.insert({ i, std::vector<uint32_t>{} });
@@ -248,7 +248,7 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 	strip.leftIndices = newLeftIndices;
 	strip.rightIndices = newRightIndices;
 
-	std::cout << "No issue sorting seams" << std::endl;
+	//std::cout << "No issue sorting seams" << std::endl;
 	//std::cout << strip.leftIndices.size() << " " << strip.rightIndices.size() << std::endl;
 }
 
@@ -855,6 +855,9 @@ void compareStrips(SeamStrip& a, SeamStrip& b, std::vector<Vertex> vertices) {
 			break; // Assume that if the first two vertices match then the rest will too
 		}
 		else if (i > 0) {
+			if (matchDirections == 3 || matchDirections == 4) {
+				flipSeamIndices(b);
+			}
 			return; // If we've checked more than one seam vertex and the directions don't match we assume there was some error and do nothing
 		}
 	}
@@ -1129,11 +1132,11 @@ bool doMeshesOverlap(Mesh* a, Mesh* b) {
 
 bool doStripsOverlap(SeamStrip* a, SeamStrip* b) {
 	if (doMeshesOverlap(&a->leftMesh, &b->leftMesh)) {
-		std::cout << "Left meshes overlap" << std::endl;
+		//std::cout << "Left meshes overlap" << std::endl;
 		return true;
 	}
 	if (doMeshesOverlap(&a->rightMesh, &b->rightMesh)) {
-		std::cout << "Right meshes overlap" << std::endl;
+		//std::cout << "Right meshes overlap" << std::endl;
 		return true;
 	}
 	return false;
@@ -1175,14 +1178,14 @@ void SeamFixer::packSeamStrips() {
 		}
 	}
 
-	for (auto elem: intersecting_strips) {
-		std::cout << elem.first << ": ";
-		for (uint32_t j = 0; j != elem.second.size(); j++) {
-			std::cout << elem.second[j] << " ";
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
+	//for (auto elem: intersecting_strips) {
+	//	std::cout << elem.first << ": ";
+	//	for (uint32_t j = 0; j != elem.second.size(); j++) {
+	//		std::cout << elem.second[j] << " ";
+	//	}
+	//	std::cout << std::endl;
+	//}
+	//std::cout << std::endl;
 
 	std::vector<bool> consumed(seamStrips.size(), false);
 
@@ -1228,19 +1231,16 @@ void SeamFixer::packSeamStrips() {
 		std::vector<Mesh*> rightAlphaMeshes{};
 		std::vector<Mesh*> leftAlphaMeshes{};
 		for (uint32_t j = 0; j != sortedSeamStrips[i].size(); j++) {
-			std::cout << sortedSeamStrips[i][j] << " ";
 			leftMeshes.push_back(&seamStrips[sortedSeamStrips[i][j]].leftMesh);
 			rightMeshes.push_back(&seamStrips[sortedSeamStrips[i][j]].rightMesh);
 			leftAlphaMeshes.push_back(&seamStrips[sortedSeamStrips[i][j]].leftAlphaMesh);
 			rightAlphaMeshes.push_back(&seamStrips[sortedSeamStrips[i][j]].rightAlphaMesh);
 		}
-		std::cout << std::endl;
 		sortedLeftMeshes.push_back(leftMeshes);
 		sortedLeftAlphaMeshes.push_back(leftAlphaMeshes);
 		sortedRightMeshes.push_back(rightMeshes);
 		sortedRightAlphaMeshes.push_back(rightAlphaMeshes);
 	}
-	std::cout << std::endl;
 }
 
 void SeamFixer::prepMap(OverlayMap* map) {
@@ -1253,7 +1253,7 @@ void SeamFixer::prepMap(OverlayMap* map) {
 	map->colour->mipLevels = 1;
 	map->colour->textureFormat = VK_FORMAT_R8G8B8A8_SRGB;
 	map->colour->textureLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	map->colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	map->colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	map->colour->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	map->colour->textureImageView = map->colour->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
@@ -1887,6 +1887,8 @@ void SeamFixer::alphaOverMap(Texture* cMap, Texture* aMap, Texture* texInFlight)
 
 	seamMap->cleanup();
 	seamAlpha->cleanup();
+	delete seamMap;
+	delete seamAlpha;
 	alphaOver.cleanup(false);
 };
 
@@ -1980,16 +1982,63 @@ void SeamFixer::createDemoImages(std::string baseName) {
 		seamFixAll();
 	}
 
-	remapper->cleanup();
+	if (colourMap.colour->texHeight > 1024) {
+		uint32_t smallWidth = 1024 * static_cast<float>(colourMap.colour->texWidth) / static_cast<float>(colourMap.colour->texHeight);
+		Texture* smallColourMap = colourMap.colour->copyTexture(smallWidth, 1024);
+		Texture* smallAlphaMap = alphaMap.colour->copyTexture(smallWidth, 1024);
 
-	remapper->setup();
-	remapper->toggleNormalization();
-	remapper->createReferenceMaps(colourMap.colour, alphaMap.colour);
+		remapper->cleanup();
+
+		remapper->setup();
+		remapper->toggleNormalization();
+		remapper->createReferenceMaps(smallColourMap, smallAlphaMap);
+
+		smallColourMap->cleanup();
+		delete smallColourMap;
+		smallAlphaMap->cleanup();
+		delete smallAlphaMap;
+
+		remapper->filteredTarget->getCVMat();
+
+		cv::resize(remapper->filteredTarget->texMat, remapper->filteredTarget->texMat, cv::Size(colourMap.colour->texWidth, colourMap.colour->texHeight), 0.0f, 0.0f, cv::INTER_NEAREST);
+
+		Texture* hiResAlpha = new imageTexture(remapper->filteredTarget->texMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+		alphaOverMap(alphaMap.colour, alphaMap.colour, hiResAlpha);
+
+		//hiResAlpha->getCVMat();
+		//cv::resize(hiResAlpha->texMat, hiResAlpha->texMat, cv::Size(1024 * static_cast<float>(static_cast<float>(colourMap.colour->texWidth) / static_cast<float>(colourMap.colour->texHeight)), 1024), 0.0f, 0.0f);
+		//cv::imshow("Written over low res alpha", hiResAlpha->texMat);
+		//cv::waitKey(0);
+		//hiResAlpha->destroyCVMat();
+
+		remapper->filteredTarget->destroyCVMat();
+
+		remapper->cleanup();
+
+		remapper->setup();
+		remapper->toggleNormalization();
+		remapper->createReferenceMaps(colourMap.colour, hiResAlpha);
+
+		hiResAlpha->cleanup();
+		delete hiResAlpha;
+	}
+	else {
+		remapper->cleanup();
+
+		remapper->setup();
+		remapper->toggleNormalization();
+		remapper->createReferenceMaps(colourMap.colour, alphaMap.colour);
+	}
 
 	remapper->filteredTarget->getCVMat();
 	cv::imwrite(baseName + std::string("_R_RemapAlpha.jpg"), remapper->filteredTarget->texMat);
 
 	remapper->filteredTarget->destroyCVMat();
+
+	rightCol->cleanup();
+	delete rightCol;
+	rightAlpha->cleanup();
+	delete rightAlpha;
 
 	commandBuffer = Engine::get()->beginSingleTimeCommands();
 	commandBuffer = drawColourMap(commandBuffer, &colourMap, leftColourMeshes);
@@ -2013,14 +2062,63 @@ void SeamFixer::createDemoImages(std::string baseName) {
 	cv::imwrite(baseName + std::string("_L_SolidAlpha.jpg"), lThresh);
 	cv::imwrite(baseName + std::string("_L_BlendAlpha.jpg"), lA);
 
-	remapper->cleanup();
+	if (colourMap.colour->texHeight > 1024) {
+		uint32_t smallWidth = 1024 * static_cast<float>(colourMap.colour->texWidth) / static_cast<float>(colourMap.colour->texHeight);
+		Texture* smallColourMap = colourMap.colour->copyTexture(smallWidth, 1024);
+		Texture* smallAlphaMap = alphaMap.colour->copyTexture(smallWidth, 1024);
 
-	remapper->setup();
-	remapper->toggleNormalization();
-	remapper->createReferenceMaps(colourMap.colour, alphaMap.colour);
+		remapper->cleanup();
+
+		remapper->setup();
+		remapper->toggleNormalization();
+		remapper->createReferenceMaps(smallColourMap, smallAlphaMap);
+
+		smallColourMap->cleanup();
+		delete smallColourMap;
+		smallAlphaMap->cleanup();
+		delete smallAlphaMap;
+
+		remapper->filteredTarget->getCVMat();
+
+		cv::resize(remapper->filteredTarget->texMat, remapper->filteredTarget->texMat, cv::Size(colourMap.colour->texWidth, colourMap.colour->texHeight), 0.0f, 0.0f, cv::INTER_NEAREST);
+
+		Texture* hiResAlpha = new imageTexture(remapper->filteredTarget->texMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+		alphaOverMap(alphaMap.colour, alphaMap.colour, hiResAlpha);
+
+		//hiResAlpha->getCVMat();
+		//cv::resize(hiResAlpha->texMat, hiResAlpha->texMat, cv::Size(1024 * static_cast<float>(static_cast<float>(colourMap.colour->texWidth) / static_cast<float>(colourMap.colour->texHeight)), 1024), 0.0f, 0.0f);
+		//cv::imshow("Written over low res alpha", hiResAlpha->texMat);
+		//cv::waitKey(0);
+		//hiResAlpha->destroyCVMat();
+
+		remapper->filteredTarget->destroyCVMat();
+
+		remapper->cleanup();
+
+		remapper->setup();
+		remapper->toggleNormalization();
+		remapper->createReferenceMaps(colourMap.colour, hiResAlpha);
+
+		hiResAlpha->cleanup();
+		delete hiResAlpha;
+	}
+	else {
+		remapper->cleanup();
+
+		remapper->setup();
+		remapper->toggleNormalization();
+		remapper->createReferenceMaps(colourMap.colour, alphaMap.colour);
+	}
 
 	remapper->filteredTarget->getCVMat();
 	cv::imwrite(baseName + std::string("_L_RemapAlpha.jpg"), remapper->filteredTarget->texMat);
+
+	remapper->filteredTarget->destroyCVMat();
+
+	leftCol->cleanup();
+	delete leftCol;
+	leftAlpha->cleanup();
+	delete leftAlpha;
 
 	commandBuffer = Engine::get()->beginSingleTimeCommands();
 	commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, outsideMeshes);
@@ -2063,7 +2161,7 @@ void SeamFixer::seamFixAll() {
 	}
 	Texture* writeTex = targetTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
 	for (uint32_t i = 0; i != sortedLeftMeshes.size(); i++) {
-		std::cout << i << " " << sortedSeamStrips.size() << std::endl;
+		//std::cout << i << " " << sortedSeamStrips.size() << std::endl;
 		std::vector<Mesh*> colourMeshes{};
 		std::vector<Mesh*> alphaMeshes{};
 		if (isRight) {
@@ -2077,16 +2175,63 @@ void SeamFixer::seamFixAll() {
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		commandBuffer = drawColourMap(commandBuffer, &colourMap, colourMeshes);
 		commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, alphaMeshes);
-		
 
 		if (useRemapper && remapper != nullptr) {
 			Engine::get()->endSingleTimeCommands(commandBuffer);
 
-			remapper->cleanup();
+			//alphaMap.colour->getCVMat();
+			//cv::resize(alphaMap.colour->texMat, alphaMap.colour->texMat, cv::Size(1024 * static_cast<float>(static_cast<float>(colourMap.colour->texWidth) / static_cast<float>(colourMap.colour->texHeight)), 1024), 0.0f, 0.0f);
+			//cv::imshow("Drawn alpha", alphaMap.colour->texMat);
+			//cv::waitKey(0);
+			//alphaMap.colour->destroyCVMat();
 
-			remapper->setup();
-			remapper->toggleNormalization();
-			remapper->createReferenceMaps(colourMap.colour, alphaMap.colour);
+			if (colourMap.colour->texHeight > 1024) {
+				uint32_t smallWidth = 1024 * static_cast<float>(colourMap.colour->texWidth) / static_cast<float>(colourMap.colour->texHeight);
+				Texture* smallColourMap = colourMap.colour->copyTexture(smallWidth, 1024);
+				Texture* smallAlphaMap = alphaMap.colour->copyTexture(smallWidth, 1024);
+
+				remapper->cleanup();
+
+				remapper->setup();
+				remapper->toggleNormalization();
+				remapper->createReferenceMaps(smallColourMap, smallAlphaMap);
+
+				smallColourMap->cleanup();
+				delete smallColourMap;
+				smallAlphaMap->cleanup();
+				delete smallAlphaMap;
+
+				remapper->filteredTarget->getCVMat();
+				
+				cv::resize(remapper->filteredTarget->texMat, remapper->filteredTarget->texMat, cv::Size(colourMap.colour->texWidth, colourMap.colour->texHeight), 0.0f, 0.0f, cv::INTER_NEAREST);
+
+				Texture* hiResAlpha = new imageTexture(remapper->filteredTarget->texMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+				alphaOverMap(alphaMap.colour, alphaMap.colour, hiResAlpha);
+
+				//hiResAlpha->getCVMat();
+				//cv::resize(hiResAlpha->texMat, hiResAlpha->texMat, cv::Size(1024 * static_cast<float>(static_cast<float>(colourMap.colour->texWidth) / static_cast<float>(colourMap.colour->texHeight)), 1024), 0.0f, 0.0f);
+				//cv::imshow("Written over low res alpha", hiResAlpha->texMat);
+				//cv::waitKey(0);
+				//hiResAlpha->destroyCVMat();
+
+				remapper->filteredTarget->destroyCVMat();
+
+				remapper->cleanup();
+
+				remapper->setup();
+				remapper->toggleNormalization();
+				remapper->createReferenceMaps(colourMap.colour, hiResAlpha);
+
+				hiResAlpha->cleanup();
+				delete hiResAlpha;
+			}
+			else {
+				remapper->cleanup();
+
+				remapper->setup();
+				remapper->toggleNormalization();
+				remapper->createReferenceMaps(colourMap.colour, alphaMap.colour);
+			}
 			
 			//colourMap.colour->getCVMat();
 			//cv::imshow("remapped alpha", colourMap.colour->texMat);
@@ -2094,7 +2239,8 @@ void SeamFixer::seamFixAll() {
 			//colourMap.colour->destroyCVMat();
 
 			//remapper->filteredTarget->getCVMat();
-			//cv::imshow("remapped alpha", remapper->filteredTarget->texMat);
+			//cv::resize(remapper->filteredTarget->texMat, remapper->filteredTarget->texMat, cv::Size(1024 * static_cast<float>(static_cast<float>(colourMap.colour->texWidth) / static_cast<float>(colourMap.colour->texHeight)), 1024), 0.0f, 0.0f);
+			//cv::imshow("Hi res remapped alpha", remapper->filteredTarget->texMat);
 			//cv::waitKey(0);
 			//remapper->filteredTarget->destroyCVMat();
 

@@ -190,6 +190,10 @@ Texture* Texture::copyTexture(){
 	return copy;
 }
 
+Texture* Texture::copyTexture(uint32_t width, uint32_t height) {
+	return copyTexture(textureFormat, textureLayout, textureUsage, textureTiling, mipLevels, width, height);
+};
+
 Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t mipLevels) {
 	Texture* copy = copyImage(format, layout, usage, tiling, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT , mipLevels, texWidth, texHeight);
 	if (copy->mipLevels != 1) {
