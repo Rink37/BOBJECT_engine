@@ -253,12 +253,30 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 	std::vector<uint32_t> newLeftIndices{};
 	std::vector<uint32_t> newRightIndices{};
 	
+	std::vector<glm::vec2> seenTexCoords{};
+	std::vector<uint32_t> seenIndices{};
+	bool needsFlipped = false;
 	for (uint32_t i : sortedSeamPositions) {
 		newLeftIndices.push_back(strip.leftIndices[i]);
+		glm::vec2 texCoord = target->vertices[strip.leftIndices[i]].texCoord;
+		if (find(seenTexCoords.begin(), seenTexCoords.end(), texCoord) != seenTexCoords.end() && find(seenIndices.begin(), seenIndices.end(), strip.leftIndices[i]) == seenIndices.end()) {
+			strip.directionLocked = true;
+		}
+		seenTexCoords.push_back(texCoord);
+		seenIndices.push_back(strip.leftIndices[i]);
 	}
 
+	seenTexCoords.clear();
+	seenIndices.clear();
 	for (uint32_t i : rightSortedSeamPositions) {
 		newRightIndices.push_back(strip.rightIndices[i]);
+		glm::vec2 texCoord = target->vertices[strip.rightIndices[i]].texCoord;
+		if (find(seenTexCoords.begin(), seenTexCoords.end(), texCoord) != seenTexCoords.end() && find(seenIndices.begin(), seenIndices.end(), strip.rightIndices[i]) == seenIndices.end()) {
+			strip.directionLocked = true;
+			needsFlipped = true;
+		}
+		seenTexCoords.push_back(texCoord);
+		seenIndices.push_back(strip.rightIndices[i]);
 	}
 
 	uint32_t L_size = newLeftIndices.size();
@@ -353,8 +371,15 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 		//std::cout << "Right should be closed" << std::endl;
 	}
 
-	strip.leftIndices = newLeftIndices;
-	strip.rightIndices = newRightIndices;
+	if (needsFlipped) {
+		strip.rightIndices = newLeftIndices;
+		strip.leftIndices = newRightIndices;
+	}
+	else {
+		strip.leftIndices = newLeftIndices;
+		strip.rightIndices = newRightIndices;
+	}
+	
 
 	//std::cout << "Sorted Left Indices: ";
 	//for (uint32_t i : newLeftIndices) {
@@ -1045,7 +1070,7 @@ void SeamFixer::findAdjacentStrips() {
 	}
 
 	std::vector<std::array<uint32_t, 2>> seamVertexPairs{};
-	// Now uniquePositions contains the set of all positions which share multiple vertices
+	// Now uniquePositions contains the set of all 3D positions which share multiple vertices
 	for (auto elem : uniquePositions) {
 		for (uint32_t i = 0; i != elem.second.size(); i++) {
 			for (uint32_t j = 0; j != elem.second.size(); j++) {
