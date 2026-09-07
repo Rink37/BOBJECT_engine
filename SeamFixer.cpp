@@ -94,9 +94,11 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 	// Sorts both sets of indices based on the layout of the left indices
 	std::map<uint32_t, std::vector<uint32_t>> localIndicesMap{}; // Maps an index in leftIndices to the indices of all other elements in leftIndices that are adjacent to vertices[leftIndices[index]]
 	std::map<uint32_t, std::vector<uint32_t>> rightLocalIndicesMap{};
-	//std::cout << "Left indices: ";
+	
+	std::cout << strip.leftIndices.size() << " " << strip.rightIndices.size() << std::endl;
+	std::cout << "Left indices: ";
 	for (uint32_t i = 0; i != strip.leftIndices.size(); i++) {
-		//std::cout << strip.leftIndices[i] << " ";
+		std::cout << strip.leftIndices[i] << " ";
 		std::vector<uint32_t> localIndices{};
 		localIndicesMap.insert({ i, std::vector<uint32_t>{} });
 		findLocalIndices(localIndices, target->indices, strip.leftIndices[i]);
@@ -110,10 +112,10 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 			return;
 		}
 	}
-	//std::cout << std::endl;
-	//std::cout << "Right indices: ";
+	std::cout << std::endl;
+	std::cout << "Right indices: ";
 	for (uint32_t i = 0; i != strip.rightIndices.size(); i++){
-		//std::cout << strip.rightIndices[i] << " ";
+		std::cout << strip.rightIndices[i] << " ";
 		std::vector<uint32_t> localIndices{};
 		rightLocalIndicesMap.insert({ i, std::vector<uint32_t>{} });
 		findLocalIndices(localIndices, target->indices, strip.rightIndices[i]);
@@ -127,7 +129,7 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 			return;
 		}
 	}
-	//std::cout << std::endl;
+	std::cout << std::endl;
 	//bool closed = true;
 	uint32_t currentIndex = 0;
 	bool currentIndexFound = false;
@@ -218,26 +220,41 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 		break;
 	}
 
+	if (sortedSeamPositions[0] != sortedSeamPositions[sortedSeamPositions.size() - 1]) {
+		std::vector<uint32_t> matchesAtStart = localIndicesMap.at(sortedSeamPositions[0]);
+		if (find(matchesAtStart.begin(), matchesAtStart.end(), sortedSeamPositions[sortedSeamPositions.size() - 1]) != matchesAtStart.end()) {
+			sortedSeamPositions.push_back(sortedSeamPositions[0]);
+		}
+	}
+	if (rightSortedSeamPositions[0] != rightSortedSeamPositions[rightSortedSeamPositions.size() - 1]) {
+		std::vector<uint32_t> rightMatchesAtStart = rightLocalIndicesMap.at(rightSortedSeamPositions[0]);
+		if (find(rightMatchesAtStart.begin(), rightMatchesAtStart.end(), rightSortedSeamPositions[rightSortedSeamPositions.size() - 1]) != rightMatchesAtStart.end()) {
+			rightSortedSeamPositions.push_back(rightSortedSeamPositions[0]);
+		}
+	}
+
 	//std::cout << strip.leftIndices.size() << std::endl;
 
-	//std::cout << "Sorted left positions: ";
-	//for (uint32_t i : sortedSeamPositions) {
-	//	std::cout << i << " ";
-	//}
-	//std::cout << std::endl;
+	std::cout << sortedSeamPositions.size() << " " << rightSortedSeamPositions.size() << std::endl;
 
-	//std::cout << "Sorted right positions: ";
-	//for (uint32_t i : rightSortedSeamPositions) {
-	//	std::cout << i << " ";
-	//}
-	//std::cout << std::endl;
+	std::cout << "Sorted left positions: ";
+	for (uint32_t i : sortedSeamPositions) {
+		std::cout << i << " ";
+	}
+	std::cout << std::endl;
+
+	std::cout << "Sorted right positions: ";
+	for (uint32_t i : rightSortedSeamPositions) {
+		std::cout << i << " ";
+	}
+	std::cout << std::endl;
+	std::cout << std::endl;
 
 	std::vector<uint32_t> newLeftIndices{};
 	std::vector<uint32_t> newRightIndices{};
 	
 	for (uint32_t i : sortedSeamPositions) {
 		newLeftIndices.push_back(strip.leftIndices[i]);
-		
 	}
 
 	for (uint32_t i : rightSortedSeamPositions) {
@@ -257,10 +274,19 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 		}
 		else {
 			// Some other issue with sorting
-			// Just truncate the longer one so it is the same size as the shorter one
-			uint32_t minSize = (L_size < R_size) ? L_size : R_size;
-			newLeftIndices.resize(minSize);
-			newRightIndices.resize(minSize);
+			bool leftSmaller = (L_size < R_size);
+			if (leftSmaller) {
+				newRightIndices.clear();
+				for (uint32_t i : sortedSeamPositions) {
+					newRightIndices.push_back(strip.rightIndices[i]);
+				}
+			}
+			else {
+				newLeftIndices.clear();
+				for (uint32_t i : rightSortedSeamPositions) {
+					newLeftIndices.push_back(strip.leftIndices[i]);
+				}
+			}
 		}
 	}
 
@@ -767,7 +793,7 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.025f, bool
 			strip.leftMesh.vertices.at(index).texCoord = glm::vec2(vertices[strip.rightIndices[i]].texCoord.x, vertices[strip.rightIndices[i]].texCoord.y);
 			index++;
 		}
-		
+
 
 		Vertex R_in_Alpha{};
 		R_in_Alpha.pos = glm::vec3(coord.x, coord.y, 0.0f);
@@ -912,8 +938,7 @@ void compareStrips(SeamStrip& a, SeamStrip& b, std::vector<Vertex> vertices) {
 		return; // Assume that if two seams share UV coordinates on one side they will be the same non-zero length
 	}
 
-	uint8_t matchDirections = 0; // 0 means no match, 1 means LL match, 2 means RR match, 3 means LR match, 4 means RL match
-
+	uint8_t matchDirections = 0; // 0 means no match, 1 means LL match, 2 means RR match, 3 means LR match, 4 means RL match, 5 means exact match, 6 means exact match but flipped
 	for (uint32_t i = 0; i != a.leftIndices.size(); i++) {
 		uint8_t lastMatchDirection = matchDirections;
 		glm::vec2 a_L_tC = vertices[a.leftIndices[i]].texCoord;
@@ -924,7 +949,8 @@ void compareStrips(SeamStrip& a, SeamStrip& b, std::vector<Vertex> vertices) {
 
 			if (a_L_tC == b_L_tC) {
 				if (a_R_tC == b_R_tC) {
-					return; // The seams are duplicates - repeated geometry that doesn't connect to non-repeated geometry
+					matchDirections = 5;
+					break; // The seams are duplicates - repeated geometry that doesn't connect to non-repeated geometry
 				}
 				matchDirections = 1;
 				break;
@@ -935,7 +961,8 @@ void compareStrips(SeamStrip& a, SeamStrip& b, std::vector<Vertex> vertices) {
 			}
 			else if (a_L_tC == b_R_tC) {
 				if (a_R_tC == b_L_tC) {
-					flipSeamIndices(b);
+					//flipSeamIndices(b);
+					matchDirections = 6;
 					return;
 				}
 				matchDirections = 3;
@@ -951,6 +978,10 @@ void compareStrips(SeamStrip& a, SeamStrip& b, std::vector<Vertex> vertices) {
 		}
 		else if (matchDirections == lastMatchDirection){
 			break; // Assume that if the first two vertices match then the rest will too
+		}
+		else if (lastMatchDirection >= 5 and i == 1) {
+			std::cout << "Strip started with an exact match, but continuing anyway" << std::endl;
+			break;
 		}
 		else if (i > 0) {
 			if (matchDirections == 3 || matchDirections == 4) {
@@ -979,6 +1010,9 @@ void compareStrips(SeamStrip& a, SeamStrip& b, std::vector<Vertex> vertices) {
 		flipSeamIndices(a);
 		a.directionLocked = true;
 		b.directionLocked = true;
+	}
+	else if (matchDirections == 6) {
+		flipSeamIndices(b);
 	}
 }
 
@@ -1067,18 +1101,8 @@ void SeamFixer::findAdjacentStrips() {
 		}
 
 		seamVertexPairs.erase(remove(seamVertexPairs.begin(), seamVertexPairs.end(), std::array<uint32_t, 2>{0, 0}), seamVertexPairs.end());
-	}
 
-	for (uint32_t i = 0; i != seamStrips.size(); i++) {
-		for (uint32_t j = 0; j != seamStrips.size(); j++) {
-			if (i == j) {
-				continue;
-			}
-			compareStrips(seamStrips[i], seamStrips[j], target->vertices);
-		}
-	}
-
-	for (uint32_t i = 0; i != seamStrips.size(); i++){
+		uint32_t i = seamStrips.size() - 1;
 		for (uint32_t j = 0; j != seamStrips[i].leftIndices.size(); j++) {
 			uint32_t k = seamStrips[i].leftIndices[j];
 			cv::Point L = cv::Point(vertices[k].texCoord.x * width, vertices[k].texCoord.y * height);
@@ -1091,15 +1115,27 @@ void SeamFixer::findAdjacentStrips() {
 			cv::line(demoMat, L, R, cv::Scalar(0, 0, 0), 1);
 		}
 
+		cv::imshow("Seam checker", demoMat);
+		cv::waitKey(0);
+		demoMat = cleanDemoMat.clone();
+	}
+
+	for (uint32_t i = 0; i != seamStrips.size(); i++) {
+		for (uint32_t j = 0; j != seamStrips.size(); j++) {
+			if (i == j) {
+				continue;
+			}
+			compareStrips(seamStrips[i], seamStrips[j], target->vertices);
+		}
+	}
+
+	for (uint32_t i = 0; i != seamStrips.size(); i++){
+
 		//std::cout << "Creating seam meshes" << std::endl;
 		createSeamMeshes(seamStrips[i]);
 		//std::cout << "Finished creating seam meshes" << std::endl;
 
 		//seamStrips.push_back(newSeamStrip);
-
-		//cv::imshow("Seam checker", demoMat);
-		//cv::waitKey(0);
-		//demoMat = cleanDemoMat.clone();
 
 		//std::cout << "Seam done" << std::endl;
 	}
