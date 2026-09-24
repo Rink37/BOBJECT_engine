@@ -1129,6 +1129,18 @@ void SeamFixer::findAdjacentStrips() {
 		}
 	}
 
+	std::vector<std::array<uint32_t, 2>> possibleDuplicates{};
+	uint32_t index = 0;
+	while (index < seamVertexPairs.size()) {
+		if (vertices[seamVertexPairs[index][0]].texCoord == vertices[seamVertexPairs[index][1]].texCoord && vertices[seamVertexPairs[index][0]].pos == vertices[seamVertexPairs[index][1]].pos) {
+			possibleDuplicates.push_back(seamVertexPairs[index]);
+			seamVertexPairs.erase(seamVertexPairs.begin() + index);
+		}
+		else {
+			index++;
+		}
+	}	
+
 	// We should now have a vector containing the indices of all pairs of vertices that mark the seams of the UV map
 	// The aim is now to separate individual seams and determine which side of the seam each vertex falls on i.e. we construct the chain of vertices on either side of each
 	// In the indices of the mesh vertices which correspond to triangles are arranged in triples; therefore if multiple seam vertices appear in the same set of three indices we know that these vertices are on the same side of a seam
@@ -1144,13 +1156,24 @@ void SeamFixer::findAdjacentStrips() {
 
 	cv::Mat cleanDemoMat = demoMat.clone();
 
-	//for (std::array<uint32_t, 2> pair : seamVertexPairs) {
-	//	cv::circle(demoMat, cv::Point(vertices[pair[0]].texCoord.x * width * 0.25f, vertices[pair[0]].texCoord.y * height * 0.25f), 5, cv::Scalar(255, 0, 0));
-	//	cv::circle(demoMat, cv::Point(vertices[pair[1]].texCoord.x * width * 0.25f, vertices[pair[1]].texCoord.y * height * 0.25f), 5, cv::Scalar(0, 255, 0));
-	//}
+	for (std::array<uint32_t, 2> pair : possibleDuplicates) {
+		cv::circle(demoMat, cv::Point(vertices[pair[0]].texCoord.x * width * 0.25f, vertices[pair[0]].texCoord.y * height * 0.25f), 5, cv::Scalar(255, 0, 0));
+		cv::circle(demoMat, cv::Point(vertices[pair[1]].texCoord.x * width * 0.25f, vertices[pair[1]].texCoord.y * height * 0.25f), 5, cv::Scalar(0, 255, 0));
+	}
 
-	//cv::imshow("All pairs", demoMat);
-	//cv::waitKey(0);
+	cv::imshow("All possible duplicates", demoMat);
+	cv::waitKey(0);
+
+	demoMat = cleanDemoMat.clone();
+
+	for (std::array<uint32_t, 2> pair : seamVertexPairs) {
+		cv::circle(demoMat, cv::Point(vertices[pair[0]].texCoord.x * width * 0.25f, vertices[pair[0]].texCoord.y * height * 0.25f), 5, cv::Scalar(255, 0, 0));
+		cv::circle(demoMat, cv::Point(vertices[pair[1]].texCoord.x * width * 0.25f, vertices[pair[1]].texCoord.y * height * 0.25f), 5, cv::Scalar(0, 255, 0));
+		cv::line(demoMat, cv::Point(vertices[pair[0]].texCoord.x * width * 0.25f, vertices[pair[0]].texCoord.y * height * 0.25f), cv::Point(vertices[pair[1]].texCoord.x * width * 0.25f, vertices[pair[1]].texCoord.y * height * 0.25f), cv::Scalar(0, 0, 0), 1);
+	} 
+
+	cv::imshow("Vertex pairs", demoMat);
+	cv::waitKey(0);
 
 	demoMat = cleanDemoMat.clone();
 
@@ -1191,9 +1214,9 @@ void SeamFixer::findAdjacentStrips() {
 			cv::line(demoMat, L, R, cv::Scalar(0, 0, 0), 1);
 		}
 
-		//cv::imshow("Seam checker", demoMat);
-		//cv::waitKey(0);
-		//demoMat = cleanDemoMat.clone();
+		cv::imshow("Seam checker", demoMat);
+		cv::waitKey(0);
+		demoMat = cleanDemoMat.clone();
 	}
 
 	for (uint32_t i = 0; i != seamStrips.size(); i++) {
