@@ -705,13 +705,18 @@ public:
 		itemType = CHECKBOX;
 	}
 
-	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func) {
+	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func, bool state = true) {
 		
 		image = std::unique_ptr<UIImage>(new UIImage);
 		image->mat.push_back(onMat);
 		image->mat.push_back(offMat);
-		image->matidx = 0;
-		this->activestate = true;
+		if (state) {
+			image->matidx = 0;
+		}
+		else {
+			image->matidx = 1;
+		}
+		this->activestate = state;
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
 		image->texHeight = image->mat[0]->textures[0]->texHeight;

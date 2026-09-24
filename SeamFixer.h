@@ -374,9 +374,18 @@ public:
 		
 		directionButtons->addItem(getPtr(directionTB));
 
-		directionButtons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, std::bind(&SeamFixMenu::swapDirection, this, std::placeholders::_1))));
+		directionButtons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, std::bind(&SeamFixMenu::swapDirection, this, std::placeholders::_1), false)));
+
+		Arrangement* useRemapperButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		TextBox* remapperTB = new TextBox(loadList->getFont(), 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		remapperTB->addText("Use remapper:");
+
+		useRemapperButtons->addItem(getPtr(remapperTB));
+		useRemapperButtons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, std::bind(&SeamFixMenu::activateRemapper, this, std::placeholders::_1), false)));
 
 		column->addItem(getPtr(directionButtons));
+		column->addItem(getPtr(useRemapperButtons));
 
 		TextBox* sizeText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.2f, 18, ARRANGE_START, ARRANGE_CENTER);
 		sizeText->addText("Seam size:");
@@ -389,10 +398,7 @@ public:
 
 		column->addItem(getPtr(sizeSlide));
 
-		Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
-		column->addItem(getPtr(new Button(settingsMat, std::bind(&SeamFixMenu::activateRemapper, this, std::placeholders::_1))));
-
-		column->addItem(getPtr(new Button(settingsMat, std::bind(&SeamFixMenu::createDemoMaps, this, std::placeholders::_1))));
+		//column->addItem(getPtr(new Button(settingsMat, std::bind(&SeamFixMenu::createDemoMaps, this, std::placeholders::_1))));
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
@@ -456,8 +462,8 @@ private:
 
 	void finish(UIItem* owner) {
 		outMap->setVisibility(false);
-		fixer->targetTex->cleanup();
-		delete fixer->targetTex;
+		//fixer->targetTex->cleanup();
+		//delete fixer->targetTex;
 
 		owner->Name = fixer->targetTexName;
 
