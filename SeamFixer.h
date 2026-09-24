@@ -178,6 +178,10 @@ public:
 		if (remapper != nullptr) {
 			remapper->cleanup();
 		}
+
+		if (targetTex != nullptr) {
+			targetTex->cleanup();
+		}
 	}
 
 	void createRemapper() {
@@ -469,7 +473,7 @@ private:
 
 	void cancel(UIItem* owner) {
 		outMap->setVisibility(true);
-		textureLL->replacePtr(fixer->targetTex, fixer->targetTexName);
+		textureLL->replacePtr(fixer->targetTex->copyTexture(), fixer->targetTexName);
 
 		owner->Name = fixer->targetTexName;
 

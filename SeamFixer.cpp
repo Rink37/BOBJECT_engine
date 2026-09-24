@@ -1080,6 +1080,7 @@ void compareStrips(SeamStrip& a, SeamStrip& b, std::vector<Vertex> vertices) {
 		b.directionLocked = true;
 	}
 	else if (matchDirections >= 5) {
+		std::cout << "Clearing b because it is identical to (or a flipped equivalent of) a" << std::endl;
 		b.leftIndices.clear();
 		b.rightIndices.clear();
 	}	
@@ -1201,31 +1202,49 @@ void SeamFixer::findAdjacentStrips() {
 
 		seamVertexPairs.erase(remove(seamVertexPairs.begin(), seamVertexPairs.end(), std::array<uint32_t, 2>{0, 0}), seamVertexPairs.end());
 
-		uint32_t i = seamStrips.size() - 1;
-		for (uint32_t j = 0; j != seamStrips[i].leftIndices.size(); j++) {
-			uint32_t k = seamStrips[i].leftIndices[j];
-			cv::Point L = cv::Point(vertices[k].texCoord.x * width, vertices[k].texCoord.y * height);
-			k = seamStrips[i].rightIndices[j];
-			cv::Point R = cv::Point(vertices[k].texCoord.x * width, vertices[k].texCoord.y * height);
-			L *= 0.25f;
-			R *= 0.25f;
-			cv::circle(demoMat, L, 5, cv::Scalar(255 * static_cast<float>(j) / static_cast<float>(seamStrips[i].leftIndices.size()), 0, 0), -1);
-			cv::circle(demoMat, R, 5, cv::Scalar(0, 255 * static_cast<float>(j) / static_cast<float>(seamStrips[i].rightIndices.size()), 0), -1);
-			cv::line(demoMat, L, R, cv::Scalar(0, 0, 0), 1);
-		}
+		//uint32_t i = seamStrips.size() - 1;
+		//for (uint32_t j = 0; j != seamStrips[i].leftIndices.size(); j++) {
+		//	uint32_t k = seamStrips[i].leftIndices[j];
+		//	cv::Point L = cv::Point(vertices[k].texCoord.x * width, vertices[k].texCoord.y * height);
+		//	k = seamStrips[i].rightIndices[j];
+		//	cv::Point R = cv::Point(vertices[k].texCoord.x * width, vertices[k].texCoord.y * height);
+		//	L *= 0.25f;
+		//	R *= 0.25f;
+		//	cv::circle(demoMat, L, 5, cv::Scalar(255 * static_cast<float>(j) / static_cast<float>(seamStrips[i].leftIndices.size()), 0, 0), -1);
+		//	cv::circle(demoMat, R, 5, cv::Scalar(0, 255 * static_cast<float>(j) / static_cast<float>(seamStrips[i].rightIndices.size()), 0), -1);
+		//	cv::line(demoMat, L, R, cv::Scalar(0, 0, 0), 1);
+		//}
 
-		cv::imshow("Seam checker", demoMat);
-		cv::waitKey(0);
-		demoMat = cleanDemoMat.clone();
+		//cv::imshow("Seam checker", demoMat);
+		//cv::waitKey(0);
+		//demoMat = cleanDemoMat.clone();
 	}
 
 	for (uint32_t i = 0; i != seamStrips.size(); i++) {
-		for (uint32_t j = 0; j != seamStrips.size(); j++) {
-			if (i == j) {
+		for (uint32_t j = i; j != seamStrips.size(); j++) {
+			std::cout << i << " " << j << std::endl;
+			if (i == j || seamStrips[i].leftIndices.size() == 0 || seamStrips[j].leftIndices.size() == 0) {
 				continue;
 			}
-			//std::cout << i << " " << j << std::endl;
 			compareStrips(seamStrips[i], seamStrips[j], target->vertices);
+			//if (seamStrips[j].leftIndices.size() == 0) {
+			//	std::cout << i << " " << j << std::endl;
+			//	for (uint32_t j = 0; j != seamStrips[i].leftIndices.size(); j++) {
+			//		uint32_t k = seamStrips[i].leftIndices[j];
+			//		cv::Point L = cv::Point(vertices[k].texCoord.x * width, vertices[k].texCoord.y * height);
+			//		k = seamStrips[i].rightIndices[j];
+			//		cv::Point R = cv::Point(vertices[k].texCoord.x * width, vertices[k].texCoord.y * height);
+			//		L *= 0.25f;
+			//		R *= 0.25f;
+			//		cv::circle(demoMat, L, 5, cv::Scalar(255 * static_cast<float>(j) / static_cast<float>(seamStrips[i].leftIndices.size()), 0, 0), -1);
+			//		cv::circle(demoMat, R, 5, cv::Scalar(0, 255 * static_cast<float>(j) / static_cast<float>(seamStrips[i].rightIndices.size()), 0), -1);
+			//		cv::line(demoMat, L, R, cv::Scalar(0, 0, 0), 1);
+			//	}
+
+			//	cv::imshow("Duplicated seam", demoMat);
+			//	cv::waitKey(0);
+			//	demoMat = cleanDemoMat.clone();
+			//}	
 		}
 	}
 	seamStrips.erase(std::remove_if(
