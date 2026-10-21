@@ -600,7 +600,6 @@ private:
 	std::vector<int> autoIndices{};
 
 	void setMaterialName(UIItem* owner) {
-		//std::cout << newMaterialName << std::endl;
 		newMaterialName = owner->text;
 	}
 
@@ -760,10 +759,8 @@ public:
 
 		std::sort(removeIndices.begin(), removeIndices.end(), [](uint32_t a, uint32_t b) {return a > b; });
 		for (uint32_t i : removeIndices) {
-			//std::cout << i << " ";
 			existingMaterials.erase(existingMaterials.begin() + i);
 		}
-		// << std::endl;
 
 		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 		materialSelect->addOptions(existingMaterials);
@@ -1048,7 +1045,6 @@ public:
 		textureSelect->setBlankText("Select a texture:");
 		textureSelect->addOptions(textures);
 		textureSelect->setSelectCallback(std::bind(&NormalMixer::setMixTex, this, std::placeholders::_1));
-		//mixTexName = textures[0];
 
 		totalArrangement->addItem(getPtr(textureSelect));
 
@@ -1596,12 +1592,6 @@ private:
 				loadedTexture = new imageTexture(initMat, VK_FORMAT_R8G8B8A8_UNORM);
 				loadedTexture->isNormal = true;
 				normalType = !normalTypeToggle->activestate;
-				//if (normalType) {
-				//	std::cout << "TS" << std::endl;
-				//}
-				//else {
-				//	std::cout << "OS" << std::endl;
-				//}
 				loadedTexture->normalType = normalType;
 			}
 			else {
@@ -1618,7 +1608,6 @@ private:
 			}
 		}
 		catch (...) {
-			//std::cout << "Invalid texture name or extension" << std::endl;
 			if (errorFunc != nullptr) {
 				std::string del = ".";
 				auto pos = fileName.find(del);
@@ -1844,9 +1833,13 @@ public:
 		}
 		TextureElements.getPtr(webcamTexture::get(), "Webcam View");
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
+		std::function<void()> colourChange2 = bind(&Application::colourChangeTest2, this);
+		std::function<void()> colourChange3 = bind(&Application::colourChangeTest3, this);
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
 		std::function<void()> widgetToggle = bind(&Application::toggleWidgets, this);
+		keyBinds.addBinding(GLFW_KEY_1, colourChange2, PRESS_EVENT, std::vector<int>{GLFW_KEY_LEFT_SHIFT});
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
+		keyBinds.addBinding(GLFW_KEY_1, colourChange3, RELEASE_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F1, widgetToggle, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
@@ -2145,6 +2138,22 @@ private:
 		primaryColour = glm::vec3(0.0f, 0.13f, 0.27f); 
 		secondaryColour = glm::vec3(0.0f, 0.55f, 0.32f);
 		tertiaryColour = glm::vec3(0.0f, 0.39f, 0.31f);
+		backgroundColour = glm::vec3(0.0f, 0.55f, 0.32f);
+		updateColourScheme();
+	}
+
+	void colourChangeTest2() {
+		primaryColour = glm::vec3(0.42f, 0.06f, 0.11f);
+		secondaryColour = glm::vec3(0.82f, 0.55f, 0.36f);
+		tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
+		backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
+		updateColourScheme();
+	}
+
+	void colourChangeTest3() {
+		primaryColour = glm::vec3(0.0f, 0.13f, 0.27f);
+		tertiaryColour = glm::vec3(0.0f, 0.55f, 0.32f);
+		secondaryColour = glm::vec3(0.0f, 0.39f, 0.31f);
 		backgroundColour = glm::vec3(0.0f, 0.55f, 0.32f);
 		updateColourScheme();
 	}

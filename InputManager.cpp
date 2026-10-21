@@ -7,25 +7,23 @@
 
 using namespace std;
 
+void KeyManager::addBinding(int key, const Callback& callback) {
+	updateKey(key, callback);
+}
+
 void KeyManager::addBinding(int key, const Callback& callback, int eventType) {
 	if (eventType == HOLD_EVENT && !pollRequired) {
 		pollRequired = true;
 	}
-	std::map<int, KeyState>::iterator it = _KeyStates.find(key);
-	if (it == _KeyStates.end()) {
-		addKey(key);
-	}
-	_KeyStates[key].eventType = eventType;
-	_Callbacks.insert({ key, callback });
+	updateKey(key, eventType, callback);
 }
 
-void KeyManager::addBinding(int key, const Callback& callback) {
-	std::map<int, KeyState>::iterator it = _KeyStates.find(key);
-	if (it == _KeyStates.end()) {
-		addKey(key);
-	}
-	_KeyStates[key].eventType = PRESS_EVENT;
-	_Callbacks.insert({ key, callback });
+void KeyManager::addBinding(int key, const Callback& callback, std::vector<int> requirements) {
+	updateKey(key, requirements, callback);
+}
+
+void KeyManager::addBinding(int key, const Callback& callback, int eventType, std::vector<int> requirements) {
+	updateKey(key, eventType, requirements, callback);
 }
 
 void KeyManager::pollRepeatEvents() {
@@ -34,40 +32,86 @@ void KeyManager::pollRepeatEvents() {
 	}
 	for (std::map<int, KeyState>::iterator it = _KeyStates.begin(); it != _KeyStates.end(); ++it) {
 		int key = it->first;
-		if (_KeyStates[key].eventType == HOLD_EVENT && _KeyStates[key].isKeyDown) {
-			_Callbacks[key]();
+		if (_KeyStates[key].callbacks.contains(HOLD_EVENT)) {
+			checkForEvent(key, HOLD_EVENT);
 		}
 	}
 }
 
-void KeyManager::checkForEvent(int key) {
-	switch (_KeyStates[key].eventType) {
-	case PRESS_EVENT:
-		if (_KeyStates[key].isKeyDown) {
-			_Callbacks[key]();
+void KeyManager::checkForEvent(int key, int eventType) {
+	if (_KeyStates[key].callbacks.count(eventType) > 0) {
+		for (std::pair<std::vector<int>, std::function<void()>> elem : _KeyStates[key].callbacks.at(eventType)) {
+			std::cout << elem.first.size() << std::endl;
+			bool conditionsMet = true;
+			for (int code : elem.first) {
+				if (!_KeyStates[code].isKeyDown) {
+					conditionsMet = false;
+					break;
+				}
+			}
+			if (conditionsMet) {
+				elem.second();
+				return;
+			}
 		}
-		break;
-	case RELEASE_EVENT:
-		if (!_KeyStates[key].isKeyDown) {
-			_Callbacks[key]();
-		}
-		break;
-	default:
-		break;
 	}
 }
 
 void KeyManager::setIsKeyDown(int key, int action) {
 	std::map<int, KeyState>::iterator it = _KeyStates.find(key);
-	if (it != _KeyStates.end() && action != GLFW_REPEAT) {
-		_KeyStates[key].setIsKeyDown(action != GLFW_RELEASE);
+	if (it == _KeyStates.end()) {
+		return;
 	}
-	checkForEvent(key);
+	if (action != GLFW_REPEAT) {
+		_KeyStates[key].setIsKeyDown(action != GLFW_RELEASE);
+		int eventType = NO_EVENT;
+		if (action == GLFW_RELEASE) {
+			eventType = RELEASE_EVENT;
+		}
+		else {
+			eventType = PRESS_EVENT;
+		}
+		checkForEvent(key, eventType);
+	}
 }
 
-void KeyManager::addKey(int key) {
-	KeyState keystate;
-	_KeyStates.insert({ key, keystate });
+void KeyManager::updateKey(int keyCode, std::function<void()> callback) {
+	updateKey(keyCode, PRESS_EVENT, callback);
+}
+
+void KeyManager::updateKey(int keyCode, int eventType, std::function<void()> callback) {
+	updateKey(keyCode, eventType, std::vector<int>{}, callback);
+}
+
+void KeyManager::updateKey(int keyCode, std::vector<int> requirement, std::function<void()> callback) {
+	updateKey(keyCode, PRESS_EVENT, requirement, callback);
+}
+
+void KeyManager::updateKey(int keyCode, int eventType, std::vector<int> requirement, std::function<void()> callback) {
+	for (auto requiredKey : requirement) {
+		if (_KeyStates.count(requiredKey) == 0) {
+			KeyState requiredKeyState;
+			_KeyStates.insert({ requiredKey, requiredKeyState });
+		}
+	}
+	std::map<int, KeyState>::iterator it = _KeyStates.find(keyCode);
+	if (it == _KeyStates.end()) {
+		KeyState keyState;
+		keyState.callbacks.insert({ eventType, std::vector<std::pair<std::vector<int>, std::function<void()>>>{ {requirement, callback} } });
+		keyState.sortCallbacks();
+		_KeyStates.insert({ keyCode, keyState });
+	}
+	else {
+		KeyState* keyState = &_KeyStates.at(keyCode);
+		std::map<int, std::vector<std::pair<std::vector<int>, std::function<void()>>>>::iterator state_it = keyState->callbacks.find(eventType);
+		if (state_it == keyState->callbacks.end()) {
+			keyState->callbacks.insert({ eventType, std::vector < std::pair<std::vector<int>, std::function<void()>>>{ {requirement, callback} } });
+		}
+		else {
+			keyState->callbacks.at(eventType).push_back({ requirement, callback });
+		}
+		keyState->sortCallbacks();
+	}
 }
 
 void KeyManager::initCallbacks(GLFWwindow* window) {

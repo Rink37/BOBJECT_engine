@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <algorithm>
 #include <functional>
 
 #define NO_EVENT 0
@@ -31,6 +32,15 @@ public:
 	void setIsKeyDown(int isDown) {
 		isKeyDown = isDown;
 	}
+
+	void sortCallbacks() {
+		for (auto it = callbacks.begin(); it != callbacks.end(); it++) {
+			std::sort(it->second.begin(), it->second.end(), [](std::pair<std::vector<int>, std::function<void()>>a, std::pair<std::vector<int>, std::function<void()>>b) {return a.first.size() > b.first.size(); });
+		}
+	}
+
+	std::map<int, std::vector<std::pair<std::vector<int>, std::function<void()>>>> callbacks{};
+	// Callbacks are accessed by keycode and held keys
 };
 
 class KeyManager {
@@ -43,22 +53,25 @@ public:
 
 	using Callback = std::function<void()>;
 
-	void addKey(int);
-
-	void addBinding(int, const Callback&, int);
+	void updateKey(int, std::function<void()>);
+	void updateKey(int, int, std::function<void()>);
+	void updateKey(int, int, std::vector<int>, std::function<void()>);
+	void updateKey(int, std::vector<int>, std::function<void()>);
 
 	void addBinding(int, const Callback&);
+	void addBinding(int, const Callback&, int);
+	void addBinding(int, const Callback&, std::vector<int>);
+	void addBinding(int, const Callback&, int, std::vector<int>);
 
 	void pollRepeatEvents();
 
-	void checkForEvent(int);
+	void checkForEvent(int, int);
 
 	void setIsKeyDown(int, int);
 
 private:
 	bool pollRequired = false;
 
-	std::map<int, Callback> _Callbacks;
 	std::map<int, KeyState> _KeyStates;
 
 	static std::vector<KeyManager*> _instances;
@@ -78,12 +91,10 @@ public:
 	}
 
 	void startListening() {
-		//std::cout << "Started listening" << std::endl;
 		listening = true;
 	}
 
 	void stopListening() {
-		//std::cout << "Stopped listening" << std::endl;
 		listening = false;
 	}
 
