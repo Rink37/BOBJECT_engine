@@ -4,6 +4,8 @@
 #include"Bobject_Engine.h"
 #include"Materials.h"
 
+#define NORM_SIZE 1.5f
+
 struct BoundingBox{
 	std::pair<float, float> x_range{ 0.0f, 0.0f };
 	std::pair<float, float> y_range{ 0.0f, 0.0f };
@@ -11,6 +13,15 @@ struct BoundingBox{
 
 	glm::vec3 size{ 0.0f, 0.0f, 0.0f };
 	glm::vec3 position{ 0.0f, 0.0f, 0.0f };
+
+	void clearRanges() {
+		x_range.first = 0.0f;
+		x_range.second = 0.0f;
+		y_range.first = 0.0f;
+		y_range.second = 0.0f;
+		z_range.first = 0.0f;
+		z_range.second = 0.0f;
+	}
 
 	void updateRanges(glm::vec3 vertPos) {
 		x_range.first = (vertPos.x < x_range.first) ? vertPos.x : x_range.first;
@@ -31,6 +42,16 @@ struct BoundingBox{
 		size.x = abs(x_range.second - x_range.first);
 		size.y = abs(y_range.second - y_range.first);
 		size.z = abs(z_range.second - z_range.first);
+	}
+
+	float getNormFactor() {
+		float factor = 1.0f;
+		float maxSize = (size.x > size.y) ? size.x : size.y;
+		maxSize = (size.z > maxSize) ? size.z : maxSize;
+		if (maxSize > 0.0f) {
+			factor = NORM_SIZE / maxSize;
+		}
+		return factor;
 	}
 };
 
@@ -83,6 +104,8 @@ public:
 	StaticMesh() {};
 	StaticMesh(std::string);
 	void computeTangents();
+
+	void resizeMesh(float);
 
 	BoundingBox bbox;
 private:
