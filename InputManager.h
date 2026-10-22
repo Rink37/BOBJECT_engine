@@ -27,7 +27,6 @@ const std::map<char, char> upperCaseSpecial{ {49, 33}, {50, 34}, {52, 36}, { 53,
 struct KeyState {
 public:
 	bool isKeyDown = false;
-	int eventType = NO_EVENT;
 
 	void setIsKeyDown(int isDown) {
 		isKeyDown = isDown;
