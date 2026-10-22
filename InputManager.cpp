@@ -41,7 +41,9 @@ void KeyManager::pollRepeatEvents() {
 void KeyManager::checkForEvent(int key, int eventType) {
 	if (_KeyStates[key].callbacks.count(eventType) > 0) {
 		for (std::pair<std::vector<int>, std::function<void()>> elem : _KeyStates[key].callbacks.at(eventType)) {
-			std::cout << elem.first.size() << std::endl;
+			if (_KeyStates[key].context.size() > 0 && _KeyStates[key].context != elem.first) {
+				continue;
+			}
 			bool conditionsMet = true;
 			for (int code : elem.first) {
 				if (!_KeyStates[code].isKeyDown) {
@@ -51,9 +53,17 @@ void KeyManager::checkForEvent(int key, int eventType) {
 			}
 			if (conditionsMet) {
 				elem.second();
+				if (eventType == PRESS_EVENT) {
+					_KeyStates[key].context = elem.first;
+				} else if(eventType == RELEASE_EVENT) {
+					_KeyStates[key].context.clear();
+				}
 				return;
 			}
 		}
+	}
+	if (eventType == RELEASE_EVENT) {
+		_KeyStates[key].context.clear();
 	}
 }
 

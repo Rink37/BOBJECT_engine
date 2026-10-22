@@ -39,6 +39,7 @@ public:
 		}
 	}
 
+	std::vector<int> context{};
 	std::map<int, std::vector<std::pair<std::vector<int>, std::function<void()>>>> callbacks{};
 	// Callbacks are accessed by keycode and held keys
 };
