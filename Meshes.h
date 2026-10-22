@@ -103,6 +103,7 @@ class StaticMesh : public Mesh {
 public:
 	StaticMesh() {};
 	StaticMesh(std::string);
+	StaticMesh(std::string, float&);
 	void computeTangents();
 
 	void resizeMesh(float);
@@ -135,8 +136,8 @@ private:
 
 class StaticObject {
 public:
-	StaticObject(std::string name) {
-		mesh = new StaticMesh(name);
+	StaticObject(std::string name, float& scaleFac) {
+		mesh = new StaticMesh(name, scaleFac);
 	}
 
 	void setMat(Material* m, std::string shader) {

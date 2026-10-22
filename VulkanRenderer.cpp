@@ -103,49 +103,18 @@ public:
 
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 		Arrangement* exitArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
-		//Arrangement* remapArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 		exitArrangement->addItem(getPtr(new spacer()));
 		exitArrangement->addItem(getPtr(new Button(closeMat, exitFnc)));
 
 		std::vector<std::string> functionNames{};
 
-		//remapArrangement->addItem(getPtr(new spacer()));
-		//Button* remapBtn = new Button(settingsMat, remapFnc);
-		//remapBtn->Name = texName;
-
 		if (tex->isNormal) {
-			//Button* mapMixer = new Button(settingsMat, mixNormalsFnc);
-			//mapMixer->Name = texName;
-			//remapArrangement->addItem(getPtr(mapMixer));
-
-			//if (tex->normalType) {
-			//	Material* tsMat = loadList->getMaterial("TSBtnMat");
-
-			//	Button* normalType = new Button(tsMat, transitionTypeFnc);
-			//	normalType->Name = texName;
-
-			//	remapArrangement->addItem(getPtr(normalType));
-
-			//}
-			//else {
-			//	Material* osMat = loadList->getMaterial("OSBtnMat");
-
-			//	Button* normalType = new Button(osMat, transitionTypeFnc);
-			//	normalType->Name = texName;
-
-			//	remapArrangement->addItem(getPtr(normalType));
-			//}
 			functionNames.push_back("Convert norm");
 			functionNames.push_back("Combine norms");
 		}
-		//Button* seamFixBtn = new Button(settingsMat, fixSeamsFnc);
-		//seamFixBtn->Name = texName;
-
-		//remapArrangement->addItem(getPtr(seamFixBtn));
 
 		functionNames.push_back("Remap");
 		functionNames.push_back("Fix seams");
-		//remapArrangement->addItem(getPtr(remapBtn));
 
 		Material* panelMat = loadList->replacePtr(new Material(tex), "Image view");
 		bool isWebcam = (texName == std::string("Webcam View"));
@@ -161,9 +130,6 @@ public:
 
 		mainArrangement->addItem(getPtr(exitArrangement));
 		mainArrangement->addItem(getPtr(imagePanel));
-		//if (texName != std::string("Webcam View")) {
-		//	mainArrangement->addItem(getPtr(remapArrangement));
-		//}
 		if (texName != std::string("Webcam View")) {
 			mainArrangement->addItem(getPtr(functionDropdown));
 		}
@@ -1283,7 +1249,6 @@ private:
 		}
 
 		if (resultNormalType) {
-			//std::cout << "Attempting to change normal map type" << std::endl;
 			changeNormalMapType(textureName);
 		}
 
@@ -1310,10 +1275,6 @@ public:
 		addTextureFunc = addTexFunc;
 		getMesh = getMeshFunc;
 		exitCallback = exitFunc;
-
-		//for (std::string objName : objects) {
-		//	std::cout << objName << std::endl;
-		//}
 
 		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 		
@@ -1650,7 +1611,6 @@ public:
 
 		Arrangement* textArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
-		//imageData lb = OPENBUTTON;
 		Material* loadMat = loadList->getMaterial("OpenBtnMat");
 
 		TextBox* menuText = new TextBox(objectFont, 0.0f, 0.0f, 4.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
@@ -1837,7 +1797,9 @@ public:
 		std::function<void()> colourChange3 = bind(&Application::colourChangeTest3, this);
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
 		std::function<void()> widgetToggle = bind(&Application::toggleWidgets, this);
+		std::function<void()> resetCamPos = bind(&Application::resetCamera, this);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange2, PRESS_EVENT, std::vector<int>{GLFW_KEY_LEFT_SHIFT});
+		keyBinds.addBinding(GLFW_KEY_C, resetCamPos, PRESS_EVENT, std::vector<int>{GLFW_KEY_LEFT_CONTROL});
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange3, RELEASE_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
@@ -1931,6 +1893,11 @@ private:
 	bool isTrackingFPS = false;
 	uint32_t frameCount = 0;
 	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+
+	// World settings
+
+	glm::vec3 defaultCameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
+	float scaleFactor = 1.0f;
 
 	// Light position
 
@@ -2306,6 +2273,9 @@ private:
 			obj.mesh->cleanup();
 		}
 		staticObjects.clear();
+		scaleFactor = 1.0f;
+		defaultCameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
+
 		updateVisibleObjects();
 
 		objectMenu.clearObjects();
@@ -2775,7 +2745,11 @@ private:
 			return;
 		}
 		objectName = objectName.substr(0, pos);
-		StaticObject newObject(modelPath);
+		StaticObject newObject(modelPath, scaleFactor);
+		
+		//std::cout << newObject.mesh->bbox.position.x << " " << newObject.mesh->bbox.position.y << " " << newObject.mesh->bbox.position.z << std::endl;
+		//std::cout << newObject.mesh->bbox.size.x << " " << newObject.mesh->bbox.size.y << " " << newObject.mesh->bbox.size.z << std::endl;
+
 		newObject.objectName = objectName;
 
 		std::function<void(UIItem*)> visibleFunction = bind(&Application::setObjectVisibility, this, placeholders::_1);
@@ -2787,9 +2761,28 @@ private:
 		newObject.setMat(TextureElements.getMaterial("Webcam Material"), "BF");
 
 		staticObjects.push_back(newObject);
+		if (staticObjects.size() == 1) {
+			resetCamera();
+		}
 		session::get()->currentStudio.modelPaths.push_back(modelPath);
 
 		updateVisibleObjects();
+	}
+
+	void updateCentralLocation() {
+		uint32_t objectCount = staticObjects.size();
+		glm::vec3 avgPos{ 0.0f, 0.0f, 0.0f };
+		for (uint32_t i = 0; i != objectCount; i++) {
+			avgPos += staticObjects[i].mesh->bbox.position;
+		}
+		if (objectCount > 0) {
+			defaultCameraPos = avgPos / static_cast<float>(objectCount);
+		}
+	}
+
+	void resetCamera() {
+		updateCentralLocation();
+		camera.center = defaultCameraPos;
 	}
 
 	void cleanup() {

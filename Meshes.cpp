@@ -124,10 +124,20 @@ StaticMesh::StaticMesh(string modelPath) {
 	setup();
 }
 
+StaticMesh::StaticMesh(string modelPath, float& scaleFac) {
+	loadModel(modelPath);
+	if (scaleFac == 1.0f) {
+		scaleFac = bbox.getNormFactor();
+	}
+	resizeMesh(scaleFac);
+	setup();
+}
+
+
 void StaticMesh::resizeMesh(float size) {
 	bbox.clearRanges();
 	for (uint32_t i = 0; i != vertices.size(); i++) {
-		vertices[i].pos = (vertices[i].pos - bbox.position) * size + bbox.position;
+		vertices[i].pos = vertices[i].pos * size;
 		bbox.updateRanges(vertices[i].pos);
 	}
 	bbox.getPosition();
@@ -185,11 +195,7 @@ bool StaticMesh::loadModel(string testMODEL_PATH) {
 		}
 		bbox.getPosition();
 		bbox.getSize();
-		std::cout << bbox.getNormFactor() << std::endl;
-		resizeMesh(bbox.getNormFactor());
 		computeTangents();
-		std::cout << bbox.position.x << " " << bbox.position.y << " " << bbox.position.y << std::endl;
-		std::cout << bbox.size.x << " " << bbox.size.y << " " << bbox.size.z << std::endl;
 		return true;
 	}
 	return false;
