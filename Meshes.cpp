@@ -144,6 +144,8 @@ bool StaticMesh::loadModel(string testMODEL_PATH) {
 					attrib.vertices[3 * index.vertex_index + 2]
 				};
 
+				bbox.updateRanges(vertex.pos);
+
 				vertex.normal = {
 					attrib.normals[3 * index.normal_index + 0],
 					attrib.normals[3 * index.normal_index + 1],
@@ -169,17 +171,13 @@ bool StaticMesh::loadModel(string testMODEL_PATH) {
 				indices.push_back(uniqueVertices[vertex]);
 
 				uniqueTexindices.push_back(uniqueVertices[vertex]);
-
-				// System attempts to seek the unique texture coordinate vertices - does not currently work
-
-				//if (vertices[uniqueCoords[vertex.texCoord]].pos == vertices[uniqueVertices[vertex]].pos) {
-					// Checks if the position of this vertex is the same as the position of the first vertex with the same texture coordinate
-				//	uniqueTexindices.push_back(uniqueVertices[vertex]);
-				//}
-
 			}
 		}
 		computeTangents();
+		bbox.getPosition();
+		bbox.getSize();
+		std::cout << bbox.position.x << " " << bbox.position.y << " " << bbox.position.y << std::endl;
+		std::cout << bbox.size.x << " " << bbox.size.y << " " << bbox.size.z << std::endl;
 		return true;
 	}
 	return false;
@@ -189,7 +187,6 @@ void StaticMesh::computeTangents() {
 	// First we initialise all the tangents and bitangents
 	for (Vertex vert : vertices) {
 		vert.tangent = glm::vec4(0, 0, 0, 0);
-		//vert.biTangent = glm::vec3(0, 0, 0);
 	}
 
 	vector<glm::vec3> biTangents;
@@ -248,7 +245,6 @@ void StaticMesh::computeTangents() {
 		vertices[i].tangent = glm::vec4(t.x, t.y, t.z, w);
 
 		t = cross(glm::vec3(vertices[i].tangent.x, vertices[i].tangent.y, vertices[i].tangent.z), vertices[i].normal);
-		//vertices[i].biTangent = t;
 	}
 }
 
@@ -282,7 +278,6 @@ void PlaneMesh::computeTangents() {
 	// First we initialise all the tangents and bitangents
 	for (Vertex vert : vertices) {
 		vert.tangent = glm::vec4(0, 0, 0, 0);
-		//vert.biTangent = glm::vec3(0, 0, 0);
 	}
 
 	vector<glm::vec3> biTangents;
@@ -341,6 +336,5 @@ void PlaneMesh::computeTangents() {
 		vertices[i].tangent = glm::vec4(t.x, t.y, t.z, w);
 
 		t = cross(glm::vec3(vertices[i].tangent.x, vertices[i].tangent.y, vertices[i].tangent.z), vertices[i].normal);
-		//vertices[i].biTangent = t;
 	}
 }

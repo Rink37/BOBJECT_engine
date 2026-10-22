@@ -2190,7 +2190,7 @@ private:
 			frameCount++;
 			return;
 		}
-		//std::cout << "FrameRate is ~" << frameCount << " FPS" << std::endl;
+		std::cout << "FrameRate is ~" << frameCount << " FPS" << std::endl;
 		isTrackingFPS = false;
 	}
 

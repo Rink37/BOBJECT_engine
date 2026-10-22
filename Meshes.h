@@ -4,6 +4,36 @@
 #include"Bobject_Engine.h"
 #include"Materials.h"
 
+struct BoundingBox{
+	std::pair<float, float> x_range{ 0.0f, 0.0f };
+	std::pair<float, float> y_range{ 0.0f, 0.0f };
+	std::pair<float, float> z_range{ 0.0f, 0.0f };
+
+	glm::vec3 size{ 0.0f, 0.0f, 0.0f };
+	glm::vec3 position{ 0.0f, 0.0f, 0.0f };
+
+	void updateRanges(glm::vec3 vertPos) {
+		x_range.first = (vertPos.x < x_range.first) ? vertPos.x : x_range.first;
+		x_range.second = (vertPos.x > x_range.second) ? vertPos.x : x_range.second;
+		y_range.first = (vertPos.y < y_range.first) ? vertPos.y : y_range.first;
+		y_range.second = (vertPos.y > y_range.second) ? vertPos.y : y_range.second;
+		z_range.first = (vertPos.z < z_range.first) ? vertPos.z : z_range.first;
+		z_range.second = (vertPos.z > z_range.second) ? vertPos.z : z_range.second;
+	}
+
+	void getPosition() {
+		position.x = (x_range.first + x_range.second) / 2.0f;
+		position.y = (y_range.first + y_range.second) / 2.0f;
+		position.z = (z_range.first + z_range.second) / 2.0f;
+	}
+
+	void getSize() {
+		size.x = abs(x_range.second - x_range.first);
+		size.y = abs(y_range.second - y_range.first);
+		size.z = abs(z_range.second - z_range.first);
+	}
+};
+
 struct Mesh {
 	std::vector<Vertex> vertices;
 	
@@ -53,6 +83,8 @@ public:
 	StaticMesh() {};
 	StaticMesh(std::string);
 	void computeTangents();
+
+	BoundingBox bbox;
 private:
 	bool loadModel(std::string);
 };
