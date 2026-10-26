@@ -1711,6 +1711,24 @@ private:
 		}
 		string saveName = winFile::SaveFileDialog();
 		if (saveName != string("fail")) {
+			uint32_t lastDotIndex = saveName.size();
+			if (saveName.size() > 1) {
+				char dot = '.';
+				for (uint32_t i = 0; i != saveName.size(); i++) {
+					uint32_t j = saveName.size() - (i + 1);
+					char c = saveName[j];
+					if (c == dot) {
+						lastDotIndex = i-1;
+						break;
+					}
+					else if (c == '/' || c == '\\') {
+						break;
+					}
+				}
+			}
+			if (lastDotIndex == saveName.size()) {
+				saveName += ".png";
+			}
 			if (sRGBTex == nullptr) {
 				texToSave->getCVMat();
 				imwrite(saveName, texToSave->texMat);
