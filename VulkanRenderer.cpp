@@ -1798,9 +1798,11 @@ public:
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
 		std::function<void()> widgetToggle = bind(&Application::toggleWidgets, this);
 		std::function<void()> resetCamPos = bind(&Application::resetCamera, this);
+		std::function<void()> fullResetCamPos = bind(&Application::fullResetCamera, this);
 		std::function<void()> swizzle = bind(&Application::updateSwizzle, this);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange2, PRESS_EVENT, std::vector<int>{GLFW_KEY_LEFT_SHIFT});
 		keyBinds.addBinding(GLFW_KEY_C, resetCamPos, PRESS_EVENT, std::vector<int>{GLFW_KEY_LEFT_CONTROL});
+		keyBinds.addBinding(GLFW_KEY_C, fullResetCamPos, PRESS_EVENT, std::vector<int>{GLFW_KEY_LEFT_CONTROL, GLFW_KEY_LEFT_SHIFT});
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange3, RELEASE_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
@@ -2134,7 +2136,6 @@ private:
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			staticObjects[i].mesh->updateSwizzle();
 		}
-		std::cout << static_cast<int>(swizzle) << std::endl;
 	}
 
 	void updateVisibleObjects() {
@@ -2756,12 +2757,8 @@ private:
 			createErrorDialog("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for models"));
 			return;
 		}
-		std::cout << static_cast<int>(swizzle) << std::endl;
 		objectName = objectName.substr(0, pos);
 		StaticObject newObject(modelPath, swizzle, scaleFactor);
-		
-		//std::cout << newObject.mesh->bbox.position.x << " " << newObject.mesh->bbox.position.y << " " << newObject.mesh->bbox.position.z << std::endl;
-		//std::cout << newObject.mesh->bbox.size.x << " " << newObject.mesh->bbox.size.y << " " << newObject.mesh->bbox.size.z << std::endl;
 
 		newObject.objectName = objectName;
 
@@ -2796,6 +2793,15 @@ private:
 	void resetCamera() {
 		updateCentralLocation();
 		camera.center = defaultCameraPos;
+	}
+
+	void fullResetCamera() {
+		resetCamera();
+		camera.getInstance().distance = 5.0f;
+		camera.initxrot = 45.0f;
+		camera.inityrot = 10.0f;
+		camera.xrot = 45.0f;
+		camera.yrot = 10.0f;
 	}
 
 	void cleanup() {

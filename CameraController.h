@@ -32,8 +32,6 @@ public:
 	float fov = 45.0f;
 	float defaultVelocity = 0.01f;
 	float velocity = 0.01f;
-	float radius = glm::length(pos);
-	double defaultscale = pow(glm::length(pos), 2);
 	bool isPanning = false;
 	bool isRotating = false;
 

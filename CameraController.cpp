@@ -3,13 +3,7 @@
 
 using namespace glm;
 
-
 void Camera::updateCamera(GLFWwindow* window) {
-	radius = glm::length(pos);
-	float scalefac = radius * radius / defaultscale;
-	if (scalefac > 2) {
-		scalefac = 2;
-	}
 	int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
 	int shiftState = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
 	int mb4State = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_4);
