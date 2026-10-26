@@ -2884,7 +2884,7 @@ private:
 		UniformBufferObject ubo{};
 		ubo.model = glm::mat4(1.0f);
 		ubo.view = camera.view;
-		ubo.proj = glm::perspective(glm::radians(camera.fov), engine->swapChainExtent.width / (float)engine->swapChainExtent.height, 0.1f, 10.0f);
+		ubo.proj = glm::perspective(glm::radians(camera.fov), engine->swapChainExtent.width / (float)engine->swapChainExtent.height, 0.1f, 25.0f);
 		ubo.proj[1][1] *= -1;
 
 		if (remapMenu.isVisible && remapMenu.isSetup) {
