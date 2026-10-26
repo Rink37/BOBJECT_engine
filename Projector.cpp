@@ -10,8 +10,14 @@ void Projector::setCamera(Camera* cam) {
 
 void Projector::calculateUVs() {
 	projectedUVs.clear();
+	std::cout << tex->texWidth << " " << tex->texHeight << std::endl;
+	std::cout << Engine::get()->windowWidth << " " << Engine::get()->windowHeight << std::endl;
 	for (uint32_t i = 0; i != mesh->vertices.size(); i++) {
 		glm::vec4 projectedPoint = proj * view * glm::vec4(mesh->vertices[i].pos, 1.0f);
-		projectedUVs.push_back(projectedPoint);
+		projectedUVs.push_back(glm::vec2(projectedPoint.x / projectedPoint.w + 0.5f, 0.5f - projectedPoint.y / projectedPoint.w));
 	}
+	for (uint32_t i = 0; i != mesh->vertices.size(); i++) {
+		mesh->vertices[i].texCoord = projectedUVs[i];
+	}
+	mesh->setup();
 }

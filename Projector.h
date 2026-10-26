@@ -1,12 +1,16 @@
 #include"Meshes.h"
 #include"Textures.h"
 #include"CameraController.h"
+#include"Bobject_Engine.h"
 
 class Projector {
 public:
 	Projector(Texture* t, Mesh* m) {
 		tex = t;
 		mesh = m;
+		for (uint32_t i = 0; i != mesh->vertices.size(); i++) {
+			originalUVs.push_back(mesh->vertices[i].texCoord);
+		}
 	}
 
 	void setCamera(Camera*);
@@ -15,6 +19,7 @@ public:
 
 	Texture* tex;
 	Mesh* mesh;
+	std::vector<glm::vec2> originalUVs{};
 	std::vector<glm::vec2> projectedUVs{};
 
 	glm::mat4 proj{};

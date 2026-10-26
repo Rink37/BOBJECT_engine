@@ -14,6 +14,7 @@
 #include"ImageProcessor.h"
 #include"GenerateNormalMap.h"
 #include"SeamFixer.h"
+#include"Projector.h"
 
 #include<chrono>
 
@@ -78,12 +79,11 @@ public:
 		textureLL = textureAssets;
 	}
 
-	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc) {
+	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc, std::function<void(UIItem*)> projectorFunc) {
 		if (isSetup) {
 			return;
 		}
 		if (!textureLL->checkForTexture(texName)) {
-			//std::cout << "Texture " << texName << " does not exist in this load list" << std::endl;
 			return;
 		}
 
@@ -102,6 +102,7 @@ public:
 		Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
 
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
+		Arrangement* projectorArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_FILL, SCALE_BY_DIMENSIONS);
 		Arrangement* exitArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 		exitArrangement->addItem(getPtr(new spacer()));
 		exitArrangement->addItem(getPtr(new Button(closeMat, exitFnc)));
@@ -128,11 +129,21 @@ public:
 		functionDropdown->setBlankText("Choose a function:");
 		functionDropdown->setSelectCallback(std::bind(&TextureSettings::functionMap, this, std::placeholders::_1));
 
+		TextBox* projectorLabel = new TextBox(loadList->getFont(), 0.0f, 0.0f, 2.5f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		projectorLabel->addText("Projector");
+
+		Button* projector = new Button(renderedMat, projectorFunc);
+		projector->Name = texName;
+
+		projectorArrangement->addItem(getPtr(projectorLabel));
+		projectorArrangement->addItem(getPtr(projector));
+
 		mainArrangement->addItem(getPtr(exitArrangement));
 		mainArrangement->addItem(getPtr(imagePanel));
 		if (texName != std::string("Webcam View")) {
 			mainArrangement->addItem(getPtr(functionDropdown));
 		}
+		mainArrangement->addItem(getPtr(projectorArrangement));
 		mainArrangement->addItem(getPtr(new spacer()));
 		mainArrangement->arrangeItems();
 
@@ -1922,6 +1933,9 @@ private:
 	float scaleFactor = 1.0f;
 	uint8_t swizzle = 0;
 
+	// Projector
+	Projector* projector = nullptr;
+
 	// Light position
 
 	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f);
@@ -2057,6 +2071,23 @@ private:
 
 			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
 		}
+	}
+
+	void createProjector(UIItem* owner) {
+		std::string texName = owner->Name;
+
+		std::cout << texName << std::endl;
+
+		if (projector != nullptr) {
+			delete projector;
+		}
+		if (staticObjects.size() == 0) {
+			return;
+		}
+		projector = new Projector(TextureElements.getTexture(texName), staticObjects[0].mesh);
+		projector->setCamera(&camera);
+		projector->calculateUVs();
+		delete projector;
 	}
 
 	void openSeamObjPicker(UIItem* owner) {
@@ -2334,8 +2365,9 @@ private:
 
 	void openTextureSettingsMenu(UIItem* owner) {
 		std::function<void(UIItem*)> seamFixFunc = std::bind(&Application::openSeamObjPicker, this, std::placeholders::_1);
-		
-		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc);
+		std::function<void(UIItem*)> projectFunc = std::bind(&Application::createProjector, this, std::placeholders::_1);
+
+		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc);
 
 		addWidget(&textureSettings);
 	}
@@ -2730,8 +2762,10 @@ private:
 			textureMenu.hide();
 			
 			closeTextureSettingsMenu(owner);
+
+			std::function<void(UIItem*)> projectFunc = std::bind(&Application::createProjector, this, std::placeholders::_1);
 			
-			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr);
+			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr, projectFunc);
 
 			addWidget(&textureSettings);
 		}
