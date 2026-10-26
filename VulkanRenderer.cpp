@@ -1798,12 +1798,14 @@ public:
 		std::function<void()> FPSTrack = bind(&Application::startFPSTrack, this);
 		std::function<void()> widgetToggle = bind(&Application::toggleWidgets, this);
 		std::function<void()> resetCamPos = bind(&Application::resetCamera, this);
+		std::function<void()> swizzle = bind(&Application::updateSwizzle, this);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange2, PRESS_EVENT, std::vector<int>{GLFW_KEY_LEFT_SHIFT});
 		keyBinds.addBinding(GLFW_KEY_C, resetCamPos, PRESS_EVENT, std::vector<int>{GLFW_KEY_LEFT_CONTROL});
 		keyBinds.addBinding(GLFW_KEY_1, colourChange, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange3, RELEASE_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F1, widgetToggle, PRESS_EVENT);
+		keyBinds.addBinding(GLFW_KEY_GRAVE_ACCENT, swizzle, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 
 		Engine::get()->createRenderPass(renderGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -1898,6 +1900,7 @@ private:
 
 	glm::vec3 defaultCameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
 	float scaleFactor = 1.0f;
+	uint8_t swizzle = 0;
 
 	// Light position
 
@@ -2123,6 +2126,15 @@ private:
 		secondaryColour = glm::vec3(0.0f, 0.39f, 0.31f);
 		backgroundColour = glm::vec3(0.0f, 0.55f, 0.32f);
 		updateColourScheme();
+	}
+
+	void updateSwizzle() {
+		swizzle += 1;
+		swizzle %= 3;
+		for (uint32_t i = 0; i != staticObjects.size(); i++) {
+			staticObjects[i].mesh->updateSwizzle();
+		}
+		std::cout << static_cast<int>(swizzle) << std::endl;
 	}
 
 	void updateVisibleObjects() {
@@ -2744,8 +2756,9 @@ private:
 			createErrorDialog("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for models"));
 			return;
 		}
+		std::cout << static_cast<int>(swizzle) << std::endl;
 		objectName = objectName.substr(0, pos);
-		StaticObject newObject(modelPath, scaleFactor);
+		StaticObject newObject(modelPath, swizzle, scaleFactor);
 		
 		//std::cout << newObject.mesh->bbox.position.x << " " << newObject.mesh->bbox.position.y << " " << newObject.mesh->bbox.position.z << std::endl;
 		//std::cout << newObject.mesh->bbox.size.x << " " << newObject.mesh->bbox.size.y << " " << newObject.mesh->bbox.size.z << std::endl;

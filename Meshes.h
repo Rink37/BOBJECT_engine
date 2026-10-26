@@ -81,6 +81,8 @@ struct Mesh {
 	virtual void computeTangents() {};
 	void createIndexBuffer();
 
+	void updateSwizzle();
+
 	const void cleanup();
 	bool cleaned = true;
 };
@@ -102,15 +104,15 @@ public:
 class StaticMesh : public Mesh {
 public:
 	StaticMesh() {};
-	StaticMesh(std::string);
-	StaticMesh(std::string, float&);
+	StaticMesh(std::string, uint8_t);
+	StaticMesh(std::string, uint8_t, float&);
 	void computeTangents();
 
 	void resizeMesh(float);
 
 	BoundingBox bbox;
 private:
-	bool loadModel(std::string);
+	bool loadModel(std::string, uint8_t);
 };
 
 class PlaneMesh : public Mesh {
@@ -136,8 +138,8 @@ private:
 
 class StaticObject {
 public:
-	StaticObject(std::string name, float& scaleFac) {
-		mesh = new StaticMesh(name, scaleFac);
+	StaticObject(std::string name, uint8_t swizzle, float& scaleFac) {
+		mesh = new StaticMesh(name, swizzle, scaleFac);
 	}
 
 	void setMat(Material* m, std::string shader) {

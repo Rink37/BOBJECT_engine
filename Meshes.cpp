@@ -55,6 +55,8 @@ const void Mesh::cleanup() {
 
 	Engine* engine = Engine::get();
 
+	vkDeviceWaitIdle(engine->device);
+
 	vkDestroyBuffer(engine->device, indexBuffer, nullptr);
 	vkFreeMemory(engine->device, indexBufferMemory, nullptr);
 
@@ -62,6 +64,22 @@ const void Mesh::cleanup() {
 	vkFreeMemory(engine->device, vertexBufferMemory, nullptr);
 
 	cleaned = true;
+}
+
+void Mesh::updateSwizzle() {
+	for (uint32_t i = 0; i != vertices.size(); i++) {
+		glm::vec3 previousPos = vertices[i].pos;
+		glm::vec3 previousNormal = vertices[i].normal;
+
+		vertices[i].pos.x = previousPos.y;
+		vertices[i].pos.y = previousPos.z;
+		vertices[i].pos.z = previousPos.x;
+
+		vertices[i].normal.x = previousNormal.y;
+		vertices[i].normal.y = previousNormal.z;
+		vertices[i].normal.z = previousNormal.x;
+	}
+	setup();
 }
 
 void UIMesh::UpdateVertices(float xp, float yp, float xsc, float ysc, float zp) {
@@ -119,13 +137,13 @@ void UIMesh::updateVertexBuffer() {
 	memcpy(vBuffer, vertices.data(), (size_t)bufferSize);
 }
 
-StaticMesh::StaticMesh(string modelPath) {
-	loadModel(modelPath);
+StaticMesh::StaticMesh(string modelPath, uint8_t swizzle) {
+	loadModel(modelPath, swizzle);
 	setup();
 }
 
-StaticMesh::StaticMesh(string modelPath, float& scaleFac) {
-	loadModel(modelPath);
+StaticMesh::StaticMesh(string modelPath, uint8_t swizzle, float& scaleFac) {
+	loadModel(modelPath, swizzle);
 	if (scaleFac == 1.0f) {
 		scaleFac = bbox.getNormFactor();
 	}
@@ -144,7 +162,7 @@ void StaticMesh::resizeMesh(float size) {
 	bbox.getSize();
 }
 
-bool StaticMesh::loadModel(string testMODEL_PATH) {
+bool StaticMesh::loadModel(string testMODEL_PATH, uint8_t swizzle) {
 	tinyobj::attrib_t attrib;
 	vector<tinyobj::shape_t> shapes;
 	vector<tinyobj::material_t> materials;
@@ -159,17 +177,17 @@ bool StaticMesh::loadModel(string testMODEL_PATH) {
 				Vertex vertex{};
 
 				vertex.pos = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2]
+					attrib.vertices[3 * index.vertex_index + (0 + swizzle)%3],
+					attrib.vertices[3 * index.vertex_index + (1 + swizzle)%3],
+					attrib.vertices[3 * index.vertex_index + (2 + swizzle)%3]
 				};
 
 				bbox.updateRanges(vertex.pos);
 
 				vertex.normal = {
-					attrib.normals[3 * index.normal_index + 0],
-					attrib.normals[3 * index.normal_index + 1],
-					attrib.normals[3 * index.normal_index + 2]
+					attrib.normals[3 * index.normal_index + (0 + swizzle) % 3],
+					attrib.normals[3 * index.normal_index + (1 + swizzle) % 3],
+					attrib.normals[3 * index.normal_index + (2 + swizzle) % 3]
 				};
 
 				vertex.texCoord = {
