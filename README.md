@@ -21,7 +21,7 @@ The application contains a lot of features designed to make it relatively easy t
 
 ### Once you've set up your webcam
 1. Launch the application and it will find all available webcams. By default the app will select the default webcam of your system, but you will have the option to change this in the next step.
-2. Load an object by clicking on the open button next to the "meshes" label at the left of the interface. You should see a screenshot of your webcam view wrapped around the object. 
+2. Load an object by clicking on the open button next to the "meshes" label at the left of the interface. You should see a screenshot of your webcam view wrapped around the object. If the model is rotated incorrectly then you can hit the grave accent key (`) to rotate the axes until the model up direction is correct.
 > [!NOTE]
 > At the moment, the app only supports loading .obj models, though further compatibility with other model formats is planned for the future.
 3. Click on the settings icon in the top middle of the app. This will open a menu which allows you to configure the settings of your webcam. You should see your webcam start updating automatically. If the wrong webcam is selected, hit the arrow keys until the viewer shows the feed from the webcam pointed at your canvas. 
@@ -38,11 +38,21 @@ The application contains a lot of features designed to make it relatively easy t
 
 ## View Settings
 
+### View Modes
+
 The application features multiple view modes: the webcam view mode which was described earlier, a "Rendered" view mode which is toggled using the center icon in the trio at the top-left and a "Wireframe" view mode toggled using the leftmost of these icons. 
 
 The rendered view mode will allow the user to see the object with whatever material is applied to it and with lighting enabled. While in the rendered view mode the position of the scene light can be modified using the two sliders beneath the trio of view mode toggles. Lighting can also be disabled in the rendered view mode by clicking on the circle icon next to the settings button at the top middle of the application window. Clicking on this icon again will re-enable lighting.
 
 The wireframe view mode will show only the wireframe of your models, so no lighting or materials are present in this mode. 
+
+### Camera Controls
+
+Rotate camera: RMB
+Pan camera: Shift + RMB or Mouse Button 4 + RMB
+Zoom in/out: Middle mouse scroll
+Reset camera location: Ctrl + C
+Reset camera location, rotation and zoom: Ctrl + Shift + C
 
 ## Textures and Materials
 
