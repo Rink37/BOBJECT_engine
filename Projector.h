@@ -14,6 +14,7 @@ public:
 	}
 
 	void setCamera(Camera*);
+	void shareCamera(Camera*);
 
 	void calculateUVs();
 
@@ -26,5 +27,8 @@ public:
 	glm::mat4 view{};
 	glm::vec3 pos{};
 	glm::vec3 center{};
+	float xrot = 45.0f;
+	float yrot = 10.0f;
+	float distance = 5.0f;
 	float fov = 0.0f;
 };

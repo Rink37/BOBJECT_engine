@@ -1828,6 +1828,7 @@ public:
 		std::function<void()> widgetToggle = bind(&Application::toggleWidgets, this);
 		std::function<void()> resetCamPos = bind(&Application::resetCamera, this);
 		std::function<void()> fullResetCamPos = bind(&Application::fullResetCamera, this);
+		std::function<void()> setCamPosToProjector = bind(&Application::setCameraToProjector, this);
 		std::function<void()> swizzle = bind(&Application::updateSwizzle, this);
 		keyBinds.addBinding(GLFW_KEY_1, colourChange2, PRESS_EVENT, std::vector<int>{GLFW_KEY_LEFT_SHIFT});
 		keyBinds.addBinding(GLFW_KEY_C, resetCamPos, PRESS_EVENT, std::vector<int>{GLFW_KEY_LEFT_CONTROL});
@@ -1837,6 +1838,7 @@ public:
 		keyBinds.addBinding(GLFW_KEY_F, FPSTrack, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_F1, widgetToggle, PRESS_EVENT);
 		keyBinds.addBinding(GLFW_KEY_GRAVE_ACCENT, swizzle, PRESS_EVENT);
+		keyBinds.addBinding(GLFW_KEY_TAB, setCamPosToProjector, PRESS_EVENT);
 		webcamTexture::get()->webCam->shouldUpdate = false;
 
 		Engine::get()->createRenderPass(renderGP.renderPass, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -2089,6 +2091,14 @@ private:
 		projector = new Projector(TextureElements.getTexture(texName), staticObjects[0].mesh);
 		projector->setCamera(&camera);
 		projector->calculateUVs();
+	}
+
+	void setCameraToProjector() {
+		//std::cout << "Updating camera" << std::endl;
+		if (projector == nullptr) {
+			return;
+		}
+		projector->shareCamera(&camera);
 	}
 
 	void openSeamObjPicker(UIItem* owner) {

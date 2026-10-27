@@ -5,7 +5,18 @@ void Projector::setCamera(Camera* cam) {
 	pos = cam->pos;
 	center = cam->center;
 	fov = cam->fov;
+	xrot = cam->xrot;
+	yrot = cam->yrot;
+	distance = cam->getInstance().distance;
 	proj = glm::perspective(glm::radians(fov), static_cast<float>(tex->texWidth) / static_cast<float>(tex->texHeight), 0.1f, 25.0f);
+}
+
+void Projector::shareCamera(Camera* cam) {
+	cam->xrot = xrot;
+	cam->yrot = yrot;
+	cam->center = center;
+	cam->fov = fov;
+	cam->getInstance().distance = distance;
 }
 
 void Projector::calculateUVs() {

@@ -69,19 +69,19 @@ public:
 
 	void setIsKeyDown(int, int);
 
+	static std::vector<KeyManager*> _instances;
 private:
 	bool pollRequired = false;
 
 	std::map<int, KeyState> _KeyStates;
-
-	static std::vector<KeyManager*> _instances;
 
 	static void callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 };
 
 class TypeManager {
 public:
-	TypeManager() {
+	TypeManager(GLFWwindow* window) {
+		windowRef = window;
 		TypeManager::_instances.push_back(this);
 		listening = false;
 	}
@@ -91,11 +91,15 @@ public:
 	}
 
 	void startListening() {
+		initCallbacks(windowRef);
 		listening = true;
 	}
 
 	void stopListening() {
 		listening = false;
+		for (KeyManager* instance : KeyManager::_instances) {
+			instance->initCallbacks(windowRef);
+		}
 	}
 
 	void setTypeCallback(std::function<void(char)> func) {
@@ -105,6 +109,8 @@ public:
 	void initCallbacks(GLFWwindow* window);
 private:
 	static std::vector<TypeManager*> _instances;
+
+	GLFWwindow* windowRef = nullptr;
 
 	bool listening = false;
 

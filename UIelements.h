@@ -306,9 +306,7 @@ public:
 		modifiable = isModifiable;
 
 		if (modifiable) {
-			//std::cout << "Modifiable text box created" << std::endl;
-			typeManager = new TypeManager();
-			typeManager->initCallbacks(Engine::get()->window);
+			typeManager = new TypeManager(Engine::get()->window);
 			typeManager->setTypeCallback(std::bind(&TextBox::updateText, this, std::placeholders::_1));
 		}
 
@@ -819,10 +817,6 @@ public:
 class Arrangement : public UIItem {
 public:
 	float spacing;
-
-	//Arrangement() {
-	//	itemType = ARRANGEMENT;
-	//}
 
 	Arrangement(int orient, float px, float py, float ex, float ey, float spc) {
 		setDims(px, py, ex, ey, spc);
