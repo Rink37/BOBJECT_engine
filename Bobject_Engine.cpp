@@ -446,8 +446,10 @@ void Engine::createGraphicsPipelines() {
 void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, bool alphaToCoverage) {
 
 	shaderData flatShader = FLATSHADER;
+	shaderData affineFlatShader = AFFINE_FLATSHADER;
 	shaderData AC_flatShader = AC_FLATSHADER;
 	shaderData bfShader = BFSHADER;
+	shaderData affineBFShader = AFFINE_BFSHADER;
 	shaderData AC_bfShader = AC_BFSHADER;
 	shaderData uiShader = UISHADER;
 	shaderData wShader = WSHADER;
@@ -464,9 +466,13 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, 
 
 	graphicsPass.shaderDatas.push_back(flatShader);
 	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(affineFlatShader);
+	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(AC_flatShader);
 	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(bfShader);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(affineBFShader);
 	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(AC_bfShader);
 	vertexInputInfoIndices.push_back(0);

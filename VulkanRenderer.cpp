@@ -1935,6 +1935,7 @@ private:
 
 	// Projector
 	Projector* projector = nullptr;
+	bool debugView = false;
 
 	// Light position
 
@@ -2076,7 +2077,7 @@ private:
 	void createProjector(UIItem* owner) {
 		std::string texName = owner->Name;
 
-		std::cout << texName << std::endl;
+		//std::cout << texName << std::endl;
 
 		if (projector != nullptr) {
 			delete projector;
@@ -2921,16 +2922,16 @@ private:
 		ubo.proj = glm::perspective(glm::radians(camera.fov), engine->swapChainExtent.width / (float)engine->swapChainExtent.height, 0.1f, 25.0f);
 		ubo.proj[1][1] *= -1;
 
-		if (remapMenu.isVisible && remapMenu.isSetup && projector == nullptr) {
+		if (remapMenu.isVisible && remapMenu.isSetup && (!debugView || projector == nullptr)) {
 			ubo.UVdistort[0] = 2 * remapMenu.outMap->extentx;
 			ubo.UVdistort[1] = (remapMenu.outMap->posx) - remapMenu.outMap->extentx;
 			ubo.UVdistort[2] = 2 * remapMenu.outMap->extenty;
 			ubo.UVdistort[3] = (remapMenu.outMap->posy) - remapMenu.outMap->extenty;
 		}
-		else if (textureSettings.isVisible && textureSettings.isSetup && projector == nullptr) {
+		else if (textureSettings.isVisible && textureSettings.isSetup && (!debugView || projector == nullptr)) {
 			textureSettings.getUVPos(ubo.UVdistort);
 		}
-		else if (projector != nullptr) {
+		else if (projector != nullptr && debugView) {
 			float projectedWidth = static_cast<float>(static_cast<float>(Engine::get()->windowHeight) / static_cast<float>(projector->tex->texHeight) * projector->tex->texWidth) / static_cast<float>(Engine::get()->windowWidth);
 			ubo.UVdistort[0] = 2.0f * projectedWidth;
 			ubo.UVdistort[1] = -1.0f * projectedWidth;

@@ -290,6 +290,8 @@ int main(){
 	compileAndWriteShaders(basepath, string("AC_Flat"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("AC_TS_BF"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("AC_OS_BF"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("Affine_BF"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("Affine_Flat"), 0, outRoot);
 	cout << "Done" << endl;
 	return 0;
 }
