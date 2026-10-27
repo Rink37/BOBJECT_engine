@@ -2080,6 +2080,7 @@ private:
 
 		if (projector != nullptr) {
 			delete projector;
+			projector = nullptr;
 		}
 		if (staticObjects.size() == 0) {
 			return;
@@ -2087,7 +2088,6 @@ private:
 		projector = new Projector(TextureElements.getTexture(texName), staticObjects[0].mesh);
 		projector->setCamera(&camera);
 		projector->calculateUVs();
-		delete projector;
 	}
 
 	void openSeamObjPicker(UIItem* owner) {
@@ -2921,14 +2921,21 @@ private:
 		ubo.proj = glm::perspective(glm::radians(camera.fov), engine->swapChainExtent.width / (float)engine->swapChainExtent.height, 0.1f, 25.0f);
 		ubo.proj[1][1] *= -1;
 
-		if (remapMenu.isVisible && remapMenu.isSetup) {
+		if (remapMenu.isVisible && remapMenu.isSetup && projector == nullptr) {
 			ubo.UVdistort[0] = 2 * remapMenu.outMap->extentx;
 			ubo.UVdistort[1] = (remapMenu.outMap->posx) - remapMenu.outMap->extentx;
 			ubo.UVdistort[2] = 2 * remapMenu.outMap->extenty;
 			ubo.UVdistort[3] = (remapMenu.outMap->posy) - remapMenu.outMap->extenty;
 		}
-		else if (textureSettings.isVisible && textureSettings.isSetup) {
+		else if (textureSettings.isVisible && textureSettings.isSetup && projector == nullptr) {
 			textureSettings.getUVPos(ubo.UVdistort);
+		}
+		else if (projector != nullptr) {
+			float projectedWidth = static_cast<float>(static_cast<float>(Engine::get()->windowHeight) / static_cast<float>(projector->tex->texHeight) * projector->tex->texWidth) / static_cast<float>(Engine::get()->windowWidth);
+			ubo.UVdistort[0] = 2.0f * projectedWidth;
+			ubo.UVdistort[1] = -1.0f * projectedWidth;
+			ubo.UVdistort[2] = 2.0f;
+			ubo.UVdistort[3] = -1.0f;
 		}
 		else {
 			ubo.UVdistort[0] = 0;
