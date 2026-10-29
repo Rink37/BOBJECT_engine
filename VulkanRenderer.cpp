@@ -1686,6 +1686,7 @@ private:
 	}
 
 	void addTexture(UIItem* owner) {
+		std::cout << "Adding texture " << owner->Name << std::endl;
 		std::string textureName = owner->Name;
 
 		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
@@ -2079,23 +2080,30 @@ private:
 	void createProjector(UIItem* owner) {
 		std::string texName = owner->Name;
 
-		//std::cout << texName << std::endl;
-
 		if (projector != nullptr) {
 			projector->reprojectImage();
 			delete projector;
 			projector = nullptr;
+			return;
 		}
 		if (staticObjects.size() == 0) {
 			return;
 		}
-		projector = new Projector(TextureElements.getTexture(texName), staticObjects[0].mesh);
+		projector = new Projector(TextureElements.getTexture(texName), staticObjects[0].mesh, texName, std::bind(&Application::addTexture, this, std::placeholders::_1, std::placeholders::_2));
 		projector->setCamera(&camera);
 		projector->calculateUVs();
 	}
 
+	void addTexture(std::string name, Texture* tex) {
+		std::cout << name << std::endl;
+		TextureElements.getPtr(tex, name);
+		UIItem* temp = new spacer();
+		temp->Name = name;
+		textureMenu.getAddTexCallback()(temp);
+		delete temp;
+	}
+
 	void setCameraToProjector() {
-		//std::cout << "Updating camera" << std::endl;
 		if (projector == nullptr) {
 			return;
 		}

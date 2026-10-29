@@ -35,6 +35,16 @@ void Projector::calculateUVs() {
 	mesh->setup();
 }
 
+void Projector::resetMesh() {
+	if (mesh->vertices.size() != originalUVs.size()) {
+		return;
+	}
+	for (uint32_t i = 0; i != mesh->vertices.size(); i++) {
+		mesh->vertices[i].texCoord = originalUVs[i];
+	}
+	mesh->setup();
+}
+
 void Projector::reprojectImage() {
 	createReprojectionMesh();
 	OverlayMap reprojectedMap{};
@@ -44,15 +54,17 @@ void Projector::reprojectImage() {
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 	commandBuffer = drawColourMap(commandBuffer, &reprojectedMap);
 	Engine::get()->endSingleTimeCommands(commandBuffer);
-	Texture* resTex = reprojectedMap.colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, tex->texWidth, tex->texHeight);
+	Texture* resTex = reprojectedMap.colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, tex->texWidth, tex->texHeight);
 	resTex->getCVMat();
 	cv::imshow("Reprojected", resTex->texMat);
 	cv::waitKey(0);
 	reprojectedMap.cleanup();
-	resTex->cleanup();
-	delete resTex;
 	reprojectionMesh->cleanup();
 	delete reprojectionMesh;
+	resetMesh();
+	if (saveTextureFnc != nullptr) {
+		saveTextureFnc(texName + std::string("_projected"), resTex);
+	}
 }
 
 void Projector::createReprojectionMesh() {
