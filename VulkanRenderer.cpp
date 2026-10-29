@@ -2082,6 +2082,7 @@ private:
 		//std::cout << texName << std::endl;
 
 		if (projector != nullptr) {
+			projector->reprojectImage();
 			delete projector;
 			projector = nullptr;
 		}

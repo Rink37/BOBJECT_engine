@@ -7,8 +7,6 @@
 #include"UIelements.h"
 #include"Remapper.h"
 
-//#include"include/BakedImages.h"
-
 struct SeamStrip {
 	std::vector<uint32_t> leftIndices{};
 	std::vector<uint32_t> rightIndices{};
@@ -90,62 +88,6 @@ public:
 			}
 		}
 		this->isRight = isRight;
-	}
-
-	void alphaOverRight() {
-		vkDeviceWaitIdle(Engine::get()->device);
-		drawRightMap();
-		drawRightAlpha();
-		alphaOverMap(true);
-	}
-
-	void alphaOverLeft() {
-		vkDeviceWaitIdle(Engine::get()->device);
-		drawLeftMap();
-		drawLeftAlpha();
-		alphaOverMap(false);
-	}
-
-	void drawRightMap() {
-		if (rightMap.cleaned) {
-			prepMap(&rightMap);
-			prepareColourDescriptor(&rightMap);
-			createTexWritePipeline(&rightMap);
-		}
-		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-		commandBuffer = drawColourMap(commandBuffer, true);
-		Engine::get()->endSingleTimeCommands(commandBuffer);
-	}
-
-	void drawLeftMap() {
-		if (leftMap.cleaned) {
-			prepMap(&leftMap);
-			prepareColourDescriptor(&leftMap);
-			createTexWritePipeline(&leftMap);
-		}
-		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-		commandBuffer = drawColourMap(commandBuffer, false);
-		Engine::get()->endSingleTimeCommands(commandBuffer);
-	}
-
-	void drawRightAlpha() {
-		if (rightAlpha.cleaned) {
-			prepMap(&rightAlpha);
-			createAlphaWritePipeline(&rightAlpha);
-		}
-		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-		commandBuffer = drawAlphaMap(commandBuffer, true);
-		Engine::get()->endSingleTimeCommands(commandBuffer);
-	}
-
-	void drawLeftAlpha() {
-		if (leftAlpha.cleaned) {
-			prepMap(&leftAlpha);
-			createAlphaWritePipeline(&leftAlpha);
-		}
-		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-		commandBuffer = drawAlphaMap(commandBuffer, false);
-		Engine::get()->endSingleTimeCommands(commandBuffer);
 	}
 
 	void cleanup() {
