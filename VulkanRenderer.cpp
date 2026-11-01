@@ -3003,6 +3003,9 @@ private:
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(elem.first)]);
 				for (uint32_t i : elem.second) {
 					Material* mat = staticObjects[i].mat;
+					if (projector != nullptr && projector->shellMesh != nullptr) {
+						engine->drawObject(commandBuffer, projector->shellMesh->vertexBuffer, projector->shellMesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(projector->shellMesh->indices.size()));
+					}
 					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 				}
 			}
@@ -3029,6 +3032,10 @@ private:
 				default:
 					mat = staticObjects[i].unlitMat;
 					break;
+				}
+
+				if (projector != nullptr && projector->shellMesh != nullptr) {
+					engine->drawObject(commandBuffer, projector->shellMesh->vertexBuffer, projector->shellMesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(projector->shellMesh->indices.size()));
 				}
 				
 				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));

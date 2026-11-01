@@ -23,26 +23,42 @@ void Projector::shareCamera(Camera* cam) {
 
 void Projector::calculateUVs() {
 	projectedUVs.clear();
-	//std::cout << tex->texWidth << " " << tex->texHeight << std::endl;
-	//std::cout << Engine::get()->windowWidth << " " << Engine::get()->windowHeight << std::endl;
-	for (uint32_t i = 0; i != mesh->vertices.size(); i++) {
-		glm::vec4 projectedPoint = proj * view * glm::vec4(mesh->vertices[i].pos, 1.0f);
+	if (shellMesh == nullptr) {
+		shellMesh = new Mesh();
+	}
+	shellMesh->vertices.clear();
+	for (uint32_t i = 0; i != refMesh->vertices.size(); i++) {
+		glm::vec4 projectedPoint = proj * view * glm::vec4(refMesh->vertices[i].pos, 1.0f);
 		projectedUVs.push_back(glm::vec2(projectedPoint.x / (2.0f * projectedPoint.w) + 0.5f, 0.5f - projectedPoint.y / (2.0f * projectedPoint.w)));
 	}
-	for (uint32_t i = 0; i != mesh->vertices.size(); i++) {
-		mesh->vertices[i].texCoord = projectedUVs[i];
+	for (uint32_t i = 0; i != refMesh->vertices.size(); i++) {
+		shellMesh->vertices.push_back(refMesh->vertices[i]);
+		shellMesh->vertices[i].pos = shellMesh->vertices[i].pos + shellMesh->vertices[i].normal * 0.0005f;
+		shellMesh->vertices[i].texCoord = projectedUVs[i];
 	}
-	mesh->setup();
-}
+	for (uint32_t i = 0; i < refMesh->indices.size() - 2; i += 3) {
+		glm::vec3 n0 = shellMesh->vertices[refMesh->indices[i]].normal;
+		glm::vec3 n1 = shellMesh->vertices[refMesh->indices[i + 1]].normal;
+		glm::vec3 n2 = shellMesh->vertices[refMesh->indices[i + 2]].normal;
+		glm::vec3 avgNormal = (n0 + n1 + n2) / 3.0f;
 
-void Projector::resetMesh() {
-	if (mesh->vertices.size() != originalUVs.size()) {
-		return;
+		glm::vec3 p0 = shellMesh->vertices[refMesh->indices[i]].pos;
+		glm::vec3 p1 = shellMesh->vertices[refMesh->indices[i + 1]].pos;
+		glm::vec3 p2 = shellMesh->vertices[refMesh->indices[i + 2]].pos;
+		glm::vec3 avgPos = (n0 + n1 + n2) / 3.0f;
+
+		glm::vec3 pointingVec = pos - avgPos;
+		float dp0 = glm::dot(n0, pos - p0);
+		float dp1 = glm::dot(n1, pos - p1);
+		float dp2 = glm::dot(n2, pos - p2);
+
+		if (dp0 >= 0 || dp1 >= 0 || dp2 >= 0) {
+			shellMesh->indices.push_back(refMesh->indices[i]);
+			shellMesh->indices.push_back(refMesh->indices[i+1]);
+			shellMesh->indices.push_back(refMesh->indices[i+2]);
+		}
 	}
-	for (uint32_t i = 0; i != mesh->vertices.size(); i++) {
-		mesh->vertices[i].texCoord = originalUVs[i];
-	}
-	mesh->setup();
+	shellMesh->setup();
 }
 
 void Projector::reprojectImage() {
@@ -55,13 +71,11 @@ void Projector::reprojectImage() {
 	commandBuffer = drawColourMap(commandBuffer, &reprojectedMap);
 	Engine::get()->endSingleTimeCommands(commandBuffer);
 	Texture* resTex = reprojectedMap.colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, tex->texWidth, tex->texHeight);
-	resTex->getCVMat();
-	cv::imshow("Reprojected", resTex->texMat);
-	cv::waitKey(0);
 	reprojectedMap.cleanup();
 	reprojectionMesh->cleanup();
 	delete reprojectionMesh;
-	resetMesh();
+	shellMesh->cleanup();
+	delete shellMesh;
 	if (saveTextureFnc != nullptr) {
 		saveTextureFnc(texName + std::string("_projected"), resTex);
 	}
@@ -73,13 +87,13 @@ void Projector::createReprojectionMesh() {
 		delete reprojectionMesh;
 	}
 	reprojectionMesh = new Mesh();
-	for (uint32_t i = 0; i != mesh->vertices.size(); i++) {
+	for (uint32_t i = 0; i != refMesh->vertices.size(); i++) {
 		Vertex vertex{};
 		vertex.pos = glm::vec3(originalUVs[i], 0.0f);
 		vertex.texCoord = projectedUVs[i];
 		reprojectionMesh->vertices.push_back(vertex);
 	}
-	reprojectionMesh->indices = mesh->indices;
+	reprojectionMesh->indices = refMesh->indices;
 	reprojectionMesh->setup();
 }
 

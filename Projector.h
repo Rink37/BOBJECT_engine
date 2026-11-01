@@ -7,9 +7,9 @@ class Projector {
 public:
 	Projector(Texture* t, Mesh* m, std::string tN, std::function<void(std::string, Texture*)> saveFnc) {
 		tex = t;
-		mesh = m;
-		for (uint32_t i = 0; i != mesh->vertices.size(); i++) {
-			originalUVs.push_back(mesh->vertices[i].texCoord);
+		refMesh = m;
+		for (uint32_t i = 0; i != refMesh->vertices.size(); i++) {
+			originalUVs.push_back(refMesh->vertices[i].texCoord);
 		}
 		saveTextureFnc = saveFnc;
 		texName = tN;
@@ -21,11 +21,11 @@ public:
 	void shareCamera(Camera*);
 
 	void calculateUVs();
-	void resetMesh();
 
 	Texture* tex;
 	std::string texName{};
-	Mesh* mesh;
+	Mesh* refMesh;
+	Mesh* shellMesh = nullptr;
 	Mesh* reprojectionMesh = nullptr;
 	std::vector<glm::vec2> originalUVs{};
 	std::vector<glm::vec2> projectedUVs{};
