@@ -21,6 +21,17 @@ void Projector::shareCamera(Camera* cam) {
 	cam->getInstance().distance = distance;
 }
 
+void Projector::cleanup() {
+	reprojectionMesh->cleanup();
+	delete reprojectionMesh;
+	shellMesh->cleanup();
+	delete shellMesh;
+	shadedProjection->cleanup();
+	delete shadedProjection;
+	flatProjection->cleanup();
+	delete flatProjection;
+}
+
 void Projector::calculateUVs() {
 	projectedUVs.clear();
 	if (shellMesh == nullptr) {
@@ -72,10 +83,7 @@ void Projector::reprojectImage() {
 	Engine::get()->endSingleTimeCommands(commandBuffer);
 	Texture* resTex = reprojectedMap.colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, tex->texWidth, tex->texHeight);
 	reprojectedMap.cleanup();
-	reprojectionMesh->cleanup();
-	delete reprojectionMesh;
-	shellMesh->cleanup();
-	delete shellMesh;
+	cleanup();
 	if (saveTextureFnc != nullptr) {
 		saveTextureFnc(texName + std::string("_projected"), resTex);
 	}

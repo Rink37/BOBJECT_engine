@@ -5,7 +5,7 @@
 
 class Projector {
 public:
-	Projector(Texture* t, Mesh* m, std::string tN, std::function<void(std::string, Texture*)> saveFnc) {
+	Projector(Texture* t, Mesh* m, std::string tN, std::function<void(std::string, Texture*)> saveFnc, GraphicsPass* gP) {
 		tex = t;
 		refMesh = m;
 		for (uint32_t i = 0; i != refMesh->vertices.size(); i++) {
@@ -13,7 +13,12 @@ public:
 		}
 		saveTextureFnc = saveFnc;
 		texName = tN;
+
+		shadedProjection = new Material(std::vector<Texture*>{tex}, "Affine_BF", gP);
+		flatProjection = new Material(std::vector<Texture*>{tex}, "Affine_Flat", gP);
 	}
+
+	void cleanup();
 
 	std::function<void(std::string, Texture*)> saveTextureFnc = nullptr;
 
@@ -27,6 +32,8 @@ public:
 	Mesh* refMesh;
 	Mesh* shellMesh = nullptr;
 	Mesh* reprojectionMesh = nullptr;
+	Material* shadedProjection = nullptr;
+	Material* flatProjection = nullptr;
 	std::vector<glm::vec2> originalUVs{};
 	std::vector<glm::vec2> projectedUVs{};
 

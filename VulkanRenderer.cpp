@@ -68,8 +68,6 @@ public:
 
 		isSetup = true;
 	}
-private:
-	
 };
 
 class TextureSettings : public Widget {
@@ -471,7 +469,7 @@ public:
 		int optionIndex = 0;
 
 		std::vector<std::string> materialOptions{};
-		std::vector<std::string> invalidMatOptions = {"UI", "UIGray", "UIText", "UV", "W", "UIRoundBox"};
+		std::vector<std::string> invalidMatOptions = {"UI", "UIGray", "UIText", "UV", "W", "UIRoundBox", "Affine_BF", "Affine_Flat"};
 		for (auto elem : boundPass->pipelineMap) {
 			if (find(invalidMatOptions.begin(), invalidMatOptions.end(), elem.first) != invalidMatOptions.end()) {
 				continue;
@@ -2089,7 +2087,7 @@ private:
 		if (staticObjects.size() == 0) {
 			return;
 		}
-		projector = new Projector(TextureElements.getTexture(texName), staticObjects[0].mesh, texName, std::bind(&Application::addTexture, this, std::placeholders::_1, std::placeholders::_2));
+		projector = new Projector(TextureElements.getTexture(texName), staticObjects[0].mesh, texName, std::bind(&Application::addTexture, this, std::placeholders::_1, std::placeholders::_2), currentPass);
 		projector->setCamera(&camera);
 		projector->calculateUVs();
 	}
@@ -2998,14 +2996,24 @@ private:
 			engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));
 		}
 
+		if (projector != nullptr && projector->shellMesh != nullptr) {
+			Material* mat = nullptr;
+			if (viewIndex == 1 && lit) {
+				mat = projector->shadedProjection;
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("Affine_BF")]);
+			}
+			else {
+				mat = projector->flatProjection;
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("Affine_Flat")]);
+			}
+			engine->drawObject(commandBuffer, projector->shellMesh->vertexBuffer, projector->shellMesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(projector->shellMesh->indices.size()));
+		}
+
 		if (viewIndex == 1 && lit) {
 			for (auto elem : objectPipelines) {
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(elem.first)]);
 				for (uint32_t i : elem.second) {
 					Material* mat = staticObjects[i].mat;
-					if (projector != nullptr && projector->shellMesh != nullptr) {
-						engine->drawObject(commandBuffer, projector->shellMesh->vertexBuffer, projector->shellMesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(projector->shellMesh->indices.size()));
-					}
 					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
 				}
 			}
@@ -3032,10 +3040,6 @@ private:
 				default:
 					mat = staticObjects[i].unlitMat;
 					break;
-				}
-
-				if (projector != nullptr && projector->shellMesh != nullptr) {
-					engine->drawObject(commandBuffer, projector->shellMesh->vertexBuffer, projector->shellMesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(projector->shellMesh->indices.size()));
 				}
 				
 				engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
