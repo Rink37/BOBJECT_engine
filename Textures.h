@@ -85,7 +85,6 @@ struct Texture {
 		vkDeviceWaitIdle(Engine::get()->device);
 		if (textureImage != nullptr) {
 			vkDestroyImage(Engine::get()->device, textureImage, nullptr);
-			
 		}
 		if (textureImageMemory != nullptr) {
 			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
@@ -139,15 +138,6 @@ public:
 		createTextureImageView();
 		destroyCVMat();
 	}
-
-	//imageTexture(std::string filename, VkFormat format) {
-	//	// Image texture which is loaded from file
-	//	texMat = cv::imread(filename, cv::IMREAD_UNCHANGED);
-	//	textureFormat = format;
-	//	transitionMatToImg();
-	//	createTextureImageView();
-	//	destroyCVMat();
-	//}
 
 	imageTexture(cv::Mat initMat, VkFormat format) {
 		// Image texture which is loaded from file
@@ -250,6 +240,7 @@ public:
 		if (cleaned || webCam == nullptr) {
 			return;
 		}
+		vkDeviceWaitIdle(Engine::get()->device);
 		cleanupImage();
 		webCam->cleanup();
 		delete webCam;

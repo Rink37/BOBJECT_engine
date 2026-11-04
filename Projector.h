@@ -27,13 +27,22 @@ public:
 
 	void calculateUVs();
 
+	void createMarkerVertices(float, Vertex&, Vertex&, Vertex&, Vertex&);
+	void makeProjectorMarker();
+	void makeBackgroundMarker();
+
 	Texture* tex;
 	std::string texName{};
 	Mesh* refMesh;
 	Mesh* shellMesh = nullptr;
 	Mesh* reprojectionMesh = nullptr;
+
+	Mesh* backgroundRect = nullptr;
+	Mesh* projectorMarker = nullptr;
+
 	Material* shadedProjection = nullptr;
 	Material* flatProjection = nullptr;
+
 	std::vector<glm::vec2> originalUVs{};
 	std::vector<glm::vec2> projectedUVs{};
 

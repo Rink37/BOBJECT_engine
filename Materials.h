@@ -65,12 +65,12 @@ public:
 		if (cleaned || this->descriptorPool == nullptr) {
 			return;
 		}
+		vkDeviceWaitIdle(Engine::get()->device);
 		for (Texture* tex : textures) {
 			if (tex != webcamTexture::get() && tex != nullptr) {
 				tex->cleanup();
 			}
 		}
-		vkDeviceWaitIdle(Engine::get()->device);
 		vkDestroyDescriptorPool(Engine::get()->device, this->descriptorPool, nullptr);
 		this->descriptorPool = nullptr;
 	}

@@ -1937,6 +1937,7 @@ private:
 	// Projector
 	Projector* projector = nullptr;
 	bool debugView = false;
+	bool inProjectorView = false;
 
 	// Light position
 
@@ -2068,7 +2069,6 @@ private:
 
 		auto it = find(widgets.begin(), widgets.end(), widget);
 		if (it != widgets.end()) {
-			//std::cout << "Erasing widget" << std::endl;
 			widgets.erase(it);
 
 			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
@@ -2080,6 +2080,7 @@ private:
 
 		if (projector != nullptr) {
 			projector->reprojectImage();
+			projector->cleanup();
 			delete projector;
 			projector = nullptr;
 			return;
@@ -2090,6 +2091,7 @@ private:
 		projector = new Projector(TextureElements.getTexture(texName), staticObjects[0].mesh, texName, std::bind(&Application::addTexture, this, std::placeholders::_1, std::placeholders::_2), currentPass);
 		projector->setCamera(&camera);
 		projector->calculateUVs();
+		inProjectorView = true;
 	}
 
 	void addTexture(std::string name, Texture* tex) {
@@ -2106,6 +2108,7 @@ private:
 			return;
 		}
 		projector->shareCamera(&camera);
+		inProjectorView = true;
 	}
 
 	void openSeamObjPicker(UIItem* owner) {
@@ -2966,6 +2969,14 @@ private:
 
 		ubo.lightPosition = lightPos;
 		ubo.viewPosition = camera.pos;
+		if (inProjectorView && projector != nullptr) {
+			if (camera.pos != projector->pos) {
+				inProjectorView = false;
+			}
+		}
+		else if (inProjectorView) {
+			inProjectorView = false;
+		}
 
 		memcpy(engine->uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); 
 	} 
@@ -3007,6 +3018,15 @@ private:
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("Affine_Flat")]);
 			}
 			engine->drawObject(commandBuffer, projector->shellMesh->vertexBuffer, projector->shellMesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(projector->shellMesh->indices.size()));
+			if (inProjectorView && projector->backgroundRect != nullptr) {
+				mat = projector->flatProjection;
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("Affine_Flat")]);
+				engine->drawObject(commandBuffer, projector->backgroundRect->vertexBuffer, projector->backgroundRect->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(projector->backgroundRect->indices.size()));
+			}
+			if (projector->projectorMarker != nullptr) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("W")]);
+				engine->drawObject(commandBuffer, projector->projectorMarker->vertexBuffer, projector->projectorMarker->indexBuffer, wireMat->pipelineLayout, wireMat->descriptorSets[currentFrame], static_cast<uint32_t>(projector->projectorMarker->indices.size()));
+			}
 		}
 
 		if (viewIndex == 1 && lit) {

@@ -306,7 +306,6 @@ void PlaneMesh::constructMesh() {
 	vertex.texCoord = { 0.0f, 0.0f };
 	vertices.push_back(vertex);
 
-
 	indices = { 0, 1, 2, 2, 3, 0 };
 }
 

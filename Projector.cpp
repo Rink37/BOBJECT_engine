@@ -11,6 +11,8 @@ void Projector::setCamera(Camera* cam) {
 	yrot = cam->yrot;
 	distance = cam->getInstance().distance;
 	proj = glm::perspective(glm::radians(fov), static_cast<float>(tex->texWidth) / static_cast<float>(tex->texHeight), 0.1f, 25.0f);
+	makeProjectorMarker();
+	makeBackgroundMarker();
 }
 
 void Projector::shareCamera(Camera* cam) {
@@ -21,15 +23,93 @@ void Projector::shareCamera(Camera* cam) {
 	cam->getInstance().distance = distance;
 }
 
+void Projector::createMarkerVertices(float distance, Vertex& v1, Vertex& v2, Vertex& v3, Vertex& v4) {
+	glm::vec3 centralPos = pos + glm::normalize(center - pos) * distance;
+	float markerHeight = distance * tan(glm::radians(fov * 0.5f));
+	float markerWidth = markerHeight * tex->texWidth / tex->texHeight;
+	glm::mat3 rotationMatrix = glm::mat3(glm::rotate(glm::mat4(1.0f), glm::radians(yrot), glm::vec3(0.0f, 1.0f, 0.0f))) * glm::mat3(glm::rotate(glm::mat4(1.0f), glm::radians(xrot), glm::vec3(0.0f, 0.0f, 1.0f)));
+
+	// Rotation matrix does not work currently
+
+	glm::vec3 p1 = glm::vec3(0.0f, -markerWidth, -markerHeight);
+	glm::vec3 p2 = glm::vec3(0.0f, markerWidth, -markerHeight);
+	glm::vec3 p3 = glm::vec3(0.0f, markerWidth, markerHeight);
+	glm::vec3 p4 = glm::vec3(0.0f, -markerWidth, markerHeight);
+	v1.pos = glm::vec3(p1 * rotationMatrix) + centralPos;
+	v2.pos = glm::vec3(p2 * rotationMatrix) + centralPos;
+	v3.pos = glm::vec3(p3 * rotationMatrix) + centralPos;
+	v4.pos = glm::vec3(p4 * rotationMatrix) + centralPos;
+	v1.normal = glm::normalize(pos - v1.pos);
+	v2.normal = glm::normalize(pos - v2.pos);
+	v3.normal = glm::normalize(pos - v3.pos);
+	v4.normal = glm::normalize(pos - v4.pos);
+	v1.texCoord = glm::vec2(0.0f, 1.0f);
+	v2.texCoord = glm::vec2(1.0f, 1.0f);
+	v3.texCoord = glm::vec2(1.0f, 0.0f);
+	v4.texCoord = glm::vec2(0.0f, 0.0f);
+}
+
+void Projector::makeProjectorMarker() {
+	float distance = 0.11f;
+	if (projectorMarker != nullptr) {
+		projectorMarker->cleanup();
+		delete projectorMarker;
+	}
+	projectorMarker = new Mesh();
+	Vertex v1{};
+	Vertex v2{};
+	Vertex v3{};
+	Vertex v4{};
+	createMarkerVertices(distance, v1, v2, v3, v4);
+	projectorMarker->vertices.push_back(v1);
+	projectorMarker->vertices.push_back(v2);
+	projectorMarker->vertices.push_back(v3);
+	projectorMarker->vertices.push_back(v4);
+	projectorMarker->indices = std::vector<uint32_t>{ 0, 1, 2, 2, 3, 0 , 2, 1, 0, 0, 3, 2};
+	projectorMarker->setup();
+}
+
+void Projector::makeBackgroundMarker() {
+	float distance = 24.9f;
+	if (backgroundRect != nullptr) {
+		backgroundRect->cleanup();
+		delete backgroundRect;
+	}
+	backgroundRect = new Mesh();
+	Vertex v1{};
+	Vertex v2{};
+	Vertex v3{};
+	Vertex v4{};
+	createMarkerVertices(distance, v1, v2, v3, v4);
+	backgroundRect->vertices.push_back(v1);
+	backgroundRect->vertices.push_back(v2);
+	backgroundRect->vertices.push_back(v3);
+	backgroundRect->vertices.push_back(v4);
+	backgroundRect->indices = std::vector<uint32_t>{ 0, 1, 2, 2, 3, 0 };
+	backgroundRect->setup();
+}
+
 void Projector::cleanup() {
+	vkDeviceWaitIdle(Engine::get()->device);
 	reprojectionMesh->cleanup();
 	delete reprojectionMesh;
+	reprojectionMesh = nullptr;
 	shellMesh->cleanup();
 	delete shellMesh;
-	shadedProjection->cleanup();
-	delete shadedProjection;
-	flatProjection->cleanup();
-	delete flatProjection;
+	shellMesh = nullptr;
+	projectorMarker->cleanup();
+	delete projectorMarker;
+	projectorMarker = nullptr;
+	backgroundRect->cleanup();
+	delete backgroundRect;
+	backgroundRect = nullptr;
+
+	//shadedProjection->cleanup();
+	//delete shadedProjection;
+	//shadedProjection = nullptr;
+	//flatProjection->cleanup();
+	//delete flatProjection;
+	//flatProjection = nullptr;
 }
 
 void Projector::calculateUVs() {
@@ -83,7 +163,6 @@ void Projector::reprojectImage() {
 	Engine::get()->endSingleTimeCommands(commandBuffer);
 	Texture* resTex = reprojectedMap.colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, tex->texWidth, tex->texHeight);
 	reprojectedMap.cleanup();
-	cleanup();
 	if (saveTextureFnc != nullptr) {
 		saveTextureFnc(texName + std::string("_projected"), resTex);
 	}
