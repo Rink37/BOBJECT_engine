@@ -267,7 +267,6 @@ private:
 
 	void finishFunc(UIItem* owner) {
 		if (objectName == "") {
-			//std::cout << "No object has been selected" << std::endl;
 			if (errorFunc != nullptr) {
 				errorFunc("SELECT ERROR: ", "No base object has been selected!");
 			}

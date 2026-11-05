@@ -77,7 +77,7 @@ public:
 		textureLL = textureAssets;
 	}
 
-	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc, std::function<void(UIItem*)> projectorFunc) {
+	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc, std::function<void(UIItem*)> projectorFunc, std::function<void(UIItem*)> cancelProjectorFnc, std::function<void(UIItem*)> finishProjectorFnc) {
 		if (isSetup) {
 			return;
 		}
@@ -90,7 +90,6 @@ public:
 		functions.insert({ "Combine norms", mixNormalsFnc });
 		functions.insert({ "Remap", remapFnc });
 		functions.insert({ "Fix seams", fixSeamsFnc });
-		
 
 		Texture* tex = textureLL->getTexture(texName);
 
@@ -101,6 +100,7 @@ public:
 
 		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f);
 		Arrangement* projectorArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_FILL, SCALE_BY_DIMENSIONS);
+		Arrangement* projectorFinishBtns = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_FILL, SCALE_BY_DIMENSIONS);
 		Arrangement* exitArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 		exitArrangement->addItem(getPtr(new spacer()));
 		exitArrangement->addItem(getPtr(new Button(closeMat, exitFnc)));
@@ -136,12 +136,19 @@ public:
 		projectorArrangement->addItem(getPtr(projectorLabel));
 		projectorArrangement->addItem(getPtr(projector));
 
+		Button* cancelProjector = new Button(loadList->getMaterial("CancelBtnMat"), cancelProjectorFnc);
+		Button* finishProjector = new Button(loadList->getMaterial("FinishBtnMat"), finishProjectorFnc);
+
+		projectorFinishBtns->addItem(getPtr(cancelProjector));
+		projectorFinishBtns->addItem(getPtr(finishProjector));
+
 		mainArrangement->addItem(getPtr(exitArrangement));
 		mainArrangement->addItem(getPtr(imagePanel));
 		if (texName != std::string("Webcam View")) {
 			mainArrangement->addItem(getPtr(functionDropdown));
 		}
 		mainArrangement->addItem(getPtr(projectorArrangement));
+		mainArrangement->addItem(getPtr(projectorFinishBtns));
 		mainArrangement->addItem(getPtr(new spacer()));
 		mainArrangement->arrangeItems();
 
@@ -1893,6 +1900,7 @@ private:
 	SeamObjPicker sob = SeamObjPicker(&UIElements, &TextureElements);
 	SeamFixMenu seamFixer = SeamFixMenu(&UIElements, &TextureElements);
 	ErrorDialog errorDlg = ErrorDialog(&UIElements);
+	ProjectorObjPicker pob = ProjectorObjPicker(&UIElements, &TextureElements);
 
 	bool showWidgets = true;
 
@@ -2075,23 +2083,73 @@ private:
 		}
 	}
 
-	void createProjector(UIItem* owner) {
+	void createProjectorObjPicker(UIItem* owner) {
+		if (projector != nullptr) {
+			return;
+		}
 		std::string texName = owner->Name;
 
+		std::vector<std::string> objectNames{};
+		for (auto elem : objectMenu.ObjectMap) {
+			objectNames.push_back(elem.first);
+		}
+		//closeTextureSettingsMenu(owner);
+
+		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::closeProjectorObjPicker, this, std::placeholders::_1);
+
+		if (pob.errorFunc == nullptr) {
+			pob.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		}
+		pob.setup(texName, objectNames, std::bind(&Application::openProjector, this, std::placeholders::_1), cancelFunc);
+
+		addWidget(&pob);
+	}
+
+	void closeProjectorObjPicker(UIItem* owner) {
+		spacer* temp = new spacer;
+		temp->Name = owner->Name;
+
+		removeWidget(&pob);
+		openTextureSettingsMenu(temp);
+
+		temp->cleanup();
+		delete temp;
+	}
+
+	void openProjector(UIItem* owner) {
+		std::string texName = owner->Name;
+		std::string objName = owner->text;
+		Mesh* selectedMesh = staticObjects[objectMenu.ObjectMap.at(objName)].mesh;
+
+		createProjector(texName, selectedMesh);
+		removeWidget(&pob);
+	}
+
+	void createProjector(std::string texName, Mesh* mesh) {
+		if (mesh == nullptr) {
+			return;
+		}
+		projector = new Projector(TextureElements.getTexture(texName), mesh, texName, std::bind(&Application::addTexture, this, std::placeholders::_1, std::placeholders::_2), currentPass);
+		projector->setCamera(&camera);
+		projector->calculateUVs();
+		inProjectorView = true;
+	}
+
+	void finishProjector(UIItem* owner) {
 		if (projector != nullptr) {
 			projector->reprojectImage();
 			projector->cleanup();
 			delete projector;
 			projector = nullptr;
-			return;
 		}
-		if (staticObjects.size() == 0) {
-			return;
+	}
+
+	void cancelProjector(UIItem* owner) {
+		if (projector != nullptr) {
+			projector->cleanup();
+			delete projector;
+			projector = nullptr;
 		}
-		projector = new Projector(TextureElements.getTexture(texName), staticObjects[0].mesh, texName, std::bind(&Application::addTexture, this, std::placeholders::_1, std::placeholders::_2), currentPass);
-		projector->setCamera(&camera);
-		projector->calculateUVs();
-		inProjectorView = true;
 	}
 
 	void addTexture(std::string name, Texture* tex) {
@@ -2386,9 +2444,11 @@ private:
 
 	void openTextureSettingsMenu(UIItem* owner) {
 		std::function<void(UIItem*)> seamFixFunc = std::bind(&Application::openSeamObjPicker, this, std::placeholders::_1);
-		std::function<void(UIItem*)> projectFunc = std::bind(&Application::createProjector, this, std::placeholders::_1);
+		std::function<void(UIItem*)> projectFunc = std::bind(&Application::createProjectorObjPicker, this, std::placeholders::_1);
+		std::function<void(UIItem*)> cancelProjectorFunc = std::bind(&Application::cancelProjector, this, std::placeholders::_1);
+		std::function<void(UIItem*)> finishProjectorFunc = std::bind(&Application::finishProjector, this, std::placeholders::_1);
 
-		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc);
+		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc, cancelProjectorFunc, finishProjectorFunc);
 
 		addWidget(&textureSettings);
 	}
@@ -2784,9 +2844,11 @@ private:
 			
 			closeTextureSettingsMenu(owner);
 
-			std::function<void(UIItem*)> projectFunc = std::bind(&Application::createProjector, this, std::placeholders::_1);
-			
-			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr, projectFunc);
+			std::function<void(UIItem*)> projectFunc = std::bind(&Application::createProjectorObjPicker, this, std::placeholders::_1);
+			std::function<void(UIItem*)> cancelProjectorFunc = std::bind(&Application::cancelProjector, this, std::placeholders::_1);
+			std::function<void(UIItem*)> finishProjectorFunc = std::bind(&Application::finishProjector, this, std::placeholders::_1);
+
+			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr, projectFunc, cancelProjectorFunc, finishProjectorFunc);
 
 			addWidget(&textureSettings);
 		}
@@ -2893,6 +2955,11 @@ private:
 			if (allWidgets[i] != nullptr) {
 				allWidgets[i]->cleanup();
 			}
+		}
+
+		if (projector != nullptr) {
+			projector->cleanup();
+			delete projector;
 		}
 
 		renderImage.cleanup(Engine::get()->device);

@@ -91,18 +91,26 @@ void Projector::makeBackgroundMarker() {
 
 void Projector::cleanup() {
 	vkDeviceWaitIdle(Engine::get()->device);
-	reprojectionMesh->cleanup();
-	delete reprojectionMesh;
-	reprojectionMesh = nullptr;
-	shellMesh->cleanup();
-	delete shellMesh;
-	shellMesh = nullptr;
-	projectorMarker->cleanup();
-	delete projectorMarker;
-	projectorMarker = nullptr;
-	backgroundRect->cleanup();
-	delete backgroundRect;
-	backgroundRect = nullptr;
+	if (reprojectionMesh != nullptr) {
+		reprojectionMesh->cleanup();
+		delete reprojectionMesh;
+		reprojectionMesh = nullptr;
+	}
+	if (shellMesh != nullptr) {
+		shellMesh->cleanup();
+		delete shellMesh;
+		shellMesh = nullptr;
+	}
+	if (projectorMarker != nullptr) {
+		projectorMarker->cleanup();
+		delete projectorMarker;
+		projectorMarker = nullptr;
+	}
+	if (backgroundRect != nullptr) {
+		backgroundRect->cleanup();
+		delete backgroundRect;
+		backgroundRect = nullptr;
+	}
 
 	shadedProjection->cleanupDescriptor();
 	delete shadedProjection;
