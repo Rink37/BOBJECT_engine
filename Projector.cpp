@@ -60,12 +60,17 @@ void Projector::makeProjectorMarker() {
 	Vertex v2{};
 	Vertex v3{};
 	Vertex v4{};
+	Vertex v5{};
+	v5.pos = glm::vec3(pos);
+	v5.normal = glm::normalize(pos - center);
+	v5.texCoord = glm::vec2(0.0f, 0.0f);
 	createMarkerVertices(distance, v1, v2, v3, v4);
 	projectorMarker->vertices.push_back(v1);
 	projectorMarker->vertices.push_back(v2);
 	projectorMarker->vertices.push_back(v3);
 	projectorMarker->vertices.push_back(v4);
-	projectorMarker->indices = std::vector<uint32_t>{ 0, 1, 2, 2, 3, 0 , 2, 1, 0, 0, 3, 2};
+	projectorMarker->vertices.push_back(v5);
+	projectorMarker->indices = std::vector<uint32_t>{ 0, 1, 4, 4, 1, 0, 1, 2, 4, 4, 2, 1, 2, 3, 4, 4, 3, 2, 3, 0, 4, 4, 0, 3 };
 	projectorMarker->setup();
 }
 
