@@ -352,7 +352,7 @@ void RemapUI::kuwaharaCallback(int kern) {
 
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	remapper->performRemap(commandBuffer);
-	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 }
 
@@ -361,7 +361,7 @@ void RemapUI::zeroCrossCallback(float zeroCross) {
 	
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	remapper->performRemap(commandBuffer);
-	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 }
 
@@ -370,7 +370,7 @@ void RemapUI::sharpnessCallback(float sharpness) {
 	
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	remapper->performRemap(commandBuffer);
-	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 }
 
@@ -379,7 +379,7 @@ void RemapUI::hardnessCallback(float hardness) {
 	
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	remapper->performRemap(commandBuffer);
-	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 }
 
@@ -388,7 +388,7 @@ void RemapUI::averagerCallback(int kern) {
 	
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	remapper->performRemap(commandBuffer);
-	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 }
 
@@ -397,7 +397,7 @@ void RemapUI::gradientCallback(float thresh) {
 	
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	remapper->performRemap(commandBuffer);
-	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 }
 
@@ -406,7 +406,7 @@ void RemapUI::iterationCallback(int count) {
 
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	remapper->performRemap(commandBuffer);
-	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 };
 
@@ -415,7 +415,7 @@ void RemapUI::toggleNormalization(UIItem* owner) {
 
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 	remapper->performRemap(commandBuffer);
-	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 };
 
@@ -440,7 +440,7 @@ void RemapUI::incrementMethod(UIItem*) {
 		remapper->toggleNormalization();
 	}
 	fullRemap(refTex, targetTex);
-	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 	UIItem* endButtons = canvas[0]->Items[canvas[0]->Items.size() - 1];
 	for (int i = 2; i != canvas[0]->Items.size()-1; i++) {
@@ -472,7 +472,7 @@ void RemapUI::reduceMethod(UIItem*) {
 		remapper->toggleNormalization();
 	}
 	fullRemap(refTex, targetTex);
-	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat");
+	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 	UIItem* endButtons = canvas[0]->Items[canvas[0]->Items.size() - 1];
 	for (int i = 2; i != canvas[0]->Items.size() - 1; i++) {

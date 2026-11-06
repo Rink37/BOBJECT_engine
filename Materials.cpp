@@ -2,58 +2,6 @@
 
 using namespace std;
 
-void Material::createDescriptorPool() {
-	VkDescriptorPoolCreateInfo poolInfo{};
-	if (textures.size() == 1) {
-		array<VkDescriptorPoolSize, 2> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-		if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-			throw runtime_error("failed to create descriptor pool!");
-		}
-	}
-	else if (textures.size() == 0) {
-		array<VkDescriptorPoolSize, 1> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-		if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-			throw runtime_error("failed to create descriptor pool!");
-		}
-	}
-	else {
-		array<VkDescriptorPoolSize, 3> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-		poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-		if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-			throw runtime_error("failed to create descriptor pool!");
-		}
-	}
-}
-
 void Material::createDescriptorPool(std::string targetShader, GraphicsPass* currentPass) {
 	std::vector<shaderIOValue>* IOvals = &currentPass->shaderDatas[currentPass->pipelineMap.at(targetShader)].IO;
 
@@ -84,146 +32,13 @@ void Material::createDescriptorPool(std::string targetShader, GraphicsPass* curr
 	}
 }
 
-void Material::createDescriptorSets() {
-	VkDescriptorSetAllocateInfo allocInfo{};
-
-	std::string key = "";
-
-	if (textures.size() == 1) {
-		key = "1_0_";
-		
-		pipelineLayoutIndex = Engine::get()->defaultPass.layoutMap.at(key);
-		descriptorSetLayout = Engine::get()->defaultPass.descriptorSetLayouts[pipelineLayoutIndex];
-		pipelineLayout = Engine::get()->defaultPass.pipelineLayouts[pipelineLayoutIndex];
-
-		if (isUIMat) {
-			shaderName = "UIGray";
-		}
-		else {
-			shaderName = "UI";
-		}
-	}
-	else if (textures.size() == 0) {
-		key = "1_";
-
-		pipelineLayoutIndex = Engine::get()->defaultPass.layoutMap.at(key);
-		descriptorSetLayout = Engine::get()->defaultPass.descriptorSetLayouts[pipelineLayoutIndex];
-		pipelineLayout = Engine::get()->defaultPass.pipelineLayouts[pipelineLayoutIndex];
-	}
-	else {
-		key = "1_0_0_";
-
-		pipelineLayoutIndex = Engine::get()->defaultPass.layoutMap.at(key);
-		descriptorSetLayout = Engine::get()->defaultPass.descriptorSetLayouts[pipelineLayoutIndex];
-		pipelineLayout = Engine::get()->defaultPass.pipelineLayouts[pipelineLayoutIndex];
-	}
-
-	vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
-
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-	allocInfo.pSetLayouts = layouts.data();
-
-	descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-
-	if (vkAllocateDescriptorSets(Engine::get()->device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
-		throw runtime_error("failed to allocate descriptor sets!");
-	}
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		VkDescriptorBufferInfo bufferInfo{};
-		if (isUIMat) {
-			bufferInfo.buffer = Engine::get()->colourBuffer;
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(ColourSchemeObject);
-		}
-		else {
-			bufferInfo.buffer = Engine::get()->uniformBuffers[i];
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UniformBufferObject);
-		}
-
-		if (textures.size() == 1) {
-			array<VkWriteDescriptorSet, 2> descriptorWrites{};
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = descriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = textures[0]->textureImageView;
-			imageInfo.sampler = Engine::get()->textureSampler;
-
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = descriptorSets[i];
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &imageInfo;
-
-			vkUpdateDescriptorSets(Engine::get()->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-		}
-		else if (textures.size() == 0) {
-			array<VkWriteDescriptorSet, 1> descriptorWrites{};
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = descriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-			vkUpdateDescriptorSets(Engine::get()->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-		}
-		else {
-			array<VkWriteDescriptorSet, 3> descriptorWrites{};
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = descriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = textures[0]->textureImageView;
-			imageInfo.sampler = Engine::get()->textureSampler;
-
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = descriptorSets[i];
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &imageInfo;
-
-			VkDescriptorImageInfo normalInfo{};
-			normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			normalInfo.imageView = textures[1]->textureImageView;
-			normalInfo.sampler = Engine::get()->textureSampler;
-
-			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[2].dstSet = descriptorSets[i];
-			descriptorWrites[2].dstBinding = 2;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].pImageInfo = &normalInfo;
-
-			vkUpdateDescriptorSets(Engine::get()->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-		}
-	}
-}
-
 void Material::createDescriptorSets(std::string targetShader, GraphicsPass* currentPass) {
 	
+	if (currentPass->pipelineMap.count(targetShader) == 0) {
+		std::cout << targetShader << std::endl;
+		throw runtime_error("Shader is not attached to a valid pipeline");
+	}
+
 	VkDescriptorSetAllocateInfo allocInfo{};
 	std::vector<shaderIOValue>* IOvals = &currentPass->shaderDatas[currentPass->pipelineMap.at(targetShader)].IO;
 
@@ -265,20 +80,24 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 		
 		uint32_t textureIndex = 0;
 		uint32_t bindingIndex = 0;
+		uint32_t bufferIndex = 0;
 		for (shaderIOValue ioVal : *IOvals) {
 
 			if (ioVal.type == 1) {
-				
+				if (bufferIndex >= buffers.size()) {
+					throw runtime_error("Insufficient buffers to cover all shader slots!");
+				}
+
 				VkDescriptorBufferInfo bufferInfo{};
-				if (isUIMat) {
-					bufferInfo.buffer = Engine::get()->colourBuffer;
+				if (buffers[bufferIndex].first.size() >= MAX_FRAMES_IN_FLIGHT) {
+					bufferInfo.buffer = buffers[bufferIndex].first[i];
 					bufferInfo.offset = 0;
-					bufferInfo.range = sizeof(ColourSchemeObject);
+					bufferInfo.range = buffers[bufferIndex].second;
 				}
 				else {
-					bufferInfo.buffer = Engine::get()->uniformBuffers[i];
+					bufferInfo.buffer = buffers[bufferIndex].first[0];
 					bufferInfo.offset = 0;
-					bufferInfo.range = sizeof(UniformBufferObject);
+					bufferInfo.range = buffers[bufferIndex].second;
 				}
 				
 				descriptorWrites[bindingIndex].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -288,9 +107,13 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 				descriptorWrites[bindingIndex].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				descriptorWrites[bindingIndex].descriptorCount = 1;
 				descriptorWrites[bindingIndex].pBufferInfo = &bufferInfo;
-			
+				
+				bufferIndex++;
 			}
 			else {
+				if (textureIndex >= textures.size()) {
+					throw runtime_error("Insufficient textures to cover all shader slots!");
+				}
 
 				imageInfos[textureIndex].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				imageInfos[textureIndex].imageView = textures[textureIndex]->textureImageView;
@@ -306,8 +129,6 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 
 				textureIndex++;
 			}
-
-			//descriptorWrites.push_back(descriptorWrite);
 
 			bindingIndex++;
 		}

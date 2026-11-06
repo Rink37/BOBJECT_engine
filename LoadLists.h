@@ -105,7 +105,7 @@ struct LoadList {
 		return materials.at(materials.size() - 1).get();
 	}
 
-	Material* getPtr(imageData* imgData, std::string name) {
+	Material* getPtr(imageData* imgData, std::string shaderName, std::string name) {
 		if (checkForMaterial(name + "Mat")) {
 			return findMatPtr(name + "Mat");
 		}
@@ -117,7 +117,7 @@ struct LoadList {
 			else {
 				tex = getPtr(new imageTexture(imgData), name + "Tex");
 			}
-			return getPtr(new Material(tex), name + "Mat");
+			return getPtr(new Material(tex, shaderName), name + "Mat");
 		}
 	}
 

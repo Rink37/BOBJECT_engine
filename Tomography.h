@@ -425,7 +425,7 @@ private:
 				}
 				return;
 			}
-			Material* imageMat = loadList->replacePtr(new Material(tomographer.items[activeImageCount]->baseImage), name + "Mat");
+			Material* imageMat = loadList->replacePtr(new Material(tomographer.items[activeImageCount]->baseImage, "UI"), name + "Mat");
 			tomogLoadMenu = new TomographyLoad(loadList);
 			if (loadCallback == nullptr) {
 				loadCallback = std::bind(&TomographyMenu::addItem, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
@@ -440,7 +440,7 @@ private:
 
 	void updateCallback(UIItem* owner) {
 		tomographer.align(activeImageCount);
-		Material* imageMat = loadList->replacePtr(new Material(tomographer.items[tomographer.items.size() - 1]->correctedImage), tomographer.items[tomographer.items.size() - 1]->name + "Mat");
+		Material* imageMat = loadList->replacePtr(new Material(tomographer.items[tomographer.items.size() - 1]->correctedImage, "UI"), tomographer.items[tomographer.items.size() - 1]->name + "Mat");
 		if (tomogLoadMenu != nullptr) {
 			tomogLoadMenu->recreateUI(imageMat, tomographer.items[activeImageCount]->rotation);
 		}
@@ -544,13 +544,13 @@ private:
 		if (generateNormal && !generateDiffuse) {
 			tomographer.calculate_normal();
 			normalAvailable = true;
-			scannedMaterial.init(baseDiffuse, loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"));
+			scannedMaterial.init(baseDiffuse, loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"), "TS_BF");
 			renderPipeline = "TS_BF";
 		}
 		else if (generateNormal && generateDiffuse) {
 			tomographer.calculate_NormAndDiff();
 			normalAvailable = true;
-			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogDiffTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"));
+			scannedMaterial.init(loadList->replacePtr(new imageTexture(tomographer.computedDiffuse), "TomogDiffTex"), loadList->replacePtr(new imageTexture(tomographer.computedNormal, VK_FORMAT_R8G8B8A8_UNORM), "TomogNormTex"), "TS_BF");
 			renderPipeline = "TS_BF";
 		}
 		//else {

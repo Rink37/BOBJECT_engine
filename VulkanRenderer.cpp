@@ -115,7 +115,7 @@ public:
 		functionNames.push_back("Remap");
 		functionNames.push_back("Fix seams");
 
-		Material* panelMat = loadList->replacePtr(new Material(tex), "Image view");
+		Material* panelMat = loadList->replacePtr(new Material(tex, "UI"), "Image view");
 		bool isWebcam = (texName == std::string("Webcam View"));
 		imagePanel = new ImagePanel(panelMat, isWebcam);
 
@@ -168,7 +168,7 @@ public:
 
 	void updateWebcamTex() {
 		if (imageName == std::string("Webcam View")) {
-			imagePanel->image->mat[0] = loadList->replacePtr(new Material(textureLL->getTexture("Webcam View")), "Image View");
+			imagePanel->image->mat[0] = loadList->replacePtr(new Material(textureLL->getTexture("Webcam View"), "UI"), "Image View");
 		}
 	}
 
@@ -223,7 +223,7 @@ public:
 		Arrangement* rotationButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.05f, 0.01f);
 		Arrangement* ARSettings = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.1f, 0.05f);
 
-		webcamView = new ImagePanel(loadList->getPtr(new Material(webcamTexture::get()), "Webcam View Mat"), true);
+		webcamView = new ImagePanel(loadList->getPtr(new Material(webcamTexture::get(), "UI"), "Webcam View Mat"), true);
 
 		Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
 		Material* finishmat = loadList->getMaterial("FinishBtnMat");
@@ -1853,7 +1853,7 @@ public:
 
 		currentPass = &renderGP;
 
-		webcamMat = TextureElements.getPtr(new Material(webcamTexture::get()) , "Webcam Material");
+		webcamMat = TextureElements.getPtr(new Material(webcamTexture::get(), "BF"), "Webcam Material");
 		MaterialTemplate wireMatTemplate(std::string("W"), &renderGP);
 		wireMatTemplate.listChannels();
 		wireMat = UIElements.getPtr(wireMatTemplate.createMaterial(), "Wire Material");
@@ -1981,51 +1981,51 @@ private:
 	void createWidgetMaterials() {
 		UIElements.getPtr(new Material(std::vector<Texture*>{}, "UIRoundBox", currentPass, true), "UIRoundBox");
 		imageData cb = CLOSEBUTTON;
-		UIElements.getPtr(&cb, "CloseBtn");
+		UIElements.getPtr(&cb, "UIGray", "CloseBtn");
 		imageData sb = SETTINGSBUTTON;
-		UIElements.getPtr(&sb, "SettingsBtn");
+		UIElements.getPtr(&sb, "UIGray", "SettingsBtn");
 		imageData tsb = TANGENTSPACE;
-		UIElements.getPtr(&tsb, "TSBtn");
+		UIElements.getPtr(&tsb, "UIGray", "TSBtn");
 		imageData osb = OSBUTTON;
-		UIElements.getPtr(&osb, "OSBtn");
+		UIElements.getPtr(&osb, "UIGray", "OSBtn");
 		imageData finishBtnImage = FINISHBUTTON;
-		UIElements.getPtr(&finishBtnImage, "FinishBtn");
+		UIElements.getPtr(&finishBtnImage, "UIGray", "FinishBtn");
 		imageData cancelBtnImage = CANCELBUTTON;
-		UIElements.getPtr(&cancelBtnImage, "CancelBtn");
+		UIElements.getPtr(&cancelBtnImage, "UIGray", "CancelBtn");
 		imageData pb = PLAYBUTTON;
-		UIElements.getPtr(&pb, "PlayBtn");
+		UIElements.getPtr(&pb, "UIGray", "PlayBtn");
 		imageData psb = PAUSEBUTTON;
-		UIElements.getPtr(&psb, "PauseBtn");
+		UIElements.getPtr(&psb, "UIGray", "PauseBtn");
 		imageData bb = BACKBUTTON;
-		UIElements.getPtr(&bb, "BackBtn");
+		UIElements.getPtr(&bb, "UIGray", "BackBtn");
 		imageData rf = ROTATEFORWARD;
-		UIElements.getPtr(&rf, "RotateFWBtn");
+		UIElements.getPtr(&rf, "UIGray", "RotateFWBtn");
 		imageData rtb = ROTATEBACKWARD;
-		UIElements.getPtr(&rtb, "RotateBWBtn");
+		UIElements.getPtr(&rtb, "UIGray", "RotateBWBtn");
 		imageData tcb = TESTCHECKBOXBUTTON;
-		UIElements.getPtr(&tcb, "TestCheckBtn");
+		UIElements.getPtr(&tcb, "UIGray", "TestCheckBtn");
 		imageData OpenButton = OPENBUTTON;
-		UIElements.getPtr(&OpenButton, "OpenBtn");
+		UIElements.getPtr(&OpenButton, "UIGray", "OpenBtn");
 		imageData SaveButton = SAVEBUTTON;
-		UIElements.getPtr(&SaveButton, "SaveBtn");
+		UIElements.getPtr(&SaveButton, "UIGray", "SaveBtn");
 		imageData plusButton = PLUSBUTTON;
-		UIElements.getPtr(&plusButton, "PlusBtn");
+		UIElements.getPtr(&plusButton, "UIGray", "PlusBtn");
 		imageData rb = RENDEREDBUTTON;
-		UIElements.getPtr(&rb, "RenderBtn");
+		UIElements.getPtr(&rb, "UIGray", "RenderBtn");
 		imageData ub = WEBCAMVIEWBUTTON;
-		UIElements.getPtr(&ub, "WebcamBtn");
+		UIElements.getPtr(&ub, "UIGray", "WebcamBtn");
 		imageData wb = WIREFRAMEBUTTON;
-		UIElements.getPtr(&wb, "WireframeBtn");
+		UIElements.getPtr(&wb, "UIGray", "WireframeBtn");
 		imageData urb = UNRENDEREDBUTTON;
-		UIElements.getPtr(&urb, "UnrenderedBtn");
+		UIElements.getPtr(&urb, "UIGray", "UnrenderedBtn");
 		imageData webcamOn = WEBCAMONBUTTON;
-		UIElements.getPtr(&webcamOn, "WebcamOnBtn");
+		UIElements.getPtr(&webcamOn, "UIGray", "WebcamOnBtn");
 		imageData update = UPDATEBUTTON;
-		UIElements.getPtr(&update, "UpdateBtn");
+		UIElements.getPtr(&update, "UIGray", "UpdateBtn");
 		imageData plb = PLANEBUTTON;
-		UIElements.getPtr(&plb, "PlaneBtn");
+		UIElements.getPtr(&plb, "UIGray", "PlaneBtn");
 		imageData crs = CLOSEBUTTON;
-		UIElements.getPtr(&crs, "CrossBtn");
+		UIElements.getPtr(&crs, "UIGray", "CrossBtn");
 	}
 
 	void addWidget(Widget* widget, bool hasClick = true, bool hasPos = false) {

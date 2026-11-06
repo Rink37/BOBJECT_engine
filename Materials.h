@@ -5,20 +5,43 @@
 
 class Material {
 public:
-	Material() = default;
+	Material() {
+		pass = &Engine::get()->defaultPass;
+		buffers.push_back(std::pair<std::vector<VkBuffer>, uint32_t>{Engine::get()->uniformBuffers, sizeof(UniformBufferObject)});
+	};
 
-	Material(Texture* defaultTex) {
-		if (defaultTex->textureFormat == VK_FORMAT_R8_UNORM) {
-			isUIMat = true;
+	Material(Texture* defaultTex, std::string name) {
+		shaderName = name;
+		if (name == std::string("UIGray")) {
+			buffers.push_back(std::pair<std::vector<VkBuffer>, uint32_t>{std::vector<VkBuffer>{Engine::get()->colourBuffer}, sizeof(ColourSchemeObject)});
+		}
+		else {
+			buffers.push_back(std::pair<std::vector<VkBuffer>, uint32_t>{Engine::get()->uniformBuffers, sizeof(UniformBufferObject)});
 		}
 		textures.push_back(defaultTex);
+		pass = &Engine::get()->defaultPass;
 		createMaterial();
 	}
 
 	Material(std::vector<Texture*> inTextures, std::string targetShader, GraphicsPass* graphicsPass, bool isUI = false) {
 		textures = inTextures;
-		isUIMat = isUI;
-		createMaterial(targetShader, graphicsPass);
+		shaderName = targetShader;
+		pass = graphicsPass;
+		if (isUI) {
+			buffers.push_back(std::pair<std::vector<VkBuffer>, uint32_t>{std::vector<VkBuffer>{Engine::get()->colourBuffer}, sizeof(ColourSchemeObject)});
+		}
+		else {
+			buffers.push_back(std::pair<std::vector<VkBuffer>, uint32_t>{Engine::get()->uniformBuffers, sizeof(UniformBufferObject)});
+		}
+		createMaterial();
+	}
+
+	Material(std::vector<Texture*> inTextures, std::vector<std::pair<std::vector<VkBuffer>, uint32_t>> inBuffers, std::string targetShader, GraphicsPass* graphicsPass) {
+		textures = inTextures;
+		buffers = inBuffers;
+		shaderName = targetShader;
+		pass = graphicsPass;
+		createMaterial();
 	}
 
 	void init(bool clearTextures = true) {
@@ -40,11 +63,12 @@ public:
 		createMaterial();
 	}
 
-	void init(Texture* defaultTex, Texture* normalTex) {
+	void init(Texture* defaultTex, Texture* normalTex, std::string targetShader) {
 		if (!cleaned) {
 			cleanupDescriptor();
 			textures.clear();
 		}
+		shaderName = targetShader;
 		textures.push_back(defaultTex);
 		textures.push_back(normalTex);
 		createMaterial();
@@ -54,10 +78,16 @@ public:
 		if (!cleaned) {
 			cleanupDescriptor();
 			textures.clear();
+			buffers.clear();
 		}
 		for (Texture* initTex : matPtr.textures) {
 			textures.push_back(initTex);
 		}
+		for (std::pair<std::vector<VkBuffer>, uint32_t> buffer : matPtr.buffers) {
+			buffers.push_back(buffer);
+		}
+		shaderName = matPtr.shaderName;
+		pass = matPtr.pass;
 		createMaterial();
 	}
 
@@ -85,6 +115,7 @@ public:
 	}
 
 	std::vector<Texture*> textures = {};
+	std::vector<std::pair<std::vector<VkBuffer>, uint32_t>> buffers = {};
 
 	std::string shaderName = "BF";
 
@@ -93,28 +124,18 @@ public:
 	uint32_t pipelineLayoutIndex = 0;
 	VkDescriptorPool descriptorPool = nullptr;
 	std::vector<VkDescriptorSet> descriptorSets = {};
+	GraphicsPass* pass = nullptr;
 
 	void createMaterial() {
-		createDescriptorPool();
-		createDescriptorSets();
+		createDescriptorPool(shaderName, pass);
+		createDescriptorSets(shaderName, pass);
 		cleaned = false;
 	}
 
-	void createMaterial(std::string sName, GraphicsPass* currentPass) {
-		shaderName = sName;
-		createDescriptorPool(shaderName, currentPass);
-		createDescriptorSets(shaderName, currentPass);
-		cleaned = false;
-	}
-
-	void createDescriptorPool();
 	void createDescriptorPool(std::string, GraphicsPass*);
-	
-	void createDescriptorSets();
 	void createDescriptorSets(std::string, GraphicsPass*);
 
 	bool cleaned = true;
-	bool isUIMat = false;
 
 	~Material() {
 		cleanupDescriptor();

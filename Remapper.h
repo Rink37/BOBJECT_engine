@@ -290,7 +290,7 @@ public:
 		std::function<void(UIItem*)> incrementMethodFunction = std::bind(&RemapUI::incrementMethod, this, std::placeholders::_1);
 		std::function<void(UIItem*)> reduceMethodFunction = std::bind(&RemapUI::reduceMethod, this, std::placeholders::_1);
 
-		outMap = getPtr(new ImagePanel(loadList->replacePtr(new Material(remapper->filteredTarget), "RemapOSMat"), false));
+		outMap = getPtr(new ImagePanel(loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat"), false));
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 

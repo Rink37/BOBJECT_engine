@@ -302,7 +302,7 @@ public:
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
 
-		outMap = getPtr(new ImagePanel(textureLL->replacePtr(new Material(textureLL->getTexture(texName)), "SeamFixMat"), false));
+		outMap = getPtr(new ImagePanel(textureLL->replacePtr(new Material(textureLL->getTexture(texName), "UI"), "SeamFixMat"), false));
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 1.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
