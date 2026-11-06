@@ -354,7 +354,7 @@ public:
 	}
 
 	void cleanupSubClasses() {
-		scannedMaterial.cleanupDescriptor();
+		scannedMaterial.cleanup();
 		tomographer.cleanup();
 		if (tomogLoadMenu != nullptr) {
 			tomogLoadMenu->cleanup();

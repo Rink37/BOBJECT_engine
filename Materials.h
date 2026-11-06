@@ -46,7 +46,7 @@ public:
 
 	void init(bool clearTextures = true) {
 		if (!cleaned) {
-			cleanupDescriptor();
+			cleanup();
 			if (clearTextures) {
 				textures.clear();
 			}
@@ -56,7 +56,7 @@ public:
 
 	void init(Texture* defaultTex) {
 		if (!cleaned) {
-			cleanupDescriptor();
+			cleanup();
 			textures.clear();
 		}
 		textures.push_back(defaultTex);
@@ -65,7 +65,7 @@ public:
 
 	void init(Texture* defaultTex, Texture* normalTex, std::string targetShader) {
 		if (!cleaned) {
-			cleanupDescriptor();
+			cleanup();
 			textures.clear();
 		}
 		shaderName = targetShader;
@@ -76,7 +76,7 @@ public:
 
 	void init(Material &matPtr) {
 		if (!cleaned) {
-			cleanupDescriptor();
+			cleanup();
 			textures.clear();
 			buffers.clear();
 		}
@@ -91,21 +91,7 @@ public:
 		createMaterial();
 	}
 
-	void cleanup(){
-		if (cleaned || this->descriptorPool == nullptr) {
-			return;
-		}
-		vkDeviceWaitIdle(Engine::get()->device);
-		for (Texture* tex : textures) {
-			if (tex != webcamTexture::get() && tex != nullptr) {
-				tex->cleanup();
-			}
-		}
-		vkDestroyDescriptorPool(Engine::get()->device, this->descriptorPool, nullptr);
-		this->descriptorPool = nullptr;
-	}
-
-	void cleanupDescriptor() {
+	void cleanup() {
 		if (cleaned || this->descriptorPool == nullptr) {
 			return;
 		}
@@ -138,7 +124,7 @@ public:
 	bool cleaned = true;
 
 	~Material() {
-		cleanupDescriptor();
+		cleanup();
 	}
 };
 

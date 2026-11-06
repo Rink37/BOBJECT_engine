@@ -2455,7 +2455,7 @@ private:
 
 	void updateTextureSettingsMenu() {
 		vkDeviceWaitIdle(Engine::get()->device);
-		TextureElements.getMaterial("Webcam Material")->cleanupDescriptor();
+		TextureElements.getMaterial("Webcam Material")->cleanup();
 		TextureElements.getMaterial("Webcam Material")->init(webcamTexture::get());
 		textureSettings.updateWebcamTex();
 		textureSettings.update();

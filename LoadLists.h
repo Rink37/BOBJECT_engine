@@ -76,7 +76,7 @@ struct LoadList {
 
 	Material* getPtr(Material* tex, std::string name) {
 		if (checkForMaterial(name)) {
-			tex->cleanupDescriptor();
+			tex->cleanup();
 			delete tex;
 			return materials.at(materialMap.at(name)).get();
 		}
@@ -163,7 +163,7 @@ struct LoadList {
 			return;
 		}
 		int index = materialMap.at(name);
-		materials.at(index)->cleanupDescriptor();
+		materials.at(index)->cleanup();
 		materials.erase(materials.begin() + index);
 		materialMap.erase(name);
 		for (auto const& [key, val] : materialMap) {

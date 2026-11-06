@@ -21,7 +21,7 @@ public:
 	void cleanup() {
 		if (!cleaned){
 			fontAtlas->cleanup();
-			fontMat->cleanupDescriptor();
+			fontMat->cleanup();
 			cleaned = true;
 		}
 	}

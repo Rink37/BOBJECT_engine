@@ -116,13 +116,16 @@ void Projector::cleanup() {
 		delete backgroundRect;
 		backgroundRect = nullptr;
 	}
-
-	shadedProjection->cleanupDescriptor();
-	delete shadedProjection;
-	shadedProjection = nullptr;
-	flatProjection->cleanupDescriptor();
-	delete flatProjection;
-	flatProjection = nullptr;
+	if (shadedProjection != nullptr) {
+		shadedProjection->cleanup();
+		delete shadedProjection;
+		shadedProjection = nullptr;
+	}
+	if (flatProjection != nullptr) {
+		flatProjection->cleanup();
+		delete flatProjection;
+		flatProjection = nullptr;
+	}
 }
 
 void Projector::calculateUVs() {
