@@ -17,9 +17,15 @@ const mat4 ditherMatrix = mat4(0.0, 0.5, 0.125, 0.625,
 
 
 void main(){
-	float transparency = 1.0f + dot(normalize(projectorPos - vertPos), normalInterp);
-	transparency = (transparency > 1.0f)? 1.0f : transparency;
-	transparency *= transparency;
+	float dotprod = dot(normalize(projectorPos - vertPos), normalInterp);
+	float angle = acos(dotprod);
+	float transparency = cos(4*angle);
+	if (-1.571 <= angle && angle <= 1.571){
+		transparency = 1.0f;
+	}
+	if (angle <= -1.9634 || angle >= 1.9634){
+		transparency = 0.0f;
+	}
 	
 	ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
 	float ditherThresh = ditherMatrix[pixelCoord.x%4][pixelCoord.y%4];

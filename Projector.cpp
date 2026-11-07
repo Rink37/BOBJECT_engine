@@ -161,11 +161,11 @@ void Projector::calculateUVs() {
 		glm::vec3 avgPos = (n0 + n1 + n2) / 3.0f;
 
 		glm::vec3 pointingVec = pos - avgPos;
-		float dp0 = glm::dot(n0, pos - p0);
-		float dp1 = glm::dot(n1, pos - p1);
-		float dp2 = glm::dot(n2, pos - p2);
+		float dp0 = glm::dot(n0, glm::normalize(pos - p0));
+		float dp1 = glm::dot(n1, glm::normalize(pos - p1));
+		float dp2 = glm::dot(n2, glm::normalize(pos - p2));
 
-		if (dp0 >= 0 || dp1 >= 0 || dp2 >= 0) {
+		if (acos(abs(dp0)) <= 1.963f || acos(abs(dp1)) <= 1.963f || acos(abs(dp2)) <= 1.963f) {
 			shellMesh->indices.push_back(refMesh->indices[i]);
 			shellMesh->indices.push_back(refMesh->indices[i+1]);
 			shellMesh->indices.push_back(refMesh->indices[i+2]);
