@@ -40,45 +40,6 @@ public:
 		//targetTex->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
-	Texture* depth = nullptr;
-	Texture* attachment = nullptr;
-
-	struct OverlayMap {
-		VkFramebuffer frameBuffer = nullptr;
-		VkRenderPass renderPass = nullptr;
-		Texture* colour = nullptr;
-		VkDescriptorPool descriptorPool = nullptr;
-		VkDescriptorSet descriptorSet = nullptr;
-		VkDescriptorSetLayout descriptorSetLayout = nullptr;
-		VkPipelineLayout pipelineLayout = nullptr;
-		VkPipeline pipeline = nullptr;
-
-		void cleanup() {
-			vkDeviceWaitIdle(Engine::get()->device);
-			if (colour != nullptr) {
-				colour->cleanup();
-				delete colour;
-			}
-			if (descriptorSetLayout != nullptr) {
-				vkDestroyDescriptorSetLayout(Engine::get()->device, descriptorSetLayout, nullptr);
-				vkDestroyDescriptorPool(Engine::get()->device, descriptorPool, nullptr);
-			}
-			if (pipeline != nullptr) {
-				vkDestroyPipeline(Engine::get()->device, pipeline, nullptr);
-				vkDestroyPipelineLayout(Engine::get()->device, pipelineLayout, nullptr);
-			}
-			if (renderPass != nullptr) {
-				vkDestroyRenderPass(Engine::get()->device, renderPass, nullptr);
-			}
-			if (frameBuffer != nullptr) {
-				vkDestroyFramebuffer(Engine::get()->device, frameBuffer, nullptr);
-			}
-			cleaned = true;
-		}
-
-		bool cleaned = true;
-	};
-
 	void updateSeamMeshes(float distance = 0.01f, bool updateColour = false, bool smoothOutside = false);
 
 	void createSeamMeshes(SeamStrip&, float, bool, bool smoothOutside);
@@ -96,15 +57,6 @@ public:
 	}
 
 	void cleanup() {
-		
-		depth->cleanup();
-		delete depth;
-
-		attachment->cleanup();
-		delete attachment;
-
-		colourMap.cleanup();
-		alphaMap.cleanup();
 
 		colourWriter->cleanup();
 		alphaWriter->cleanup();
@@ -136,10 +88,6 @@ public:
 			return;
 		}
 		useRemapper = true;
-		if (alphaMap.cleaned) {
-			prepMap(&alphaMap);
-			createAlphaWritePipeline(&alphaMap);
-		}
 		remapper = new RemapBackend();
 	}
 
@@ -160,9 +108,6 @@ private:
 	textureWriter* colourWriter = nullptr;
 	textureWriter* alphaWriter = nullptr;
 
-	OverlayMap colourMap{};
-	OverlayMap alphaMap{};
-
 	LoadList* textureLL = nullptr;
 
 	std::vector<SeamStrip> seamStrips{};
@@ -178,17 +123,17 @@ private:
 	void packSeamStrips();
 
 	void sortSeamIndices(SeamStrip&);
-	void prepMap(OverlayMap*);
-	void prepareColourDescriptor(OverlayMap*);
-	void createTexWritePipeline(OverlayMap*);
-	void createAlphaWritePipeline(OverlayMap*);
-	//VkCommandBuffer drawColourMap(VkCommandBuffer, bool);
-	VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*, Mesh*);
-	VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*, std::vector<Mesh*>);
+	
+	//void prepMap(OverlayMap*);
+	//void prepareColourDescriptor(OverlayMap*);
+	//void createTexWritePipeline(OverlayMap*);
+	//void createAlphaWritePipeline(OverlayMap*);
 
-	//VkCommandBuffer drawAlphaMap(VkCommandBuffer, bool);
-	VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, Mesh*);
-	VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, std::vector<Mesh*>);
+	//VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*, Mesh*);
+	//VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*, std::vector<Mesh*>);
+
+	//VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, Mesh*);
+	//VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, std::vector<Mesh*>);
 
 	//void alphaOverMap(bool);
 	void alphaOverMap(Texture*, Texture*, Texture*);

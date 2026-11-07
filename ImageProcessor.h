@@ -217,42 +217,6 @@ private:
 	std::vector<drawImage*> targets{};
 };
 
-struct OverlayMap {
-	VkFramebuffer frameBuffer = nullptr;
-	VkRenderPass renderPass = nullptr;
-	Texture* colour = nullptr;
-	VkDescriptorPool descriptorPool = nullptr;
-	VkDescriptorSet descriptorSet = nullptr;
-	VkDescriptorSetLayout descriptorSetLayout = nullptr;
-	VkPipelineLayout pipelineLayout = nullptr;
-	VkPipeline pipeline = nullptr;
-
-	void cleanup() {
-		vkDeviceWaitIdle(Engine::get()->device);
-		if (colour != nullptr) {
-			colour->cleanup();
-			delete colour;
-		}
-		if (descriptorSetLayout != nullptr) {
-			vkDestroyDescriptorSetLayout(Engine::get()->device, descriptorSetLayout, nullptr);
-			vkDestroyDescriptorPool(Engine::get()->device, descriptorPool, nullptr);
-		}
-		if (pipeline != nullptr) {
-			vkDestroyPipeline(Engine::get()->device, pipeline, nullptr);
-			vkDestroyPipelineLayout(Engine::get()->device, pipelineLayout, nullptr);
-		}
-		if (renderPass != nullptr) {
-			vkDestroyRenderPass(Engine::get()->device, renderPass, nullptr);
-		}
-		if (frameBuffer != nullptr) {
-			vkDestroyFramebuffer(Engine::get()->device, frameBuffer, nullptr);
-		}
-		cleaned = true;
-	}
-
-	bool cleaned = true;
-};
-
 class textureWriter {
 	// Used to draw textures using meshes
 public:
@@ -290,6 +254,41 @@ public:
 
 	VkCommandBuffer drawMap(VkCommandBuffer, std::vector<Mesh*>);
 
+	struct OverlayMap {
+		VkFramebuffer frameBuffer = nullptr;
+		VkRenderPass renderPass = nullptr;
+		Texture* colour = nullptr;
+		VkDescriptorPool descriptorPool = nullptr;
+		VkDescriptorSet descriptorSet = nullptr;
+		VkDescriptorSetLayout descriptorSetLayout = nullptr;
+		VkPipelineLayout pipelineLayout = nullptr;
+		VkPipeline pipeline = nullptr;
+
+		void cleanup() {
+			vkDeviceWaitIdle(Engine::get()->device);
+			if (colour != nullptr) {
+				colour->cleanup();
+				delete colour;
+			}
+			if (descriptorSetLayout != nullptr) {
+				vkDestroyDescriptorSetLayout(Engine::get()->device, descriptorSetLayout, nullptr);
+				vkDestroyDescriptorPool(Engine::get()->device, descriptorPool, nullptr);
+			}
+			if (pipeline != nullptr) {
+				vkDestroyPipeline(Engine::get()->device, pipeline, nullptr);
+				vkDestroyPipelineLayout(Engine::get()->device, pipelineLayout, nullptr);
+			}
+			if (renderPass != nullptr) {
+				vkDestroyRenderPass(Engine::get()->device, renderPass, nullptr);
+			}
+			if (frameBuffer != nullptr) {
+				vkDestroyFramebuffer(Engine::get()->device, frameBuffer, nullptr);
+			}
+			cleaned = true;
+		}
+
+		bool cleaned = true;
+	};
 	OverlayMap* map = nullptr;
 
 	void cleanup() {
