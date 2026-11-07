@@ -482,7 +482,7 @@ void textureWriter::prepMap() {
 	map->colour->texHeight = refTex->texHeight;
 	map->colour->texChannels = 4;
 	map->colour->mipLevels = 1;
-	map->colour->textureFormat = VK_FORMAT_R8G8B8A8_SRGB;
+	map->colour->textureFormat = refTex->textureFormat;
 	map->colour->textureLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	map->colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
@@ -494,7 +494,7 @@ void textureWriter::prepMap() {
 	dependency.dstSubpass = 0;
 
 	VkAttachmentDescription colorAttachment{};
-	colorAttachment.format = VK_FORMAT_R8G8B8A8_SRGB;
+	colorAttachment.format = refTex->textureFormat;
 	colorAttachment.samples = sampleCount;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -531,7 +531,7 @@ void textureWriter::prepMap() {
 			attachment->texHeight = refTex->texHeight;
 			attachment->texChannels = 4;
 			attachment->mipLevels = 1;
-			attachment->textureFormat = VK_FORMAT_R8G8B8A8_SRGB;
+			attachment->textureFormat = refTex->textureFormat;
 			attachment->textureLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			attachment->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
@@ -562,7 +562,7 @@ void textureWriter::prepMap() {
 		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		colourAttachmentResolve.format = VK_FORMAT_R8G8B8A8_SRGB;
+		colourAttachmentResolve.format = refTex->textureFormat;
 		colourAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
 		colourAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colourAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -691,9 +691,15 @@ void textureWriter::createTexWritePipeline() {
 	auto attributeDescriptions = Vertex::getAttributeDescriptions();
 
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
-	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
 	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+	if (fullAttributes) {
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(Vertex::getCompleteAttributeDescriptions().size());
+		vertexInputInfo.pVertexAttributeDescriptions = Vertex::getCompleteAttributeDescriptions().data();
+	}
+	else {
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(Vertex::getAttributeDescriptions().size());
+		vertexInputInfo.pVertexAttributeDescriptions = Vertex::getAttributeDescriptions().data();
+	}
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -825,7 +831,7 @@ void textureWriter::createTexWritePipeline() {
 VkCommandBuffer textureWriter::drawMap(VkCommandBuffer commandbuffer, std::vector<Mesh*> meshes) {
 
 	std::vector<VkClearValue> clearValues{};
-	clearValues.push_back(VkClearValue{ {0.0f, 0.0f, 0.0f, 1.0f} });
+	clearValues.push_back(VkClearValue{ {clearColour.x, clearColour.y, clearColour.z, clearColour.w} });
 	if (depthTested) {
 		clearValues.push_back(VkClearValue{ {1.0f, 0.0f} });
 	}

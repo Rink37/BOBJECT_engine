@@ -226,13 +226,9 @@ public:
 		depthTested = depthTestEnable;
 
 		map = new OverlayMap();
-		std::cout << "Created overlay map" << std::endl;
 		prepMap();
-		std::cout << "Map prepped" << std::endl;
 		prepareDrawDescriptor();
-		std::cout << "Descriptor prepped" << std::endl;
 		createTexWritePipeline();
-		std::cout << "Write pipeline prepped" << std::endl;
 	};
 
 	textureWriter(Texture* targetTexture, shaderData* drawShader, bool depthTestEnable, bool descriptorEnable) {
@@ -241,15 +237,31 @@ public:
 		depthTested = depthTestEnable;
 
 		map = new OverlayMap();
-		std::cout << "Created overlay map" << std::endl;
 		prepMap();
-		std::cout << "Map prepped" << std::endl;
 		if (descriptorEnable) {
 			prepareDrawDescriptor();
-			std::cout << "Descriptor prepped" << std::endl;
 		}
 		createTexWritePipeline();
-		std::cout << "Write pipeline prepped" << std::endl;
+	};
+
+	textureWriter(Texture* targetTexture, shaderData* drawShader, bool depthTestEnable, bool descriptorEnable, bool fullAttribs) {
+		refTex = targetTexture;
+		sD = drawShader;
+		depthTested = depthTestEnable;
+		fullAttributes = fullAttribs;
+		map = new OverlayMap();
+		prepMap();
+		std::cout << "Setup map" << std::endl;
+		if (descriptorEnable) {
+			prepareDrawDescriptor();
+			std::cout << "Prepared descriptor" << std::endl;
+		}
+		createTexWritePipeline();
+		std::cout << "Created tex write pipeline" << std::endl;
+	};
+
+	void setClearColour(glm::vec4 colour) {
+		clearColour = colour;
 	};
 
 	VkCommandBuffer drawMap(VkCommandBuffer, std::vector<Mesh*>);
@@ -310,7 +322,10 @@ private:
 
 	shaderData* sD = nullptr;
 
+	glm::vec4 clearColour{ 0.0f };
+
 	bool depthTested = false;
+	bool fullAttributes = false;
 
 	void prepMap();
 	void prepareDrawDescriptor();

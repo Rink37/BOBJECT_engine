@@ -850,7 +850,7 @@ private:
 		commandBuffer = generator.drawOSMap(commandBuffer, obj->mesh);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
 
-		Texture* EdgeFillImg = generator.objectSpaceMap.colour->copyTexture(generator.objectSpaceMap.colour->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+		Texture* EdgeFillImg = generator.OStexGenerator->map->colour->copyTexture(generator.OStexGenerator->map->colour->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
 		filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 		OS_EdgeFill.filterImage();
 		OS_EdgeFill.filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -1082,7 +1082,7 @@ private:
 		commandBuffer = generator.drawOSMap(commandBuffer, mesh);
 		Engine::get()->endSingleTimeCommands(commandBuffer);
 
-		Texture* OSNormTex = generator.objectSpaceMap.colour->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
+		Texture* OSNormTex = generator.OStexGenerator->map->colour->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 			VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
@@ -1127,13 +1127,13 @@ private:
 			generator.copyTSImage(norm);
 			generator.setupOSConverter();
 			commandBuffer = generator.convertTStoOS(commandBuffer, mesh);
-			res = generator.objectSpaceMap.colour;
+			res = generator.TStoOSConverter->map->colour;
 		}
 		else {
 			generator.copyOSImage(norm);
 			generator.setupTSConverter();
 			commandBuffer = generator.convertOStoTS(commandBuffer, mesh);
-			res = generator.tangentSpaceMap.colour;
+			res = generator.OStoTSConverter->map->colour;
 		}
 
 		Engine::get()->endSingleTimeCommands(commandBuffer);
@@ -1393,29 +1393,23 @@ private:
 			generator.copyTSImage(norm);
 			generator.setupOSConverter();
 			commandBuffer = generator.convertTStoOS(commandBuffer, mesh);
-			res = generator.objectSpaceMap.colour;
 		}
 		else {
 			generator.copyOSImage(norm);
 			generator.setupTSConverter();
 			commandBuffer = generator.convertOStoTS(commandBuffer, mesh);
-			res = generator.tangentSpaceMap.colour;
 		}
-
 		Engine::get()->endSingleTimeCommands(commandBuffer);
 
 		Texture* outNorm = nullptr;
 
 		if (!normalType) {
-			outNorm = res->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-				VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
-
-			outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+			res = generator.OStoTSConverter->map->colour;
+			outNorm = res->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
 		}
 		else {
-			Texture* EdgeFillImg = res->copyTexture(res->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+			res = generator.TStoOSConverter->map->colour;
+			Texture* EdgeFillImg = res->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
 			filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 			OS_EdgeFill.filterImage();
 			OS_EdgeFill.filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -1432,6 +1426,8 @@ private:
 			EdgeFillImg->cleanup();
 			delete EdgeFillImg;
 		}
+
+		std::cout << "Copied image" << std::endl;
 
 		outNorm->isNormal = true;
 		outNorm->normalType = !normalType;
