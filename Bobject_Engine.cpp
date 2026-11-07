@@ -446,10 +446,10 @@ void Engine::createGraphicsPipelines() {
 void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, bool alphaToCoverage) {
 
 	shaderData flatShader = FLATSHADER;
-	shaderData affineFlatShader = AFFINE_FLATSHADER;
+	shaderData affineFlatShader = PROJECTOR_FLATSHADER;
 	shaderData AC_flatShader = AC_FLATSHADER;
 	shaderData bfShader = BFSHADER;
-	shaderData affineBFShader = AFFINE_BFSHADER;
+	shaderData affineBFShader = PROJECTOR_BFSHADER;
 	shaderData AC_bfShader = AC_BFSHADER;
 	shaderData uiShader = UISHADER;
 	shaderData wShader = WSHADER;

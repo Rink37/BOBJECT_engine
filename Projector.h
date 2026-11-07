@@ -110,8 +110,8 @@ public:
 		
 		std::vector<std::pair<std::vector<VkBuffer>, uint32_t>> projectorBuffers{std::pair<std::vector<VkBuffer>, uint32_t> {Engine::get()->uniformBuffers, sizeof(UniformBufferObject)}, std::pair<std::vector<VkBuffer>, uint32_t>{std::vector<VkBuffer>{positionBuffer}, sizeof(ProjectorPositionObject)} };
 		
-		shadedProjection = new Material(std::vector<Texture*>{tex}, projectorBuffers, "Affine_BF", gP);
-		flatProjection = new Material(std::vector<Texture*>{tex}, projectorBuffers, "Affine_Flat", gP);
+		shadedProjection = new Material(std::vector<Texture*>{tex}, projectorBuffers, "Projector_BF", gP);
+		flatProjection = new Material(std::vector<Texture*>{tex}, projectorBuffers, "Projector_Flat", gP);
 	}
 
 	void cleanup();

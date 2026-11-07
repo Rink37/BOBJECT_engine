@@ -43,8 +43,8 @@
 #include"include/TS_BF.h"
 #include"include/UIText.h"
 #include"include/UIRoundBox.h"
-#include"include/Affine_Flat.h"
-#include"include/Affine_BF.h"
+#include"include/Projector_Flat.h"
+#include"include/Projector_BF.h"
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;

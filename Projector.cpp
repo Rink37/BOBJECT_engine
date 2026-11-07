@@ -172,7 +172,6 @@ void Projector::calculateUVs() {
 		}
 	}
 	shellMesh->setup();
-	std::cout << "Created shell Mesh" << std::endl;
 }
 
 void Projector::createPositionBuffer() {
