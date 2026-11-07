@@ -224,13 +224,13 @@ struct SwapChainSupportDetails {
 };
 
 struct UniformBufferObject {
-	alignas(16) glm::mat4 model;
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 proj;
-	alignas(16) glm::vec4 UVdistort;
-	alignas(16) glm::vec3 backgroundColour;
-	alignas(16) glm::vec3 lightPosition;
-	alignas(16) glm::vec3 viewPosition;
+	alignas(16) glm::mat4 model; // Size = 64
+	alignas(16) glm::mat4 view; // Size = 64
+	alignas(16) glm::mat4 proj; // Size = 64
+	alignas(16) glm::vec4 UVdistort; // Size = 16
+	alignas(16) glm::vec3 backgroundColour; // Size = 12
+	alignas(16) glm::vec3 lightPosition; // Size = 12
+	alignas(16) glm::vec3 viewPosition; // Size = 12
 };
 
 struct ColourSchemeObject {

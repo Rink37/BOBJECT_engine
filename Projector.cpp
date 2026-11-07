@@ -15,9 +15,6 @@ void Projector::setCamera(Camera* cam) {
 	makeBackgroundMarker();
 	ppo.pos = glm::vec4(pos, 1.0f);
 	updatePositionBuffer();
-	std::cout << "Created projector" << std::endl;
-	std::cout << shadedProjection->buffers.size() << std::endl;
-	std::cout << ppo.pos.x << " " << ppo.pos.y << " " << ppo.pos.z << std::endl;
 }
 
 void Projector::shareCamera(Camera* cam) {

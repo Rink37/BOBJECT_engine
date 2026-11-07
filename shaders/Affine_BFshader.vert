@@ -1,9 +1,6 @@
 #version 450
 
-layout(binding = 0) uniform ProjectorPositionObject{
-	vec4 projectorPosition;
-} ppo;
-layout(binding = 1) uniform UniformBufferObject {
+layout(binding = 0, std140) uniform UniformBufferObject {
 	mat4 model;
 	mat4 view;
 	mat4 proj;
@@ -12,6 +9,9 @@ layout(binding = 1) uniform UniformBufferObject {
 	vec3 lightPosition;
 	vec3 cameraPosition;
 } ubo;
+layout(binding = 1) uniform ProjectorPositionObject{
+	vec4 projectorPosition;
+} ppo;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;

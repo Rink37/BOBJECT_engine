@@ -45,16 +45,23 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 	std::string key = "";
 
 	uint8_t textureCount = 0;
+	uint8_t bufferCount = 0;
 
 	for (shaderIOValue ioVal : *IOvals) {
 		key += std::to_string(ioVal.type) + "_";
 		if (ioVal.type == 0) {
 			textureCount++;
 		}
+		else {
+			bufferCount++;
+		}
 	}
 
 	if (textures.size() < textureCount) {
 		throw runtime_error("Material could not be created - not enough textures were provided");
+	}
+	if (buffers.size() < bufferCount) {
+		throw runtime_error("Insufficient buffers to cover all shader slots!");
 	}
 
 	pipelineLayoutIndex = Engine::get()->defaultPass.layoutMap.at(key);
@@ -76,6 +83,7 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		std::vector<VkWriteDescriptorSet> descriptorWrites{ (*IOvals).size(), VkWriteDescriptorSet{} };
+		std::vector<VkDescriptorBufferInfo> bufferInfos{ bufferCount, VkDescriptorBufferInfo{} };
 		std::vector<VkDescriptorImageInfo> imageInfos{ textureCount, VkDescriptorImageInfo{} };
 		
 		uint32_t textureIndex = 0;
@@ -84,20 +92,15 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 		for (shaderIOValue ioVal : *IOvals) {
 
 			if (ioVal.type == 1) {
-				if (bufferIndex >= buffers.size()) {
-					throw runtime_error("Insufficient buffers to cover all shader slots!");
-				}
-
-				VkDescriptorBufferInfo bufferInfo{};
 				if (buffers[bufferIndex].first.size() >= MAX_FRAMES_IN_FLIGHT) {
-					bufferInfo.buffer = buffers[bufferIndex].first[i];
-					bufferInfo.offset = 0;
-					bufferInfo.range = buffers[bufferIndex].second;
+					bufferInfos[bufferIndex].buffer = buffers[bufferIndex].first[i];
+					bufferInfos[bufferIndex].offset = 0;
+					bufferInfos[bufferIndex].range = buffers[bufferIndex].second;
 				}
 				else {
-					bufferInfo.buffer = buffers[bufferIndex].first[0];
-					bufferInfo.offset = 0;
-					bufferInfo.range = buffers[bufferIndex].second;
+					bufferInfos[bufferIndex].buffer = buffers[bufferIndex].first[0];
+					bufferInfos[bufferIndex].offset = 0;
+					bufferInfos[bufferIndex].range = buffers[bufferIndex].second;
 				}
 				
 				descriptorWrites[bindingIndex].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -106,15 +109,11 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 				descriptorWrites[bindingIndex].dstArrayElement = 0;
 				descriptorWrites[bindingIndex].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				descriptorWrites[bindingIndex].descriptorCount = 1;
-				descriptorWrites[bindingIndex].pBufferInfo = &bufferInfo;
+				descriptorWrites[bindingIndex].pBufferInfo = &bufferInfos[bufferIndex];
 				
 				bufferIndex++;
 			}
 			else {
-				if (textureIndex >= textures.size()) {
-					throw runtime_error("Insufficient textures to cover all shader slots!");
-				}
-
 				imageInfos[textureIndex].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				imageInfos[textureIndex].imageView = textures[textureIndex]->textureImageView;
 				imageInfos[textureIndex].sampler = Engine::get()->textureSampler;
