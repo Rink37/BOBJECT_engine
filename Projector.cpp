@@ -13,6 +13,11 @@ void Projector::setCamera(Camera* cam) {
 	proj = glm::perspective(glm::radians(fov), static_cast<float>(tex->texWidth) / static_cast<float>(tex->texHeight), 0.1f, 25.0f);
 	makeProjectorMarker();
 	makeBackgroundMarker();
+	ppo.pos = glm::vec4(pos, 1.0f);
+	updatePositionBuffer();
+	std::cout << "Created projector" << std::endl;
+	std::cout << shadedProjection->buffers.size() << std::endl;
+	std::cout << ppo.pos.x << " " << ppo.pos.y << " " << ppo.pos.z << std::endl;
 }
 
 void Projector::shareCamera(Camera* cam) {
@@ -126,6 +131,10 @@ void Projector::cleanup() {
 		delete flatProjection;
 		flatProjection = nullptr;
 	}
+	if (positionBuffer != nullptr) {
+		vkDestroyBuffer(Engine::get()->device, positionBuffer, nullptr);
+		vkFreeMemory(Engine::get()->device, positionBufferMemory, nullptr);
+	}
 }
 
 void Projector::calculateUVs() {
@@ -166,6 +175,18 @@ void Projector::calculateUVs() {
 		}
 	}
 	shellMesh->setup();
+	std::cout << "Created shell Mesh" << std::endl;
+}
+
+void Projector::createPositionBuffer() {
+	VkDeviceSize bufferSize = sizeof(ProjectorPositionObject);
+
+	Engine::get()->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, positionBuffer, positionBufferMemory);
+	vkMapMemory(Engine::get()->device, positionBufferMemory, 0, bufferSize, 0, &positionBufferMapped);
+}
+
+void Projector::updatePositionBuffer() {
+	memcpy(positionBufferMapped, &ppo, sizeof(ppo));
 }
 
 void Projector::reprojectImage() {

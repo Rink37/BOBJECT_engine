@@ -1,6 +1,9 @@
 #version 450
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform ProjectorPositionObject{
+	vec4 projectorPosition;
+} ppo;
+layout(binding = 1) uniform UniformBufferObject {
 	mat4 model;
 	mat4 view;
 	mat4 proj;
@@ -21,6 +24,7 @@ layout(location = 3) out vec3 ambientLighting;
 layout(location = 4) out vec3 lightPos;
 layout(location = 5) out vec3 cameraPos;
 layout(location = 6) out float w;
+layout(location = 7) out vec3 projectorPos;
 
 vec3 normalInterp;
 
@@ -34,4 +38,5 @@ void main(){
 	ambientLighting = ubo.backgroundColour;
 	lightPos = ubo.lightPosition;
 	cameraPos = ubo.cameraPosition;
+	projectorPos = ppo.projectorPosition.xyz;
 }

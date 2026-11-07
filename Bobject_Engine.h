@@ -282,11 +282,11 @@ public:
 
 	VkSampler textureSampler = nullptr;
 
-	std::vector<void*> uniformBuffersMapped = {};
-	void* colourBufferMapped = nullptr;
-
 	std::vector<VkBuffer> uniformBuffers = {};
+	std::vector<void*> uniformBuffersMapped = {};
+	
 	VkBuffer colourBuffer = nullptr;
+	void* colourBufferMapped = nullptr;
 
 	bool framebufferResized = false;
 

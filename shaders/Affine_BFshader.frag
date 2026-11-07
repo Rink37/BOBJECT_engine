@@ -9,10 +9,11 @@ layout(location = 3) in vec3 ambientLighting;
 layout(location = 4) in vec3 lightPos;
 layout(location = 5) in vec3 cameraPos;
 layout(location = 6) in float w;
+layout(location = 7) in vec3 projectorPos;
 
 layout(location = 0) out vec4 outColor;
 
-layout(binding = 1) uniform sampler2D texSampler;
+layout(binding = 2) uniform sampler2D texSampler;
 
 const vec3 lightColor = vec3(1.0, 1.0, 1.0);
 const float lightPower = 40.0;
@@ -20,8 +21,22 @@ float ambientScale = 0.2;
 const vec3 specColor = vec3(1.0, 1.0, 1.0);
 const float shininess = 16.0;
 
+const mat4 ditherMatrix = mat4(0.0, 0.5, 0.125, 0.625,
+0.75, 0.25, 0.875, 0.375,
+0.1875, 0.6875, 0.0625, 0.5625,
+0.9375, 0.4375, 0.8125, 0.3125);
+
 void main(){
+	float transparency = 1.0f + dot(normalize(projectorPos - vertPos), normalInterp);
+	transparency = (transparency > 1.0f)? 1.0f : transparency;
+	transparency *= transparency;
 	
+	ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
+	float ditherThresh = ditherMatrix[pixelCoord.x%4][pixelCoord.y%4];
+	if (transparency <= ditherThresh){
+		discard;
+	}
+
 	vec4 tex = texture(texSampler, fragTexCoord / w);
 	tex.rgb = pow(tex.rgb, vec3(2.2));
 
@@ -49,6 +64,6 @@ void main(){
 	vec4 specularOut = vec4(tex.rgb*specColor.rgb*specular*lightColor.rgb*lightPower/distance, tex.a);
 
 	outColor = ambient + diffuse + specularOut;
-	//outColor = vec4(lightDir, 1.0);
+
 	outColor.rgb = pow(outColor.rgb, vec3(1/2.2));
 }

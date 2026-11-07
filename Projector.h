@@ -4,6 +4,10 @@
 #include"Bobject_Engine.h"
 #include"UIElements.h"
 
+struct ProjectorPositionObject {
+	alignas(16) glm::vec4 pos = glm::vec4(0.0f);
+};
+
 class ProjectorObjPicker : public Widget {
 public:
 	ProjectorObjPicker(LoadList* assets, LoadList* texLL) {
@@ -100,9 +104,14 @@ public:
 		}
 		saveTextureFnc = saveFnc;
 		texName = tN;
-
-		shadedProjection = new Material(std::vector<Texture*>{tex}, "Affine_BF", gP);
-		flatProjection = new Material(std::vector<Texture*>{tex}, "Affine_Flat", gP);
+		
+		createPositionBuffer();
+		updatePositionBuffer();
+		
+		std::vector<std::pair<std::vector<VkBuffer>, uint32_t>> projectorBuffers{std::pair<std::vector<VkBuffer>, uint32_t> {Engine::get()->uniformBuffers, sizeof(UniformBufferObject)}, std::pair<std::vector<VkBuffer>, uint32_t>{std::vector<VkBuffer>{positionBuffer}, sizeof(ProjectorPositionObject)} };
+		
+		shadedProjection = new Material(std::vector<Texture*>{tex}, projectorBuffers, "Affine_BF", gP);
+		flatProjection = new Material(std::vector<Texture*>{tex}, projectorBuffers, "Affine_Flat", gP);
 	}
 
 	void cleanup();
@@ -117,6 +126,15 @@ public:
 	void createMarkerVertices(float, Vertex&, Vertex&, Vertex&, Vertex&);
 	void makeProjectorMarker();
 	void makeBackgroundMarker();
+
+	void createPositionBuffer();
+	void updatePositionBuffer();
+
+	ProjectorPositionObject ppo{};
+
+	VkBuffer positionBuffer = nullptr;
+	void* positionBufferMapped = nullptr;
+	VkDeviceMemory positionBufferMemory = nullptr;
 
 	Texture* tex;
 	std::string texName{};

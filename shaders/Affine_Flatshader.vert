@@ -5,19 +5,30 @@ layout(binding = 0) uniform UniformBufferObject {
 	mat4 view;
 	mat4 proj;
 	vec4 UVdistort;
+	vec3 backgroundColour;
+	vec3 lightPosition;
+	vec3 cameraPosition;
 } ubo;
+layout(binding = 1) uniform ProjectorPositionObject{
+	vec4 projectorPosition;
+} ppo;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inTexCoord;
 
-layout(location = 0) out vec3 fragNormal;
-layout(location = 1) out vec2 fragTexCoord;
-layout(location = 2) out float w;
+layout(location = 0) out vec3 vertPos;
+layout(location = 1) out vec3 normalInterp;
+layout(location = 2) out vec2 fragTexCoord;
+layout(location = 3) out float w;
+layout(location = 4) out vec3 projectorPos;
 
 void main(){
 	gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
-	fragNormal = inNormal;
+	vec4 vertPos4 = ubo.model*vec4(inPosition, 1.0);
+	vertPos = vec3(vertPos4)/vertPos4.w;
+	normalInterp = vec4(ubo.model * vec4(inNormal, 1.0)).xyz;
 	w = gl_Position.w;
 	fragTexCoord = inTexCoord * w;
+	projectorPos = ppo.projectorPosition.xyz;
 }
