@@ -128,6 +128,11 @@ void Projector::cleanup() {
 		delete flatProjection;
 		flatProjection = nullptr;
 	}
+	if (backgroundMat != nullptr) {
+		backgroundMat->cleanup();
+		delete backgroundMat;
+		backgroundMat = nullptr;
+	}
 	if (positionBuffer != nullptr) {
 		vkDestroyBuffer(Engine::get()->device, positionBuffer, nullptr);
 		vkFreeMemory(Engine::get()->device, positionBufferMemory, nullptr);

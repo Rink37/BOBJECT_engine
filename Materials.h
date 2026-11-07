@@ -23,6 +23,19 @@ public:
 		createMaterial();
 	}
 
+	Material(Texture* defaultTex, std::string name, GraphicsPass* graphicsPass) {
+		shaderName = name;
+		if (name == std::string("UIGray")) {
+			buffers.push_back(std::pair<std::vector<VkBuffer>, uint32_t>{std::vector<VkBuffer>{Engine::get()->colourBuffer}, sizeof(ColourSchemeObject)});
+		}
+		else {
+			buffers.push_back(std::pair<std::vector<VkBuffer>, uint32_t>{Engine::get()->uniformBuffers, sizeof(UniformBufferObject)});
+		}
+		textures.push_back(defaultTex);
+		pass = graphicsPass;
+		createMaterial();
+	}
+
 	Material(std::vector<Texture*> inTextures, std::string targetShader, GraphicsPass* graphicsPass, bool isUI = false) {
 		textures = inTextures;
 		shaderName = targetShader;

@@ -446,10 +446,10 @@ void Engine::createGraphicsPipelines() {
 void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, bool alphaToCoverage) {
 
 	shaderData flatShader = FLATSHADER;
-	shaderData affineFlatShader = PROJECTOR_FLATSHADER;
+	shaderData projectorFlatShader = PROJECTOR_FLATSHADER;
 	shaderData AC_flatShader = AC_FLATSHADER;
 	shaderData bfShader = BFSHADER;
-	shaderData affineBFShader = PROJECTOR_BFSHADER;
+	shaderData projectorBFShader = PROJECTOR_BFSHADER;
 	shaderData AC_bfShader = AC_BFSHADER;
 	shaderData uiShader = UISHADER;
 	shaderData wShader = WSHADER;
@@ -461,18 +461,19 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, 
 	shaderData AC_TS_BF = AC_TS_BFSHADER;
 	shaderData uiTextShader = UITEXTSHADER;
 	shaderData uiRoundBox = UIROUNDBOXSHADER;
+	shaderData projectorBackgroundShader = PROJECTOR_BACKGROUNDSHADER;
 	
 	std::vector<int> vertexInputInfoIndices;
 
 	graphicsPass.shaderDatas.push_back(flatShader);
 	vertexInputInfoIndices.push_back(0);
-	graphicsPass.shaderDatas.push_back(affineFlatShader);
+	graphicsPass.shaderDatas.push_back(projectorFlatShader);
 	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(AC_flatShader);
 	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(bfShader);
 	vertexInputInfoIndices.push_back(0);
-	graphicsPass.shaderDatas.push_back(affineBFShader);
+	graphicsPass.shaderDatas.push_back(projectorBFShader);
 	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(AC_bfShader);
 	vertexInputInfoIndices.push_back(0);
@@ -495,6 +496,8 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, 
 	graphicsPass.shaderDatas.push_back(uiTextShader);
 	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(uiRoundBox);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(projectorBackgroundShader);
 	vertexInputInfoIndices.push_back(0);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};

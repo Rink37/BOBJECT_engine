@@ -45,6 +45,7 @@
 #include"include/UIRoundBox.h"
 #include"include/Projector_Flat.h"
 #include"include/Projector_BF.h"
+#include"include/Projector_Background.h"
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;

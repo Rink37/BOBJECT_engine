@@ -112,6 +112,7 @@ public:
 		
 		shadedProjection = new Material(std::vector<Texture*>{tex}, projectorBuffers, "Projector_BF", gP);
 		flatProjection = new Material(std::vector<Texture*>{tex}, projectorBuffers, "Projector_Flat", gP);
+		backgroundMat = new Material(tex, "Projector_Background");
 	}
 
 	void cleanup();
@@ -147,6 +148,7 @@ public:
 
 	Material* shadedProjection = nullptr;
 	Material* flatProjection = nullptr;
+	Material* backgroundMat = nullptr;
 
 	std::vector<glm::vec2> originalUVs{};
 	std::vector<glm::vec2> projectedUVs{};

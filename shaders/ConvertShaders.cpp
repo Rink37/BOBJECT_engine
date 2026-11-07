@@ -292,6 +292,7 @@ int main(){
 	compileAndWriteShaders(basepath, string("AC_OS_BF"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("Projector_BF"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("Projector_Flat"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("Projector_Background"), 0, outRoot);
 	cout << "Done" << endl;
 	return 0;
 }

@@ -476,7 +476,7 @@ public:
 		int optionIndex = 0;
 
 		std::vector<std::string> materialOptions{};
-		std::vector<std::string> invalidMatOptions = {"UI", "UIGray", "UIText", "UV", "W", "UIRoundBox", "Projector_BF", "Projector_Flat"};
+		std::vector<std::string> invalidMatOptions = {"UI", "UIGray", "UIText", "UV", "W", "UIRoundBox", "Projector_BF", "Projector_Flat", "Projector_Background"};
 		for (auto elem : boundPass->pipelineMap) {
 			if (find(invalidMatOptions.begin(), invalidMatOptions.end(), elem.first) != invalidMatOptions.end()) {
 				continue;
@@ -3086,8 +3086,8 @@ private:
 			}
 			engine->drawObject(commandBuffer, projector->shellMesh->vertexBuffer, projector->shellMesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(projector->shellMesh->indices.size()));
 			if (inProjectorView && projector->backgroundRect != nullptr) {
-				mat = projector->flatProjection;
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("Projector_Flat")]);
+				mat = projector->backgroundMat;
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("Projector_Background")]);
 				engine->drawObject(commandBuffer, projector->backgroundRect->vertexBuffer, projector->backgroundRect->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(projector->backgroundRect->indices.size()));
 			}
 			if (projector->projectorMarker != nullptr) {
