@@ -27,15 +27,6 @@ public:
 	Texture* refTS = nullptr;
 	textureWriter* TStoOSConverter = nullptr;
 
-	struct TangentSpaceMap {
-		VkFramebuffer frameBuffer;
-		Texture *colour = nullptr;
-		VkRenderPass renderPass;
-		VkDescriptorPool descriptorPool;
-		VkDescriptorSet descriptorSet;
-		VkDescriptorSetLayout descriptorSetLayout;
-	} tangentSpaceMap{};
-
 	void setupOSExtractor() {
 		prepGenerateOSMap();
 	};
@@ -49,14 +40,10 @@ public:
 
 	void setupTSConverter() {
 		prepareTSMap();
-		//prepareTSDescriptor();
-		//createTSPipeline();
 	};
 
 	void setupOSConverter() {
 		prepareOSMap();
-		//prepareOSDescriptor();
-		//createOSPipeline();
 	};
 
 	VkCommandBuffer convertOStoTS(VkCommandBuffer, Mesh*);
@@ -68,22 +55,9 @@ public:
 private:
 	LoadList* loadList = nullptr;
 
-	VkPipelineLayout OSpipelineLayout = nullptr;
-	VkPipeline OSpipeline = nullptr;
-
 	void prepGenerateOSMap();
-
-	VkPipelineLayout TSpipelineLayout = nullptr;
-	VkPipeline TSpipeline = nullptr;
-
 	void prepareTSMap();
-	//void prepareTSDescriptor();
-	//void createTSPipeline();
-
-	void prepareOSMap();
-	//void prepareOSDescriptor();
-	//void createOSPipeline();
-	
+	void prepareOSMap();	
 };
 
 #endif
