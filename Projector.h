@@ -3,6 +3,8 @@
 #include"CameraController.h"
 #include"Bobject_Engine.h"
 #include"UIElements.h"
+#include"ImageProcessor.h"
+#include"include/OS_EdgeFill.h"
 
 struct ProjectorPositionObject {
 	alignas(16) glm::vec4 pos = glm::vec4(0.0f);
@@ -164,47 +166,4 @@ public:
 
 	void reprojectImage();
 	void createReprojectionMesh();
-
-private:
-	struct OverlayMap {
-		VkFramebuffer frameBuffer = nullptr;
-		VkRenderPass renderPass = nullptr;
-		Texture* colour = nullptr;
-		VkDescriptorPool descriptorPool = nullptr;
-		VkDescriptorSet descriptorSet = nullptr;
-		VkDescriptorSetLayout descriptorSetLayout = nullptr;
-		VkPipelineLayout pipelineLayout = nullptr;
-		VkPipeline pipeline = nullptr;
-
-		void cleanup() {
-			vkDeviceWaitIdle(Engine::get()->device);
-			if (colour != nullptr) {
-				colour->cleanup();
-				delete colour;
-			}
-			if (descriptorSetLayout != nullptr) {
-				vkDestroyDescriptorSetLayout(Engine::get()->device, descriptorSetLayout, nullptr);
-				vkDestroyDescriptorPool(Engine::get()->device, descriptorPool, nullptr);
-			}
-			if (pipeline != nullptr) {
-				vkDestroyPipeline(Engine::get()->device, pipeline, nullptr);
-				vkDestroyPipelineLayout(Engine::get()->device, pipelineLayout, nullptr);
-			}
-			if (renderPass != nullptr) {
-				vkDestroyRenderPass(Engine::get()->device, renderPass, nullptr);
-			}
-			if (frameBuffer != nullptr) {
-				vkDestroyFramebuffer(Engine::get()->device, frameBuffer, nullptr);
-			}
-			cleaned = true;
-		}
-
-		bool cleaned = true;
-	};
-
-	void prepMap(OverlayMap*);
-	void prepareColourDescriptor(OverlayMap*);
-	void createTexWritePipeline(OverlayMap*);
-
-	VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*);
 };

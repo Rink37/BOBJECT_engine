@@ -5,6 +5,7 @@
 #include<chrono>
 #include"Textures.h"
 #include"ShaderDataType.h"
+#include"Meshes.h"
 
 #define OIOO 0
 #define TIOO 1
@@ -214,6 +215,90 @@ private:
 	std::vector<filter> filters{};
 	std::vector<Texture*> constructedTextures{};
 	std::vector<drawImage*> targets{};
+};
+
+struct OverlayMap {
+	VkFramebuffer frameBuffer = nullptr;
+	VkRenderPass renderPass = nullptr;
+	Texture* colour = nullptr;
+	VkDescriptorPool descriptorPool = nullptr;
+	VkDescriptorSet descriptorSet = nullptr;
+	VkDescriptorSetLayout descriptorSetLayout = nullptr;
+	VkPipelineLayout pipelineLayout = nullptr;
+	VkPipeline pipeline = nullptr;
+
+	void cleanup() {
+		vkDeviceWaitIdle(Engine::get()->device);
+		if (colour != nullptr) {
+			colour->cleanup();
+			delete colour;
+		}
+		if (descriptorSetLayout != nullptr) {
+			vkDestroyDescriptorSetLayout(Engine::get()->device, descriptorSetLayout, nullptr);
+			vkDestroyDescriptorPool(Engine::get()->device, descriptorPool, nullptr);
+		}
+		if (pipeline != nullptr) {
+			vkDestroyPipeline(Engine::get()->device, pipeline, nullptr);
+			vkDestroyPipelineLayout(Engine::get()->device, pipelineLayout, nullptr);
+		}
+		if (renderPass != nullptr) {
+			vkDestroyRenderPass(Engine::get()->device, renderPass, nullptr);
+		}
+		if (frameBuffer != nullptr) {
+			vkDestroyFramebuffer(Engine::get()->device, frameBuffer, nullptr);
+		}
+		cleaned = true;
+	}
+
+	bool cleaned = true;
+};
+
+class textureWriter {
+	// Used to draw textures using meshes
+public:
+	textureWriter(Texture* targetTexture, shaderData* drawShader, bool depthTestEnable) {
+		refTex = targetTexture;
+		sD = drawShader;
+		depthTested = depthTestEnable;
+
+		map = new OverlayMap();
+		std::cout << "Created overlay map" << std::endl;
+		prepMap();
+		std::cout << "Map prepped" << std::endl;
+		prepareDrawDescriptor();
+		std::cout << "Descriptor prepped" << std::endl;
+		createTexWritePipeline();
+		std::cout << "Write pipeline prepped" << std::endl;
+	};
+
+	VkCommandBuffer drawMap(VkCommandBuffer, std::vector<Mesh*>);
+
+	OverlayMap* map = nullptr;
+
+	void cleanup() {
+		map->cleanup();
+		if (depth != nullptr) {
+			depth->cleanup();
+			delete depth;
+		}
+		if (attachment != nullptr) {
+			attachment->cleanup();
+			delete attachment;
+		}
+	}
+
+private:
+	Texture* refTex = nullptr;
+	Texture* depth = nullptr;
+	Texture* attachment = nullptr;
+
+	shaderData* sD = nullptr;
+
+	bool depthTested = false;
+
+	void prepMap();
+	void prepareDrawDescriptor();
+	void createTexWritePipeline();
 };
 
 #endif
