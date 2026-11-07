@@ -6,6 +6,8 @@
 #include"LoadLists.h"
 #include"UIelements.h"
 #include"Remapper.h"
+#include"include/SeamFix_Colour.h"
+#include"include/SeamFix_Alpha.h"
 
 struct SeamStrip {
 	std::vector<uint32_t> leftIndices{};
@@ -32,6 +34,9 @@ public:
 		targetTexName = texName;
 		targetTex = textureLL->getTexture(texName)->copyTexture();
 		targetTex->getCVMat();
+
+		colourWriter = new textureWriter(targetTex, new SEAMFIX_COLOURSHADER, true);
+		alphaWriter = new textureWriter(targetTex, new SEAMFIX_ALPHASHADER, true, false);
 		//targetTex->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
@@ -97,14 +102,14 @@ public:
 
 		attachment->cleanup();
 		delete attachment;
-		
-		leftMap.cleanup();
-		leftAlpha.cleanup();
-		rightMap.cleanup();
-		rightAlpha.cleanup();
 
 		colourMap.cleanup();
 		alphaMap.cleanup();
+
+		colourWriter->cleanup();
+		alphaWriter->cleanup();
+		delete colourWriter;
+		delete alphaWriter;
 
 		for (SeamStrip strip : seamStrips) {
 			if (!strip.directionLocked) {
@@ -152,18 +157,13 @@ private:
 
 	Mesh* target = nullptr;
 
+	textureWriter* colourWriter = nullptr;
+	textureWriter* alphaWriter = nullptr;
+
 	OverlayMap colourMap{};
 	OverlayMap alphaMap{};
 
-	OverlayMap leftMap{};
-	OverlayMap leftAlpha{};
-	OverlayMap rightMap{};
-	OverlayMap rightAlpha{};
-
 	LoadList* textureLL = nullptr;
-
-	std::vector<OverlayMap*> maps{ &leftMap, &rightMap };
-	std::vector<OverlayMap*> alphaMaps{ &leftAlpha, &rightAlpha };
 
 	std::vector<SeamStrip> seamStrips{};
 	std::vector<std::vector<uint32_t>> sortedSeamStrips{};
@@ -182,15 +182,15 @@ private:
 	void prepareColourDescriptor(OverlayMap*);
 	void createTexWritePipeline(OverlayMap*);
 	void createAlphaWritePipeline(OverlayMap*);
-	VkCommandBuffer drawColourMap(VkCommandBuffer, bool);
+	//VkCommandBuffer drawColourMap(VkCommandBuffer, bool);
 	VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*, Mesh*);
 	VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*, std::vector<Mesh*>);
 
-	VkCommandBuffer drawAlphaMap(VkCommandBuffer, bool);
+	//VkCommandBuffer drawAlphaMap(VkCommandBuffer, bool);
 	VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, Mesh*);
 	VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, std::vector<Mesh*>);
 
-	void alphaOverMap(bool);
+	//void alphaOverMap(bool);
 	void alphaOverMap(Texture*, Texture*, Texture*);
 };
 

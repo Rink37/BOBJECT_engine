@@ -2,8 +2,6 @@
 
 #include"ImageProcessor.h"
 #include"include/ShaderDataType.h"
-#include"include/SeamFix_Colour.h"
-#include"include/SeamFix_Alpha.h"
 #include"include/AlphaOver.h"
 #include"include/IPAlphaOver.h"
 #include"WindowsFileManager.h"
@@ -1999,78 +1997,78 @@ void SeamFixer::createAlphaWritePipeline(OverlayMap* map) {
 	map->cleaned = false;
 }
 
-VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, bool isRight) {
-
-	OverlayMap* map = (isRight) ? maps[1] : maps[0];
-
-	//VkClearValue clearValues[1] = {};
-	//clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-
-	VkRenderPassBeginInfo renderPassBeginInfo = {};
-	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassBeginInfo.renderPass = map->renderPass;
-	renderPassBeginInfo.framebuffer = map->frameBuffer;
-	renderPassBeginInfo.renderArea.extent.width = map->colour->texWidth;
-	renderPassBeginInfo.renderArea.extent.height = map->colour->texHeight;
-	//renderPassBeginInfo.clearValueCount = 1;
-	//renderPassBeginInfo.pClearValues = clearValues;
-
-	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-	clearValues[1].depthStencil = { 1.0f, 0 };
-
-	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassBeginInfo.pClearValues = clearValues.data();
-
-	vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(map->colour->texWidth);
-	viewport.height = static_cast<float>(map->colour->texHeight);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
-
-	VkRect2D scissor{};
-	scissor.offset = { 0,0 };
-	scissor.extent = { map->colour->texWidth, map->colour->texHeight };
-	vkCmdSetScissor(commandbuffer, 0, 1, &scissor);
-
-	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipeline);
-
-	for (SeamStrip seam : seamStrips) {
-		if (isRight) {
-			VkBuffer vertexBuffers[] = { seam.rightMesh.vertexBuffer };
-			VkDeviceSize offsets[] = { 0 };
-
-			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
-
-			vkCmdBindIndexBuffer(commandbuffer, seam.rightMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-			vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipelineLayout, 0, 1, &map->descriptorSet, 0, nullptr);
-
-			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.rightMesh.indices.size()), 1, 0, 0, 0);
-
-		}
-		else {
-			VkBuffer vertexBuffers[] = { seam.leftMesh.vertexBuffer };
-			VkDeviceSize offsets[] = { 0 };
-
-			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
-
-			vkCmdBindIndexBuffer(commandbuffer, seam.leftMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-			vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipelineLayout, 0, 1, &map->descriptorSet, 0, nullptr);
-
-			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.leftMesh.indices.size()), 1, 0, 0, 0);
-		}
-	}
-	vkCmdEndRenderPass(commandbuffer);
-
-	return commandbuffer;
-}
+//VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, bool isRight) {
+//
+//	OverlayMap* map = (isRight) ? maps[1] : maps[0];
+//
+//	VkClearValue clearValues[1] = {};
+//	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+//
+//	VkRenderPassBeginInfo renderPassBeginInfo = {};
+//	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+//	renderPassBeginInfo.renderPass = map->renderPass;
+//	renderPassBeginInfo.framebuffer = map->frameBuffer;
+//	renderPassBeginInfo.renderArea.extent.width = map->colour->texWidth;
+//	renderPassBeginInfo.renderArea.extent.height = map->colour->texHeight;
+//	renderPassBeginInfo.clearValueCount = 1;
+//	renderPassBeginInfo.pClearValues = clearValues;
+//
+//	std::array<VkClearValue, 2> clearValues{};
+//	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+//	clearValues[1].depthStencil = { 1.0f, 0 };
+//
+//	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+//	renderPassBeginInfo.pClearValues = clearValues.data();
+//
+//	vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+//
+//	VkViewport viewport{};
+//	viewport.x = 0.0f;
+//	viewport.y = 0.0f;
+//	viewport.width = static_cast<float>(map->colour->texWidth);
+//	viewport.height = static_cast<float>(map->colour->texHeight);
+//	viewport.minDepth = 0.0f;
+//	viewport.maxDepth = 1.0f;
+//	vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
+//
+//	VkRect2D scissor{};
+//	scissor.offset = { 0,0 };
+//	scissor.extent = { map->colour->texWidth, map->colour->texHeight };
+//	vkCmdSetScissor(commandbuffer, 0, 1, &scissor);
+//
+//	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipeline);
+//
+//	for (SeamStrip seam : seamStrips) {
+//		if (isRight) {
+//			VkBuffer vertexBuffers[] = { seam.rightMesh.vertexBuffer };
+//			VkDeviceSize offsets[] = { 0 };
+//
+//			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
+//
+//			vkCmdBindIndexBuffer(commandbuffer, seam.rightMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+//
+//			vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipelineLayout, 0, 1, &map->descriptorSet, 0, nullptr);
+//
+//			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.rightMesh.indices.size()), 1, 0, 0, 0);
+//
+//		}
+//		else {
+//			VkBuffer vertexBuffers[] = { seam.leftMesh.vertexBuffer };
+//			VkDeviceSize offsets[] = { 0 };
+//
+//			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
+//
+//			vkCmdBindIndexBuffer(commandbuffer, seam.leftMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+//
+//			vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipelineLayout, 0, 1, &map->descriptorSet, 0, nullptr);
+//
+//			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.leftMesh.indices.size()), 1, 0, 0, 0);
+//		}
+//	}
+//	vkCmdEndRenderPass(commandbuffer);
+//
+//	return commandbuffer;
+//}
 
 VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, OverlayMap* map, Mesh* mesh) {
 	return drawColourMap(commandbuffer, map, std::vector<Mesh*>{mesh});
@@ -2132,74 +2130,74 @@ VkCommandBuffer SeamFixer::drawColourMap(VkCommandBuffer commandbuffer, OverlayM
 	return commandbuffer;
 };
 
-VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, bool isRight) {
-
-	OverlayMap* map = (isRight) ? alphaMaps[1] : alphaMaps[0];
-
-	//VkClearValue clearValues[1] = {};
-	//clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-
-	VkRenderPassBeginInfo renderPassBeginInfo = {};
-	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassBeginInfo.renderPass = map->renderPass;
-	renderPassBeginInfo.framebuffer = map->frameBuffer;
-	renderPassBeginInfo.renderArea.extent.width = map->colour->texWidth;
-	renderPassBeginInfo.renderArea.extent.height = map->colour->texHeight;
-	//renderPassBeginInfo.clearValueCount = 1;
-	//renderPassBeginInfo.pClearValues = clearValues;
-
-	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { {0.0f, 0.0f, 1.0f / 255.0f, 1.0f} };
-	clearValues[1].depthStencil = { 1.0f, 0 };
-
-	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassBeginInfo.pClearValues = clearValues.data();
-
-	vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(map->colour->texWidth);
-	viewport.height = static_cast<float>(map->colour->texHeight);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
-
-	VkRect2D scissor{};
-	scissor.offset = { 0,0 };
-	scissor.extent = { map->colour->texWidth, map->colour->texHeight };
-	vkCmdSetScissor(commandbuffer, 0, 1, &scissor);
-
-	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipeline);
-
-	for (SeamStrip seam : seamStrips) {
-		if (isRight) {
-			VkBuffer vertexBuffers[] = { seam.rightAlphaMesh.vertexBuffer };
-			VkDeviceSize offsets[] = { 0 };
-
-			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
-
-			vkCmdBindIndexBuffer(commandbuffer, seam.rightAlphaMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.rightAlphaMesh.indices.size()), 1, 0, 0, 0);
-
-		}
-		else {
-			VkBuffer vertexBuffers[] = { seam.leftAlphaMesh.vertexBuffer };
-			VkDeviceSize offsets[] = { 0 };
-
-			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
-
-			vkCmdBindIndexBuffer(commandbuffer, seam.leftAlphaMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.leftAlphaMesh.indices.size()), 1, 0, 0, 0);
-		}
-	}
-	vkCmdEndRenderPass(commandbuffer);
-
-	return commandbuffer;
-}
+//VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, bool isRight) {
+//
+//	OverlayMap* map = (isRight) ? alphaMaps[1] : alphaMaps[0];
+//
+//	VkClearValue clearValues[1] = {};
+//	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+//
+//	VkRenderPassBeginInfo renderPassBeginInfo = {};
+//	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+//	renderPassBeginInfo.renderPass = map->renderPass;
+//	renderPassBeginInfo.framebuffer = map->frameBuffer;
+//	renderPassBeginInfo.renderArea.extent.width = map->colour->texWidth;
+//	renderPassBeginInfo.renderArea.extent.height = map->colour->texHeight;
+//	//renderPassBeginInfo.clearValueCount = 1;
+//	//renderPassBeginInfo.pClearValues = clearValues;
+//
+//	std::array<VkClearValue, 2> clearValues{};
+//	clearValues[0].color = { {0.0f, 0.0f, 1.0f / 255.0f, 1.0f} };
+//	clearValues[1].depthStencil = { 1.0f, 0 };
+//
+//	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+//	renderPassBeginInfo.pClearValues = clearValues.data();
+//
+//	vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+//
+//	VkViewport viewport{};
+//	viewport.x = 0.0f;
+//	viewport.y = 0.0f;
+//	viewport.width = static_cast<float>(map->colour->texWidth);
+//	viewport.height = static_cast<float>(map->colour->texHeight);
+//	viewport.minDepth = 0.0f;
+//	viewport.maxDepth = 1.0f;
+//	vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
+//
+//	VkRect2D scissor{};
+//	scissor.offset = { 0,0 };
+//	scissor.extent = { map->colour->texWidth, map->colour->texHeight };
+//	vkCmdSetScissor(commandbuffer, 0, 1, &scissor);
+//
+//	vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipeline);
+//
+//	for (SeamStrip seam : seamStrips) {
+//		if (isRight) {
+//			VkBuffer vertexBuffers[] = { seam.rightAlphaMesh.vertexBuffer };
+//			VkDeviceSize offsets[] = { 0 };
+//
+//			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
+//
+//			vkCmdBindIndexBuffer(commandbuffer, seam.rightAlphaMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+//
+//			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.rightAlphaMesh.indices.size()), 1, 0, 0, 0);
+//
+//		}
+//		else {
+//			VkBuffer vertexBuffers[] = { seam.leftAlphaMesh.vertexBuffer };
+//			VkDeviceSize offsets[] = { 0 };
+//
+//			vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
+//
+//			vkCmdBindIndexBuffer(commandbuffer, seam.leftAlphaMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+//
+//			vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(seam.leftAlphaMesh.indices.size()), 1, 0, 0, 0);
+//		}
+//	}
+//	vkCmdEndRenderPass(commandbuffer);
+//
+//	return commandbuffer;
+//}
 
 VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, OverlayMap* map, Mesh* mesh) {
 	return drawAlphaMap(commandbuffer, map, std::vector<Mesh*>{mesh});
@@ -2259,24 +2257,24 @@ VkCommandBuffer SeamFixer::drawAlphaMap(VkCommandBuffer commandbuffer, OverlayMa
 	return commandbuffer;
 }
 
-void SeamFixer::alphaOverMap(bool isRight) {
-	Texture* seamMap = (isRight) ? maps[1]->colour : maps[0]->colour;
-	Texture* seamAlpha = (isRight) ? alphaMaps[1]->colour : alphaMaps[0]->colour;
-	seamMap = seamMap->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
-	seamAlpha = seamAlpha->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
-	Texture* baseTex = targetTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+//void SeamFixer::alphaOverMap(bool isRight) {
+//	Texture* seamMap = (isRight) ? maps[1]->colour : maps[0]->colour;
+//	Texture* seamAlpha = (isRight) ? alphaMaps[1]->colour : alphaMaps[0]->colour;
+//	seamMap = seamMap->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+//	seamAlpha = seamAlpha->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+//	Texture* baseTex = targetTex->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
 
-	filter alphaOver(std::vector<Texture*>{baseTex, seamMap, seamAlpha}, new ALPHAOVERSHADER, VK_FORMAT_R8G8B8A8_UNORM);
-	alphaOver.filterImage();
+//	filter alphaOver(std::vector<Texture*>{baseTex, seamMap, seamAlpha}, new ALPHAOVERSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+//	alphaOver.filterImage();
 
-	Texture* res = alphaOver.filterTarget[0]->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
-	textureLL->replacePtr(res, targetTexName);
+//	Texture* res = alphaOver.filterTarget[0]->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
+//	textureLL->replacePtr(res, targetTexName);
 
-	seamMap->cleanup();
-	seamAlpha->cleanup();
-	baseTex->cleanup();
-	alphaOver.cleanup();
-}
+//	seamMap->cleanup();
+//	seamAlpha->cleanup();
+//	baseTex->cleanup();
+//	alphaOver.cleanup();
+//}
 
 void SeamFixer::alphaOverMap(Texture* cMap, Texture* aMap, Texture* texInFlight) {
 	Texture* seamMap = cMap->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
@@ -2575,8 +2573,14 @@ void SeamFixer::seamFixAll() {
 			alphaMeshes = sortedLeftAlphaMeshes[i];
 		}
 		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-		commandBuffer = drawColourMap(commandBuffer, &colourMap, colourMeshes);
-		commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, alphaMeshes);
+		commandBuffer = colourWriter->drawMap(commandBuffer, colourMeshes);
+		commandBuffer = alphaWriter->drawMap(commandBuffer, alphaMeshes);
+
+		Texture* colour = colourWriter->map->colour;
+		Texture* alpha = alphaWriter->map->colour;
+
+		//commandBuffer = drawColourMap(commandBuffer, &colourMap, colourMeshes);
+		//commandBuffer = drawAlphaMap(commandBuffer, &alphaMap, alphaMeshes);
 
 		//Texture* colourCopy = colourMap.colour->copyImage();
 
@@ -2592,10 +2596,10 @@ void SeamFixer::seamFixAll() {
 		if (useRemapper && remapper != nullptr) {
 			Engine::get()->endSingleTimeCommands(commandBuffer);
 
-			if (colourMap.colour->texHeight > 1024) {
-				uint32_t smallWidth = 1024 * static_cast<float>(colourMap.colour->texWidth) / static_cast<float>(colourMap.colour->texHeight);
-				Texture* smallColourMap = colourMap.colour->copyTexture(smallWidth, 1024);
-				Texture* smallAlphaMap = alphaMap.colour->copyTexture(smallWidth, 1024);
+			if (colour->texHeight > 1024) {
+				uint32_t smallWidth = 1024 * static_cast<float>(colour->texWidth) / static_cast<float>(colourMap.colour->texHeight);
+				Texture* smallColourMap = colour->copyTexture(smallWidth, 1024);
+				Texture* smallAlphaMap = alpha->copyTexture(smallWidth, 1024);
 
 				remapper->cleanup();
 
@@ -2613,7 +2617,7 @@ void SeamFixer::seamFixAll() {
 				cv::resize(remapper->filteredTarget->texMat, remapper->filteredTarget->texMat, cv::Size(colourMap.colour->texWidth, colourMap.colour->texHeight), 0.0f, 0.0f, cv::INTER_NEAREST);
 
 				Texture* hiResAlpha = new imageTexture(remapper->filteredTarget->texMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
-				alphaOverMap(alphaMap.colour, alphaMap.colour, hiResAlpha);
+				alphaOverMap(alpha, alpha, hiResAlpha);
 
 				//hiResAlpha->getCVMat();
 				//cv::resize(hiResAlpha->texMat, hiResAlpha->texMat, cv::Size(1024 * static_cast<float>(static_cast<float>(colourMap.colour->texWidth) / static_cast<float>(colourMap.colour->texHeight)), 1024), 0.0f, 0.0f);
@@ -2627,7 +2631,7 @@ void SeamFixer::seamFixAll() {
 
 				remapper->setup();
 				remapper->toggleNormalization();
-				remapper->createReferenceMaps(colourMap.colour, hiResAlpha);
+				remapper->createReferenceMaps(colour, hiResAlpha);
 
 				hiResAlpha->cleanup();
 				delete hiResAlpha;
@@ -2637,7 +2641,7 @@ void SeamFixer::seamFixAll() {
 
 				remapper->setup();
 				remapper->toggleNormalization();
-				remapper->createReferenceMaps(colourMap.colour, alphaMap.colour);
+				remapper->createReferenceMaps(colour, alpha);
 			}
 
 			//remapper->filteredTarget->getCVMat();
@@ -2646,11 +2650,11 @@ void SeamFixer::seamFixAll() {
 			//cv::waitKey(0);
 			//remapper->filteredTarget->destroyCVMat();
 
-			alphaOverMap(colourMap.colour, remapper->filteredTarget, writeTex);
+			alphaOverMap(colour, remapper->filteredTarget, writeTex);
 		}
 		else {
 			Engine::get()->endSingleTimeCommands(commandBuffer);
-			alphaOverMap(colourMap.colour, alphaMap.colour, writeTex);
+			alphaOverMap(colour, alpha, writeTex);
 		}
 	}
 	Texture* res = writeTex->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);

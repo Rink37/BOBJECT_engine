@@ -271,6 +271,23 @@ public:
 		std::cout << "Write pipeline prepped" << std::endl;
 	};
 
+	textureWriter(Texture* targetTexture, shaderData* drawShader, bool depthTestEnable, bool descriptorEnable) {
+		refTex = targetTexture;
+		sD = drawShader;
+		depthTested = depthTestEnable;
+
+		map = new OverlayMap();
+		std::cout << "Created overlay map" << std::endl;
+		prepMap();
+		std::cout << "Map prepped" << std::endl;
+		if (descriptorEnable) {
+			prepareDrawDescriptor();
+			std::cout << "Descriptor prepped" << std::endl;
+		}
+		createTexWritePipeline();
+		std::cout << "Write pipeline prepped" << std::endl;
+	};
+
 	VkCommandBuffer drawMap(VkCommandBuffer, std::vector<Mesh*>);
 
 	OverlayMap* map = nullptr;
