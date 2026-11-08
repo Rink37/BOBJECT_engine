@@ -275,12 +275,14 @@ int main(){
 	compileAndWriteShaders(basepath, string("AlphaOver"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("IPAlphaOver"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("ProjectorAlphaWrite"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("BakeAlpha"), 0, outRoot);
 
 	basepath = rootPath+string("/shaders/");
 	compileAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("OS_BF"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("BF"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("AC_BF"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("SAC_BF"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("UIGray"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("UIRoundBox"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("UIText"), 0, outRoot);
@@ -289,6 +291,7 @@ int main(){
 	compileAndWriteShaders(basepath, string("W"), 1, outRoot);
 	compileAndWriteShaders(basepath, string("Flat"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("AC_Flat"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("SAC_Flat"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("AC_TS_BF"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("AC_OS_BF"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("Projector_BF"), 0, outRoot);

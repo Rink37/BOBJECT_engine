@@ -448,9 +448,11 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, 
 	shaderData flatShader = FLATSHADER;
 	shaderData projectorFlatShader = PROJECTOR_FLATSHADER;
 	shaderData AC_flatShader = AC_FLATSHADER;
+	shaderData SAC_flatShader = SAC_FLATSHADER;
 	shaderData bfShader = BFSHADER;
 	shaderData projectorBFShader = PROJECTOR_BFSHADER;
 	shaderData AC_bfShader = AC_BFSHADER;
+	shaderData SAC_bfShader = SAC_BFSHADER;
 	shaderData uiShader = UISHADER;
 	shaderData wShader = WSHADER;
 	shaderData uvShader = UVSHADER;
@@ -471,11 +473,15 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, 
 	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(AC_flatShader);
 	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(SAC_flatShader);
+	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(bfShader);
 	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(projectorBFShader);
 	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(AC_bfShader);
+	vertexInputInfoIndices.push_back(0);
+	graphicsPass.shaderDatas.push_back(SAC_bfShader);
 	vertexInputInfoIndices.push_back(0);
 	graphicsPass.shaderDatas.push_back(uiShader);
 	vertexInputInfoIndices.push_back(0);

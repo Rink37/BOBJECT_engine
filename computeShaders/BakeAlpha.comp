@@ -1,0 +1,17 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout(binding = 0, rgba8) uniform image2D baseImage;
+layout(binding = 1, rgba8) uniform readonly image2D alphaImage;
+
+void main(){
+	ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+
+	vec4 pixel = imageLoad(baseImage, pixelCoords);
+	vec4 alpha = imageLoad(alphaImage, pixelCoords);
+
+	float alphaValue = 0.299f * alpha.r + 0.58f * alpha.g + 0.114f * alpha.b; // Assume that the alpha is either a colour image or all channels are the same
+	pixel.w *= alphaValue;
+
+	imageStore(baseImage, pixelCoords, pixel);
+}

@@ -46,6 +46,8 @@
 #include"include/Projector_Flat.h"
 #include"include/Projector_BF.h"
 #include"include/Projector_Background.h"
+#include"include/SAC_BF.h"
+#include"include/SAC_Flat.h"
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
