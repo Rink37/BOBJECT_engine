@@ -107,8 +107,11 @@ public:
 
 		font* newFont = textureLL->getFont();
 
+		TextBox* baseText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		baseText->addText(std::string("Baking Alpha ") + targetTextureName);
+
 		TextBox* targetText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
-		targetText->addText(std::string("Baking Alpha ") + targetTextureName + std::string(" into:"));
+		targetText->addText(std::string("Into texture:"));
 
 		DropdownMenu* refDropdown = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), newFont);
 		refDropdown->setBlankText("Select a texture");
@@ -120,6 +123,7 @@ public:
 		finishButtons->addItem(getPtr(new spacer()));
 		finishButtons->addItem(getPtr(new Button(finishedMat, finishFunct)));
 
+		mainArrangement->addItem(getPtr(baseText));
 		mainArrangement->addItem(getPtr(targetText));
 		mainArrangement->addItem(getPtr(refDropdown));
 		mainArrangement->addItem(getPtr(finishButtons));
@@ -939,22 +943,7 @@ private:
 
 		NormalGen generator(textureLL);
 		generator.setupOSExtractor();
-		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-		commandBuffer = generator.drawOSMap(commandBuffer, obj->mesh);
-		Engine::get()->endSingleTimeCommands(commandBuffer);
-
-		Texture* EdgeFillImg = generator.OStexGenerator->map->colour->copyTexture(generator.OStexGenerator->map->colour->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
-		filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
-		OS_EdgeFill.filterImage();
-		OS_EdgeFill.filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		OS_EdgeFill.filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-		Texture* OSNormTex = OS_EdgeFill.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
-		
-		OSNormTex->textureImageView = OSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		Texture* OSNormTex = generator.drawOSMap(obj->mesh);
 
 		OSNormTex->isNormal = true;
 		OSNormTex->normalType = false;
@@ -974,9 +963,6 @@ private:
 		}
 
 		generator.cleanupGenOS();
-		OS_EdgeFill.cleanup();
-		EdgeFillImg->cleanup();
-		delete EdgeFillImg;
 	}
 };
 
@@ -1171,16 +1157,7 @@ private:
 
 		NormalGen generator(textureLL);
 		generator.setupOSExtractor();
-		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-		commandBuffer = generator.drawOSMap(commandBuffer, mesh);
-		Engine::get()->endSingleTimeCommands(commandBuffer);
-
-		Texture* OSNormTex = generator.OStexGenerator->map->colour->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
-
-		OSNormTex->textureImageView = OSNormTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		Texture* OSNormTex = generator.drawOSMap(mesh);
 
 		OSNormTex->isNormal = true;
 		OSNormTex->normalType = false;
@@ -1209,54 +1186,20 @@ private:
 		Texture* norm = textureLL->getTexture(tName);
 		std::string outNormalName = tName + "_OS";
 
-		Texture* res = nullptr;
-
 		Mesh* mesh = getMesh(objectName);
 
-		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		NormalGen generator(loadList);
+		Texture* outNorm = nullptr;
 
 		if (norm->normalType) {
 			generator.copyTSImage(norm);
 			generator.setupOSConverter();
-			commandBuffer = generator.convertTStoOS(commandBuffer, mesh);
-			res = generator.TStoOSConverter->map->colour;
+			outNorm = generator.convertTStoOS(mesh);
 		}
 		else {
 			generator.copyOSImage(norm);
 			generator.setupTSConverter();
-			commandBuffer = generator.convertOStoTS(commandBuffer, mesh);
-			res = generator.OStoTSConverter->map->colour;
-		}
-
-		Engine::get()->endSingleTimeCommands(commandBuffer);
-
-		Texture* outNorm = nullptr;
-
-		if (!norm->normalType) {
-			outNorm = res->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-				VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
-
-			outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		} else {
-			Texture* EdgeFillImg = res->copyTexture(res->textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
-			filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
-			OS_EdgeFill.filterImage();
-			OS_EdgeFill.filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-			OS_EdgeFill.filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-			outNorm = res->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-				VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
-
-			outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-
-			OS_EdgeFill.cleanup();
-			EdgeFillImg->cleanup();
-			delete EdgeFillImg;
+			outNorm = generator.convertOStoTS(mesh);
 		}
 
 		outNorm->isNormal = true;
@@ -1474,50 +1417,21 @@ private:
 				outNormalName = texName + "_TS";
 			}
 		}
-		
-		Texture* res = nullptr;
 
 		Mesh* mesh = getMesh(objectName);
 
-		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
 		NormalGen generator(loadList);
+		Texture* outNorm = nullptr;
 		
 		if (normalType) {
 			generator.copyTSImage(norm);
 			generator.setupOSConverter();
-			commandBuffer = generator.convertTStoOS(commandBuffer, mesh);
+			outNorm = generator.convertTStoOS(mesh);
 		}
 		else {
 			generator.copyOSImage(norm);
 			generator.setupTSConverter();
-			commandBuffer = generator.convertOStoTS(commandBuffer, mesh);
-		}
-		Engine::get()->endSingleTimeCommands(commandBuffer);
-
-		Texture* outNorm = nullptr;
-
-		if (!normalType) {
-			res = generator.OStoTSConverter->map->colour;
-			outNorm = res->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
-		}
-		else {
-			res = generator.TStoOSConverter->map->colour;
-			Texture* EdgeFillImg = res->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
-			filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
-			OS_EdgeFill.filterImage();
-			OS_EdgeFill.filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-			OS_EdgeFill.filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-			outNorm = OS_EdgeFill.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-				VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
-
-			outNorm->textureImageView = outNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-
-			OS_EdgeFill.cleanup();
-			EdgeFillImg->cleanup();
-			delete EdgeFillImg;
+			outNorm = generator.convertOStoTS(mesh);
 		}
 
 		std::cout << "Copied image" << std::endl;
@@ -2439,7 +2353,6 @@ private:
 
 		filter bakeAlpha{ std::vector<Texture*>{tex, alpha}, new BAKEALPHASHADER};
 		bakeAlpha.filterImage();
-
 		bakeAlpha.cleanup();
 
 		removeWidget(&amts);

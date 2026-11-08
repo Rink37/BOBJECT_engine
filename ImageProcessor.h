@@ -6,6 +6,7 @@
 #include"Textures.h"
 #include"ShaderDataType.h"
 #include"Meshes.h"
+#include"include/EdgeFill.h"
 
 #define OIOO 0
 #define TIOO 1
@@ -115,21 +116,7 @@ public:
 
 	void filterImage(VkCommandBuffer);
 
-	void cleanupSource() {
-		for (Texture* tex : source) {
-			if (tex == nullptr) {
-				continue;
-			}
-			if (!tex->cleaned) {
-				tex->cleanup();
-			}
-		}
-	}
-
-	void cleanup(bool cleanSource = true) {
-		if (cleanSource) {
-			cleanupSource();
-		}
+	void cleanup() {
 		for (Texture* tex : filterTarget) {
 			if (tex == nullptr) {
 				continue;
@@ -220,11 +207,15 @@ private:
 class textureWriter {
 	// Used to draw textures using meshes
 public:
-	textureWriter(Texture* targetTexture, shaderData* drawShader, bool depthTestEnable, bool descriptorEnable = true, bool fullAttribs = false) {
+	textureWriter(Texture* targetTexture, shaderData* drawShader, bool depthTestEnable, bool descriptorEnable = true, bool fullAttribs = false, bool fillEdges = true) {
 		refTex = targetTexture;
 		sD = drawShader;
 		depthTested = depthTestEnable;
 		fullAttributes = fullAttribs;
+		edgeFill = fillEdges;
+		if (!edgeFill) {
+			clearColour.w = 1.0f;
+		}
 
 		map = new OverlayMap();
 		prepMap();
@@ -234,11 +225,15 @@ public:
 		createTexWritePipeline();
 	};
 
-	textureWriter(Texture* targetTexture, shaderData* drawShader, std::vector<Texture*> textures, std::vector<std::pair<std::vector<VkBuffer>, uint32_t>> buffers, bool depthTestEnable, bool descriptorEnable = true, bool fullAttribs = false) {
+	textureWriter(Texture* targetTexture, shaderData* drawShader, std::vector<Texture*> textures, std::vector<std::pair<std::vector<VkBuffer>, uint32_t>> buffers, bool depthTestEnable, bool descriptorEnable = true, bool fullAttribs = false, bool fillEdges = true) {
 		refTex = targetTexture;
 		sD = drawShader;
 		depthTested = depthTestEnable;
 		fullAttributes = fullAttribs;
+		edgeFill = fillEdges;
+		if (!edgeFill) {
+			clearColour.w = 1.0f;
+		}
 
 		map = new OverlayMap();
 		prepMap();
@@ -252,7 +247,7 @@ public:
 		clearColour = colour;
 	};
 
-	VkCommandBuffer drawMap(VkCommandBuffer, std::vector<Mesh*>);
+	Texture* drawMap(std::vector<Mesh*>);
 
 	struct OverlayMap {
 		VkFramebuffer frameBuffer = nullptr;
@@ -308,10 +303,13 @@ private:
 
 	shaderData* sD = nullptr;
 
-	glm::vec4 clearColour{ 0.0f, 0.0f, 0.0f, 1.0f};
+	glm::vec4 clearColour{ 0.0f };
+
+	VkCommandBuffer drawMap(VkCommandBuffer, std::vector<Mesh*>);
 
 	bool depthTested = false;
 	bool fullAttributes = false;
+	bool edgeFill = true;
 
 	void prepMap();
 	void prepareDrawDescriptor();

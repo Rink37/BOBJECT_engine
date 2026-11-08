@@ -21,12 +21,12 @@ void NormalGen::prepareTSMap() {
 	if (OStoTSConverter != nullptr) {
 		OStoTSConverter->cleanup();
 	}
-	OStoTSConverter = new textureWriter(refOS, new OSTOTSCONVERTERSHADER, false, true, true);
-	OStoTSConverter->setClearColour(glm::vec4{ 0.5f, 0.5f, 1.0f, 1.0f });
+	OStoTSConverter = new textureWriter(refOS, new OSTOTSCONVERTERSHADER, false, true, true, true);
+	OStoTSConverter->setClearColour(glm::vec4{ 0.5f, 0.5f, 1.0f, 0.0f });
 }
 
-VkCommandBuffer NormalGen::convertOStoTS(VkCommandBuffer commandbuffer, Mesh* mesh) {
-	return OStoTSConverter->drawMap(commandbuffer, std::vector<Mesh*>{mesh});
+Texture* NormalGen::convertOStoTS(Mesh* mesh) {
+	return OStoTSConverter->drawMap(std::vector<Mesh*>{mesh});
 }
 
 void NormalGen::cleanupOStoTS() {
@@ -44,8 +44,8 @@ void NormalGen::prepareOSMap() {
 	TStoOSConverter = new textureWriter(refTS, new TSTOOSCONVERTERSHADER, false, true, true);
 }
 
-VkCommandBuffer NormalGen::convertTStoOS(VkCommandBuffer commandbuffer, Mesh* mesh) {
-	return TStoOSConverter->drawMap(commandbuffer, std::vector<Mesh*>{mesh});
+Texture* NormalGen::convertTStoOS(Mesh* mesh) {
+	return TStoOSConverter->drawMap(std::vector<Mesh*>{mesh});
 }
 
 void NormalGen::cleanupTStoOS() {
@@ -74,8 +74,8 @@ void NormalGen::prepGenerateOSMap() {
 	OStexGenerator = new textureWriter(refTex, new NORMALGENERATORSHADER, false, false);
 }
 
-VkCommandBuffer NormalGen::drawOSMap(VkCommandBuffer commandbuffer, Mesh* mesh) {
-	return OStexGenerator->drawMap(commandbuffer, std::vector<Mesh*>{mesh});
+Texture* NormalGen::drawOSMap(Mesh* mesh) {
+	return OStexGenerator->drawMap(std::vector<Mesh*>{mesh});
 }
 
 void NormalGen::cleanupGenOS() {

@@ -1505,7 +1505,7 @@ void SeamFixer::alphaOverMap(Texture* cMap, Texture* aMap, Texture* texInFlight)
 	seamAlpha->cleanup();
 	delete seamMap;
 	delete seamAlpha;
-	alphaOver.cleanup(false);
+	alphaOver.cleanup();
 };
 
 void SeamFixer::createDemoImages(std::string baseName) {
@@ -1572,13 +1572,8 @@ void SeamFixer::createDemoImages(std::string baseName) {
 		outsideMeshes.push_back(rightOutsideMesh);
 	}
 
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-	commandBuffer = colourWriter->drawMap(commandBuffer, rightColourMeshes);
-	commandBuffer = alphaWriter->drawMap(commandBuffer, rightAlphaMeshes);
-	Engine::get()->endSingleTimeCommands(commandBuffer);
-
-	Texture* colour = colourWriter->map->colour;
-	Texture* alpha = alphaWriter->map->colour;
+	Texture* colour = colourWriter->drawMap(rightColourMeshes);
+	Texture* alpha = alphaWriter->drawMap(rightAlphaMeshes);
 
 	Texture* rightCol = colour->copyTexture();
 	Texture* rightAlpha = alpha->copyTexture();
@@ -1653,13 +1648,8 @@ void SeamFixer::createDemoImages(std::string baseName) {
 	rightAlpha->cleanup();
 	delete rightAlpha;
 
-	commandBuffer = Engine::get()->beginSingleTimeCommands();
-	commandBuffer = colourWriter->drawMap(commandBuffer, rightColourMeshes);
-	commandBuffer = alphaWriter->drawMap(commandBuffer, rightAlphaMeshes);
-	Engine::get()->endSingleTimeCommands(commandBuffer);
-
-	colour = colourWriter->map->colour;
-	alpha = alphaWriter->map->colour;
+	colour = colourWriter->drawMap(rightColourMeshes);
+	alpha = alphaWriter->drawMap(rightAlphaMeshes);
 
 	Texture* leftCol = colour->copyTexture();
 	Texture* leftAlpha = alpha->copyTexture();
@@ -1730,11 +1720,8 @@ void SeamFixer::createDemoImages(std::string baseName) {
 	leftAlpha->cleanup();
 	delete leftAlpha;
 
-	commandBuffer = Engine::get()->beginSingleTimeCommands();
-	commandBuffer = alphaWriter->drawMap(commandBuffer, outsideMeshes);
-	Engine::get()->endSingleTimeCommands(commandBuffer);
+	alpha = alphaWriter->drawMap(outsideMeshes);
 
-	alpha = alphaWriter->map->colour;
 	Texture* outsideAlpha = alpha->copyTexture();
 	outsideAlpha->getCVMat();
 
@@ -1744,11 +1731,8 @@ void SeamFixer::createDemoImages(std::string baseName) {
 
 	cv::imwrite(baseName + std::string("_OutsideAlpha.jpg"), outsideThresh);
 
-	commandBuffer = Engine::get()->beginSingleTimeCommands();
-	commandBuffer = alphaWriter->drawMap(commandBuffer, insideMeshes);
-	Engine::get()->endSingleTimeCommands(commandBuffer);
+	alpha = alphaWriter->drawMap(insideMeshes);
 
-	alpha = alphaWriter->map->colour;
 	Texture* insideAlpha = alpha->copyTexture();
 	insideAlpha->getCVMat();
 
@@ -1775,15 +1759,10 @@ void SeamFixer::seamFixAll() {
 			colourMeshes = sortedLeftMeshes[i];
 			alphaMeshes = sortedLeftAlphaMeshes[i];
 		}
-		VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-		commandBuffer = colourWriter->drawMap(commandBuffer, colourMeshes);
-		commandBuffer = alphaWriter->drawMap(commandBuffer, alphaMeshes);
-
-		Texture* colour = colourWriter->map->colour;
-		Texture* alpha = alphaWriter->map->colour;
+		Texture* colour = colourWriter->drawMap(colourMeshes);
+		Texture* alpha = alphaWriter->drawMap(alphaMeshes);
 
 		if (useRemapper && remapper != nullptr) {
-			Engine::get()->endSingleTimeCommands(commandBuffer);
 
 			if (colour->texHeight > 1024) {
 				uint32_t smallWidth = 1024 * static_cast<float>(colour->texWidth) / static_cast<float>(colour->texHeight);
@@ -1830,7 +1809,6 @@ void SeamFixer::seamFixAll() {
 			alphaOverMap(colour, remapper->filteredTarget, writeTex);
 		}
 		else {
-			Engine::get()->endSingleTimeCommands(commandBuffer);
 			alphaOverMap(colour, alpha, writeTex);
 		}
 	}

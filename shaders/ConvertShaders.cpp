@@ -276,6 +276,7 @@ int main(){
 	compileAndWriteShaders(basepath, string("IPAlphaOver"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("ProjectorAlphaWrite"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("BakeAlpha"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("EdgeFill"), 0, outRoot);
 
 	basepath = rootPath+string("/shaders/");
 	compileAndWriteShaders(basepath, string("TS_BF"), 0, outRoot);

@@ -33,7 +33,7 @@ public:
 
 	void cleanupGenOS();
 
-	VkCommandBuffer drawOSMap(VkCommandBuffer, Mesh*);
+	Texture* drawOSMap(Mesh*);
 
 	void copyOSImage(Texture*);
 	void copyTSImage(Texture*);
@@ -46,8 +46,8 @@ public:
 		prepareOSMap();
 	};
 
-	VkCommandBuffer convertOStoTS(VkCommandBuffer, Mesh*);
-	VkCommandBuffer convertTStoOS(VkCommandBuffer, Mesh*);
+	Texture* convertOStoTS(Mesh*);
+	Texture* convertTStoOS(Mesh*);
 
 	void cleanupOStoTS();
 	void cleanupTStoOS();

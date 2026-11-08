@@ -784,6 +784,33 @@ void textureWriter::createTexWritePipeline() {
 	map->cleaned = false;
 }
 
+Texture* textureWriter::drawMap(std::vector<Mesh*> meshes) {
+	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+	drawMap(commandBuffer, meshes);
+	Engine::get()->endSingleTimeCommands(commandBuffer);
+
+	Texture* resultImg = nullptr;
+
+	if (edgeFill) {
+		Texture* EdgeFillBaseImg = map->colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, refTex->texWidth, refTex->texHeight);
+		resultImg = map->colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, refTex->texWidth, refTex->texHeight);
+		filter EdgeFill{ std::vector<Texture*>{EdgeFillBaseImg, resultImg}, new EDGEFILLSHADER };
+		EdgeFill.filterImage();
+
+		resultImg->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		resultImg->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		
+		EdgeFillBaseImg->cleanup();
+		delete EdgeFillBaseImg;
+		EdgeFill.cleanup();
+	}
+	else {
+		resultImg = map->colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, refTex->texWidth, refTex->texHeight);
+	}
+
+	return resultImg;
+}
+
 VkCommandBuffer textureWriter::drawMap(VkCommandBuffer commandbuffer, std::vector<Mesh*> meshes) {
 
 	std::vector<VkClearValue> clearValues{};

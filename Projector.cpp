@@ -194,20 +194,10 @@ void Projector::reprojectImage() {
 	textureWriter reprojector{ tex, new SEAMFIX_COLOURSHADER, false };
 	std::vector<std::pair<std::vector<VkBuffer>, uint32_t>> projectorBuffers{ std::pair<std::vector<VkBuffer>, uint32_t> {Engine::get()->uniformBuffers, sizeof(UniformBufferObject)}, std::pair<std::vector<VkBuffer>, uint32_t>{std::vector<VkBuffer>{positionBuffer}, sizeof(ProjectorPositionObject)} };
 	textureWriter alphaWriter{ tex, new PROJECTORALPHAWRITESHADER, std::vector<Texture*>{}, projectorBuffers, false };
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
-	reprojector.drawMap(commandBuffer, std::vector<Mesh*>{reprojectionMesh});
-	alphaWriter.drawMap(commandBuffer, std::vector<Mesh*>{refMesh});
-	Engine::get()->endSingleTimeCommands(commandBuffer);
-	Texture* EdgeFillImg = reprojector.map->colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, tex->texWidth, tex->texHeight);
-	filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
-	OS_EdgeFill.filterImage();
-	Texture* resTex = OS_EdgeFill.filterTarget[0]->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, tex->texWidth, tex->texHeight);
-	Texture* alphaTex = alphaWriter.map->colour->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1, tex->texWidth, tex->texHeight);
+	Texture* resTex = reprojector.drawMap(std::vector<Mesh*>{reprojectionMesh});
+	Texture* alphaTex = alphaWriter.drawMap(std::vector<Mesh*>{refMesh});
 	reprojector.cleanup();
 	alphaWriter.cleanup();
-	OS_EdgeFill.cleanup();
-	EdgeFillImg->cleanup();
-	delete EdgeFillImg;
 	if (saveTextureFnc != nullptr) {
 		saveTextureFnc(texName + std::string("_projected"), resTex);
 		saveTextureFnc(texName + std::string("_projectedAlpha"), alphaTex);
