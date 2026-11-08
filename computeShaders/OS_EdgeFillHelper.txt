@@ -1,2 +1,0 @@
-IN 0 "normalImage"
-OUT 0 "resultImage"

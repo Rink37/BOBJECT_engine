@@ -263,7 +263,6 @@ int main(){
 	compileAndWriteShaders(basepath, string("GradRemap"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("OSToTSConverter"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("TSToOSConverter"), 0, outRoot);
-	compileAndWriteShaders(basepath, string("OS_EdgeFill"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("inPlaceTest"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("NormalGenerator"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("RGB_2_YCbCr"), 0, outRoot);

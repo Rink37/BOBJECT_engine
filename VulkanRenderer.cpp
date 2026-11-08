@@ -18,7 +18,6 @@
 
 #include<chrono>
 
-#include"include/OS_EdgeFill.h"
 #include"include/BakedImages.h"
 #include"include/CombineNorms.h"
 #include"include/BakeAlpha.h"
@@ -1276,16 +1275,9 @@ private:
 											   new COMBINENORMSSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 		normMixer.filterImage();
 
-		Texture* EdgeFillImg = normMixer.filterTarget[0]->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
-		filter OS_EdgeFill(std::vector<Texture*>({ EdgeFillImg }), new OS_EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
+		Texture* mixedNorm = normMixer.filterTarget[0]->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+		filter OS_EdgeFill(std::vector<Texture*>({ normMixer.filterTarget[0], mixedNorm }), new EDGEFILLSHADER, VK_FORMAT_R8G8B8A8_UNORM);
 		OS_EdgeFill.filterImage();
-		OS_EdgeFill.filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		OS_EdgeFill.filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-		Texture* mixedNorm = OS_EdgeFill.filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
 
 		mixedNorm->isNormal = true;
 		mixedNorm->normalType = resultNormalType;
