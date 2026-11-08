@@ -343,6 +343,7 @@ public:
 	void transitionImageLayout(VkCommandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
+	void createDescriptorSetLayout(std::string, std::vector<shaderIOValue>, GraphicsPass&) const;
 private:
 	static Engine* enginstance;
 	Engine() = default;
@@ -373,7 +374,6 @@ private:
 	void createLogicalDevice();
 	void createSwapChain();
 	void createImageViews();
-	void createDescriptorSetLayout(std::string, std::vector<shaderIOValue>, GraphicsPass&) const;
 	void createGraphicsPipelines();
 	void createCommandPool();
 	void createComputeCommandPool();

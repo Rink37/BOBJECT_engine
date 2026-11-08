@@ -625,6 +625,11 @@ void textureWriter::prepareDrawDescriptor() {
 	map->cleaned = false;
 }
 
+void textureWriter::prepareDrawDescriptor(std::vector<Texture*> textures, std::vector<std::pair<std::vector<VkBuffer>, uint32_t>> buffers){
+	map->drawMat = new Material(textures, buffers, sD);
+	map->cleaned = false;
+}
+
 void textureWriter::createTexWritePipeline() {
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};

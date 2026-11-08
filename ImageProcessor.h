@@ -220,35 +220,12 @@ private:
 class textureWriter {
 	// Used to draw textures using meshes
 public:
-	textureWriter(Texture* targetTexture, shaderData* drawShader, bool depthTestEnable) {
-		refTex = targetTexture;
-		sD = drawShader;
-		depthTested = depthTestEnable;
-
-		map = new OverlayMap();
-		prepMap();
-		prepareDrawDescriptor();
-		createTexWritePipeline();
-	};
-
-	textureWriter(Texture* targetTexture, shaderData* drawShader, bool depthTestEnable, bool descriptorEnable) {
-		refTex = targetTexture;
-		sD = drawShader;
-		depthTested = depthTestEnable;
-
-		map = new OverlayMap();
-		prepMap();
-		if (descriptorEnable) {
-			prepareDrawDescriptor();
-		}
-		createTexWritePipeline();
-	};
-
-	textureWriter(Texture* targetTexture, shaderData* drawShader, bool depthTestEnable, bool descriptorEnable, bool fullAttribs) {
+	textureWriter(Texture* targetTexture, shaderData* drawShader, bool depthTestEnable, bool descriptorEnable = true, bool fullAttribs = false) {
 		refTex = targetTexture;
 		sD = drawShader;
 		depthTested = depthTestEnable;
 		fullAttributes = fullAttribs;
+
 		map = new OverlayMap();
 		prepMap();
 		if (descriptorEnable) {
@@ -256,6 +233,20 @@ public:
 		}
 		createTexWritePipeline();
 	};
+
+	textureWriter(Texture* targetTexture, shaderData* drawShader, std::vector<Texture*> textures, std::vector<std::pair<std::vector<VkBuffer>, uint32_t>> buffers, bool depthTestEnable, bool descriptorEnable = true, bool fullAttribs = false) {
+		refTex = targetTexture;
+		sD = drawShader;
+		depthTested = depthTestEnable;
+		fullAttributes = fullAttribs;
+
+		map = new OverlayMap();
+		prepMap();
+		if (descriptorEnable) {
+			prepareDrawDescriptor(textures, buffers);
+		}
+		createTexWritePipeline();
+	}
 
 	void setClearColour(glm::vec4 colour) {
 		clearColour = colour;
@@ -317,13 +308,14 @@ private:
 
 	shaderData* sD = nullptr;
 
-	glm::vec4 clearColour{ 0.0f };
+	glm::vec4 clearColour{ 0.0f, 0.0f, 0.0f, 1.0f};
 
 	bool depthTested = false;
 	bool fullAttributes = false;
 
 	void prepMap();
 	void prepareDrawDescriptor();
+	void prepareDrawDescriptor(std::vector<Texture*>, std::vector<std::pair<std::vector<VkBuffer>, uint32_t>>);
 	void createTexWritePipeline();
 };
 
