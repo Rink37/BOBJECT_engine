@@ -111,6 +111,7 @@ void TextBox::updateDisplay() {
 	float maxPos_y = posy + extenty - characterHeight;
 	float vSpacing = characterHeight * 2.0f;
 	uint32_t maxLines = static_cast<uint32_t>(extenty / characterHeight);
+	maxLines = (maxLines < 1) ? 1 : maxLines;
 
 	float lineWidth = 0.0f;
 	float maxLineWidth = 2.0f * extentx;
@@ -128,7 +129,7 @@ void TextBox::updateDisplay() {
 	uint32_t index = 0;
 	uint32_t lineIndex = 0;
 	for (fontMesh* mesh : characters) {
-		if (hideCharacters) {
+		if (hideCharacters || lineIndex >= maxLines) {
 			mesh->setVisibility(false);
 			continue;
 		}
@@ -141,7 +142,7 @@ void TextBox::updateDisplay() {
 			// New line handling
 			float leftSpacing = 0.0f;
 
-			if (isBlank || mesh->unicodeCharacter == NEWLINE_CHAR || maxLines == 1) {
+			if (isBlank || mesh->unicodeCharacter == NEWLINE_CHAR || lineIndex + 1 == maxLines) {
 				for (uint32_t wIndex : wordIndices) {
 					lineIndices.push_back(wIndex);
 				}
