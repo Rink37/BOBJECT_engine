@@ -21,6 +21,7 @@
 #include"include/OS_EdgeFill.h"
 #include"include/BakedImages.h"
 #include"include/CombineNorms.h"
+#include"include/BakeAlpha.h"
 
 using namespace cv;
 using namespace std;
@@ -70,6 +71,95 @@ public:
 	}
 };
 
+class AlphaMixTexSelector : public Widget {
+public:
+	AlphaMixTexSelector(LoadList* assets, LoadList* texLL) {
+		loadList = assets;
+		textureLL = texLL;
+	}
+
+	void setup(std::string targetTextureName, std::function<void(std::string, std::string)> callback, std::function<void(UIItem*)> cancel) {
+		if (isSetup) {
+			return;
+		}
+		targetName = targetTextureName;
+
+		continueCallback = callback;
+
+		std::vector<std::string> availableTextures{};
+		textureLL->listTextures(availableTextures);
+
+		if (std::find(availableTextures.begin(), availableTextures.end(), targetName) == availableTextures.end()) {
+			if (errorFunc != nullptr) {
+				errorFunc("FILE ERROR: ", "The target texture is not valid!");
+			}
+			return;
+		}
+
+		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
+		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+		Material* finishedMat = loadList->getMaterial("FinishBtnMat");
+		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
+
+		std::function<void(UIItem*)> finishFunct = std::bind(&AlphaMixTexSelector::finish, this, std::placeholders::_1);
+		
+		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+		font* newFont = textureLL->getFont();
+
+		TextBox* targetText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		targetText->addText(std::string("Baking Alpha ") + targetTextureName + std::string(" into:"));
+
+		DropdownMenu* refDropdown = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), newFont);
+		refDropdown->setBlankText("Select a texture");
+		refDropdown->addOptions(availableTextures);
+		refDropdown->setSelectCallback(std::bind(&AlphaMixTexSelector::setRefName, this, std::placeholders::_1));
+
+		Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 2.0f, 0.01f);
+		finishButtons->addItem(getPtr(new Button(cancelMat, cancel)));
+		finishButtons->addItem(getPtr(new spacer()));
+		finishButtons->addItem(getPtr(new Button(finishedMat, finishFunct)));
+
+		mainArrangement->addItem(getPtr(targetText));
+		mainArrangement->addItem(getPtr(refDropdown));
+		mainArrangement->addItem(getPtr(finishButtons));
+		mainArrangement->arrangeItems();
+
+		canvas.push_back(getPtr(mainArrangement));
+
+		addBackground(loadList->getMaterial("UIRoundBox"));
+
+		isSetup = true;
+	}
+
+	int clickIndex = 0;
+
+private:
+	LoadList* textureLL = nullptr;
+
+	std::string targetName = "";
+	std::string refName = "";
+
+	std::function<void(std::string, std::string)> continueCallback = nullptr;
+
+	void setRefName(UIItem* owner) {
+		refName = owner->text;
+	}
+
+	void finish(UIItem* owner) {
+		if (targetName.size() == 0 || refName.size() == 0) {
+			if (errorFunc != nullptr) {
+				errorFunc("SELECT ERROR: ", "No reference texture has been selected!");
+			}
+			return;
+		}
+
+		if (continueCallback != nullptr) {
+			continueCallback(refName, targetName);
+		}
+	}
+};
+
 class TextureSettings : public Widget {
 public: 
 	TextureSettings(LoadList* assets, LoadList* textureAssets) {
@@ -77,7 +167,7 @@ public:
 		textureLL = textureAssets;
 	}
 
-	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc, std::function<void(UIItem*)> projectorFunc, std::function<void(UIItem*)> cancelProjectorFnc, std::function<void(UIItem*)> finishProjectorFnc) {
+	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc, std::function<void(UIItem*)> projectorFunc, std::function<void(UIItem*)> cancelProjectorFnc, std::function<void(UIItem*)> finishProjectorFnc, std::function<void(UIItem*)> bakeAlphaFunc) {
 		if (isSetup) {
 			return;
 		}
@@ -90,6 +180,7 @@ public:
 		functions.insert({ "Combine norms", mixNormalsFnc });
 		functions.insert({ "Remap", remapFnc });
 		functions.insert({ "Fix seams", fixSeamsFnc });
+		functions.insert({ "Bake Alpha", bakeAlphaFunc });
 
 		Texture* tex = textureLL->getTexture(texName);
 
@@ -107,13 +198,15 @@ public:
 
 		std::vector<std::string> functionNames{};
 
+		functionNames.push_back("Remap");
+		functionNames.push_back("Fix seams");
 		if (tex->isNormal) {
 			functionNames.push_back("Convert norm");
 			functionNames.push_back("Combine norms");
 		}
-
-		functionNames.push_back("Remap");
-		functionNames.push_back("Fix seams");
+		else {
+			functionNames.push_back("Bake Alpha");
+		}
 
 		Material* panelMat = loadList->replacePtr(new Material(tex, "UI"), "Image view");
 		bool isWebcam = (texName == std::string("Webcam View"));
@@ -1889,6 +1982,7 @@ private:
 	MaterialCreator mc = MaterialCreator(&UIElements, &TextureElements); 
 	ObjectSettingsMenu osm = ObjectSettingsMenu(&UIElements, &TextureElements);
 	RemapTexSelector rts = RemapTexSelector(&UIElements, &TextureElements);
+	AlphaMixTexSelector amts = AlphaMixTexSelector(&UIElements, &TextureElements);
 	TextureLoadMenu tlm = TextureLoadMenu(&UIElements, &TextureElements);
 	TomogRefPicker tomogPicker = TomogRefPicker(&UIElements, &TextureElements);
 	SpaceTransitionMenu stm = SpaceTransitionMenu(&UIElements, &TextureElements);
@@ -2323,6 +2417,32 @@ private:
 		inWebSettings = false;
 	}
 
+	void createAlphaMixTexSelector(UIItem* owner) {
+		std::function<void(std::string, std::string)> continueCallback = std::bind(&Application::alphaMix, this, std::placeholders::_1, std::placeholders::_2);
+		std::function<void(UIItem*)> cancelCallback = std::bind(&Application::destroyAlphaMixTexSelector, this, std::placeholders::_1);
+
+		if (amts.errorFunc == nullptr) {
+			amts.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		}
+		amts.setup(owner->Name, continueCallback, cancelCallback);
+
+		addWidget(&amts);
+	}
+
+	void destroyAlphaMixTexSelector(UIItem* owner) {
+		removeWidget(&amts);
+	}
+
+	void alphaMix(std::string texName, std::string alphaName) {
+		Texture* tex = TextureElements.getTexture(texName);
+		Texture* alpha = TextureElements.getTexture(alphaName);
+
+		filter bakeAlpha{ std::vector<Texture*>{tex, alpha}, new BAKEALPHASHADER};
+		bakeAlpha.filterImage();
+
+		removeWidget(&amts);
+	}
+
 	void createRemapTexSelector(UIItem* owner) {
 		std::function<void(std::string, std::string)> continueCallback = std::bind(&Application::createRemapper, this, std::placeholders::_1, std::placeholders::_2);
 		std::function<void(UIItem*)> cancelCallback = std::bind(&Application::destroyRemapTexSelector, this, std::placeholders::_1);
@@ -2440,11 +2560,12 @@ private:
 
 	void openTextureSettingsMenu(UIItem* owner) {
 		std::function<void(UIItem*)> seamFixFunc = std::bind(&Application::openSeamObjPicker, this, std::placeholders::_1);
+		std::function<void(UIItem*)> alphaBakeFunc = std::bind(&Application::createAlphaMixTexSelector, this, std::placeholders::_1);
 		std::function<void(UIItem*)> projectFunc = std::bind(&Application::createProjectorObjPicker, this, std::placeholders::_1);
 		std::function<void(UIItem*)> cancelProjectorFunc = std::bind(&Application::cancelProjector, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishProjectorFunc = std::bind(&Application::finishProjector, this, std::placeholders::_1);
 
-		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc, cancelProjectorFunc, finishProjectorFunc);
+		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc, cancelProjectorFunc, finishProjectorFunc, alphaBakeFunc);
 
 		addWidget(&textureSettings);
 	}
@@ -2844,7 +2965,7 @@ private:
 			std::function<void(UIItem*)> cancelProjectorFunc = std::bind(&Application::cancelProjector, this, std::placeholders::_1);
 			std::function<void(UIItem*)> finishProjectorFunc = std::bind(&Application::finishProjector, this, std::placeholders::_1);
 
-			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr, projectFunc, cancelProjectorFunc, finishProjectorFunc);
+			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr, projectFunc, cancelProjectorFunc, finishProjectorFunc, nullptr);
 
 			addWidget(&textureSettings);
 		}

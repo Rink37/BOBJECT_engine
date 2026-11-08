@@ -124,18 +124,6 @@ private:
 
 	void sortSeamIndices(SeamStrip&);
 	
-	//void prepMap(OverlayMap*);
-	//void prepareColourDescriptor(OverlayMap*);
-	//void createTexWritePipeline(OverlayMap*);
-	//void createAlphaWritePipeline(OverlayMap*);
-
-	//VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*, Mesh*);
-	//VkCommandBuffer drawColourMap(VkCommandBuffer, OverlayMap*, std::vector<Mesh*>);
-
-	//VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, Mesh*);
-	//VkCommandBuffer drawAlphaMap(VkCommandBuffer, OverlayMap*, std::vector<Mesh*>);
-
-	//void alphaOverMap(bool);
 	void alphaOverMap(Texture*, Texture*, Texture*);
 };
 
