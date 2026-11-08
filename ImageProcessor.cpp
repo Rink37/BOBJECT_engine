@@ -621,64 +621,7 @@ void textureWriter::prepMap() {
 }
 
 void textureWriter::prepareDrawDescriptor() {
-
-	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-	samplerLayoutBinding.binding = 0;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
-	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	VkDescriptorSetLayoutCreateInfo layoutInfo{};
-	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = 1;
-	layoutInfo.pBindings = &samplerLayoutBinding;
-
-	if (vkCreateDescriptorSetLayout(Engine::get()->device, &layoutInfo, nullptr, &map->descriptorSetLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create descriptor set layout!");
-	}
-
-	VkDescriptorPoolSize poolSize;
-
-	poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSize.descriptorCount = 1;
-
-	VkDescriptorPoolCreateInfo poolInfo{};
-	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolInfo.poolSizeCount = 1;
-	poolInfo.pPoolSizes = &poolSize;
-	poolInfo.maxSets = 1;
-
-	if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &map->descriptorPool) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create descriptor pool!");
-	}
-
-	VkDescriptorSetAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = map->descriptorPool;
-	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &map->descriptorSetLayout;
-
-	if (vkAllocateDescriptorSets(Engine::get()->device, &allocInfo, &map->descriptorSet) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate descriptor sets!");
-	}
-
-	VkDescriptorImageInfo imageInfo{};
-	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	imageInfo.imageView = refTex->textureImageView;
-	imageInfo.sampler = Engine::get()->textureSampler;
-
-	VkWriteDescriptorSet descriptorWrite{};
-	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrite.dstSet = map->descriptorSet;
-	descriptorWrite.dstBinding = 0;
-	descriptorWrite.dstArrayElement = 0;
-	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descriptorWrite.descriptorCount = 1;
-	descriptorWrite.pImageInfo = &imageInfo;
-
-	vkUpdateDescriptorSets(Engine::get()->device, 1, &descriptorWrite, 0, nullptr);
-
+	map->drawMat = new Material(std::vector<Texture*>{refTex}, std::vector<std::pair<std::vector<VkBuffer>, uint32_t>>{}, sD);
 	map->cleaned = false;
 }
 
@@ -736,9 +679,9 @@ void textureWriter::createTexWritePipeline() {
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	if (map->descriptorSetLayout != nullptr) {
+	if (map->drawMat != nullptr && map->drawMat->descriptorSetLayout != nullptr) {
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &map->descriptorSetLayout;
+		pipelineLayoutInfo.pSetLayouts = &map->drawMat->descriptorSetLayout;
 	}
 	else {
 		pipelineLayoutInfo.setLayoutCount = 0;
@@ -871,8 +814,8 @@ VkCommandBuffer textureWriter::drawMap(VkCommandBuffer commandbuffer, std::vecto
 
 		vkCmdBindIndexBuffer(commandbuffer, mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-		if (map->descriptorSet != nullptr) {
-			vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipelineLayout, 0, 1, &map->descriptorSet, 0, nullptr);
+		if (map->drawMat != nullptr && map->drawMat->descriptorSets.size() > 0 && map->drawMat->descriptorSets[0] != nullptr) {
+			vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, map->pipelineLayout, 0, 1, &map->drawMat->descriptorSets[0], 0, nullptr);
 		}
 
 		vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);

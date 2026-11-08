@@ -11,8 +11,9 @@ const bool OSToTSConverterWireframe = false;
 
 const std::string OSToTSConverterName = "OSToTSConverter";
 
+const std::vector<shaderIOValue> OSToTSConverterIO = {shaderIOValue("objectSpaceNormalSampler", 0, true)};
 #endif
 
 #ifndef OSTOTSCONVERTERSHADER
-#define OSTOTSCONVERTERSHADER shaderData( &OSToTSConverterFragData, &OSToTSConverterVertData, OSToTSConverterWireframe, OSToTSConverterName )
+#define OSTOTSCONVERTERSHADER shaderData( &OSToTSConverterFragData, &OSToTSConverterVertData, OSToTSConverterWireframe, OSToTSConverterIO, OSToTSConverterName )
 #endif

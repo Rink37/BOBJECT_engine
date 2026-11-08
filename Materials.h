@@ -57,6 +57,14 @@ public:
 		createMaterial();
 	}
 
+	Material(std::vector<Texture*> inTextures, std::vector<std::pair<std::vector<VkBuffer>, uint32_t>> inBuffers, shaderData* sD) {
+		textures = inTextures;
+		buffers = inBuffers;
+		shaderName = sD->shaderName;
+		pass = &Engine::get()->defaultPass;
+		createMaterial(sD);
+	}
+
 	void init(bool clearTextures = true) {
 		if (!cleaned) {
 			cleanup();
@@ -131,8 +139,17 @@ public:
 		cleaned = false;
 	}
 
+	void createMaterial(shaderData* sD) {
+		createDescriptorPool(sD);
+		createDescriptorSets(sD);
+		cleaned = false;
+	}
+
 	void createDescriptorPool(std::string, GraphicsPass*);
 	void createDescriptorSets(std::string, GraphicsPass*);
+
+	void createDescriptorPool(shaderData*);
+	void createDescriptorSets(shaderData*);
 
 	bool cleaned = true;
 

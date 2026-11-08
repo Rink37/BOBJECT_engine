@@ -3,7 +3,11 @@
 using namespace std;
 
 void Material::createDescriptorPool(std::string targetShader, GraphicsPass* currentPass) {
-	std::vector<shaderIOValue>* IOvals = &currentPass->shaderDatas[currentPass->pipelineMap.at(targetShader)].IO;
+	createDescriptorPool(&currentPass->shaderDatas[currentPass->pipelineMap.at(targetShader)]);
+}
+
+void Material::createDescriptorPool(shaderData* sD) {
+	std::vector<shaderIOValue>* IOvals = &sD->IO;
 
 	VkDescriptorPoolCreateInfo poolInfo{};
 	std::vector<VkDescriptorPoolSize> poolSizes{};
@@ -39,8 +43,14 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 		throw runtime_error("Shader is not attached to a valid pipeline");
 	}
 
+	createDescriptorSets(&currentPass->shaderDatas[currentPass->pipelineMap.at(targetShader)]);
+
+}
+
+void Material::createDescriptorSets(shaderData* sD) {
+
 	VkDescriptorSetAllocateInfo allocInfo{};
-	std::vector<shaderIOValue>* IOvals = &currentPass->shaderDatas[currentPass->pipelineMap.at(targetShader)].IO;
+	std::vector<shaderIOValue>* IOvals = &sD->IO;
 
 	std::string key = "";
 
@@ -62,6 +72,9 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 	}
 	if (buffers.size() < bufferCount) {
 		throw runtime_error("Insufficient buffers to cover all shader slots!");
+	}
+	if (Engine::get()->defaultPass.layoutMap.count(key) == 0) {
+		throw runtime_error("No pipeline matching this shader found in the graphics pass!");
 	}
 
 	pipelineLayoutIndex = Engine::get()->defaultPass.layoutMap.at(key);
@@ -85,7 +98,7 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 		std::vector<VkWriteDescriptorSet> descriptorWrites{ (*IOvals).size(), VkWriteDescriptorSet{} };
 		std::vector<VkDescriptorBufferInfo> bufferInfos{ bufferCount, VkDescriptorBufferInfo{} };
 		std::vector<VkDescriptorImageInfo> imageInfos{ textureCount, VkDescriptorImageInfo{} };
-		
+
 		uint32_t textureIndex = 0;
 		uint32_t bindingIndex = 0;
 		uint32_t bufferIndex = 0;
@@ -102,7 +115,7 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 					bufferInfos[bufferIndex].offset = 0;
 					bufferInfos[bufferIndex].range = buffers[bufferIndex].second;
 				}
-				
+
 				descriptorWrites[bindingIndex].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				descriptorWrites[bindingIndex].dstSet = descriptorSets[i];
 				descriptorWrites[bindingIndex].dstBinding = bindingIndex;
@@ -110,7 +123,7 @@ void Material::createDescriptorSets(std::string targetShader, GraphicsPass* curr
 				descriptorWrites[bindingIndex].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				descriptorWrites[bindingIndex].descriptorCount = 1;
 				descriptorWrites[bindingIndex].pBufferInfo = &bufferInfos[bufferIndex];
-				
+
 				bufferIndex++;
 			}
 			else {

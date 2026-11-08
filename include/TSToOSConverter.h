@@ -11,8 +11,9 @@ const bool TSToOSConverterWireframe = false;
 
 const std::string TSToOSConverterName = "TSToOSConverter";
 
+const std::vector<shaderIOValue> TSToOSConverterIO = {shaderIOValue("tangentSpaceNormalSampler", 0, true)};
 #endif
 
 #ifndef TSTOOSCONVERTERSHADER
-#define TSTOOSCONVERTERSHADER shaderData( &TSToOSConverterFragData, &TSToOSConverterVertData, TSToOSConverterWireframe, TSToOSConverterName )
+#define TSTOOSCONVERTERSHADER shaderData( &TSToOSConverterFragData, &TSToOSConverterVertData, TSToOSConverterWireframe, TSToOSConverterIO, TSToOSConverterName )
 #endif

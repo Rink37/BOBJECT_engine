@@ -11,8 +11,9 @@ const bool SeamFix_ColourWireframe = false;
 
 const std::string SeamFix_ColourName = "SeamFix_Colour";
 
+const std::vector<shaderIOValue> SeamFix_ColourIO = {shaderIOValue("imageSampler", 0, true)};
 #endif
 
 #ifndef SEAMFIX_COLOURSHADER
-#define SEAMFIX_COLOURSHADER shaderData( &SeamFix_ColourFragData, &SeamFix_ColourVertData, SeamFix_ColourWireframe, SeamFix_ColourName )
+#define SEAMFIX_COLOURSHADER shaderData( &SeamFix_ColourFragData, &SeamFix_ColourVertData, SeamFix_ColourWireframe, SeamFix_ColourIO, SeamFix_ColourName )
 #endif

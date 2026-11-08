@@ -31,8 +31,6 @@ void Projector::createMarkerVertices(float distance, Vertex& v1, Vertex& v2, Ver
 	float markerWidth = markerHeight * tex->texWidth / tex->texHeight;
 	glm::mat3 rotationMatrix = glm::mat3(glm::rotate(glm::mat4(1.0f), glm::radians(yrot), glm::vec3(0.0f, 1.0f, 0.0f))) * glm::mat3(glm::rotate(glm::mat4(1.0f), glm::radians(xrot), glm::vec3(0.0f, 0.0f, 1.0f)));
 
-	// Rotation matrix does not work currently
-
 	glm::vec3 p1 = glm::vec3(0.0f, -markerWidth, -markerHeight);
 	glm::vec3 p2 = glm::vec3(0.0f, markerWidth, -markerHeight);
 	glm::vec3 p3 = glm::vec3(0.0f, markerWidth, markerHeight);

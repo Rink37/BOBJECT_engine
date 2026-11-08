@@ -251,13 +251,10 @@ public:
 		fullAttributes = fullAttribs;
 		map = new OverlayMap();
 		prepMap();
-		std::cout << "Setup map" << std::endl;
 		if (descriptorEnable) {
 			prepareDrawDescriptor();
-			std::cout << "Prepared descriptor" << std::endl;
 		}
 		createTexWritePipeline();
-		std::cout << "Created tex write pipeline" << std::endl;
 	};
 
 	void setClearColour(glm::vec4 colour) {
@@ -270,9 +267,7 @@ public:
 		VkFramebuffer frameBuffer = nullptr;
 		VkRenderPass renderPass = nullptr;
 		Texture* colour = nullptr;
-		VkDescriptorPool descriptorPool = nullptr;
-		VkDescriptorSet descriptorSet = nullptr;
-		VkDescriptorSetLayout descriptorSetLayout = nullptr;
+		Material* drawMat = nullptr;
 		VkPipelineLayout pipelineLayout = nullptr;
 		VkPipeline pipeline = nullptr;
 
@@ -282,9 +277,9 @@ public:
 				colour->cleanup();
 				delete colour;
 			}
-			if (descriptorSetLayout != nullptr) {
-				vkDestroyDescriptorSetLayout(Engine::get()->device, descriptorSetLayout, nullptr);
-				vkDestroyDescriptorPool(Engine::get()->device, descriptorPool, nullptr);
+			if (drawMat != nullptr) {
+				drawMat->cleanup();
+				delete drawMat;
 			}
 			if (pipeline != nullptr) {
 				vkDestroyPipeline(Engine::get()->device, pipeline, nullptr);
