@@ -273,6 +273,7 @@ int main(){
 	compileAndWriteShaders(basepath, string("SeamFix_Alpha"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("AlphaOver"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("IPAlphaOver"), 0, outRoot);
+	compileAndWriteShaders(basepath, string("SimpleIPAlphaOver"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("ProjectorAlphaWrite"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("BakeAlpha"), 0, outRoot);
 	compileAndWriteShaders(basepath, string("EdgeFill"), 0, outRoot);
