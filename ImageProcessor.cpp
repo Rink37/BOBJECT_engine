@@ -290,7 +290,11 @@ void filter::createFilterTarget() {
 }
 
 void filter::filterImage() {
-	vkQueueWaitIdle(Engine::get()->computeQueue);
+	vkDeviceWaitIdle(Engine::get()->device);
+
+	for (Texture* tex : source) {
+		tex->transitionImageLayout(tex->textureLayout, VK_IMAGE_LAYOUT_GENERAL);
+	}
 
 	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
 
@@ -299,6 +303,10 @@ void filter::filterImage() {
 	vkCmdDispatch(commandBuffer, source[0]->texWidth / 16 + 1, source[0]->texHeight / 16 + 1, 1);
 
 	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
+
+	for (Texture* tex : source) {
+		tex->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, tex->textureLayout);
+	}
 }
 
 void filter::filterImage(VkCommandBuffer commandBuffer) {

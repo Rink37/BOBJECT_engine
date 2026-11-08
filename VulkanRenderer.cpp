@@ -2440,6 +2440,8 @@ private:
 		filter bakeAlpha{ std::vector<Texture*>{tex, alpha}, new BAKEALPHASHADER};
 		bakeAlpha.filterImage();
 
+		bakeAlpha.cleanup();
+
 		removeWidget(&amts);
 	}
 
