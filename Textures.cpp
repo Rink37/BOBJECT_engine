@@ -670,13 +670,13 @@ void Texture::getCVMat() {
 		supportsBlit = false;
 	}
 
-	Texture* dst = copyImage(textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
+	Texture* dst = copyImage(textureFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_TILING_LINEAR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 1);
 
 	VkImageSubresource subResource{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
 	VkSubresourceLayout subResourceLayout;
 	vkGetImageSubresourceLayout(Engine::get()->device, dst->textureImage, &subResource, &subResourceLayout);
 
-	const char* data;
+	const char* data{};
 	vkMapMemory(Engine::get()->device, dst->textureImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
 	data += subResourceLayout.offset;
 
@@ -688,7 +688,7 @@ void Texture::getCVMat() {
 		colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), textureFormat) != formatsBGR.end());
 	}
 
-	texMat.create(texHeight, texWidth, CV_8UC3);
+	texMat.create(texHeight, texWidth, CV_8UC4);
 
 	for (uint32_t y = 0; y < texHeight; y++)
 	{
@@ -697,11 +697,11 @@ void Texture::getCVMat() {
 		{
 			if (!colorSwizzle)
 			{
-				texMat.at<Vec3b>(y, x) = Vec3b(*((char*)row+2), *((char*)row+1), *((char*)row));
+				texMat.at<Vec4b>(y, x) = Vec4b(*((char*)row+2), *((char*)row+1), *((char*)row), *((char*)row+3));
 			}
 			else
 			{
-				texMat.at<Vec3b>(y, x) = Vec3b(*((char*)row), *((char*)row+1), *((char*)row+2));
+				texMat.at<Vec4b>(y, x) = Vec4b(*((char*)row), *((char*)row+1), *((char*)row+2), *((char*)row+3));
 			}
 			row++;
 		}

@@ -1812,13 +1812,13 @@ private:
 	void saveTexture(UIItem* owner) {
 		std::string textureName = owner->Name;
 
-		Texture* texToSave = textureLoadList->getTexture(textureName);
-		Texture* sRGBTex = nullptr;
-		if (texToSave->textureFormat == VK_FORMAT_R8G8B8A8_UNORM) {
-			sRGBTex = texToSave->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, texToSave->textureLayout, VK_IMAGE_USAGE_TRANSFER_DST_BIT, texToSave->textureTiling, 0);
-		}
 		string saveName = winFile::SaveFileDialog();
 		if (saveName != string("fail")) {
+			Texture* texToSave = textureLoadList->getTexture(textureName);
+			Texture* sRGBTex = nullptr;
+			if (texToSave->textureFormat == VK_FORMAT_R8G8B8A8_UNORM) {
+				sRGBTex = texToSave->copyTexture(VK_FORMAT_R8G8B8A8_SRGB, texToSave->textureLayout, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, texToSave->textureTiling, 0);
+			}
 			uint32_t lastDotIndex = saveName.size();
 			if (saveName.size() > 1) {
 				char dot = '.';
@@ -1845,11 +1845,11 @@ private:
 				sRGBTex->getCVMat();
 				imwrite(saveName, sRGBTex->texMat);
 			}
-		}
-		texToSave->destroyCVMat();
-		if (sRGBTex != nullptr) {
-			sRGBTex->cleanup();
-			delete sRGBTex;
+			texToSave->destroyCVMat();
+			if (sRGBTex != nullptr) {
+				sRGBTex->cleanup();
+				delete sRGBTex;
+			}
 		}
 	}
 
@@ -2464,7 +2464,7 @@ private:
 	}
 
 	void alphaOver(std::string texName, std::string overlayName) {
-		Texture* tex = TextureElements.getTexture(texName)->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+		Texture* tex = TextureElements.getTexture(texName)->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
 		Texture* overlay = TextureElements.getTexture(overlayName)->copyTexture(tex->texWidth, tex->texHeight);
 
 		filter alphaOver{ std::vector<Texture*>{tex, overlay}, new SIMPLEIPALPHAOVERSHADER };
