@@ -147,33 +147,14 @@ void Projector::calculateUVs() {
 	for (uint32_t i = 0; i != refMesh->vertices.size(); i++) {
 		glm::vec4 projectedPoint = proj * view * glm::vec4(refMesh->vertices[i].pos, 1.0f);
 		projectedUVs.push_back(glm::vec2(projectedPoint.x / (2.0f * projectedPoint.w) + 0.5f, 0.5f - projectedPoint.y / (2.0f * projectedPoint.w)));
-	}
-	for (uint32_t i = 0; i != refMesh->vertices.size(); i++) {
 		shellMesh->vertices.push_back(refMesh->vertices[i]);
 		shellMesh->vertices[i].pos = shellMesh->vertices[i].pos + shellMesh->vertices[i].normal * 0.0005f;
 		shellMesh->vertices[i].texCoord = projectedUVs[i];
 	}
 	for (uint32_t i = 0; i < refMesh->indices.size() - 2; i += 3) {
-		glm::vec3 n0 = shellMesh->vertices[refMesh->indices[i]].normal;
-		glm::vec3 n1 = shellMesh->vertices[refMesh->indices[i + 1]].normal;
-		glm::vec3 n2 = shellMesh->vertices[refMesh->indices[i + 2]].normal;
-		glm::vec3 avgNormal = (n0 + n1 + n2) / 3.0f;
-
-		glm::vec3 p0 = shellMesh->vertices[refMesh->indices[i]].pos;
-		glm::vec3 p1 = shellMesh->vertices[refMesh->indices[i + 1]].pos;
-		glm::vec3 p2 = shellMesh->vertices[refMesh->indices[i + 2]].pos;
-		glm::vec3 avgPos = (n0 + n1 + n2) / 3.0f;
-
-		glm::vec3 pointingVec = pos - avgPos;
-		float dp0 = glm::dot(n0, glm::normalize(pos - p0));
-		float dp1 = glm::dot(n1, glm::normalize(pos - p1));
-		float dp2 = glm::dot(n2, glm::normalize(pos - p2));
-
-		if (acos(abs(dp0)) <= 1.963f || acos(abs(dp1)) <= 1.963f || acos(abs(dp2)) <= 1.963f) {
-			shellMesh->indices.push_back(refMesh->indices[i]);
-			shellMesh->indices.push_back(refMesh->indices[i+1]);
-			shellMesh->indices.push_back(refMesh->indices[i+2]);
-		}
+		shellMesh->indices.push_back(refMesh->indices[i]);
+		shellMesh->indices.push_back(refMesh->indices[i + 1]);
+		shellMesh->indices.push_back(refMesh->indices[i + 2]);
 	}
 	shellMesh->setup();
 }
@@ -209,10 +190,14 @@ void Projector::reprojectImage() {
 	Texture* alphaTex = alphaWriter.drawMap(std::vector<Mesh*>{refMesh});
 	reprojector.cleanup();
 	alphaWriter.cleanup();
+	filter bakeAlpha{ std::vector<Texture*>{resTex, alphaTex}, new BAKEALPHASHADER };
+	bakeAlpha.filterImage();
+	bakeAlpha.cleanup();
 	if (saveTextureFnc != nullptr) {
 		saveTextureFnc(texName + std::string("_projected"), resTex);
-		saveTextureFnc(texName + std::string("_projectedAlpha"), alphaTex);
 	}
+	alphaTex->cleanup();
+	delete alphaTex;
 }
 
 void Projector::createReprojectionMesh() {

@@ -21,9 +21,9 @@ void main(){
 				if (distance <= minDistance){
 					vec4 readPix = imageLoad(image, ivec2(pixelCoords.x+x, pixelCoords.y+y));
 					if (readPix.w == 1.0f){
-						minDistance = distance;
 						nearestPixel = (distance<minDistance)?vec4(0,0,0,0):nearestPixel;
 						nearestPixel += vec4(readPix.rgb, 1.0);
+						minDistance = distance;
 					}
 				}
 			}
