@@ -11,6 +11,7 @@ layout(binding = 0, std140) uniform UniformBufferObject {
 } ubo;
 layout(binding = 1) uniform ProjectorPositionObject{
 	vec4 projectorPosition;
+	float maxAngle;
 } ppo;
 
 layout(location = 0) in vec3 inPosition;
@@ -22,6 +23,7 @@ layout(location = 1) out vec3 normalInterp;
 layout(location = 2) out vec2 fragTexCoord;
 layout(location = 3) out float w;
 layout(location = 4) out vec3 projectorPos;
+layout(location = 5) out float maxAngle;
 
 void main(){
 	gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
@@ -31,4 +33,5 @@ void main(){
 	w = gl_Position.w;
 	fragTexCoord = inTexCoord * w;
 	projectorPos = ppo.projectorPosition.xyz;
+	maxAngle = ppo.maxAngle;
 }

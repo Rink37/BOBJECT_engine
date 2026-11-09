@@ -264,7 +264,7 @@ public:
 		textureLL = textureAssets;
 	}
 
-	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc, std::function<void(UIItem*)> projectorFunc, std::function<void(UIItem*)> cancelProjectorFnc, std::function<void(UIItem*)> finishProjectorFnc, std::function<void(UIItem*)> bakeAlphaFunc, std::function<void(UIItem*)> alphaOverFunc) {
+	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc, std::function<void(UIItem*)> projectorFunc, std::function<void(UIItem*)> cancelProjectorFnc, std::function<void(UIItem*)> finishProjectorFnc, std::function<void(UIItem*)> bakeAlphaFunc, std::function<void(UIItem*)> alphaOverFunc, std::function<void(float)> updateProjectorAngleFunc) {
 		if (isSetup) {
 			return;
 		}
@@ -328,6 +328,10 @@ public:
 		projectorArrangement->addItem(getPtr(projectorLabel));
 		projectorArrangement->addItem(getPtr(projector));
 
+		Slider* angleSlider = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 4.0f, 1.0f);
+		angleSlider->setFloatCallback(updateProjectorAngleFunc, true);
+		angleSlider->setSlideValues(0.0f, glm::pi<float>(), glm::pi<float>() / 2.0f);
+
 		Button* cancelProjector = new Button(loadList->getMaterial("CancelBtnMat"), cancelProjectorFnc);
 		Button* finishProjector = new Button(loadList->getMaterial("FinishBtnMat"), finishProjectorFnc);
 
@@ -340,6 +344,7 @@ public:
 			mainArrangement->addItem(getPtr(functionDropdown));
 		}
 		mainArrangement->addItem(getPtr(projectorArrangement));
+		mainArrangement->addItem(getPtr(angleSlider));
 		mainArrangement->addItem(getPtr(projectorFinishBtns));
 		mainArrangement->addItem(getPtr(new spacer()));
 		mainArrangement->arrangeItems();
@@ -2228,6 +2233,12 @@ private:
 		inProjectorView = true;
 	}
 
+	void setProjectorAngle(float angle) {
+		if (projector != nullptr) {
+			projector->updateMaxAngle(angle);
+		}
+	}
+
 	void finishProjector(UIItem* owner) {
 		if (projector != nullptr) {
 			projector->reprojectImage();
@@ -2601,10 +2612,11 @@ private:
 		std::function<void(UIItem*)> projectFunc = std::bind(&Application::createProjectorObjPicker, this, std::placeholders::_1);
 		std::function<void(UIItem*)> cancelProjectorFunc = std::bind(&Application::cancelProjector, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishProjectorFunc = std::bind(&Application::finishProjector, this, std::placeholders::_1);
+		std::function<void(float)> updateProjectorAngle = std::bind(&Application::setProjectorAngle, this, std::placeholders::_1);
 
-		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc, cancelProjectorFunc, finishProjectorFunc, alphaBakeFunc, alphaOverFunc);
+		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc, cancelProjectorFunc, finishProjectorFunc, alphaBakeFunc, alphaOverFunc, updateProjectorAngle);
 
-		addWidget(&textureSettings);
+		addWidget(&textureSettings, true, true);
 	}
 
 	void updateTextureSettingsMenu() {
@@ -3001,8 +3013,9 @@ private:
 			std::function<void(UIItem*)> projectFunc = std::bind(&Application::createProjectorObjPicker, this, std::placeholders::_1);
 			std::function<void(UIItem*)> cancelProjectorFunc = std::bind(&Application::cancelProjector, this, std::placeholders::_1);
 			std::function<void(UIItem*)> finishProjectorFunc = std::bind(&Application::finishProjector, this, std::placeholders::_1);
+			std::function<void(float)> updateProjectorAngle = std::bind(&Application::setProjectorAngle, this, std::placeholders::_1);
 
-			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr, projectFunc, cancelProjectorFunc, finishProjectorFunc, nullptr, nullptr);
+			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr, projectFunc, cancelProjectorFunc, finishProjectorFunc, nullptr, nullptr, updateProjectorAngle);
 
 			addWidget(&textureSettings);
 		}

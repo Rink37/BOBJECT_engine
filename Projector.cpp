@@ -185,6 +185,17 @@ void Projector::createPositionBuffer() {
 	vkMapMemory(Engine::get()->device, positionBufferMemory, 0, bufferSize, 0, &positionBufferMapped);
 }
 
+void Projector::updateMaxAngle(float angle) {
+	if (angle < 0.0f) {
+		angle = 0.0f;
+	}
+	if (angle > glm::pi<float>()) {
+		angle = glm::pi<float>();
+	}
+	ppo.maxAngle = angle;
+	updatePositionBuffer();
+}
+
 void Projector::updatePositionBuffer() {
 	memcpy(positionBufferMapped, &ppo, sizeof(ppo));
 }

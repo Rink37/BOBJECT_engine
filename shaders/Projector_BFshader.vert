@@ -11,6 +11,7 @@ layout(binding = 0, std140) uniform UniformBufferObject {
 } ubo;
 layout(binding = 1) uniform ProjectorPositionObject{
 	vec4 projectorPosition;
+	float maxAngle;
 } ppo;
 
 layout(location = 0) in vec3 inPosition;
@@ -25,6 +26,7 @@ layout(location = 4) out vec3 lightPos;
 layout(location = 5) out vec3 cameraPos;
 layout(location = 6) out float w;
 layout(location = 7) out vec3 projectorPos;
+layout(location = 8) out float maxAngle;
 
 vec3 normalInterp;
 
@@ -39,4 +41,5 @@ void main(){
 	lightPos = ubo.lightPosition;
 	cameraPos = ubo.cameraPosition;
 	projectorPos = ppo.projectorPosition.xyz;
+	maxAngle = ppo.maxAngle;
 }

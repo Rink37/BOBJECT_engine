@@ -7,6 +7,7 @@
 
 struct ProjectorPositionObject {
 	alignas(16) glm::vec4 pos = glm::vec4(0.0f);
+	alignas(4) float maxAngle = 1.5708f;
 };
 
 class ProjectorObjPicker : public Widget {
@@ -131,6 +132,8 @@ public:
 
 	void createPositionBuffer();
 	void updatePositionBuffer();
+
+	void updateMaxAngle(float);
 
 	ProjectorPositionObject ppo{};
 
