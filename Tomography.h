@@ -337,7 +337,7 @@ public:
 		column->updateDisplay();
 
 		baseDiffuse = loadList->getPtr(textureLL->getTexture(texName)->copyImage(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1), "TomogRefTex");
-		baseDiffuse->textureImageView = baseDiffuse->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		baseDiffuse->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		baseDiffuse->getCVMat();
 
 		tomographer.setLoadList(loadList);

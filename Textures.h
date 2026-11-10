@@ -45,7 +45,7 @@ struct Texture {
 	
 	void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
 	void generateMipmaps();
-	VkImageView createImageView(VkImageAspectFlags);
+	void createImageView(VkImageAspectFlags);
 	
 	void getCVMat();
 	void destroyCVMat();
@@ -72,7 +72,7 @@ struct Texture {
 		createImage(VK_SAMPLE_COUNT_1_BIT, textureMemFlags);
 		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
 		generateMipmaps();
-		textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		cleaned = false;
 	}
 
@@ -202,7 +202,7 @@ public:
 			texMat = cv::Mat(96, 128, CV_8UC3);
 			texMat = cv::Scalar(255, 0, 255);
 			transitionMatToImg();
-			textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+			createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 			return;
 		}
 		else {

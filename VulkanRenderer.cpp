@@ -1386,7 +1386,7 @@ private:
 		mixedNorm->isNormal = true;
 		mixedNorm->normalType = resultNormalType;
 
-		mixedNorm->textureImageView = mixedNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		mixedNorm->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 		textureLL->replacePtr(mixedNorm, textureName);
 

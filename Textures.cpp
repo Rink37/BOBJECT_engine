@@ -71,14 +71,6 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
 
-	//if (textureLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-	//}
-	//else {
-		// This is a bit of a quick fix - I just need to add this transition to the list of valid transitions in the function 
-	//	transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, this->mipLevels);
-	//	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
-	//}
-
 	Texture* resolvedTexture = nullptr;
 
 	if (textureSamples != VK_SAMPLE_COUNT_1_BIT) {
@@ -257,7 +249,7 @@ Texture* Texture::copyTexture(){
 	}
 	copy->isNormal = isNormal;
 	copy->normalType = normalType;
-	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	return copy;
 }
 
@@ -272,7 +264,7 @@ Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsag
 	}
 	copy->isNormal = isNormal;
 	copy->normalType = normalType;
-	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	return copy;
 }
 
@@ -283,7 +275,7 @@ Texture* Texture::copyTexture(VkFormat format, VkImageLayout layout, VkImageUsag
 	}
 	copy->isNormal = isNormal;
 	copy->normalType = normalType;
-	copy->textureImageView = copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	copy->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	return copy;
 }
 
@@ -332,10 +324,10 @@ void imageTexture::createTextureImage(imageData* imgData) {
 }
 
 void imageTexture::createTextureImageView() {
-	textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
-VkImageView Texture::createImageView(VkImageAspectFlags aspectFlags) {
+void Texture::createImageView(VkImageAspectFlags aspectFlags) {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = textureImage;
@@ -348,12 +340,9 @@ VkImageView Texture::createImageView(VkImageAspectFlags aspectFlags) {
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 1;
 
-	VkImageView imageView;
-	if (vkCreateImageView(Engine::get()->device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+	if (vkCreateImageView(Engine::get()->device, &viewInfo, nullptr, &textureImageView) != VK_SUCCESS) {
 		throw runtime_error("failed to create texture image view!");
 	}
-
-	return imageView;
 }
 
 void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlags properties) {
@@ -793,7 +782,7 @@ void webcamTexture::recreateWebcamImage() {
 }
 
 void webcamTexture::createWebcamTextureImageView() {
-	textureImageView = createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void webcamTexture::asyncUpdate() {

@@ -264,11 +264,11 @@ public:
 		
 		refTex = textureLL->getTexture(rTexName);
 		if (refTex->textureImageView == nullptr) {
-			refTex->textureImageView = refTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+			refTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		}
 		targetTex = textureLL->getTexture(tTexName);
 		if (targetTex->textureImageView == nullptr) {
-			targetTex->textureImageView = targetTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+			targetTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		}
 		if (refTex == nullptr || targetTex == nullptr) {
 			return;

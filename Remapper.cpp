@@ -80,7 +80,7 @@ void RemapBackend::createReferenceMaps(Texture* refTex, Texture* targetTex) {
 		referenceKuwahara->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
 		filteredTarget = referenceKuwahara->filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, baseWidth, baseHeight);
-		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 		referenceKuwahara->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 		referenceKuwahara->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -155,7 +155,7 @@ void RemapBackend::createReferenceMaps(Texture* refTex, Texture* targetTex) {
 		coordReader->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
 		filteredTarget = coordReader->filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, baseWidth, baseHeight);
-		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 		coordReader->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 		coordReader->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -209,7 +209,7 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 		referenceKuwahara->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
 		filteredTarget = referenceKuwahara->filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, baseWidth, baseHeight);
-		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 		referenceKuwahara->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 		referenceKuwahara->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -253,7 +253,7 @@ void RemapBackend::performRemap(VkCommandBuffer commandBuffer) {
 		coordReader->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
 		filteredTarget = coordReader->filterTarget[0]->copyImage(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, baseWidth, baseHeight);
-		filteredTarget->textureImageView = filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		filteredTarget->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 		coordReader->filterTarget[0]->transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 		coordReader->filterTarget[0]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -430,7 +430,7 @@ void RemapUI::incrementMethod(UIItem*) {
 
 	targetTex = textureLL->getTexture(targetTexName);
 	if (targetTex->textureImageView == nullptr) {
-		targetTex->textureImageView = targetTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		targetTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	remapper = new RemapBackend();
@@ -462,7 +462,7 @@ void RemapUI::reduceMethod(UIItem*) {
 
 	targetTex = textureLL->getTexture(targetTexName);
 	if (targetTex->textureImageView == nullptr) {
-		targetTex->textureImageView = targetTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		targetTex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	remapper = new RemapBackend();

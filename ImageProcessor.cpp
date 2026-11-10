@@ -4,49 +4,17 @@ using namespace std;
 
 // https://github.com/ttddee/ShaderDev/blob/master/src/vulkanrenderer.cpp
 
-void filter::getFilterLayout(shaderData* sD) {
-	
-	IObindings = sD->IO;
-	
-	if (IObindings.size() == 0) {
-		throw runtime_error("The specified filter shader does not contain I/O information, so we cannot construct descriptor sets");
-	}
-
-	int inputCount = 0;
-	int outputCount = 0;
-	int inputImageCount = 0;
-	
-	for (size_t i = 0; i != IObindings.size(); i++) {
-		if (IObindings[i].direction) {
-			inputCount++;
-			if (IObindings[i].type == 0) {
-				inputImageCount++;
-			}
-		}
-		else {
-			outputCount++;
-			if (IObindings[i].type == 0) {
-				outputImageCount++;
-			}
-		}
-	}
-
-	if (source.size() < inputImageCount) {
-		throw runtime_error("The filter has not been given enough input images to perform filtering");
-	}
-}
-
 void filter::createDescriptorSetLayout() {
-	int descriptorElementCount = static_cast<int>(IObindings.size());
+	int descriptorElementCount = static_cast<int>(shader->IO.size());
 
 	unsigned int descriptorImageCount = 0;
 	unsigned int descriptorBufferCount = 0;
 
-	for (size_t i = 0; i != IObindings.size(); i++) {
-		if (IObindings[i].type == 0) {
+	for (size_t i = 0; i != shader->IO.size(); i++) {
+		if (shader->IO[i].type == 0) {
 			descriptorImageCount++;
 		}
-		else if (IObindings[i].type == 1) {
+		else if (shader->IO[i].type == 1) {
 			descriptorBufferCount++;
 		}
 	}
@@ -74,13 +42,13 @@ void filter::createDescriptorSetLayout() {
 
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
 	int index = 0;
-	for (size_t i = 0; i != IObindings.size(); i++) {
+	for (size_t i = 0; i != shader->IO.size(); i++) {
 		VkDescriptorSetLayoutBinding bindingElement{};
 		bindingElement.binding = index;
-		if (IObindings[i].type == 0) {
+		if (shader->IO[i].type == 0) {
 			bindingElement.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		}
-		else if (IObindings[i].type == 1) {
+		else if (shader->IO[i].type == 1) {
 			bindingElement.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		}
 		bindingElement.descriptorCount = 1;
@@ -98,7 +66,7 @@ void filter::createDescriptorSetLayout() {
 }
 
 void filter::createDescriptorSet() {
-	int descriptorElementCount = static_cast<int>(IObindings.size());
+	int descriptorElementCount = static_cast<int>(shader->IO.size());
 
 	VkDescriptorSetAllocateInfo descSetAllocInfo = {
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -118,15 +86,15 @@ void filter::createDescriptorSet() {
 	int index = 0;
 	int inputImageIndex = 0;
 	int outputImageIndex = 0;
-	for (size_t i = 0; i != IObindings.size(); i++) {
+	for (size_t i = 0; i != shader->IO.size(); i++) {
 		VkWriteDescriptorSet writeElement = {};
 		writeElement.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writeElement.dstSet = filterDescriptorSet;
 		writeElement.dstBinding = index;
 		writeElement.descriptorCount = 1;
-		if (IObindings[i].type == 0) {
+		if (shader->IO[i].type == 0) {
 			VkDescriptorImageInfo* imageInfo = new VkDescriptorImageInfo;
-			if (IObindings[i].direction) {
+			if (shader->IO[i].direction) {
 				imageInfo->imageView = source.at(inputImageIndex)->textureImageView;
 				inputImageIndex++;
 			}
@@ -141,8 +109,8 @@ void filter::createDescriptorSet() {
 			writeElement.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 			writeElement.pImageInfo = imageInfos[imageInfos.size() - 1];
 		}
-		else if (IObindings[i].type == 1) {
-			if (!IObindings[i].direction) {
+		else if (shader->IO[i].type == 1) {
+			if (!shader->IO[i].direction) {
 				throw runtime_error("IO map claims uniform buffer as output, which is an invalid specification.");
 			}
 
@@ -175,7 +143,7 @@ void filter::createDescriptorSet() {
 }
 
 void filter::updateDescriptorSet() {
-	int descriptorElementCount = static_cast<int>(IObindings.size());
+	int descriptorElementCount = static_cast<int>(shader->IO.size());
 	
 	std::vector<VkWriteDescriptorSet> descWrite = {};
 	std::vector<VkDescriptorImageInfo*> imageInfos = {};
@@ -183,15 +151,15 @@ void filter::updateDescriptorSet() {
 	int index = 0;
 	int inputImageIndex = 0;
 	int outputImageIndex = 0;
-	for (size_t i = 0; i != IObindings.size(); i++) {
+	for (size_t i = 0; i != shader->IO.size(); i++) {
 		VkWriteDescriptorSet writeElement = {};
 		writeElement.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writeElement.dstSet = filterDescriptorSet;
 		writeElement.dstBinding = index;
 		writeElement.descriptorCount = 1;
-		if (IObindings[i].type == 0) {
+		if (shader->IO[i].type == 0) {
 			VkDescriptorImageInfo* imageInfo = new VkDescriptorImageInfo;
-			if (IObindings[i].direction) {
+			if (shader->IO[i].direction) {
 				imageInfo->imageView = source.at(inputImageIndex)->textureImageView;
 				inputImageIndex++;
 			}
@@ -206,8 +174,8 @@ void filter::updateDescriptorSet() {
 			writeElement.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 			writeElement.pImageInfo = imageInfos[imageInfos.size() - 1];
 		}
-		else if (IObindings[i].type == 1) {
-			if (!IObindings[i].direction) {
+		else if (shader->IO[i].type == 1) {
+			if (!shader->IO[i].direction) {
 				throw runtime_error("IO map claims uniform buffer as output, which is an invalid specification.");
 			}
 
@@ -281,8 +249,8 @@ void filter::createFilterTarget() {
 	filterTarget[index]->textureFormat = targetFormat;
 	filterTarget[index]->textureUsage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Transfer dst might cause issues? I'm not sure yet
 	filterTarget[index]->textureLayout = VK_IMAGE_LAYOUT_GENERAL;
-	filterTarget[index]->texWidth = texWidth;
-	filterTarget[index]->texHeight = texHeight;
+	filterTarget[index]->texWidth = source[0]->texWidth;
+	filterTarget[index]->texHeight = source[0]->texHeight;
 	filterTarget[index]->mipLevels = 1;
 	filterTarget[index]->setup();
 
@@ -357,16 +325,6 @@ void filter::filterImage(VkCommandBuffer commandBuffer) {
 		0, nullptr,
 		1, &barrier
 	);
-}
-
-int countInputs(std::vector<shaderIOValue> IOValues) {
-	int count = 0;
-	for (size_t i = 0; i != IOValues.size(); i++) {
-		if (IOValues[i].direction) {
-			count++;
-		}
-	}
-	return count;
 }
 
 void postProcessFilter::setup(shaderData* sd, drawImage* target) {
@@ -495,7 +453,7 @@ void textureWriter::prepMap() {
 	map->colour->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	map->colour->createImage(sampleCount, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	map->colour->textureImageView = map->colour->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+	map->colour->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 	VkSubpassDependency dependency{};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -544,7 +502,7 @@ void textureWriter::prepMap() {
 			attachment->textureUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 			attachment->createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			attachment->textureImageView = attachment->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+			attachment->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		}
 		if (depth == nullptr) {
 			VkFormat depthFormat = Engine::get()->findDepthFormat();
@@ -559,7 +517,7 @@ void textureWriter::prepMap() {
 			depth->textureUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 			
 			depth->createImage(sampleCount, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			depth->textureImageView = depth->createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
+			depth->createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
 		}
 		depthAttachment.format = Engine::get()->findDepthFormat();
 		depthAttachment.samples = sampleCount;

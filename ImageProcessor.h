@@ -8,10 +8,6 @@
 #include"Meshes.h"
 #include"include/EdgeFill.h"
 
-#define OIOO 0
-#define TIOO 1
-#define THIOO 2
-
 class filter {
 public:
 	filter(std::vector<Texture*> srcs, shaderData* sd) {
@@ -19,15 +15,14 @@ public:
 			source.push_back(src);
 		}
 
-		getFilterLayout(sd);
-
-		texWidth = source[0]->texWidth;
-		texHeight = source[0]->texHeight;
+		shader = sd;
 
 		filterShaderModule = Engine::get()->createShaderModule(*(sd->compData));
 
-		for (int i = 0; i != outputImageCount; i++) {
-			createFilterTarget();
+		for (auto IOval: sd->IO) {
+			if (IOval.type == 0) {
+				createFilterTarget();
+			}
 		}
 		createDescriptorSetLayout();
 		createDescriptorSet();
@@ -40,17 +35,16 @@ public:
 			source.push_back(src);
 		}
 
-		getFilterLayout(sd);
-
-		texWidth = source[0]->texWidth;
-		texHeight = source[0]->texHeight;
+		shader = sd;
 
 		filterShaderModule = Engine::get()->createShaderModule(*(sd->compData));
 
 		targetFormat = outFormat;
 
-		for (int i = 0; i != outputImageCount; i++) {
-			createFilterTarget();
+		for (auto IOval : sd->IO) {
+			if (IOval.type == 0) {
+				createFilterTarget();
+			}
 		}
 		createDescriptorSetLayout();
 		createDescriptorSet();
@@ -63,19 +57,18 @@ public:
 			source.push_back(src);
 		}
 
-		getFilterLayout(sd);
+		shader = sd;
 
 		hasUniformBuffer = true;
 		this->bufferRef = buffer;
 		this->bufferSize = bufferSize;
 
-		texWidth = source[0]->texWidth;
-		texHeight = source[0]->texHeight;
-
 		filterShaderModule = Engine::get()->createShaderModule(*(sd->compData));
 
-		for (int i = 0; i != outputImageCount; i++) {
-			createFilterTarget();
+		for (auto IOval : sd->IO) {
+			if (IOval.type == 0) {
+				createFilterTarget();
+			}
 		}
 		createDescriptorSetLayout();
 		createDescriptorSet();
@@ -88,29 +81,26 @@ public:
 			source.push_back(src);
 		}
 
-		getFilterLayout(sd);
+		shader = sd;
 
 		hasUniformBuffer = true;
 		this->bufferRef = buffer;
 		this->bufferSize = bufferSize;
 
-		texWidth = source[0]->texWidth;
-		texHeight = source[0]->texHeight;
-
 		filterShaderModule = Engine::get()->createShaderModule(*(sd->compData));
 
 		targetFormat = outFormat;
 
-		for (int i = 0; i != outputImageCount; i++) {
-			createFilterTarget();
+		for (auto IOval : sd->IO) {
+			if (IOval.type == 0) {
+				createFilterTarget();
+			}
 		}
 		createDescriptorSetLayout();
 		createDescriptorSet();
 		createFilterPipelineLayout();
 		createFilterPipeline();
 	};
-
-	void getFilterLayout(shaderData*);
 
 	void filterImage();
 
@@ -134,20 +124,12 @@ public:
 		vkDestroyDescriptorSetLayout(Engine::get()->device, filterDescriptorSetLayout, nullptr);
 	};
 
-	std::vector<Texture*> source;
-	std::vector<Texture*> filterTarget;
-	std::vector<VkImageView> imageViews;
-	std::vector<VkFormat> originalFormats;
+	std::vector<Texture*> source{};
+	std::vector<Texture*> filterTarget{};
 
 	void updateDescriptorSet();
 
 private:
-	uint32_t outputImageCount = 0;
-
-	uint32_t filtertype = OIOO;
-	uint32_t texWidth = 0;
-	uint32_t texHeight = 0;
-
 	VkPipelineLayout filterPipelineLayout = nullptr;
 	VkPipeline filterPipeline = nullptr;
 
@@ -157,13 +139,14 @@ private:
 	VkDescriptorSetLayout filterDescriptorSetLayout = nullptr;
 	VkDescriptorSet filterDescriptorSet;
 
+	Material* filterMaterial = nullptr;
+	shaderData* shader = nullptr;
+
 	VkShaderModule filterShaderModule = nullptr; // Destroyed by default
 
 	bool hasUniformBuffer = false;
 	uint32_t bufferSize = 0;
 	VkBuffer bufferRef = nullptr;
-
-	std::vector<shaderIOValue> IObindings;
 
 	void createDescriptorSetLayout();
 	void createDescriptorSet();
