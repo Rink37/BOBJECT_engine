@@ -21,6 +21,7 @@
 #include"include/BakedImages.h"
 #include"include/CombineNorms.h"
 #include"include/BakeAlpha.h"
+#include"include/ExtractAlpha.h"
 #include"include/SimpleIPAlphaOver.h"
 
 using namespace cv;
@@ -264,7 +265,7 @@ public:
 		textureLL = textureAssets;
 	}
 
-	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc, std::function<void(UIItem*)> projectorFunc, std::function<void(UIItem*)> cancelProjectorFnc, std::function<void(UIItem*)> finishProjectorFnc, std::function<void(UIItem*)> bakeAlphaFunc, std::function<void(UIItem*)> alphaOverFunc, std::function<void(float)> updateProjectorAngleFunc) {
+	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc, std::function<void(UIItem*)> projectorFunc, std::function<void(UIItem*)> cancelProjectorFnc, std::function<void(UIItem*)> finishProjectorFnc, std::function<void(UIItem*)> bakeAlphaFunc, std::function<void(UIItem*)> alphaOverFunc, std::function<void(float)> updateProjectorAngleFunc, std::function<void(UIItem*)> extractAlphaMap) {
 		if (isSetup) {
 			return;
 		}
@@ -279,6 +280,7 @@ public:
 		functions.insert({ "Fix seams", fixSeamsFnc });
 		functions.insert({ "Bake alpha", bakeAlphaFunc });
 		functions.insert({ "Alpha over", alphaOverFunc });
+		functions.insert({ "Extract alpha", extractAlphaMap });
 
 		Texture* tex = textureLL->getTexture(texName);
 
@@ -305,6 +307,7 @@ public:
 		else {
 			functionNames.push_back("Bake alpha");
 			functionNames.push_back("Alpha over");
+			functionNames.push_back("Extract alpha");
 		}
 
 		Material* panelMat = loadList->replacePtr(new Material(tex, "UI"), "Image view");
@@ -2431,6 +2434,20 @@ private:
 		inWebSettings = false;
 	}
 
+	void alphaExtract(UIItem* owner) {
+		std::string texName = owner->Name;
+		Texture* tex = TextureElements.getTexture(texName)->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+
+		filter extractAlpha{ std::vector<Texture*>{tex}, new EXTRACTALPHASHADER };
+		extractAlpha.filterImage();
+		addTexture(texName + std::string("_alpha"), extractAlpha.filterTarget[0]->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1));
+		extractAlpha.cleanup();
+		tex->cleanup();
+		delete tex;
+
+		removeWidget(&amts);
+	}
+
 	void createAlphaMixTexSelector(UIItem* owner) {
 		std::function<void(std::string, std::string)> continueCallback = std::bind(&Application::alphaMix, this, std::placeholders::_1, std::placeholders::_2);
 		std::function<void(UIItem*)> cancelCallback = std::bind(&Application::destroyAlphaMixTexSelector, this, std::placeholders::_1);
@@ -2608,13 +2625,14 @@ private:
 	void openTextureSettingsMenu(UIItem* owner) {
 		std::function<void(UIItem*)> seamFixFunc = std::bind(&Application::openSeamObjPicker, this, std::placeholders::_1);
 		std::function<void(UIItem*)> alphaBakeFunc = std::bind(&Application::createAlphaMixTexSelector, this, std::placeholders::_1);
+		std::function<void(UIItem*)> alphaExtractFunc = std::bind(&Application::alphaExtract, this, std::placeholders::_1);
 		std::function<void(UIItem*)> alphaOverFunc = std::bind(&Application::createAlphaOverTexSelector, this, std::placeholders::_1);
 		std::function<void(UIItem*)> projectFunc = std::bind(&Application::createProjectorObjPicker, this, std::placeholders::_1);
 		std::function<void(UIItem*)> cancelProjectorFunc = std::bind(&Application::cancelProjector, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishProjectorFunc = std::bind(&Application::finishProjector, this, std::placeholders::_1);
 		std::function<void(float)> updateProjectorAngle = std::bind(&Application::setProjectorAngle, this, std::placeholders::_1);
 
-		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc, cancelProjectorFunc, finishProjectorFunc, alphaBakeFunc, alphaOverFunc, updateProjectorAngle);
+		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc, cancelProjectorFunc, finishProjectorFunc, alphaBakeFunc, alphaOverFunc, updateProjectorAngle, alphaExtractFunc);
 
 		addWidget(&textureSettings, true, true);
 	}
@@ -3015,7 +3033,7 @@ private:
 			std::function<void(UIItem*)> finishProjectorFunc = std::bind(&Application::finishProjector, this, std::placeholders::_1);
 			std::function<void(float)> updateProjectorAngle = std::bind(&Application::setProjectorAngle, this, std::placeholders::_1);
 
-			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr, projectFunc, cancelProjectorFunc, finishProjectorFunc, nullptr, nullptr, updateProjectorAngle);
+			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr, projectFunc, cancelProjectorFunc, finishProjectorFunc, nullptr, nullptr, updateProjectorAngle, nullptr);
 
 			addWidget(&textureSettings);
 		}
