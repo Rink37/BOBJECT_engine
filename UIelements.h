@@ -1392,8 +1392,8 @@ public:
 	}
 
 	void updateDisplay() {
-		W = static_cast<float>(Engine::get()->windowWidth);
-		H = static_cast<float>(Engine::get()->windowHeight);
+		W = static_cast<float>(Core::get()->windowWidth);
+		H = static_cast<float>(Core::get()->windowHeight);
 		this->calculateScreenPosition();
 		updateDisplayOnly();
 	}
@@ -1526,8 +1526,8 @@ private:
 
 	float a = 0.0f, b = 0.0f, e = 0.0f;
 
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
+	float W = static_cast<float>(Core::get()->windowWidth);
+	float H = static_cast<float>(Core::get()->windowHeight);
 
 	void calculateRadius() {
 		float theta = 0.0f; // Theta is measured from the major axis, not the vertical, whereas slideValue is measured from the vertical
@@ -1583,8 +1583,8 @@ public:
 	}
 
 	void calculateScreenPosition() {
-		float W = static_cast<float>(Engine::get()->windowWidth);
-		float H = static_cast<float>(Engine::get()->windowHeight);
+		float W = static_cast<float>(Core::get()->windowWidth);
+		float H = static_cast<float>(Core::get()->windowHeight);
 
 		this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // left position
 		this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // right position
@@ -1695,8 +1695,8 @@ public:
 			item->updateDisplay();
 		}
 		if (optionsArrangement != nullptr) {
-			float W = static_cast<float>(Engine::get()->windowWidth);
-			float H = static_cast<float>(Engine::get()->windowHeight);
+			float W = static_cast<float>(Core::get()->windowWidth);
+			float H = static_cast<float>(Core::get()->windowHeight);
 
 			float boxHeight = options.size() * (selectedTextBox->characterSize) / H;
 
@@ -1802,8 +1802,8 @@ private:
 	}
 
 	void openOptions(UIItem* owner) {
-		float W = static_cast<float>(Engine::get()->windowWidth);
-		float H = static_cast<float>(Engine::get()->windowHeight);
+		float W = static_cast<float>(Core::get()->windowWidth);
+		float H = static_cast<float>(Core::get()->windowHeight);
 
 		float boxHeight = options.size() * (selectedTextBox->characterSize) / H; // The box size in pixels
 		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx - 0.2f * extentx, -(posy + boxHeight + extenty), extentx * 0.8f, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
@@ -1982,8 +1982,8 @@ struct Widget {
 				measureWindowPositions();
 			}
 			if (thisBG != nullptr) {
-				float W = static_cast<float>(Engine::get()->windowWidth);
-				float H = static_cast<float>(Engine::get()->windowHeight);
+				float W = static_cast<float>(Core::get()->windowWidth);
+				float H = static_cast<float>(Core::get()->windowHeight);
 				
 				float posx = (windowPositions[1] / W + windowPositions[0] / W) - 1.0f;
 				float extentx = (windowPositions[1] / W - 0.5f) * 2.0f - posx + 0.02f;

@@ -40,8 +40,8 @@ static void bufferPosition(float &extentx, float &extenty, float &posx, float &p
 }
 
 void UIItem::calculateScreenPosition() {
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
+	float W = static_cast<float>(Core::get()->windowWidth);
+	float H = static_cast<float>(Core::get()->windowHeight);
 
 	extenty = extentx * sqAxisRatio * W / H;
 
@@ -59,8 +59,8 @@ void UIItem::calculateScreenPosition() {
 }
 
 void DropdownMenu::calculateScreenPosition() {
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
+	float W = static_cast<float>(Core::get()->windowWidth);
+	float H = static_cast<float>(Core::get()->windowHeight);
 
 	extenty = extentx * sqAxisRatio * W / H;
 
@@ -99,8 +99,8 @@ void TextBox::updateDisplay() {
 	this->calculateScreenPosition();
 	//this->setHeight(this->image->zp);
 	
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
+	float W = static_cast<float>(Core::get()->windowWidth);
+	float H = static_cast<float>(Core::get()->windowHeight);
 
 	float characterWidth = static_cast<float>(characterSize) / W;
 	float characterHeight = static_cast<float>(characterSize) / H;
@@ -286,8 +286,8 @@ void TextBox::updateDisplay() {
 }
 
 void TextBox::calculateScreenPosition() {
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
+	float W = static_cast<float>(Core::get()->windowWidth);
+	float H = static_cast<float>(Core::get()->windowHeight);
 
 	float bufferRatioX, bufferRatioY;
 
@@ -303,8 +303,8 @@ void TextBox::calculateScreenPosition() {
 }
 
 void Arrangement::calculateScreenPosition() {
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
+	float W = static_cast<float>(Core::get()->windowWidth);
+	float H = static_cast<float>(Core::get()->windowHeight);
 
 	float bufferRatioX, bufferRatioY;
 
@@ -329,8 +329,8 @@ void Arrangement::updateDisplay() {
 }
 
 void Arrangement::getItemProperties(float& totalArea, int& numSpacers, float& buffer, std::vector<float>& extents) {
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
+	float W = static_cast<float>(Core::get()->windowWidth);
+	float H = static_cast<float>(Core::get()->windowHeight);
 
 	for (size_t i = 0; i != Items.size(); i++) {
 		if (Items[i]->isSpacer()) {
@@ -484,8 +484,8 @@ void Arrangement::arrangeItems() {
 
 		// Finally for all items we calculate their positions on the screen and their sizes 
 
-		float W = static_cast<float>(Engine::get()->windowWidth);
-		float H = static_cast<float>(Engine::get()->windowHeight);
+		float W = static_cast<float>(Core::get()->windowWidth);
+		float H = static_cast<float>(Core::get()->windowHeight);
 
 		calculateVPositions(buffer, spacerSize, scaleFactor, extents, remainingHeight, W / H);
 	}
@@ -652,8 +652,8 @@ bool Arrangement::checkForSpace(UIItem* checkItem) {
 }
 
 void Grid::calculateScreenPosition() {
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
+	float W = static_cast<float>(Core::get()->windowWidth);
+	float H = static_cast<float>(Core::get()->windowHeight);
 
 	float bufferRatioX, bufferRatioY;
 
@@ -682,8 +682,8 @@ void Grid::arrangeItems() {
 	float subExtentx = 0.0f;
 	float subExtenty = 0.0f;
 
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
+	float W = static_cast<float>(Core::get()->windowWidth);
+	float H = static_cast<float>(Core::get()->windowHeight);
 
 	if (orientation == ORIENT_HORIZONTAL) {
 		mainArrangement = new Arrangement(ORIENT_VERTICAL, this->posx, -1*this->posy, this->extentx, this->extenty, this->spacing, ARRANGE_START);
@@ -724,8 +724,8 @@ void Grid::arrangeItems() {
 }
 
 void Slider::calculateScreenPosition() {
-	float W = static_cast<float>(Engine::get()->windowWidth);
-	float H = static_cast<float>(Engine::get()->windowHeight);
+	float W = static_cast<float>(Core::get()->windowWidth);
+	float H = static_cast<float>(Core::get()->windowHeight);
 
 	float bufferRatioX, bufferRatioY;
 
@@ -794,8 +794,8 @@ void Slider::calculateSlideValue(double mouseX, double mouseY) {
 }
 
 void Rotator::calculateScreenPosition() {
-	W = static_cast<float>(Engine::get()->windowWidth);
-	H = static_cast<float>(Engine::get()->windowHeight);
+	W = static_cast<float>(Core::get()->windowWidth);
+	H = static_cast<float>(Core::get()->windowHeight);
 
 	float bufferRatioX, bufferRatioY;
 

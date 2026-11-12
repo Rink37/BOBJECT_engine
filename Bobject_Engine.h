@@ -48,22 +48,21 @@
 #include"include/Projector_Background.h"
 #include"include/SAC_BF.h"
 #include"include/SAC_Flat.h"
+#include"Bobject_Core.h"
 
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
+//#include"Textures.h"
+//#include"Materials.h"
+//#include"Meshes.h"
 
-const int MAX_FRAMES_IN_FLIGHT = 2;
+//const int MAX_FRAMES_IN_FLIGHT = 2;
 
-const uint32_t WIDTH = 1920;
-const uint32_t HEIGHT = 1080;
+//const uint32_t WIDTH = 1920;
+//const uint32_t HEIGHT = 1080;
 
-const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
-const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+//const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+//const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-VkResult CreateDebugUtilsMessengerEXT(VkInstance, const VkDebugUtilsMessengerCreateInfoEXT*, const VkAllocationCallbacks*, VkDebugUtilsMessengerEXT*);
+//VkResult CreateDebugUtilsMessengerEXT(VkInstance, const VkDebugUtilsMessengerCreateInfoEXT*, const VkAllocationCallbacks*, VkDebugUtilsMessengerEXT*);
 
 struct Vertex {
 	glm::vec3 pos;
@@ -210,30 +209,30 @@ namespace std {
 	};
 }
 
-struct QueueFamilyIndices {
-	std::optional<uint32_t> graphicsFamily;
-	std::optional<uint32_t> presentFamily;
-	std::optional<uint32_t> computeFamily;
+//struct QueueFamilyIndices {
+//	std::optional<uint32_t> graphicsFamily;
+//	std::optional<uint32_t> presentFamily;
+//	std::optional<uint32_t> computeFamily;
 
-	bool isComplete() const {
-		return graphicsFamily.has_value() && presentFamily.has_value() && computeFamily.has_value();
-	}
-};
+//	bool isComplete() const {
+//		return graphicsFamily.has_value() && presentFamily.has_value() && computeFamily.has_value();
+//	}
+//};
 
-struct SwapChainSupportDetails {
-	VkSurfaceCapabilitiesKHR capabilities{};
-	std::vector<VkSurfaceFormatKHR> formats;
-	std::vector<VkPresentModeKHR> presentModes;
-};
+//struct SwapChainSupportDetails {
+//	VkSurfaceCapabilitiesKHR capabilities{};
+//	std::vector<VkSurfaceFormatKHR> formats;
+//	std::vector<VkPresentModeKHR> presentModes;
+//};
 
 struct UniformBufferObject {
-	alignas(16) glm::mat4 model; // Size = 64
-	alignas(16) glm::mat4 view; // Size = 64
-	alignas(16) glm::mat4 proj; // Size = 64
-	alignas(16) glm::vec4 UVdistort; // Size = 16
-	alignas(16) glm::vec3 backgroundColour; // Size = 12
-	alignas(16) glm::vec3 lightPosition; // Size = 12
-	alignas(16) glm::vec3 viewPosition; // Size = 12
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
+	alignas(16) glm::vec4 UVdistort;
+	alignas(16) glm::vec3 backgroundColour;
+	alignas(16) glm::vec3 lightPosition;
+	alignas(16) glm::vec3 viewPosition;
 };
 
 struct ColourSchemeObject {
@@ -241,7 +240,6 @@ struct ColourSchemeObject {
 	alignas(16) glm::vec3 Secondary;
 	alignas(16) glm::vec3 Tertiary;
 };
-
 
 class Engine {
 public:
@@ -260,10 +258,10 @@ public:
 	GLFWwindow* window = nullptr;
 	uint32_t pipelineindex = 1;
 
-	int windowWidth = WIDTH;
-	int windowHeight = HEIGHT;
+	//int windowWidth = WIDTH;
+	//int windowHeight = HEIGHT;
 
-	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+	//VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkDevice device = VK_NULL_HANDLE;
 
 	VkCommandPool commandPool = nullptr;
@@ -293,8 +291,8 @@ public:
 
 	bool framebufferResized = false;
 
-	void initWindow(const char*);
-	void initVulkan();
+	//void initWindow(const char*);
+	void initEngine(std::string);
 
 	void cleanup();
 
@@ -319,11 +317,11 @@ public:
 
 	VkShaderModule createShaderModule(const std::vector<unsigned char>&) const;
 
-	const char* appName = "BOBJECT_engine app";
+	//const char* appName = "BOBJECT_engine app";
 
-	VkSampleCountFlagBits getMaxUseableSampleCount() const;
+	//VkSampleCountFlagBits getMaxUseableSampleCount() const;
 
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice) const;
+	//QueueFamilyIndices findQueueFamilies(VkPhysicalDevice) const;
 
 	uint32_t currentFrame = 0;
 
@@ -353,11 +351,11 @@ private:
 
 	uint32_t imageCount = 0;
 
-	VkInstance instance = nullptr;
-	VkDebugUtilsMessengerEXT debugMessenger = nullptr;
-	VkSurfaceKHR surface = nullptr;
+	//VkInstance instance = nullptr;
+	//VkDebugUtilsMessengerEXT debugMessenger = nullptr;
+	//VkSurfaceKHR surface = nullptr;
 
-	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+	//VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
 	std::vector<VkDeviceMemory> uniformBuffersMemory = {};
 	VkDeviceMemory colourBufferMemory = nullptr;
@@ -366,14 +364,14 @@ private:
 	VkDeviceMemory depthImageMemory = nullptr;
 	VkImageView depthImageView = nullptr;
 
-	static void framebufferResizeCallback(GLFWwindow*, int, int);
+	//static void framebufferResizeCallback(GLFWwindow*, int, int);
 
-	bool checkValidationLayerSupport();
-	void createInstance();
-	void setupDebugMessenger();
-	void createSurface();
-	void pickPhysicalDevice();
-	void createLogicalDevice();
+	//bool checkValidationLayerSupport();
+	//void createInstance();
+	//void setupDebugMessenger();
+	//void createSurface();
+	//void pickPhysicalDevice();
+	//void createLogicalDevice();
 	void createSwapChain();
 	void createImageViews();
 	void createGraphicsPipelines();
@@ -388,31 +386,29 @@ private:
 
 	void cleanupSwapChain();
 
-	std::vector<const char*> getRequiredExtensions();
+	//std::vector<const char*> getRequiredExtensions();
 
-	void DestroyDebugUtilsMessengerEXT(VkInstance, VkDebugUtilsMessengerEXT, const VkAllocationCallbacks*);
+	//void DestroyDebugUtilsMessengerEXT(VkInstance, VkDebugUtilsMessengerEXT, const VkAllocationCallbacks*);
 
 	VkFormat findSupportedFormat(const std::vector<VkFormat>&, VkImageTiling, VkFormatFeatureFlags) const;
 
-	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT&);
+	//void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT&);
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT messageType,
-		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData
-	) {
-		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-		return VK_FALSE;
-	}
+	//static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+	//	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	//	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	//	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	//	void* pUserData
+	//) {
+	//	std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+	//	return VK_FALSE;
+	//}
 
-	uint32_t getDeviceSuitability(VkPhysicalDevice);
-
-	bool checkDeviceExtensionSupport(VkPhysicalDevice);
-
-	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice) const;
+	//uint32_t getDeviceSuitability(VkPhysicalDevice);
+	//bool checkDeviceExtensionSupport(VkPhysicalDevice);
+	//SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice) const;
+	
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>&);
-
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>&);
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR&) const;
 };

@@ -33,12 +33,12 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 		mipLevels = static_cast<uint32_t>(floor(log2(max(texWidth, texHeight)))) + 1;
 	}
 	
-	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProps);
+	vkGetPhysicalDeviceFormatProperties(Core::getPhysicalDevice(), textureFormat, &formatProps);
 	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
 		supportsBlit = false;
 	}
 
-	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProps);
+	vkGetPhysicalDeviceFormatProperties(Core::getPhysicalDevice(), textureFormat, &formatProps);
 	if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
 		//std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit to copy this image!" << std::endl;
 		supportsBlit = false;
@@ -554,7 +554,7 @@ void Texture::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, 
 
 void Texture::generateMipmaps() {
 	VkFormatProperties formatProperties;
-	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProperties);
+	vkGetPhysicalDeviceFormatProperties(Core::getPhysicalDevice(), textureFormat, &formatProperties);
 
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
 		throw runtime_error("texture image format does not support linear blitting!");
@@ -647,13 +647,13 @@ void Texture::getCVMat() {
 
 	VkFormatProperties formatProps;
 
-	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProps);
+	vkGetPhysicalDeviceFormatProperties(Core::getPhysicalDevice(), textureFormat, &formatProps);
 	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
 		//std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
 		supportsBlit = false;
 	}
 
-	vkGetPhysicalDeviceFormatProperties(Engine::get()->physicalDevice, textureFormat, &formatProps);
+	vkGetPhysicalDeviceFormatProperties(Core::getPhysicalDevice(), textureFormat, &formatProps);
 	if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
 		//std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit when fetching CV Mat!" << std::endl;
 		supportsBlit = false;

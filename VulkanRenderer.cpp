@@ -1916,8 +1916,8 @@ private:
 class Application {
 public:
 	void run() {
-		engine->initWindow("BOBERT_TradPainter");
-		engine->initVulkan();
+		//engine->initWindow("BOBERT_TradPainter");
+		engine->initEngine("BOBERT_TradPainter");
 		keyBinds.initCallbacks(engine->window);
 		mouseManager.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
@@ -2021,12 +2021,11 @@ private:
 	bool tomogActive = false;
 
 	bool showWireframe = true;
-
 	bool inWebSettings = false;
 
 	vector<StaticObject> staticObjects = {};
 	PlaneObject* tomographyPlane = nullptr;
-	std::map<std::string, std::vector<uint32_t>> objectPipelines{};
+	std::map<VkPipeline*, std::vector<uint32_t>> objectPipelines{};
 	vector<uint32_t> visibleObjects = {};
 
 	bool lit = true;
@@ -2379,11 +2378,12 @@ private:
 		for (uint32_t i = 0; i != staticObjects.size(); i++) {
 			if (staticObjects[i].isVisible) {
 				visibleObjects.push_back(i);
-				if (objectPipelines.count(staticObjects[i].shaderName) == 0) {
-					objectPipelines.insert({ staticObjects[i].shaderName, std::vector<uint32_t>{i} });
+				VkPipeline* pipeline = currentPass->GraphicsPipelines[currentPass->pipelineMap.at(staticObjects[i].shaderName)];
+				if (objectPipelines.count(pipeline) == 0) {
+					objectPipelines.insert({ pipeline, std::vector<uint32_t>{i} });
 				}
 				else {
-					objectPipelines.at(staticObjects[i].shaderName).push_back(i);
+					objectPipelines.at(pipeline).push_back(i);
 				}
 			}
 		}
@@ -3162,8 +3162,8 @@ private:
 
 		VkResult result = engine->submitAndPresentFrame(imageIndex);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine->framebufferResized) {
-			engine->framebufferResized = false;
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || Core::get()->framebufferResized) {
+			Core::get()->framebufferResized = false;
 
 			if (!glfwGetWindowAttrib(engine->window, GLFW_ICONIFIED)) {
 				for (size_t i = 0; i != widgets.size(); i++) {
@@ -3204,7 +3204,7 @@ private:
 			textureSettings.getUVPos(ubo.UVdistort);
 		}
 		else if (projector != nullptr && debugView) {
-			float projectedWidth = static_cast<float>(static_cast<float>(Engine::get()->windowHeight) / static_cast<float>(projector->tex->texHeight) * projector->tex->texWidth) / static_cast<float>(Engine::get()->windowWidth);
+			float projectedWidth = static_cast<float>(static_cast<float>(Core::get()->windowHeight) / static_cast<float>(projector->tex->texHeight) * projector->tex->texWidth) / static_cast<float>(Core::get()->windowWidth);
 			ubo.UVdistort[0] = 2.0f * projectedWidth;
 			ubo.UVdistort[1] = -1.0f * projectedWidth;
 			ubo.UVdistort[2] = 2.0f;
@@ -3282,8 +3282,8 @@ private:
 		}
 
 		if (viewIndex == 1 && lit) {
-			for (auto elem : objectPipelines) {
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(elem.first)]);
+			for (std::pair<VkPipeline*, std::vector<uint32_t>> elem : objectPipelines) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *elem.first);
 				for (uint32_t i : elem.second) {
 					Material* mat = staticObjects[i].mat;
 					engine->drawObject(commandBuffer, staticObjects[i].mesh->vertexBuffer, staticObjects[i].mesh->indexBuffer, mat->pipelineLayout, mat->descriptorSets[currentFrame], static_cast<uint32_t>(staticObjects[i].mesh->indices.size()));
@@ -3330,6 +3330,7 @@ private:
 	}
 };
 
+Core* Core::coreinstance = nullptr;
 session* session::sessionInstance = nullptr;
 webcamTexture* webcamTexture::winstance = nullptr;
 Engine* Engine::enginstance = nullptr;
