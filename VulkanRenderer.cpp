@@ -3147,8 +3147,8 @@ private:
 			delete projector;
 		}
 
-		renderImage.cleanup(Engine::get()->device);
-		renderGP.cleanup(Engine::get()->device);
+		renderImage.cleanup(Core::getDevice());
+		renderGP.cleanup(Core::getDevice());
 
 		engine->cleanup(); 
 	}

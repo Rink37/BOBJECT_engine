@@ -71,6 +71,8 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
 
+	VkDevice device = Core::getDevice();
+
 	Texture* resolvedTexture = nullptr;
 
 	if (textureSamples != VK_SAMPLE_COUNT_1_BIT) {
@@ -88,15 +90,15 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 		VkCommandBuffer resolveCmd = Engine::get()->beginSingleTimeCommands();
 
-		VkOffset3D srcResolveSize;
+		VkOffset3D srcResolveSize{};
 		srcResolveSize.x = 0;
 		srcResolveSize.y = 0;
 		srcResolveSize.z = 0;
-		VkOffset3D dstResolveSize;
+		VkOffset3D dstResolveSize{};
 		dstResolveSize.x = 0;
 		dstResolveSize.y = 0;
 		dstResolveSize.z = 0;
-		VkExtent3D resolveExtent;
+		VkExtent3D resolveExtent{};
 		resolveExtent.width = texWidth;
 		resolveExtent.height = texHeight;
 		resolveExtent.depth = 1;
@@ -124,7 +126,7 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 
-	if (vkAllocateCommandBuffers(Engine::get()->device, &allocInfo, &copyCmd) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(device, &allocInfo, &copyCmd) != VK_SUCCESS) {
 		throw runtime_error("failed to allocate command buffer!");
 	}
 
@@ -138,11 +140,11 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	if (supportsBlit)
 	{
-		VkOffset3D srcBlitSize;
+		VkOffset3D srcBlitSize{};
 		srcBlitSize.x = texWidth;
 		srcBlitSize.y = texHeight;
 		srcBlitSize.z = 1;
-		VkOffset3D dstBlitSize;
+		VkOffset3D dstBlitSize{};
 		dstBlitSize.x = width;
 		dstBlitSize.y = height;
 		dstBlitSize.z = 1;
@@ -217,17 +219,17 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	VkFenceCreateInfo fenceInfo = {};
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
-	vkCreateFence(Engine::get()->device, &fenceInfo, nullptr, &copyFence);
+	vkCreateFence(device, &fenceInfo, nullptr, &copyFence);
 
 	vkQueueSubmit(Engine::get()->graphicsQueue, 1, &submitInfo, copyFence);
 
-	if (vkWaitForFences(Engine::get()->device, 1, &copyFence, VK_TRUE, UINT64_MAX) == VK_TIMEOUT) {
+	if (vkWaitForFences(device, 1, &copyFence, VK_TRUE, UINT64_MAX) == VK_TIMEOUT) {
 		throw runtime_error("Fence timeout");
 	};
 
-	vkFreeCommandBuffers(Engine::get()->device, Engine::get()->commandPool, 1, &copyCmd);
+	vkFreeCommandBuffers(device, Engine::get()->commandPool, 1, &copyCmd);
 
-	vkDestroyFence(Engine::get()->device, copyFence, nullptr);
+	vkDestroyFence(device, copyFence, nullptr);
 
 	if (mipLevels == 1) {
 		transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, mipLevels);
@@ -304,21 +306,15 @@ void imageTexture::createTextureImage(imageData* imgData) {
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
-
-	Engine::get()->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-	void* data;
-	vkMapMemory(Engine::get()->device, stagingBufferMemory, 0, imageSize, 0, &data);
-	memcpy(data, imgData->Bytes, static_cast<size_t>(imageSize));
-	vkUnmapMemory(Engine::get()->device, stagingBufferMemory);
+	VKMem::createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+	VKMem::copyDataToBuffer(stagingBuffer, stagingBufferMemory, const_cast<unsigned char*>(imgData->Bytes), imageSize);
 
 	createImage(VK_SAMPLE_COUNT_1_BIT, textureMemFlags);
 
 	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);
-	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
+	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
 
 	generateMipmaps();
 }
@@ -340,13 +336,14 @@ void Texture::createImageView(VkImageAspectFlags aspectFlags) {
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 1;
 
-	if (vkCreateImageView(Engine::get()->device, &viewInfo, nullptr, &textureImageView) != VK_SUCCESS) {
+	if (vkCreateImageView(Core::getDevice(), &viewInfo, nullptr, &textureImageView) != VK_SUCCESS) {
 		throw runtime_error("failed to create texture image view!");
 	}
 }
 
 void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlags properties) {
-	
+	VkDevice device = Core::getDevice();
+
 	textureSamples = numSamples;
 
 	VkImageCreateInfo imageInfo{};
@@ -366,23 +363,23 @@ void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlag
 
 	imageInfo.samples = textureSamples;
 
-	if (vkCreateImage(Engine::get()->device, &imageInfo, nullptr, &textureImage) != VK_SUCCESS) {
+	if (vkCreateImage(device, &imageInfo, nullptr, &textureImage) != VK_SUCCESS) {
 		throw runtime_error("failed to create image!");
 	}
 
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(Engine::get()->device, textureImage, &memRequirements);
+	vkGetImageMemoryRequirements(device, textureImage, &memRequirements);
 
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
 	allocInfo.memoryTypeIndex = Engine::get()->findMemoryType(memRequirements.memoryTypeBits, properties);
 
-	if (vkAllocateMemory(Engine::get()->device, &allocInfo, nullptr, &textureImageMemory) != VK_SUCCESS) {
+	if (vkAllocateMemory(device, &allocInfo, nullptr, &textureImageMemory) != VK_SUCCESS) {
 		throw runtime_error("failed to allocate image memory!");
 	}
 
-	vkBindImageMemory(Engine::get()->device, textureImage, textureImageMemory, 0);
+	vkBindImageMemory(device, textureImage, textureImageMemory, 0);
 
 	cleaned = false;
 }
@@ -552,7 +549,7 @@ void Texture::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, 
 	Engine::get()->endSingleTimeCommands(commandBuffer);
 }
 
-void Texture::generateMipmaps() {
+void Texture::generateMipmaps() const {
 	VkFormatProperties formatProperties;
 	vkGetPhysicalDeviceFormatProperties(Core::getPhysicalDevice(), textureFormat, &formatProperties);
 
@@ -643,17 +640,20 @@ void Texture::getCVMat() {
 	// Retrieves an openCV Mat type image from the vulkan image of this texture struct
 	// see https://github.com/SaschaWillems/Vulkan/blob/master/examples/screenshot/screenshot.cpp 
 
+	VkDevice device = Core::getDevice();
+	VkPhysicalDevice physicalDevice = Core::getPhysicalDevice();
+
 	bool supportsBlit = true;
 
 	VkFormatProperties formatProps;
 
-	vkGetPhysicalDeviceFormatProperties(Core::getPhysicalDevice(), textureFormat, &formatProps);
+	vkGetPhysicalDeviceFormatProperties(physicalDevice, textureFormat, &formatProps);
 	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
 		//std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
 		supportsBlit = false;
 	}
 
-	vkGetPhysicalDeviceFormatProperties(Core::getPhysicalDevice(), textureFormat, &formatProps);
+	vkGetPhysicalDeviceFormatProperties(physicalDevice, textureFormat, &formatProps);
 	if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
 		//std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit when fetching CV Mat!" << std::endl;
 		supportsBlit = false;
@@ -663,10 +663,10 @@ void Texture::getCVMat() {
 
 	VkImageSubresource subResource{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
 	VkSubresourceLayout subResourceLayout;
-	vkGetImageSubresourceLayout(Engine::get()->device, dst->textureImage, &subResource, &subResourceLayout);
+	vkGetImageSubresourceLayout(device, dst->textureImage, &subResource, &subResourceLayout);
 
 	const char* data{};
-	vkMapMemory(Engine::get()->device, dst->textureImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
+	vkMapMemory(device, dst->textureImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
 	data += subResourceLayout.offset;
 
 	bool colorSwizzle = false;
@@ -720,21 +720,15 @@ void Texture::transitionMatToImg() {
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
-
-	Engine::get()->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-	void* data;
-	vkMapMemory(Engine::get()->device, stagingBufferMemory, 0, imageSize, 0, &data);
-	memcpy(data, continuousRGBA.ptr(), static_cast<size_t>(imageSize));
-	vkUnmapMemory(Engine::get()->device, stagingBufferMemory);
+	VKMem::createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+	VKMem::copyDataToBuffer(stagingBuffer, stagingBufferMemory, continuousRGBA.ptr(), static_cast<VkDeviceSize>(imageSize));
 
 	createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 	
-	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);
-	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
+	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
 
 	if (mipLevels != 1) {
 		generateMipmaps();
@@ -764,9 +758,9 @@ void webcamTexture::createWebcamImage() {
 
 	imageSize = webCam->webcamFrame.total() * webCam->webcamFrame.elemSize();
 
-	Engine::get()->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, textureBuffer, textureBufferMemory);
+	VKMem::createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, textureBuffer, textureBufferMemory);
 
-	vkMapMemory(Engine::get()->device, textureBufferMemory, 0, imageSize, 0, &tBuffer);
+	vkMapMemory(Core::getDevice(), textureBufferMemory, 0, imageSize, 0, &tBuffer);
 	memcpy(tBuffer, webCam->webcamFrame.ptr(), static_cast<size_t>(imageSize));
 
 	createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -775,7 +769,7 @@ void webcamTexture::createWebcamImage() {
 }
 
 void webcamTexture::recreateWebcamImage() {
-	vkDeviceWaitIdle(Engine::get()->device);
+	vkDeviceWaitIdle(Core::getDevice());
 	cleanupImage();
 	createWebcamImage();
 	createWebcamTextureImageView();

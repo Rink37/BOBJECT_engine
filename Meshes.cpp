@@ -5,47 +5,31 @@
 using namespace std;
 
 void Mesh::createVertexBuffer() {
-	Engine* engine = Engine::get();
-
 	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
-	engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+	VKMem::copyDataToBuffer(stagingBuffer, stagingBufferMemory, vertices.data(), bufferSize);
+	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
-	void* data;
-	vkMapMemory(engine->device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, vertices.data(), (size_t)bufferSize);
-	vkUnmapMemory(engine->device, stagingBufferMemory);
+	Engine::get()->copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
-	engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-
-	engine->copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-	vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
-	vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
+	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
 }
 
 void Mesh::createIndexBuffer() {
-	Engine* engine = Engine::get();
-
 	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
-	engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+	VKMem::copyDataToBuffer(stagingBuffer, stagingBufferMemory, indices.data(), bufferSize);
+	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
 
-	void* data;
-	vkMapMemory(engine->device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, indices.data(), (size_t)bufferSize);
-	vkUnmapMemory(engine->device, stagingBufferMemory);
+	Engine::get()->copyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
-	engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
-
-	engine->copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-	vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
-	vkFreeMemory(engine->device, stagingBufferMemory, nullptr);
+	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
 }
 
 const void Mesh::cleanup() {
@@ -53,15 +37,12 @@ const void Mesh::cleanup() {
 		return;
 	}
 
-	Engine* engine = Engine::get();
+	VkDevice device = Core::getDevice();
 
-	vkDeviceWaitIdle(engine->device);
+	vkDeviceWaitIdle(device);
 
-	vkDestroyBuffer(engine->device, indexBuffer, nullptr);
-	vkFreeMemory(engine->device, indexBufferMemory, nullptr);
-
-	vkDestroyBuffer(engine->device, vertexBuffer, nullptr);
-	vkFreeMemory(engine->device, vertexBufferMemory, nullptr);
+	VKMem::freeBuffer(indexBuffer, indexBufferMemory);
+	VKMem::freeBuffer(vertexBuffer, vertexBufferMemory);
 
 	cleaned = true;
 }
@@ -110,26 +91,19 @@ void UIMesh::UpdateVertices(float xp, float yp, float xsc, float ysc, float zp) 
 }
 
 void UIMesh::createVertexBuffer() {
-
 	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
-	Engine::get()->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-	void* data;
-	vkMapMemory(Engine::get()->device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, vertices.data(), (size_t)bufferSize);
-	vkUnmapMemory(Engine::get()->device, stagingBufferMemory);
-
-	Engine::get()->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBuffer, vertexBufferMemory);
+	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+	VKMem::copyDataToBuffer(stagingBuffer, stagingBufferMemory, vertices.data(), bufferSize);
+	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBuffer, vertexBufferMemory);
 
 	Engine::get()->copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
-	vkMapMemory(Engine::get()->device, vertexBufferMemory, 0, bufferSize, 0, &vBuffer);
+	vkMapMemory(Core::getDevice(), vertexBufferMemory, 0, bufferSize, 0, &vBuffer);
 
-	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);
-	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
+	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
 }
 
 void UIMesh::updateVertexBuffer() {

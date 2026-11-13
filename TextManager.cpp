@@ -77,21 +77,15 @@ void fontMesh::createVertexBuffer() {
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
-	Engine::get()->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-	void* data;
-	vkMapMemory(Engine::get()->device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, vertices.data(), (size_t)bufferSize);
-	vkUnmapMemory(Engine::get()->device, stagingBufferMemory);
-
-	Engine::get()->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBuffer, vertexBufferMemory);
+	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+	VKMem::copyDataToBuffer(stagingBuffer, stagingBufferMemory, vertices.data(), bufferSize);
+	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBuffer, vertexBufferMemory);
 
 	Engine::get()->copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 	
-	vkMapMemory(Engine::get()->device, vertexBufferMemory, 0, bufferSize, 0, &vBuffer);
+	vkMapMemory(Core::getDevice(), vertexBufferMemory, 0, bufferSize, 0, &vBuffer);
 
-	vkDestroyBuffer(Engine::get()->device, stagingBuffer, nullptr);
-	vkFreeMemory(Engine::get()->device, stagingBufferMemory, nullptr);
+	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
 }
 
 void fontMesh::updateVertexBuffer() {

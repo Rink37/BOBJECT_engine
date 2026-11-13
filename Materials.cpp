@@ -31,7 +31,7 @@ void Material::createDescriptorPool(shaderData* sD) {
 	poolInfo.pPoolSizes = poolSizes.data();
 	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-	if (vkCreateDescriptorPool(Engine::get()->device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+	if (vkCreateDescriptorPool(Core::getDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
 		throw runtime_error("failed to create descriptor pool!");
 	}
 }
@@ -89,7 +89,7 @@ void Material::createDescriptorSets(shaderData* sD) {
 
 	descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
 
-	if (vkAllocateDescriptorSets(Engine::get()->device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+	if (vkAllocateDescriptorSets(Core::getDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
 		throw runtime_error("failed to allocate descriptor sets!");
 	}
 
@@ -140,6 +140,6 @@ void Material::createDescriptorSets(shaderData* sD) {
 			bindingIndex++;
 		}
 
-		vkUpdateDescriptorSets(Engine::get()->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		vkUpdateDescriptorSets(Core::getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 }

@@ -2,6 +2,7 @@
 #define MESHDEFS
 
 #include"Bobject_Engine.h"
+#include"Bobject_VKMem.h"
 #include"Materials.h"
 
 #define NORM_SIZE 1.5f

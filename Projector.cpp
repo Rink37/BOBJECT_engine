@@ -162,7 +162,7 @@ void Projector::calculateUVs() {
 void Projector::createPositionBuffer() {
 	VkDeviceSize bufferSize = sizeof(ProjectorPositionObject);
 
-	Engine::get()->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, positionBuffer, positionBufferMemory);
+	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, positionBuffer, positionBufferMemory);
 	vkMapMemory(Engine::get()->device, positionBufferMemory, 0, bufferSize, 0, &positionBufferMapped);
 }
 

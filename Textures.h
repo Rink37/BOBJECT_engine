@@ -2,6 +2,7 @@
 #define TEXTURES
 
 #include"Bobject_engine.h"
+#include"Bobject_VKMem.h"
 #include"Webcam_feeder.h"
 #include"include/ImageDataType.h"
 #include<opencv2/opencv.hpp>
@@ -44,7 +45,7 @@ struct Texture {
 	void transitionImageLayout(VkImageLayout, VkImageLayout);
 	
 	void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
-	void generateMipmaps();
+	void generateMipmaps() const;
 	void createImageView(VkImageAspectFlags);
 	
 	void getCVMat();
@@ -182,8 +183,6 @@ public:
 	
 	static void destruct() {
 		winstance->cleanup();
-		//delete winstance;
-		//winstance = nullptr;
 	}
 
 	Webcam *webCam = nullptr;
@@ -198,7 +197,6 @@ public:
 	void setup() {
 		webCam = new Webcam(0);
 		if (!webCam->isValid) {
-			//std::cout << "No valid webcams found" << std::endl;
 			texMat = cv::Mat(96, 128, CV_8UC3);
 			texMat = cv::Scalar(255, 0, 255);
 			transitionMatToImg();
