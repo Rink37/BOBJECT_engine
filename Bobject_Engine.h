@@ -48,6 +48,7 @@
 #include"include/Projector_Background.h"
 #include"include/SAC_BF.h"
 #include"include/SAC_Flat.h"
+
 #include"Bobject_Core.h"
 #include"Bobject_VKMem.h"
 
@@ -273,8 +274,6 @@ public:
 	void beginRenderPass(VkCommandBuffer, GraphicsPass*, drawImage*, uint32_t, glm::vec3);
 	void drawObject(VkCommandBuffer, VkBuffer, VkBuffer, VkPipelineLayout, VkDescriptorSet, std::uint32_t);
 	VkResult submitAndPresentFrame(std::uint32_t);
-
-	std::uint32_t findMemoryType(std::uint32_t, VkMemoryPropertyFlags) const;
 
 	void copyBuffer(VkBuffer, VkBuffer, VkDeviceSize);
 	VkCommandBuffer beginSingleTimeCommands() const;

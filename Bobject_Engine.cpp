@@ -650,19 +650,6 @@ void Engine::cleanupSwapChain() {
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
 }
 
-uint32_t Engine::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const {
-	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(Core::getPhysicalDevice(), &memProperties);
-
-	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-			return i;
-		}
-	}
-
-	throw runtime_error("failed to find suitable memory type!");
-}
-
 VkFormat Engine::findSupportedFormat(const vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const {
 	for (VkFormat format : candidates) {
 		VkFormatProperties props;
@@ -710,7 +697,7 @@ void Engine::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, Vk
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+	allocInfo.memoryTypeIndex = VKMem::findMemoryType(memRequirements.memoryTypeBits, properties);
 
 	if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
 		throw runtime_error("failed to allocate image memory!");
@@ -926,7 +913,6 @@ void Engine::endSingleTimeComputeCommand(VkCommandBuffer commandBuffer) const {
 	
 	auto result = vkQueueWaitIdle(computeQueue);
 	if (result != VK_SUCCESS) {
-		cout << result << endl;
 		throw runtime_error("Failed to wait for compute queue");
 	};
 

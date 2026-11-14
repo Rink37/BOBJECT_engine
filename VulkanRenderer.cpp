@@ -1916,7 +1916,6 @@ private:
 class Application {
 public:
 	void run() {
-		//engine->initWindow("BOBERT_TradPainter");
 		engine->initEngine("BOBERT_TradPainter");
 		keyBinds.initCallbacks(engine->window);
 		mouseManager.initCallbacks(engine->window);

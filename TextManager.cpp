@@ -6,11 +6,10 @@
 font::font() {
 	imageData fontData = COOLVETICA_MSDF;
 	fontAtlas = new imageTexture(&fontData, VK_FORMAT_R8G8B8A8_UNORM);
-	//std::cout << "Created atlas" << std::endl;
 	fontMat = new Material(std::vector<Texture*>{fontAtlas}, "UIText", &Engine::get()->defaultPass, true);
 }
 
-void font::getCorners(int character, float& left, float& right, float& top, float& bottom) {
+void font::getCorners(int character, float& left, float& right, float& top, float& bottom) const {
 	int minCharacter = 33;
 
 	character -= 33;

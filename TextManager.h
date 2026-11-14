@@ -10,7 +10,7 @@ class font {
 public:
 	font();
 
-	void getCorners(int, float&, float&, float&, float&);
+	void getCorners(int, float&, float&, float&, float&) const;
 
 	void getAdvanceWidth(int, float&);
 
