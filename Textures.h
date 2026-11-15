@@ -72,9 +72,14 @@ struct Texture {
 		if (mipLevels == 0) {
 			mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 		}
-		createImage(VK_SAMPLE_COUNT_1_BIT, textureMemFlags);
-		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
-		generateMipmaps();
+		createImage(textureSamples, textureMemFlags);
+		if (mipLevels != 1) {
+			transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+			generateMipmaps();
+		}
+		else {
+			transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, textureLayout, 1);
+		}	
 		createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		cleaned = false;
 	}

@@ -758,7 +758,7 @@ void Engine::recreateSwapChain() {
 	createDepthResources();
 }
 
-void Engine::recreateDrawImage(drawImage* image) {
+void Engine::recreateDrawImage(drawImage* image) const {
 	int width = 0, height = 0;
 	while (width == 0 || height == 0) {
 		glfwGetFramebufferSize(Core::getWindow(), &width, &height);
@@ -769,28 +769,41 @@ void Engine::recreateDrawImage(drawImage* image) {
 
 	image->cleanup(device);
 
+	for (size_t i = 0; i != imageCount; i++) {
+		Texture* tex = new Texture;
+		tex->texWidth = width;
+		tex->texHeight = height;
+		tex->mipLevels = 1;
+		tex->textureSamples = VK_SAMPLE_COUNT_1_BIT;
+		tex->textureMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		tex->textureFormat = image->imageFormat;
+		tex->textureTiling = VK_IMAGE_TILING_OPTIMAL;
+		tex->textureUsage = image->imageUsage;
+		tex->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		tex->setup();
+		image->textures[i] = tex;
+	}
+
 	image->imageExtent = VkExtent2D(width, height);
 
-	for (size_t i = 0; i != imageCount; i++) {
-		createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, image->imageFormat, VK_IMAGE_TILING_OPTIMAL, image->imageUsage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image->images[i], image->imageMemory[i]);
-		transitionImageLayout(image->images[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-	}
+	image->colourTex = new Texture;
+	image->colourTex->texWidth = width;
+	image->colourTex->texHeight = height;
+	image->colourTex->mipLevels = 1;
+	image->colourTex->textureSamples = Core::maxSamples();
+	image->colourTex->textureFormat = image->imageFormat;
+	image->colourTex->textureTiling = VK_IMAGE_TILING_OPTIMAL;
+	image->colourTex->textureUsage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	image->colourTex->textureMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	image->colourTex->textureLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	image->colourTex->setup();
 
-	image->imageViews.resize(image->images.size());
-
-	for (uint32_t i = 0; i < image->images.size(); i++) {
-		image->imageViews[i] = createImageView(image->images[i], image->imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-	}
-
-	createImage(width, height, 1, Core::maxSamples(), image->imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image->colourImage, image->colourImageMemory);
-	image->colourImageView = createImageView(image->colourImage, image->imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-
-	image->imageFrameBuffers.resize(image->imageViews.size());
-	for (size_t i = 0; i < image->imageViews.size(); i++) {
+	image->imageFrameBuffers.resize(image->textures.size());
+	for (size_t i = 0; i < image->textures.size(); i++) {
 		array<VkImageView, 3> attachments = {
-			image->colourImageView,
+			image->colourTex->textureImageView,
 			depthImageView,
-			image->imageViews[i]
+			image->textures[i]->textureImageView
 		};
 
 		VkFramebufferCreateInfo framebufferInfo{};
@@ -1024,36 +1037,48 @@ void Engine::transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkIm
 	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueueObj);
 }
 
-drawImage Engine::createDrawImage(uint32_t width, int32_t height, VkFormat format, VkImageUsageFlags flags, VkRenderPass boundRenderPass) {
+drawImage Engine::createDrawImage(uint32_t width, int32_t height, VkFormat format, VkImageUsageFlags flags, VkRenderPass boundRenderPass) const {
 	drawImage newDrawImage;
 	newDrawImage.imageExtent = VkExtent2D(width, height);
 	newDrawImage.imageFormat = format;
 	newDrawImage.imageUsage = flags;
 	newDrawImage.boundRenderPass = &boundRenderPass;
 
-	newDrawImage.images.resize(imageCount);
-	newDrawImage.imageMemory.resize(imageCount);
+	newDrawImage.textures.resize(imageCount);
 
 	for (size_t i = 0; i != imageCount; i++) {
-		createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, newDrawImage.images[i], newDrawImage.imageMemory[i]);
-		transitionImageLayout(newDrawImage.images[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL); // This causes no problems - all draw images should be in the expected layout
+		Texture* tex = new Texture;
+		tex->texWidth = width;
+		tex->texHeight = height;
+		tex->mipLevels = 1;
+		tex->textureSamples = VK_SAMPLE_COUNT_1_BIT;
+		tex->textureMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		tex->textureFormat = format;
+		tex->textureTiling = VK_IMAGE_TILING_OPTIMAL;
+		tex->textureUsage = flags;
+		tex->textureLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		tex->setup();
+		newDrawImage.textures[i] = tex;
 	}
 
-	newDrawImage.imageViews.resize(newDrawImage.images.size());
+	newDrawImage.colourTex = new Texture;
+	newDrawImage.colourTex->texWidth = width;
+	newDrawImage.colourTex->texHeight = height;
+	newDrawImage.colourTex->mipLevels = 1;
+	newDrawImage.colourTex->textureSamples = Core::maxSamples();
+	newDrawImage.colourTex->textureFormat = format;
+	newDrawImage.colourTex->textureTiling = VK_IMAGE_TILING_OPTIMAL;
+	newDrawImage.colourTex->textureUsage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	newDrawImage.colourTex->textureMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	newDrawImage.colourTex->textureLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	newDrawImage.colourTex->setup();
 
-	for (uint32_t i = 0; i < newDrawImage.images.size(); i++) {
-		newDrawImage.imageViews[i] = createImageView(newDrawImage.images[i], format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-	}
-
-	createImage(width, height, 1, Core::maxSamples(), format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, newDrawImage.colourImage, newDrawImage.colourImageMemory);
-	newDrawImage.colourImageView = createImageView(newDrawImage.colourImage, format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-
-	newDrawImage.imageFrameBuffers.resize(newDrawImage.imageViews.size());
-	for (size_t i = 0; i < newDrawImage.imageViews.size(); i++) {
+	newDrawImage.imageFrameBuffers.resize(newDrawImage.textures.size());
+	for (size_t i = 0; i < newDrawImage.textures.size(); i++) {
 		array<VkImageView, 3> attachments = {
-			newDrawImage.colourImageView,
+			newDrawImage.colourTex->textureImageView,
 			depthImageView,
-			newDrawImage.imageViews[i]
+			newDrawImage.textures[i]->textureImageView
 		};
 
 		VkFramebufferCreateInfo framebufferInfo{};
@@ -1115,5 +1140,5 @@ void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, VkImage image, 
 }
 
 void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, drawImage* image, uint32_t imageIndex) {
-	copyImageToSwapchain(commandBuffer, image->images[imageIndex], image->imageExtent, imageIndex);
+	copyImageToSwapchain(commandBuffer, image->textures[imageIndex]->textureImage, image->imageExtent, imageIndex);
 }

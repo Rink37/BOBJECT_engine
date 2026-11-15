@@ -125,16 +125,12 @@ struct Vertex {
 };
 
 struct drawImage {
-	std::vector<VkImage> images = {};
-	std::vector<VkDeviceMemory> imageMemory = {};
-	std::vector<VkImageView> imageViews = {};
-	
+	std::vector<Texture*> textures{};
+
 	std::vector<VkFramebuffer> imageFrameBuffers = {};
 	
-	VkImage colourImage = nullptr;
-	VkImageView colourImageView = nullptr;
-	VkDeviceMemory colourImageMemory = nullptr;
-	
+	Texture* colourTex = nullptr;
+
 	VkExtent2D imageExtent{};
 	VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
 	VkImageUsageFlags imageUsage{};
@@ -143,24 +139,15 @@ struct drawImage {
 
 	void cleanup(VkDevice device) {
 
-		vkDestroyImageView(device, colourImageView, nullptr);
-		vkDestroyImage(device, colourImage, nullptr);
-		vkFreeMemory(device, colourImageMemory, nullptr);
+		colourTex->cleanup();
 
 		for (auto framebuffer : imageFrameBuffers) {
 			vkDestroyFramebuffer(device, framebuffer, nullptr);
 		}
 
-		for (auto image : images) {
-			vkDestroyImage(device, image, nullptr);
-		}
-
-		for (auto mem : imageMemory) {
-			vkFreeMemory(device, mem, nullptr);
-		}
-
-		for (auto imageView : imageViews) {
-			vkDestroyImageView(device, imageView, nullptr);
+		for (Texture* texture : textures) {
+			texture->cleanup();
+			delete texture;
 		}
 	}
 };
@@ -274,8 +261,8 @@ public:
 	void drawObject(VkCommandBuffer, VkBuffer, VkBuffer, VkPipelineLayout, VkDescriptorSet, std::uint32_t);
 	VkResult submitAndPresentFrame(std::uint32_t);
 
-	drawImage createDrawImage(uint32_t, int32_t, VkFormat, VkImageUsageFlags, VkRenderPass);
-	void recreateDrawImage(drawImage*);
+	drawImage createDrawImage(uint32_t, int32_t, VkFormat, VkImageUsageFlags, VkRenderPass) const;
+	void recreateDrawImage(drawImage*) const;
 
 	VkShaderModule createShaderModule(const std::vector<unsigned char>&) const;
 

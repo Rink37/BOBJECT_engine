@@ -338,14 +338,14 @@ void postProcessFilter::setup(shaderData* sd, std::vector<drawImage*> drawImgs) 
 	for (size_t i = 0; i != drawImgs.size(); i++) {
 		targets.push_back(drawImgs[i]);
 	}
-	uint32_t imageCount = static_cast<uint32_t>(targets[0]->images.size());
+	uint32_t imageCount = static_cast<uint32_t>(targets[0]->textures.size());
 	for (uint32_t i = 0; i != imageCount; i++) {
 		std::vector<Texture*> srcs{};
 		for (size_t j = 0; j != targets.size(); j++) {
 			Texture* testTex = new Texture;
-			testTex->textureImage = targets[j]->images[i];
-			testTex->textureImageMemory = targets[j]->imageMemory[i];
-			testTex->textureImageView = targets[j]->imageViews[i];
+			testTex->textureImage = targets[j]->textures[i]->textureImage;
+			testTex->textureImageMemory = targets[j]->textures[i]->textureImageMemory;
+			testTex->textureImageView = targets[j]->textures[i]->textureImageView;
 			testTex->mipLevels = 1;
 			testTex->texWidth = targets[j]->imageExtent.width;
 			testTex->texHeight = targets[j]->imageExtent.height;
@@ -375,14 +375,14 @@ void postProcessFilter::setup(shaderData* sd, std::vector<drawImage*> drawImgs, 
 	for (size_t i = 0; i != drawImgs.size(); i++) {
 		targets.push_back(drawImgs[i]);
 	}
-	uint32_t imageCount = static_cast<uint32_t>(targets[0]->images.size());
+	uint32_t imageCount = static_cast<uint32_t>(targets[0]->textures.size());
 	for (uint32_t i = 0; i != imageCount; i++) {
 		std::vector<Texture*> srcs{};
 		for (size_t j = 0; j != targets.size(); j++) {
 			Texture* testTex = new Texture;
-			testTex->textureImage = targets[j]->images[i];
-			testTex->textureImageMemory = targets[j]->imageMemory[i];
-			testTex->textureImageView = targets[j]->imageViews[i];
+			testTex->textureImage = targets[j]->textures[i]->textureImage;
+			testTex->textureImageMemory = targets[j]->textures[i]->textureImageMemory;
+			testTex->textureImageView = targets[j]->textures[i]->textureImageView;
 			testTex->mipLevels = 1;
 			testTex->texWidth = targets[j]->imageExtent.width;
 			testTex->texHeight = targets[j]->imageExtent.height;
