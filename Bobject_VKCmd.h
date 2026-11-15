@@ -6,6 +6,8 @@
 namespace VKCmd {
 	VkCommandBuffer allocateSingleTimeCommand(VkCommandPool);
 	void submitSingleTimeCommand(VkCommandBuffer, VkCommandPool, VkQueue);
+	VkCommandBuffer allocateSingleTimeCommand(Queue*);
+	void submitSingleTimeCommand(VkCommandBuffer, Queue*);
 }
 
 #endif

@@ -1,8 +1,10 @@
 #ifndef TEXTURES
 #define TEXTURES
 
-#include"Bobject_engine.h"
+#include"Bobject_Core.h"
 #include"Bobject_VKMem.h"
+#include"Bobject_VKCmd.h"
+
 #include"Webcam_feeder.h"
 #include"include/ImageDataType.h"
 #include<opencv2/opencv.hpp>
@@ -83,15 +85,15 @@ struct Texture {
 		if (cleaned) {
 			return;
 		}
-		vkDeviceWaitIdle(Engine::get()->device);
+		vkDeviceWaitIdle(Core::getDevice());
 		if (textureImage != nullptr) {
-			vkDestroyImage(Engine::get()->device, textureImage, nullptr);
+			vkDestroyImage(Core::getDevice(), textureImage, nullptr);
 		}
 		if (textureImageMemory != nullptr) {
-			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
+			vkFreeMemory(Core::getDevice(), textureImageMemory, nullptr);
 		}
 		if (textureImageView != nullptr) {
-			vkDestroyImageView(Engine::get()->device, textureImageView, nullptr);
+			vkDestroyImageView(Core::getDevice(), textureImageView, nullptr);
 		}
 		textureImage = nullptr;
 		textureImageMemory = nullptr;
@@ -179,7 +181,7 @@ public:
 		return winstance;
 	}
 	webcamTexture(const webcamTexture&) = delete;
-	Engine& operator=(const webcamTexture&) = delete;
+	webcamTexture& operator=(const webcamTexture&) = delete;
 	
 	static void destruct() {
 		winstance->cleanup();
@@ -225,11 +227,11 @@ public:
 
 	void cleanupImage() {
 		if (textureImage != nullptr) {
-			vkDestroyImage(Engine::get()->device, textureImage, nullptr);
-			vkFreeMemory(Engine::get()->device, textureImageMemory, nullptr);
-			vkDestroyImageView(Engine::get()->device, textureImageView, nullptr);
-			vkDestroyBuffer(Engine::get()->device, textureBuffer, nullptr);
-			vkFreeMemory(Engine::get()->device, textureBufferMemory, nullptr);
+			vkDestroyImage(Core::getDevice(), textureImage, nullptr);
+			vkFreeMemory(Core::getDevice(), textureImageMemory, nullptr);
+			vkDestroyImageView(Core::getDevice(), textureImageView, nullptr);
+			vkDestroyBuffer(Core::getDevice(), textureBuffer, nullptr);
+			vkFreeMemory(Core::getDevice(), textureBufferMemory, nullptr);
 		}
 		textureImage = nullptr;
 	}
@@ -238,7 +240,7 @@ public:
 		if (cleaned || webCam == nullptr) {
 			return;
 		}
-		vkDeviceWaitIdle(Engine::get()->device);
+		vkDeviceWaitIdle(Core::getDevice());
 		cleanupImage();
 		webCam->cleanup();
 		delete webCam;

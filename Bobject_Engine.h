@@ -53,7 +53,7 @@
 #include"Bobject_VKMem.h"
 #include"Bobject_VKCmd.h"
 
-//#include"Textures.h"
+#include"Textures.h"
 //#include"Materials.h"
 //#include"Meshes.h"
 

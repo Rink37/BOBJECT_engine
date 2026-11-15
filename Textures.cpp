@@ -65,6 +65,8 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 		return copy;
 	}
 
+	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
+
 	copy->createImage(VK_SAMPLE_COUNT_1_BIT, memFlags);
 
 	transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
@@ -88,7 +90,7 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 		resolvedTexture->createImage(VK_SAMPLE_COUNT_1_BIT, memFlags);
 
-		VkCommandBuffer resolveCmd = Engine::get()->beginSingleTimeCommands();
+		VkCommandBuffer resolveCmd = VKCmd::allocateSingleTimeCommand(graphicsQueue);
 
 		VkOffset3D srcResolveSize{};
 		srcResolveSize.x = 0;
@@ -113,14 +115,12 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 		vkCmdResolveImage(resolveCmd, textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, resolvedTexture->textureImage, resolvedTexture->textureLayout, 1, &imageResolveRegion);
 
-		Engine::get()->endSingleTimeCommands(resolveCmd);
+		VKCmd::submitSingleTimeCommand(resolveCmd, graphicsQueue);
 
 		transitionImageLayout(resolvedTexture->textureImage, resolvedTexture->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
 	}
 
 	VkCommandBuffer copyCmd;
-
-	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -387,9 +387,10 @@ void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlag
 }
 
 void Texture::transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout) {
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
+	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(graphicsQueue);
 	transitionImageLayout(commandBuffer, oldLayout, newLayout);
-	Engine::get()->endSingleTimeCommands(commandBuffer);
+	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueue);
 }
 
 void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) {
@@ -406,9 +407,10 @@ void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkFormat form
 }
 
 void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
+	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(graphicsQueue);
 	transitionImageLayout(commandBuffer, image, format, oldLayout, newLayout, mipLevels);
-	Engine::get()->endSingleTimeCommands(commandBuffer);
+	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueue);
 }
 
 void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
@@ -520,7 +522,8 @@ void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image
 }
 
 void Texture::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
+	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(graphicsQueue);
 
 	VkBufferImageCopy region{};
 	region.bufferOffset = 0;
@@ -548,7 +551,7 @@ void Texture::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, 
 		&region
 	);
 
-	Engine::get()->endSingleTimeCommands(commandBuffer);
+	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueue);
 }
 
 void Texture::generateMipmaps() const {
@@ -559,7 +562,8 @@ void Texture::generateMipmaps() const {
 		throw runtime_error("texture image format does not support linear blitting!");
 	}
 
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
+	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(graphicsQueue);
 
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -630,7 +634,7 @@ void Texture::generateMipmaps() const {
 		0, nullptr,
 		1, &barrier);
 
-	Engine::get()->endSingleTimeCommands(commandBuffer);
+	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueue);
 }
 
 void Texture::destroyCVMat() {

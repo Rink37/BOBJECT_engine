@@ -24,6 +24,10 @@ VkCommandBuffer VKCmd::allocateSingleTimeCommand(VkCommandPool commandPool) {
 	return commandBuffer;
 }
 
+VkCommandBuffer VKCmd::allocateSingleTimeCommand(Queue* queue) {
+	return VKCmd::allocateSingleTimeCommand(queue->commandPool);
+}
+
 void VKCmd::submitSingleTimeCommand(VkCommandBuffer commandBuffer, VkCommandPool commandPool, VkQueue queue) {
 	vkEndCommandBuffer(commandBuffer);
 
@@ -41,4 +45,8 @@ void VKCmd::submitSingleTimeCommand(VkCommandBuffer commandBuffer, VkCommandPool
 	};
 
 	vkFreeCommandBuffers(Core::getDevice(), commandPool, 1, &commandBuffer);
+}
+
+void VKCmd::submitSingleTimeCommand(VkCommandBuffer commandBuffer, Queue* queue) {
+	VKCmd::submitSingleTimeCommand(commandBuffer, queue->commandPool, queue->queue);
 }
