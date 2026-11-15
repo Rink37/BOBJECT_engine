@@ -243,7 +243,7 @@ void MouseManager::removePositionListener(size_t index) {
 }
 
 void MouseManager::checkClickEvents(int clickCode) {
-	for (auto listener : _ClickListeners) {
+	for (Listener listener : _ClickListeners) {
 		if (listener(mouse.xpos, mouse.ypos, clickCode)) {
 			break;
 		};
@@ -260,7 +260,7 @@ void MouseManager::checkPositionEvents() {
 		posCode = RMB_HOLD;
 	}
 
-	for (auto listener : _PositionListeners) {
+	for (Listener listener : _PositionListeners) {
 		if (listener(mouse.xpos, mouse.ypos, posCode)) {
 			break;
 		};

@@ -1,11 +1,9 @@
 #ifndef IMAGEPROCESSOR
 #define IMAGEPROCESSOR
 
-#include"Bobject_Engine.h"
-#include<chrono>
-#include"Textures.h"
+#include"Bobject_Engine.h" // Contains textures and meshes
 #include"ShaderDataType.h"
-#include"Meshes.h"
+#include"Materials.h"
 #include"include/EdgeFill.h"
 
 class filter {
@@ -19,7 +17,7 @@ public:
 
 		filterShaderModule = Engine::get()->createShaderModule(*(sd->compData));
 
-		for (auto IOval: sd->IO) {
+		for (shaderIOValue IOval: sd->IO) {
 			if (IOval.type == 0) {
 				createFilterTarget();
 			}

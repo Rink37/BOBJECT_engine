@@ -117,8 +117,8 @@ public:
 		if (cleaned || this->descriptorPool == nullptr) {
 			return;
 		}
-		vkDeviceWaitIdle(Engine::get()->device);
-		vkDestroyDescriptorPool(Engine::get()->device, this->descriptorPool, nullptr);
+		vkDeviceWaitIdle(Core::getDevice());
+		vkDestroyDescriptorPool(Core::getDevice(), this->descriptorPool, nullptr);
 		this->descriptorPool = nullptr;
 	}
 
@@ -188,7 +188,7 @@ public:
 
 	Material* createMaterial() {
 		bool isValid = true;
-		for (auto mapElem : textureMap) {
+		for (std::pair<std::string, Texture*> mapElem : textureMap) {
 			if (mapElem.second == nullptr) {
 				isValid = false;
 				break;
@@ -221,7 +221,7 @@ public:
 
 	Material* updateMaterial(Material* mat) {
 		bool isValid = true;
-		for (auto mapElem : textureMap) {
+		for (std::pair<std::string, Texture*> mapElem : textureMap) {
 			if (mapElem.second == nullptr) {
 				isValid = false;
 				break;

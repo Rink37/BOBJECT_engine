@@ -4,9 +4,7 @@
 #include"CameraController.h"
 #include"UIelements.h"
 #include"Webcam_feeder.h"
-#include"Textures.h"
 #include"Materials.h"
-#include"Meshes.h"
 #include"StudioSession.h"
 #include"Tomography.h"
 #include"LoadLists.h"
@@ -15,6 +13,7 @@
 #include"GenerateNormalMap.h"
 #include"SeamFixer.h"
 #include"Projector.h"
+#include"Objects.h"
 
 #include<chrono>
 
@@ -877,7 +876,7 @@ public:
 		textureLL = textureAssets;
 	}
 
-	void setup(StaticObject* object, std::function<void(UIItem*)> addTex, std::function<void(std::function<void(UIItem*)>)> newMatFunc, std::function<void(UIItem*)> closeMatFunc, std::function<void(UIItem*)> closeFunc, std::function<void(std::function<void(UIItem*)>, std::string)> editMatFunc) {
+	void setup(StaticObject* object, std::function<void(UIItem*)> addTex, std::function<void(std::function<void(UIItem*)>)> newMatFunc, std::function<void(UIItem*)> closeMatFunc, std::function<void(std::function<void(UIItem*)>, std::string)> editMatFunc) {
 		if (isSetup) {
 			return;
 		}
@@ -889,8 +888,6 @@ public:
 		openEditMaterialMenu = editMatFunc;
 		openMaterialMenu = newMatFunc;
 		closeMaterialMenu = closeMatFunc;
-
-		finishedCallback = closeFunc;
 
 		addTextureFunc = addTex;
 
@@ -965,7 +962,7 @@ public:
 
 		totalArrangement->addItem(getPtr(genNormArrangement));
 
-		totalArrangement->addItem(getPtr(new Button(finishMat, finishedCallback)));
+		totalArrangement->addItem(getPtr(new Button(finishMat, std::bind(&ObjectSettingsMenu::selfDestruct, this, std::placeholders::_1))));
 		totalArrangement->arrangeItems();
 
 		canvas.push_back(getPtr(totalArrangement));
@@ -1913,6 +1910,108 @@ private:
 	}
 };
 
+class WidgetManager {
+public:
+	WidgetManager(MouseManager* mm) {
+		mouseManager = mm;
+	}
+
+	void addWidget(std::string widgetName, Widget* widget) {
+		if (widgets.count(widgetName) != 0) {
+			return;
+		}
+		if (widget->hasClickEvents) {
+			widget->clickIndex = mouseManager->addClickListener(widget->getClickCallback());
+		}
+		else {
+			widget->clickIndex = INT_MAX;
+		}
+		if (widget->hasPosEvents) {
+			widget->posIndex = mouseManager->addPositionListener(widget->getPosCallback());
+		}
+		else {
+			widget->posIndex = INT_MAX;
+		}
+		std::function<void(std::string)> delFunc = std::bind(&WidgetManager::deleteWidget, this, std::placeholders::_1);
+		widget->deleteSelf = delFunc;
+		widget->mappedName = widgetName;
+		widgets.insert({ widgetName, widget });
+		if (prioritySortedWidgets.size() == 0) {
+			prioritySortedWidgets.push_back(widget);
+		}
+		else {
+			uint32_t index = 0;
+			while (prioritySortedWidgets[index]->priorityLayer > widget->priorityLayer && index < prioritySortedWidgets.size() - 1) {
+				index++;
+			}
+			prioritySortedWidgets.insert(prioritySortedWidgets.begin() + index, widget);
+		}
+	}
+
+	Widget* getWidget(std::string widgetName) {
+		if (widgets.count(widgetName) == 0) {
+			return nullptr;
+		}
+		return widgets.at(widgetName);
+	}
+
+	void drawWidgets(VkCommandBuffer commandBuffer, uint32_t currentFrame, GraphicsPass* currentPass) {
+		for (std::pair<std::string, Widget*> widgetElem : widgets) {
+			widgetElem.second->drawAll(commandBuffer, currentFrame, currentPass);
+		}
+	}
+
+	void cleanup() {
+		for (std::pair<std::string, Widget*> widgetElem : widgets) {
+			widgetElem.second->cleanup();
+		}
+	}
+
+	bool showWidgets = true;
+	MouseManager* mouseManager{};
+private:
+	std::map<std::string, Widget*> widgets{};
+	std::vector<Widget*> prioritySortedWidgets{};
+
+	void deleteWidget(std::string widgetName) {
+		vkDeviceWaitIdle(Core::getDevice());
+
+		if (widgets.count(widgetName) == 0) {
+			return;
+		}
+
+		Widget* widget = widgets.at(widgetName);
+
+		auto it = std::find(prioritySortedWidgets.begin(), prioritySortedWidgets.end(), widgets.at(widgetName));
+		if (it != prioritySortedWidgets.end()) {
+			prioritySortedWidgets.erase(it);
+		}
+
+		if (widget->clickIndex != INT_MAX) {
+			uint32_t clickIndex = widget->clickIndex;
+			mouseManager->removeClickListener(widget->clickIndex);
+			for (std::pair<std::string, Widget*> widgetElem : widgets) {
+				if (widgetElem.second->clickIndex > clickIndex) {
+					widgetElem.second->clickIndex -= 1;
+				}
+			}
+		}
+		if (widget->posIndex != INT_MAX) {
+			uint32_t posIndex = widget->posIndex;
+			mouseManager->removePositionListener(widget->posIndex);
+			for (std::pair<std::string, Widget*> widgetElem : widgets) {
+				if (widgetElem.second->posIndex > posIndex) {
+					widgetElem.second->posIndex -= 1;
+				}
+			}
+		}
+
+		widgets.at(widgetName)->cleanup();
+		delete widgets.at(widgetName);
+		widgets.erase(widgetName);
+	}
+};
+
 class Application {
 public:
 	void run() {
@@ -1979,6 +2078,8 @@ private:
 	Camera camera;
 	Tomographer tomographer;
 
+	WidgetManager widgetManager = WidgetManager(&mouseManager);
+
 	TomographyMenu tomogUI = TomographyMenu(&UIElements, &TextureElements);
 	SaveMenu saveMenu = SaveMenu(&UIElements);
 	WebcamMenu webcamMenu = WebcamMenu(&UIElements);
@@ -1989,7 +2090,6 @@ private:
 	RemapUI remapMenu = RemapUI(&UIElements, &TextureElements);
 	WebcamSettings webSets = WebcamSettings(&UIElements, &TextureElements);
 	MaterialCreator mc = MaterialCreator(&UIElements, &TextureElements); 
-	ObjectSettingsMenu osm = ObjectSettingsMenu(&UIElements, &TextureElements);
 	RemapTexSelector rts = RemapTexSelector(&UIElements, &TextureElements);
 	AlphaMixTexSelector amts = AlphaMixTexSelector(&UIElements, &TextureElements);
 	AlphaOverTexSelector aots = AlphaOverTexSelector(&UIElements, &TextureElements);
@@ -2008,7 +2108,7 @@ private:
 	Material* wireMat = nullptr;
 
 	vector<Widget*> widgets;
-	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, &mc, &osm, &rts, &tlm, &tomogPicker, &stm, &normalMixer, &sob, &seamFixer, &errorDlg};
+	vector<Widget*> allWidgets = { &tomogUI, &saveMenu, &webcamMenu, &renderMenu, &objectMenu, &textureMenu, &textureSettings, &remapMenu, &webSets, &mc, &rts, &tlm, &tomogPicker, &stm, &normalMixer, &sob, &seamFixer, &errorDlg};
 
 	drawImage renderImage;
 	GraphicsPass renderGP;
@@ -2016,9 +2116,7 @@ private:
 
 	StaticObject* currentObject = nullptr;
 
-	bool mouseDown = false;
 	bool tomogActive = false;
-
 	bool showWireframe = true;
 	bool inWebSettings = false;
 
@@ -2052,11 +2150,6 @@ private:
 	float polarAngle = 0.0f;
 	float azimuthAngle = 0.0f;
 	float lightRadius = 10.0f;
-
-	Material* drawMat = nullptr;
-	std::string renderPipelineName = "";
-	uint32_t graphicsPipelineIndex = 0;
-	VkPipelineLayout pipelineLayout = nullptr;
 	
 	// colours in sRGB format (for krita users these colours match the sRGB-elle-V2-g10.icc profile)
 	glm::vec3 primaryColour = glm::vec3(0.42f, 0.06f, 0.11f);
@@ -2189,10 +2282,9 @@ private:
 		std::string texName = owner->Name;
 
 		std::vector<std::string> objectNames{};
-		for (auto elem : objectMenu.ObjectMap) {
+		for (std::pair<std::string, int> elem : objectMenu.ObjectMap) {
 			objectNames.push_back(elem.first);
 		}
-		//closeTextureSettingsMenu(owner);
 
 		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::closeProjectorObjPicker, this, std::placeholders::_1);
 
@@ -2278,7 +2370,7 @@ private:
 		std::string texName = owner->Name;
 		
 		std::vector<std::string> objectNames{};
-		for (auto elem : objectMenu.ObjectMap) {
+		for (std::pair<std::string, int> elem : objectMenu.ObjectMap) {
 			objectNames.push_back(elem.first);
 		}
 		closeTextureSettingsMenu(owner);
@@ -2654,23 +2746,21 @@ private:
 	void openObjectSettingsMenu(UIItem* owner) {
 		std::function<void(std::function<void(UIItem*)>, std::string)> openEditMenu = std::bind(&Application::openEditSettingsMenu, this, std::placeholders::_1, std::placeholders::_2);
 		
-		osm.setup(&staticObjects[objectMenu.ObjectMap.at(owner->Name)], textureMenu.getAddTexCallback(), std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeObjectSettingsMenu, this, std::placeholders::_1), openEditMenu);
-		
-		addWidget(&osm);
-	}
-
-	void closeObjectSettingsMenu(UIItem* owner) {
-		removeWidget(&osm);
+		ObjectSettingsMenu* osm = new ObjectSettingsMenu(&UIElements, &TextureElements);
+		osm->setup(&staticObjects[objectMenu.ObjectMap.at(owner->Name)], textureMenu.getAddTexCallback(), std::bind(&Application::openSettingsMenu, this, std::placeholders::_1), std::bind(&Application::closeSettingsMenu, this, std::placeholders::_1), openEditMenu);
+		widgetManager.addWidget("OSM", osm);
 	}
 
 	void openSettingsMenu(std::function<void(UIItem*)> closeFnc) {
-		osm.hide();
+		Widget* osm = widgetManager.getWidget("OSM");
+		osm->hide();
 		mc.setup("BF", currentPass, closeFnc);
 		addWidget(&mc);
 	}
 
 	void openEditSettingsMenu(std::function<void(UIItem*)> closeFnc, std::string matName) {
-		osm.hide();
+		Widget* osm = widgetManager.getWidget("OSM");
+		osm->hide();
 		mc.setupEditMode("BF", currentPass, closeFnc, matName);
 		addWidget(&mc);
 	}
@@ -2678,8 +2768,9 @@ private:
 	void closeSettingsMenu(UIItem* owner) {
 		removeWidget(&mc);
 
-		osm.show();
-		osm.update();
+		Widget* osm = widgetManager.getWidget("OSM");
+		osm->show();
+		osm->update();
 
 		updateVisibleObjects();
 	}
@@ -2798,7 +2889,7 @@ private:
 
 	void createNormalMixer(UIItem* owner) {
 		std::vector<std::string> objects{};
-		for (auto elem : objectMenu.ObjectMap) {
+		for (std::pair<std::string, int> elem : objectMenu.ObjectMap) {
 			objects.push_back(elem.first);
 		}
 
@@ -2839,7 +2930,7 @@ private:
 
 	void createSpaceTransitionMenu(UIItem* owner) {
 		std::vector<std::string> objects{};
-		for (auto elem : objectMenu.ObjectMap) {
+		for (std::pair<std::string, int> elem : objectMenu.ObjectMap) {
 			objects.push_back(elem.first);
 		}
 
@@ -3135,6 +3226,8 @@ private:
 		UIElements.empty();
 		TextureElements.empty();
 		
+		widgetManager.cleanup();
+
 		for (size_t i = 0; i != allWidgets.size(); i++) {
 			if (allWidgets[i] != nullptr) {
 				allWidgets[i]->cleanup();
@@ -3250,6 +3343,7 @@ private:
 			for (size_t i = 0; i != widgets.size(); i++) {
 				widgets[i]->drawAll(commandBuffer, currentFrame, currentPass);
 			}
+			widgetManager.drawWidgets(commandBuffer, currentFrame, currentPass);
 		}
 		
 		if (tomographyPlane != nullptr && tomographyPlane->isVisible) {

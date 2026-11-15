@@ -837,3 +837,108 @@ void Rotator::calculateSlideValue(double mouseX, double mouseY) {
 		slideValue = (static_cast<float>(round(slideValue)) - minValue) / (maxValue - minValue);
 	}
 }
+
+void Widget::measureWindowPositions() {
+	windowPositions[0] = 10000.0f;
+	windowPositions[1] = 0.0f;
+	windowPositions[2] = 10000.0f;
+	windowPositions[3] = 0.0f;
+	for (UIItem* item : canvas) {
+		std::vector<UIItem*> scs;
+		item->getSubclasses(scs);
+		for (UIItem* sitem : scs) {
+			if (sitem->isSpacer() || (sitem->isArrangement() && !sitem->isText()) || sitem == thisBG) {
+				continue;
+			}
+			sitem->calculateScreenPosition();
+			windowPositions[0] = (sitem->windowPositions[0] < windowPositions[0]) ? sitem->windowPositions[0] : windowPositions[0];
+			windowPositions[1] = (sitem->windowPositions[1] > windowPositions[1]) ? sitem->windowPositions[1] : windowPositions[1];
+			windowPositions[2] = (sitem->windowPositions[2] < windowPositions[2]) ? sitem->windowPositions[2] : windowPositions[2];
+			windowPositions[3] = (sitem->windowPositions[3] > windowPositions[3]) ? sitem->windowPositions[3] : windowPositions[3];
+		}
+	}
+}
+
+bool Widget::checkForClickEvent(double mouseX, double mouseY, int eventType) {
+	if (!isVisible) {
+		return false;
+	}
+	if (!isInArea(mouseX, mouseY) && Sliders.size() == 0 && Rotators.size() == 0) {
+		return false;
+	}
+	for (UIItem* item : canvas) {
+		if (item->checkForClickEvent(mouseX, mouseY, eventType)) {
+			update();
+			return true;
+		};
+	}
+	return false;
+}
+
+bool Widget::checkForPosEvent(double mouseX, double mouseY, int eventType) {
+	if (!isVisible) {
+		return false;
+	}
+	for (UIItem* item : canvas) {
+		std::vector<UIItem*> scs;
+		item->getSubclasses(scs);
+		for (UIItem* sitem : scs) {
+			if (sitem->checkForPosEvent(mouseX, mouseY, eventType)) {
+				return true;
+			};
+		}
+	}
+	return false;
+}
+
+void Widget::sortImages() {
+	imagePipelines.clear();
+	transparentImages.clear();
+	transparentImagePipelines.clear();
+	std::map<float, std::vector<UIImage*>, std::greater<float>> imageHeights{};
+	std::vector<UIImage*> allImages{};
+	for (size_t i = 0; i != canvas.size(); i++) {
+		std::vector<UIImage*> images{};
+		canvas[i]->getImages(images);
+		allImages.insert(allImages.end(), images.begin(), images.end());
+	}
+	for (UIImage* image : allImages) {
+		if (image->isVisible && image->isOpaque) {
+			std::string key = image->mat[image->matidx]->shaderName;
+			if (imagePipelines.count(key) == 0) {
+				imagePipelines.insert({ key, std::vector<UIImage*>{image} });
+			}
+			else {
+				imagePipelines.at(key).push_back(image);
+			}
+		}
+		else if (image->isVisible) {
+			// If the image is not opaque then we need to draw them sorted from back to front and associate their pipelines properly
+			transparentImages.push_back(image);
+		}
+		float heightKey = image->zp_default;
+		if (imageHeights.count(heightKey) == 0) {
+			imageHeights.insert({ heightKey, std::vector<UIImage*>{image} });
+		}
+		else {
+			imageHeights.at(heightKey).push_back(image);
+		}
+	}
+
+	float separation = 0.001f;
+
+	float pos = zp;
+	for (auto elem : imageHeights) {
+		for (UIImage* image : elem.second) {
+			image->zp = pos;
+		}
+		pos += separation;
+	}
+
+	if (transparentImages.size() > 0) {
+		std::sort(transparentImages.begin(), transparentImages.end(), [](UIImage* a, UIImage* b) {return a->zp > b->zp; });
+	}
+	for (UIImage* transparentImage : transparentImages) {
+		transparentImagePipelines.push_back(transparentImage->mat[transparentImage->matidx]->shaderName);
+	}
+}

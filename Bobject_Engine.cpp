@@ -152,6 +152,7 @@ void Engine::createRenderPass(VkRenderPass& newRenderPass, VkFormat imageFormat,
 }
 
 void Engine::createDescriptorSetLayout(std::string key, std::vector<shaderIOValue> IO, GraphicsPass& graphicsPass) const {
+	std::vector<VkDescriptorPoolSize> poolSizes{};
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings{};
 
 	uint32_t index = 0;
@@ -170,8 +171,8 @@ void Engine::createDescriptorSetLayout(std::string key, std::vector<shaderIOValu
 			layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		}
 		layoutBindings.push_back(layoutBinding);
-	}
 
+	}
 	VkDescriptorSetLayout newDescriptorSetLayout = nullptr;
 	VkPipelineLayout newPipelineLayout = nullptr;
 
@@ -181,7 +182,7 @@ void Engine::createDescriptorSetLayout(std::string key, std::vector<shaderIOValu
 	layoutInfo.pBindings = layoutBindings.data();
 
 	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &newDescriptorSetLayout) != VK_SUCCESS) {
-		throw runtime_error("failed to create descriptor set layout!");
+		throw std::runtime_error("failed to create descriptor set layout!");
 	}
 
 	std::vector<VkDynamicState> dynamicStates = {
@@ -362,7 +363,6 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, 
 	else {
 		colorBlendAttachment.blendEnable = VK_FALSE;
 	}
-	
 
 	VkPipelineColorBlendStateCreateInfo colorBlending{};
 	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;

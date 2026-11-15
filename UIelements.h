@@ -468,9 +468,8 @@ public:
 		return false;
 	};
 
-private:
 	bool modifiable = false;
-
+private:
 	TypeManager* typeManager = nullptr;
 
 	int horizontalArrange = ARRANGE_START;
@@ -1411,7 +1410,7 @@ public:
 
 	void calculateSlideValue(double, double);
 
-	float getValue() {
+	float getValue() const {
 		return (1.0f - slideValue) * (maxValue - minValue) + minValue;
 	}
 
@@ -1870,28 +1869,9 @@ struct Widget {
 		return std::bind(&Widget::checkForPosEvent, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	}
 
-	void measureWindowPositions() {
-		windowPositions[0] = 10000.0f;
-		windowPositions[1] = 0.0f;
-		windowPositions[2] = 10000.0f;
-		windowPositions[3] = 0.0f;
-		for (UIItem* item : canvas) {
-			std::vector<UIItem*> scs;
-			item->getSubclasses(scs);
-			for (UIItem* sitem : scs) {
-				if (sitem->isSpacer() || (sitem->isArrangement() && !sitem->isText()) || sitem == thisBG) {
-					continue;
-				}
-				sitem->calculateScreenPosition();
-				windowPositions[0] = (sitem->windowPositions[0] < windowPositions[0]) ? sitem->windowPositions[0] : windowPositions[0];
-				windowPositions[1] = (sitem->windowPositions[1] > windowPositions[1]) ? sitem->windowPositions[1] : windowPositions[1];
-				windowPositions[2] = (sitem->windowPositions[2] < windowPositions[2]) ? sitem->windowPositions[2] : windowPositions[2];
-				windowPositions[3] = (sitem->windowPositions[3] > windowPositions[3]) ? sitem->windowPositions[3] : windowPositions[3];
-			}
-		}
-	}
+	void measureWindowPositions();
 
-	bool isInArea(double x, double y) {
+	bool isInArea(double x, double y) const {
 		bool result = false;
 		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
 			result = true;
@@ -1940,39 +1920,16 @@ struct Widget {
 		}
 	}
 
-	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
-		if (!isVisible) {
-			return false;
-		}
-		if (!isInArea(mouseX, mouseY) && Sliders.size() == 0 && Rotators.size() == 0) {
-			return false;
-		}
-		for (UIItem* item : canvas) {
-			if (item->checkForClickEvent(mouseX, mouseY, eventType)) {				
-				update();
-				return true;
-			};
-		}
-		return false;
-	}
+	bool checkForClickEvent(double, double, int);
 
-	bool checkForPosEvent(double mouseX, double mouseY, int eventType) {
-		if (!isVisible) {
-			return false;
-		}
-		for (UIItem* item : canvas) {
-			std::vector<UIItem*> scs;
-			item->getSubclasses(scs);
-			for (UIItem* sitem : scs) {
-				if (sitem->checkForPosEvent(mouseX, mouseY, eventType)) {
-					return true;
-				};
-			}
-		}
-		return false;
-	}
+	bool checkForPosEvent(double, double, int);
 
 	void update() {
+		if (markedForDestruction) {
+			markedForDestruction = false;
+			deleteSelf(this->mappedName);
+			return;
+		}
 		if (isVisible && isSetup) {
 			sortImages();
 			if (canvas.size() > 0) {
@@ -2063,11 +2020,13 @@ struct Widget {
 	}
 
 	UIItem* getPtr(Button* b) {
+		hasClickEvents = true;
 		buttons.emplace_back(b);
 		return buttons[buttons.size() - 1].get();
 	}
 
 	UIItem* getPtr(Checkbox* c) {
+		hasClickEvents = true;
 		checkboxes.emplace_back(c);
 		return checkboxes[checkboxes.size() - 1].get();
 	}
@@ -2088,21 +2047,27 @@ struct Widget {
 	}
 
 	UIItem* getPtr(Slider* slider) {
+		hasPosEvents = true;
 		Sliders.emplace_back(slider);
 		return Sliders[Sliders.size() - 1].get();
 	}
 
 	UIItem* getPtr(Rotator* rotator) {
+		hasPosEvents = true;
 		Rotators.emplace_back(rotator);
 		return Rotators[Rotators.size() - 1].get();
 	}
 
 	UIItem* getPtr(TextBox* textBox) {
+		if (textBox->modifiable) {
+			hasClickEvents = true;
+		}
 		TextBoxes.emplace_back(textBox);
 		return TextBoxes[TextBoxes.size() - 1].get();
 	}
 
 	UIItem* getPtr(DropdownMenu* dropdown) {
+		hasClickEvents = true;
 		DropdownMenus.emplace_back(dropdown);
 		return DropdownMenus[DropdownMenus.size() - 1].get();
 	}
@@ -2116,6 +2081,18 @@ struct Widget {
 		errorFunc = fnc;
 	}
 
+	void selfDestruct(UIItem* owner) {
+		if (deleteSelf != nullptr) {
+			markedForDestruction = true;
+		}
+	}
+
+	void destruct() {
+		if (deleteSelf != nullptr) {
+			deleteSelf(mappedName);
+		}
+	}
+
 	std::function<void(std::string, std::string)> errorFunc = nullptr;
 
 	std::vector<UIItem*> canvas;
@@ -2127,6 +2104,8 @@ struct Widget {
 						   // A widget can be placed above another simply by setting the priority of the "on-top" layer higher than the below one
 	bool isVisible = true;
 
+	bool hasClickEvents = false;
+	bool hasPosEvents = false;
 	size_t clickIndex = 0;
 	size_t posIndex = 0;
 
@@ -2135,6 +2114,10 @@ struct Widget {
 	std::vector<std::string> transparentImagePipelines{};
 
 	float posx = 0.0f, posy = 0.0f, extentx = 0.0f, extenty = 0.0f, zp = 0.003f;
+
+	bool markedForDestruction = false;
+	std::string mappedName = "";
+	std::function<void(std::string)> deleteSelf = nullptr;
 private:
 	float windowPositions[4] = { 0.0f };
 	// Array of pointers which manages the actual structure of the UI
@@ -2154,57 +2137,7 @@ private:
 
 	UIItem* thisBG = nullptr;
 
-	virtual void sortImages() {
-		imagePipelines.clear();
-		transparentImages.clear();
-		transparentImagePipelines.clear();
-		std::map<float, std::vector<UIImage*>, std::greater<float>> imageHeights{};
-		std::vector<UIImage*> allImages{};
-		for (size_t i = 0; i != canvas.size(); i++) {
-			std::vector<UIImage*> images{};
-			canvas[i]->getImages(images);
-			allImages.insert(allImages.end(), images.begin(), images.end());
-		}
-		for (UIImage* image : allImages) {
-			if (image->isVisible && image->isOpaque) {
-				std::string key = image->mat[image->matidx]->shaderName;
-				if (imagePipelines.count(key) == 0) {
-					imagePipelines.insert({ key, std::vector<UIImage*>{image} });
-				}
-				else {
-					imagePipelines.at(key).push_back(image);
-				}
-			}
-			else if (image->isVisible) {
-				// If the image is not opaque then we need to draw them sorted from back to front and associate their pipelines properly
-				transparentImages.push_back(image);
-			}
-			float heightKey = image->zp_default;
-			if (imageHeights.count(heightKey) == 0) {
-				imageHeights.insert({ heightKey, std::vector<UIImage*>{image} });
-			}
-			else {
-				imageHeights.at(heightKey).push_back(image);
-			}
-		}
-
-		float separation = 0.001f;
-
-		float pos = zp;
-		for (auto elem : imageHeights) {
-			for (UIImage* image : elem.second) {
-				image->zp = pos;
-			}
-			pos += separation;
-		}
-
-		if (transparentImages.size() > 0) {
-			std::sort(transparentImages.begin(), transparentImages.end(), [](UIImage* a, UIImage* b) {return a->zp > b->zp; });
-		}
-		for (UIImage* transparentImage : transparentImages) {
-			transparentImagePipelines.push_back(transparentImage->mat[transparentImage->matidx]->shaderName);
-		}
-	}
+	virtual void sortImages();
 };
 
 #endif

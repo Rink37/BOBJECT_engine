@@ -136,7 +136,6 @@ public:
 	using Listener = std::function<bool(double, double, int)>;
 
 	size_t addClickListener(const Listener&);
-
 	size_t addPositionListener(const Listener&);
 
 	void removeClickListener(size_t);
