@@ -270,21 +270,14 @@ public:
 
 	VkFormat findDepthFormat();
 
-	std::vector<VkImage> swapChainImages = {};
-	std::vector<VkImageView> swapChainImageViews = {};
+	std::vector<Texture*> swapChainTextures{};
 	VkFormat swapChainImageFormat = {};
 
 	void createRenderPass(VkRenderPass&, VkFormat, VkImageLayout);
-	void createGraphicsPipelines(GraphicsPass&, int blendMode = 0, bool alphaToCoverage = true);
+	void createGraphicsPipelines(GraphicsPass&, int blendMode = 0, bool alphaToCoverage = true) const;
 
 	void copyImageToSwapchain(VkCommandBuffer, drawImage*, uint32_t);
 	void copyImageToSwapchain(VkCommandBuffer, VkImage, VkExtent2D, uint32_t);
-
-	void createImage(uint32_t, uint32_t, uint32_t, VkSampleCountFlagBits, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&) const;
-	VkImageView createImageView(VkImage, VkFormat, VkImageAspectFlags, uint32_t) const;
-
-	void transitionImageLayout(VkCommandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
-	void transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 	void createDescriptorSetLayout(std::string, std::vector<shaderIOValue>, GraphicsPass&) const;
 private:
@@ -297,12 +290,9 @@ private:
 	std::vector<VkDeviceMemory> uniformBuffersMemory = {};
 	VkDeviceMemory colourBufferMemory = nullptr;
 
-	VkImage depthImage = nullptr;
-	VkDeviceMemory depthImageMemory = nullptr;
-	VkImageView depthImageView = nullptr;
+	Texture* depthTex = nullptr;
 
 	void createSwapChain();
-	void createImageViews();
 	void createGraphicsPipelines();
 	void createDepthResources();
 	void createTextureSampler();

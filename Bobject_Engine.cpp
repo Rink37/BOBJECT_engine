@@ -51,22 +51,26 @@ void Engine::createSwapChain() {
 	}
 
 	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
-	swapChainImages.resize(imageCount);
+	swapChainTextures.resize(imageCount);
+	std::vector<VkImage> swapChainImages(imageCount);
 	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+	for (uint32_t i = 0; i != imageCount; i++) {
+		swapChainTextures[i] = new Texture;
+		swapChainTextures[i]->textureImage = swapChainImages[i];
+	}
 
 	swapChainImageFormat = surfaceFormat.format;
 	swapChainExtent = extent;
 
-	for (auto image : swapChainImages) {
-		transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-	}
-}
-
-void Engine::createImageViews() {
-	swapChainImageViews.resize(swapChainImages.size());
-
-	for (uint32_t i = 0; i < swapChainImages.size(); i++) {
-		swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	for (Texture* tex : swapChainTextures) {
+		tex->textureFormat = swapChainImageFormat;
+		tex->textureAspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+		tex->mipLevels = 1;
+		tex->texWidth = swapChainExtent.width;
+		tex->texHeight = swapChainExtent.height;
+		tex->texChannels = 4;
+		tex->transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		tex->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 }
 
@@ -223,7 +227,7 @@ void Engine::createGraphicsPipelines() {
 	createGraphicsPipelines(defaultPass);
 }
 
-void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, bool alphaToCoverage) {
+void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, bool alphaToCoverage) const {
 
 	shaderData flatShader = FLATSHADER;
 	shaderData projectorFlatShader = PROJECTOR_FLATSHADER;
@@ -469,8 +473,18 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, 
 
 void Engine::createDepthResources() {
 	VkFormat depthFormat = findDepthFormat();
-	createImage(swapChainExtent.width, swapChainExtent.height, 1, Core::maxSamples(), depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-	depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+	depthTex = new Texture;
+	depthTex->texWidth = swapChainExtent.width;
+	depthTex->texHeight = swapChainExtent.height;
+	depthTex->mipLevels = 1;
+	depthTex->textureSamples = Core::maxSamples();
+	depthTex->textureFormat = depthFormat;
+	depthTex->textureTiling = VK_IMAGE_TILING_OPTIMAL;
+	depthTex->textureUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	depthTex->textureLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depthTex->textureMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	depthTex->textureAspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
+	depthTex->setup();
 }
 
 void Engine::createTextureSampler() {
@@ -579,7 +593,6 @@ void Engine::initEngine(std::string appName) {
 
 	createCommandBuffers();
 	createSwapChain();
-	createImageViews();
 	createRenderPass(defaultPass.renderPass, swapChainImageFormat, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 	createGraphicsPipelines();
 	createDepthResources();
@@ -615,12 +628,10 @@ void Engine::cleanup() {
 
 void Engine::cleanupSwapChain() {
 
-	vkDestroyImageView(device, depthImageView, nullptr);
-	vkDestroyImage(device, depthImage, nullptr);
-	vkFreeMemory(device, depthImageMemory, nullptr);
+	depthTex->cleanup();
 
-	for (auto imageView : swapChainImageViews) {
-		vkDestroyImageView(device, imageView, nullptr);
+	for (Texture* tex : swapChainTextures) {
+		vkDestroyImageView(device, tex->textureImageView, nullptr);
 	}
 
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
@@ -643,64 +654,6 @@ VkFormat Engine::findSupportedFormat(const vector<VkFormat>& candidates, VkImage
 
 VkFormat Engine::findDepthFormat() {
 	return findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-}
-
-void Engine::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const {
-	VkImageCreateInfo imageInfo{};
-	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.extent.width = width;
-	imageInfo.extent.height = height;
-	imageInfo.extent.depth = 1;
-	imageInfo.mipLevels = mipLevels;
-	imageInfo.arrayLayers = 1;
-	imageInfo.format = format;
-	imageInfo.tiling = tiling;
-	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = usage;
-
-	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	imageInfo.samples = numSamples;
-
-	if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-		throw runtime_error("failed to create image!");
-	}
-
-	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(device, image, &memRequirements);
-
-	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = VKMem::findMemoryType(memRequirements.memoryTypeBits, properties);
-
-	if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-		throw runtime_error("failed to allocate image memory!");
-	}
-
-	vkBindImageMemory(device, image, imageMemory, 0);
-}
-
-VkImageView Engine::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels) const {
-	VkImageViewCreateInfo viewInfo{};
-	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	viewInfo.image = image;
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.format = format;
-
-	viewInfo.subresourceRange.aspectMask = aspectFlags;
-	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = mipLevels;
-	viewInfo.subresourceRange.baseArrayLayer = 0;
-	viewInfo.subresourceRange.layerCount = 1;
-
-	VkImageView imageView;
-	if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-		throw runtime_error("failed to create texture image view!");
-	}
-
-	return imageView;
 }
 
 VkSurfaceFormatKHR Engine::chooseSwapSurfaceFormat(const vector<VkSurfaceFormatKHR>& availableFormats) {
@@ -754,7 +707,6 @@ void Engine::recreateSwapChain() {
 	cleanupSwapChain();
 
 	createSwapChain();
-	createImageViews();
 	createDepthResources();
 }
 
@@ -802,7 +754,7 @@ void Engine::recreateDrawImage(drawImage* image) const {
 	for (size_t i = 0; i < image->textures.size(); i++) {
 		array<VkImageView, 3> attachments = {
 			image->colourTex->textureImageView,
-			depthImageView,
+			depthTex->textureImageView,
 			image->textures[i]->textureImageView
 		};
 
@@ -932,111 +884,6 @@ VkResult Engine::submitAndPresentFrame(uint32_t imageIndex) {
 	return result;
 }
 
-void Engine::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout) {
-
-	VkImageMemoryBarrier barrier{};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = oldLayout;
-	barrier.newLayout = newLayout;
-
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-	barrier.image = image;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-	barrier.subresourceRange.levelCount = 1;
-
-	VkPipelineStageFlags sourceStage;
-	VkPipelineStageFlags destinationStage;
-
-	switch (oldLayout) {
-	case (VK_IMAGE_LAYOUT_UNDEFINED):
-		barrier.srcAccessMask = 0;
-		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL):
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL):
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL):
-		barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_GENERAL):
-		barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
-		sourceStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL):
-		barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_PRESENT_SRC_KHR):
-		barrier.srcAccessMask = 0;
-		sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		break;
-	default:
-		throw invalid_argument("Old layout not recognised");
-		break;
-	}
-
-	switch (newLayout) {
-	case (VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL):
-		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL):
-		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_GENERAL):
-		barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL):
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL):
-		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-		destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL):
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_PRESENT_SRC_KHR):
-		barrier.dstAccessMask = 0;
-		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		break;
-	default:
-		throw invalid_argument("New layout not recognised");
-		break;
-	}
-
-	vkCmdPipelineBarrier(
-		commandBuffer,
-		sourceStage, destinationStage,
-		0,
-		0, nullptr,
-		0, nullptr,
-		1, &barrier
-	);
-
-}
-
-void Engine::transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout) {
-	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(graphicsQueueObj);
-	transitionImageLayout(commandBuffer, image, oldLayout, newLayout);
-	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueueObj);
-}
-
 drawImage Engine::createDrawImage(uint32_t width, int32_t height, VkFormat format, VkImageUsageFlags flags, VkRenderPass boundRenderPass) const {
 	drawImage newDrawImage;
 	newDrawImage.imageExtent = VkExtent2D(width, height);
@@ -1077,7 +924,7 @@ drawImage Engine::createDrawImage(uint32_t width, int32_t height, VkFormat forma
 	for (size_t i = 0; i < newDrawImage.textures.size(); i++) {
 		array<VkImageView, 3> attachments = {
 			newDrawImage.colourTex->textureImageView,
-			depthImageView,
+			depthTex->textureImageView,
 			newDrawImage.textures[i]->textureImageView
 		};
 
@@ -1103,7 +950,7 @@ void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, VkImage image, 
 
 	VkFormatProperties formatProps{};
 
-	transitionImageLayout(commandBuffer, swapChainImages[imageIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	swapChainTextures[imageIndex]->transitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	if (supportsBlit)
 	{
@@ -1126,7 +973,7 @@ void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, VkImage image, 
 		vkCmdBlitImage(
 			commandBuffer,
 			image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			swapChainTextures[imageIndex]->textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			1,
 			&imageBlitRegion,
 			VK_FILTER_NEAREST);
@@ -1136,7 +983,7 @@ void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, VkImage image, 
 		throw runtime_error("Blitting cannot be performed");
 	}
 
-	transitionImageLayout(commandBuffer, swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+	swapChainTextures[imageIndex]->transitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 }
 
 void Engine::copyImageToSwapchain(VkCommandBuffer commandBuffer, drawImage* image, uint32_t imageIndex) {

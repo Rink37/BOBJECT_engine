@@ -433,7 +433,7 @@ void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image
 		}
 	}
 	else {
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.aspectMask = textureAspectFlags;
 	}
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = mipLevels;
