@@ -18,6 +18,7 @@
 #include<set>
 #include<iostream>
 #include<optional>
+#include<map>
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -27,6 +28,8 @@ const bool enableValidationLayers = true;
 
 const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+const uint32_t QUEUE_SUPPORTS_PRESENT = 0x00001000; // Vulkan does not expose a queue flag for present queues, so this value has been selected to represent these flags without overlapping with existing flags: https://docs.vulkan.org/refpages/latest/refpages/source/VkQueueFlagBits.html
 
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
@@ -44,8 +47,18 @@ struct SwapChainSupportDetails {
 	std::vector<VkPresentModeKHR> presentModes;
 };
 
+class Queue {
+public:
+	uint32_t accessMask = 0;
+	VkQueue queue = nullptr;
+	VkCommandPool commandPool = nullptr;
+
+	Queue(uint32_t, uint32_t);
+	void cleanup() const;
+};
+
 class Core {
-	// Handles lowest level - the physical device, application etc.
+	// Handles lowest level - the physical device and application
 public:
 	static Core* get() {
 		if (nullptr == coreinstance) coreinstance = new Core;
@@ -80,6 +93,15 @@ public:
 		return Core::get()->maxMSAA;
 	}
 
+	static Queue* getSupportedQueue(uint32_t accessMask) {
+		for (uint32_t i = 0; i != Core::get()->queues.size(); i++) {
+			if (Core::get()->queues[i].accessMask & accessMask) {
+				return &Core::get()->queues[i];
+			}
+		}
+		throw std::runtime_error("No queue supports the requested operation(s)!");
+	}
+
 	void createApp(std::string appName) {
 		initWindow(appName);
 		createInstance(appName);
@@ -87,6 +109,7 @@ public:
 		createSurface();
 		pickPhysicalDevice();
 		createLogicalDevice();
+		createUniqueQueues();
 	}
 
 	void cleanup();
@@ -113,12 +136,15 @@ private:
 
 	VkSampleCountFlagBits maxMSAA = VK_SAMPLE_COUNT_1_BIT;
 
+	std::vector<Queue> queues{};
+
 	void initWindow(std::string);
 	void createInstance(std::string);
 	void createSurface();
 	void setupDebugMessenger();
 	void pickPhysicalDevice();
 	void createLogicalDevice();
+	void createUniqueQueues();
 };
 
 #endif

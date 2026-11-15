@@ -51,6 +51,7 @@
 
 #include"Bobject_Core.h"
 #include"Bobject_VKMem.h"
+#include"Bobject_VKCmd.h"
 
 //#include"Textures.h"
 //#include"Materials.h"
@@ -238,11 +239,9 @@ public:
 
 	VkDevice device = VK_NULL_HANDLE;
 
-	VkCommandPool commandPool = nullptr;
-	VkCommandPool computeCommandPool = nullptr;
-	VkQueue graphicsQueue = nullptr;
-	VkQueue presentQueue = nullptr;
-	VkQueue computeQueue = nullptr;
+	Queue* graphicsQueueObj{};
+	Queue* computeQueueObj{};
+	Queue* presentQueueObj{};
 
 	GraphicsPass defaultPass;
 
@@ -325,8 +324,6 @@ private:
 	void createSwapChain();
 	void createImageViews();
 	void createGraphicsPipelines();
-	void createCommandPool();
-	void createComputeCommandPool();
 	void createDepthResources();
 	void createTextureSampler();
 	void createUniformBuffers();

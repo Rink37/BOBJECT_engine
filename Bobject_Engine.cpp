@@ -477,19 +477,6 @@ void Engine::createGraphicsPipelines(GraphicsPass& graphicsPass, int blendMode, 
 	}
 }
 
-void Engine::createCommandPool() {
-	QueueFamilyIndices queueFamilyIndices = Core::get()->indices; //findQueueFamilies(Core::getPhysicalDevice());
-
-	VkCommandPoolCreateInfo poolInfo{};
-	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-
-	if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-		throw runtime_error("failed to create command pool!");
-	}
-}
-
 void Engine::createDepthResources() {
 	VkFormat depthFormat = findDepthFormat();
 	createImage(swapChainExtent.width, swapChainExtent.height, 1, Core::maxSamples(), depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
@@ -555,9 +542,11 @@ void Engine::createCommandBuffers() {
 	commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = commandPool;
+	allocInfo.commandPool = graphicsQueueObj->commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
+
+	std::cout << graphicsQueueObj->commandPool << std::endl;
 
 	if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
 		throw runtime_error("failed to allocate command buffers!");
@@ -594,10 +583,10 @@ void Engine::initEngine(std::string appName) {
 	Core::get()->createApp(appName);
 	device = Core::getDevice();
 	window = Core::getWindow();
-	vkGetDeviceQueue(device, Core::get()->indices.graphicsFamily.value(), 0, &graphicsQueue);
-	vkGetDeviceQueue(device, Core::get()->indices.presentFamily.value(), 0, &presentQueue);
-	vkGetDeviceQueue(device, Core::get()->indices.computeFamily.value(), 0, &computeQueue);
-	createCommandPool();
+	graphicsQueueObj = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
+	presentQueueObj = Core::getSupportedQueue(QUEUE_SUPPORTS_PRESENT);
+	computeQueueObj = Core::getSupportedQueue(VK_QUEUE_COMPUTE_BIT);
+
 	createCommandBuffers();
 	createSwapChain();
 	createImageViews();
@@ -632,9 +621,6 @@ void Engine::cleanup() {
 	for (size_t i = 0; i < imageCount; i++) {
 		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
 	}
-
-	vkDestroyCommandPool(device, commandPool, nullptr);
-	vkDestroyCommandPool(device, computeCommandPool, nullptr);
 }
 
 void Engine::cleanupSwapChain() {
@@ -833,90 +819,19 @@ void Engine::recreateDrawImage(drawImage* image) {
 }
 
 VkCommandBuffer Engine::beginSingleTimeCommands() const {
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = commandPool;
-	allocInfo.commandBufferCount = 1;
-
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
-
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-	return commandBuffer;
+	return VKCmd::allocateSingleTimeCommand(graphicsQueueObj->commandPool);
 }
 
 void Engine::endSingleTimeCommands(VkCommandBuffer commandBuffer) const {
-	vkEndCommandBuffer(commandBuffer);
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
-	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkDeviceWaitIdle(device);
-
-	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
-}
-
-void Engine::createComputeCommandPool() {
-	QueueFamilyIndices indices = Core::get()->indices; //findQueueFamilies(Core::getPhysicalDevice());
-	VkCommandPoolCreateInfo cmdPoolInfo = {};
-	cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	cmdPoolInfo.queueFamilyIndex = indices.computeFamily.value();
-	cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-	if (vkCreateCommandPool(device, &cmdPoolInfo, nullptr, &computeCommandPool) != VK_SUCCESS) {
-		throw runtime_error("Failed to create compute command pool");
-	}
+	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueueObj->commandPool, graphicsQueueObj->queue);
 }
 
 VkCommandBuffer Engine::beginSingleTimeComputeCommand() {
-	if (computeCommandPool == nullptr) {
-		createComputeCommandPool();
-	}
-
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = computeCommandPool;
-	allocInfo.commandBufferCount = 1;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
-
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-	return commandBuffer;
+	return VKCmd::allocateSingleTimeCommand(computeQueueObj->commandPool);
 }
 
 void Engine::endSingleTimeComputeCommand(VkCommandBuffer commandBuffer) const {
-	vkEndCommandBuffer(commandBuffer);
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
-	vkQueueSubmit(computeQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	
-	auto result = vkQueueWaitIdle(computeQueue);
-	if (result != VK_SUCCESS) {
-		throw runtime_error("Failed to wait for compute queue");
-	};
-
-	vkFreeCommandBuffers(device, computeCommandPool, 1, &commandBuffer);
+	VKCmd::submitSingleTimeCommand(commandBuffer, computeQueueObj->commandPool, computeQueueObj->queue);
 }
 
 uint32_t Engine::getRenderTarget() {
@@ -989,11 +904,8 @@ void Engine::drawObject(VkCommandBuffer commandBuffer, VkBuffer vertexBuffer, Vk
 	VkDeviceSize offsets[] = { 0 };
 
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
 	vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-
 	vkCmdDrawIndexed(commandBuffer, drawCount, 1, 0, 0, 0);
 }
 
@@ -1014,7 +926,7 @@ VkResult Engine::submitAndPresentFrame(uint32_t imageIndex) {
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+	if (vkQueueSubmit(graphicsQueueObj->queue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
@@ -1028,7 +940,7 @@ VkResult Engine::submitAndPresentFrame(uint32_t imageIndex) {
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex;
 
-	VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
+	VkResult result = vkQueuePresentKHR(presentQueueObj->queue, &presentInfo);
 
 	return result;
 }

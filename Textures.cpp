@@ -120,9 +120,11 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	VkCommandBuffer copyCmd;
 
+	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
+
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = Engine::get()->commandPool;
+	allocInfo.commandPool = graphicsQueue->commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 
@@ -221,13 +223,13 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	vkCreateFence(device, &fenceInfo, nullptr, &copyFence);
 
-	vkQueueSubmit(Engine::get()->graphicsQueue, 1, &submitInfo, copyFence);
+	vkQueueSubmit(graphicsQueue->queue, 1, &submitInfo, copyFence);
 
 	if (vkWaitForFences(device, 1, &copyFence, VK_TRUE, UINT64_MAX) == VK_TIMEOUT) {
 		throw runtime_error("Fence timeout");
 	};
 
-	vkFreeCommandBuffers(device, Engine::get()->commandPool, 1, &copyCmd);
+	vkFreeCommandBuffers(device, graphicsQueue->commandPool, 1, &copyCmd);
 
 	vkDestroyFence(device, copyFence, nullptr);
 

@@ -1,6 +1,25 @@
 #include"Bobject_Core.h"
 
-std::vector<const char*> getRequiredExtensions() {
+Queue::Queue(uint32_t queueFamilyIndex, uint32_t accMask) {
+	accessMask = accMask; // Indicates what capabilities this queue supports
+
+	vkGetDeviceQueue(Core::getDevice(), queueFamilyIndex, 0, &queue);
+
+	VkCommandPoolCreateInfo cmdPoolInfo = {};
+	cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	cmdPoolInfo.queueFamilyIndex = queueFamilyIndex;
+	cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+	if (vkCreateCommandPool(Core::getDevice(), &cmdPoolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create command pool");
+	}
+}
+
+void Queue::cleanup() const {
+	vkDestroyCommandPool(Core::getDevice(), commandPool, nullptr);
+}
+
+static std::vector<const char*> getRequiredExtensions() {
 	uint32_t glfwExtensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -158,19 +177,21 @@ static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKH
 	// We assume that if there is only one queue family then it can do everything but otherwise we look for separate specialised ones
 	if (queueFamilyCount > 1) {
 		for (const auto& queueFamily : queueFamilies) {
-			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			if (!indices.graphicsFamily.has_value() && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 				indices.graphicsFamily = i;
 			}
 
-			if ((queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) && ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0)) {
+			if (!indices.computeFamily.has_value() && queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) {
 				indices.computeFamily = i;
 			}
 
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+			if (!indices.presentFamily.has_value()) {
+				VkBool32 presentSupport = false;
+				vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
-			if (presentSupport) {
-				indices.presentFamily = i;
+				if (presentSupport) {
+					indices.presentFamily = i;
+				}
 			}
 
 			if (indices.isComplete()) {
@@ -183,16 +204,6 @@ static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKH
 		indices.graphicsFamily = i;
 		indices.computeFamily = i;
 		indices.presentFamily = i;
-	}
-
-	if (!indices.isComplete()) {
-
-		for (const auto& queueFamily : queueFamilies) {
-			if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) {
-				indices.computeFamily = i;
-				break;
-			}
-		}
 	}
 
 	return indices;
@@ -386,6 +397,39 @@ static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMesse
 	}
 }
 
+void Core::createUniqueQueues() {
+	if (!indices.isComplete()) {
+		indices = findQueueFamilies(physicalDevice, surface);
+	}
+	std::map<uint32_t, uint32_t> uniqueQueueIndices{}; // The first element is the queue index and the second element is the access mask (i.e. all types supported by that queue family)
+
+	if (indices.graphicsFamily.has_value()) {
+		uniqueQueueIndices.insert(std::pair<uint32_t, uint32_t>(indices.graphicsFamily.value(), VK_QUEUE_GRAPHICS_BIT));
+	}
+	if (indices.presentFamily.has_value()) {
+		uint32_t index = indices.presentFamily.value();
+		if (uniqueQueueIndices.count(index) > 0) {
+			uniqueQueueIndices.at(index) = uniqueQueueIndices.at(index) | QUEUE_SUPPORTS_PRESENT;
+		}
+		else {
+			uniqueQueueIndices.insert(std::pair<uint32_t, uint32_t>(index, QUEUE_SUPPORTS_PRESENT));
+		}
+	}
+	if (indices.computeFamily.has_value()) {
+		uint32_t index = indices.computeFamily.value();
+		if (uniqueQueueIndices.count(index) > 0) {
+			uniqueQueueIndices.at(index) = uniqueQueueIndices.at(index) | VK_QUEUE_COMPUTE_BIT;
+		}
+		else {
+			uniqueQueueIndices.insert(std::pair<uint32_t, uint32_t>(index, VK_QUEUE_COMPUTE_BIT));
+		}
+	}
+
+	for (std::pair<uint32_t, uint32_t> uniqueQueueFamily : uniqueQueueIndices) {
+		queues.push_back(Queue(uniqueQueueFamily.first, uniqueQueueFamily.second));
+	}
+}
+
 void Core::cleanup() {
 	if (device != nullptr) {
 		vkDestroyDevice(device, nullptr);
@@ -393,6 +437,10 @@ void Core::cleanup() {
 	
 	if (enableValidationLayers) {
 		DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+	}
+
+	for (uint32_t i = 0; i != queues.size(); i++) {
+		queues[i].cleanup();
 	}
 
 	vkDestroySurfaceKHR(instance, surface, nullptr);

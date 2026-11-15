@@ -473,7 +473,7 @@ private:
 
 	void removeItem(UIItem* owner) {
 		int index = std::stoi(owner->Name);
-		vkQueueWaitIdle(Engine::get()->graphicsQueue);
+		vkQueueWaitIdle(Engine::get()->graphicsQueueObj->queue);
 		tomographer.remove_element(index);
 		grid->Items.erase(grid->Items.begin() + index);
 		grid->updateDisplay();

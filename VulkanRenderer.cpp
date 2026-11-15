@@ -2918,7 +2918,7 @@ private:
 		if (!tomogActive) {
 			return;
 		}
-		vkQueueWaitIdle(engine->graphicsQueue);
+		vkQueueWaitIdle(engine->graphicsQueueObj->queue);
 		
 		tomographyPlane->mesh->cleanup();
 		delete tomographyPlane;
