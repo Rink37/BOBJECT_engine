@@ -248,27 +248,27 @@ void Webcam::findWebcams() {
 	//std::cout << std::endl;
 }
 
-void Webcam::loadFilter() {
-	uint8_t defaultCalibSettings[6] = { 0, 0, 0, 255, 255, 255 };
-	bool isNotDefault = true; // If the loaded settings are default then we don't want to perform corner cropping
-	for (int k = 0; k != 6; k++) {
-		filter[k] = session::get()->currentStudio.calibrationSettings[k];
-		if (isNotDefault) {
-			isNotDefault = (filter[k] == defaultCalibSettings[k]);
-		}
-	}
-	cropMethod = 0;
-	if (!isNotDefault) {
-		cropMethod = 1;
-		getCorners(false);
-	}
-}
+//void Webcam::loadFilter() {
+//	uint8_t defaultCalibSettings[6] = { 0, 0, 0, 255, 255, 255 };
+//	bool isNotDefault = true; // If the loaded settings are default then we don't want to perform corner cropping
+//	for (int k = 0; k != 6; k++) {
+//		filter[k] = session::get()->currentStudio.calibrationSettings[k];
+//		if (isNotDefault) {
+//			isNotDefault = (filter[k] == defaultCalibSettings[k]);
+//		}
+//	}
+//	cropMethod = 0;
+//	if (!isNotDefault) {
+//		cropMethod = 1;
+//		getCorners(false);
+//	}
+//}
 
-void Webcam::saveFilter() {
-	for (int k = 0; k != 6; k++) {
-		session::get()->currentStudio.calibrationSettings[k] = filter[k];
-	}
-}
+//void Webcam::saveFilter() {
+//	for (int k = 0; k != 6; k++) {
+//		session::get()->currentStudio.calibrationSettings[k] = filter[k];
+//	}
+//}
 
 void Webcam::updateAspectRatio(float ratio) {
 	sizeRatio = ratio;
@@ -375,7 +375,7 @@ void Webcam::calibrateCornerFilter() {
 	
 	shouldUpdate = storedShouldUpdate;
 
-	saveFilter();
+	//saveFilter();
 
 	targetCorners[0] = Point2f(0, 0);
 	targetCorners[1] = Point2f(0, targetHeight);

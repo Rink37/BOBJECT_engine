@@ -5,7 +5,7 @@
 #include"UIelements.h"
 #include"Webcam_feeder.h"
 #include"Materials.h"
-#include"StudioSession.h"
+//#include"StudioSession.h"
 #include"Tomography.h"
 #include"LoadLists.h"
 #include"Remapper.h"
@@ -537,46 +537,46 @@ private:
 	}
 };
 
-class SaveMenu : public Widget {
-public:
-	SaveMenu(LoadList* assets) {
-		loadList = assets;
-	}
-
-	void setup(std::function<void(UIItem*)> loadSessionFunc, std::function<void(UIItem*)> newSessionFunc) {
-		if (isSetup) {
-			return;
-		}
-		Arrangement* SessionButtons = new Arrangement(ORIENT_HORIZONTAL, 1.0f, 1.0f, 0.15f, 0.05f, 0.01f, ARRANGE_END);
-
-		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
-
-		Material* openMat = loadList->getMaterial("OpenBtnMat");
-		Material* saveMat = loadList->getMaterial("SaveBtnMat");
-		Material* plusMat = loadList->getMaterial("PlusBtnMat");
-
-		SessionButtons->addItem(getPtr(new Button(plusMat, newSessionFunc)));
-		SessionButtons->addItem(getPtr(new Button(openMat, loadSessionFunc)));
-		SessionButtons->addItem(getPtr(new Button(saveMat, saveSessionFunc)));
-
-		SessionButtons->arrangeItems();
-
-		canvas.push_back(getPtr(SessionButtons));
-
-		isSetup = true;
-	}
-private:
-	void save(UIItem* owner) {
-		string saveLocation;
-		saveLocation = winFile::SaveFileDialog();
-		if (saveLocation == "fail") {
-			return;
-		}
-		session::get()->currentStudio.packWebcamSettings(webcamTexture::get()->webCam->rotationState, webcamTexture::get()->webCam->camIndex);
-		session::get()->currentStudio.webcamAspectRatio = webcamTexture::get()->webCam->sizeRatio;
-		session::get()->saveStudio(saveLocation);
-	}
-};
+//class SaveMenu : public Widget {
+//public:
+//	SaveMenu(LoadList* assets) {
+//		loadList = assets;
+//	}
+//
+//	void setup(std::function<void(UIItem*)> loadSessionFunc, std::function<void(UIItem*)> newSessionFunc) {
+//		if (isSetup) {
+//			return;
+//		}
+//		Arrangement* SessionButtons = new Arrangement(ORIENT_HORIZONTAL, 1.0f, 1.0f, 0.15f, 0.05f, 0.01f, ARRANGE_END);
+//
+//		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
+//
+//		Material* openMat = loadList->getMaterial("OpenBtnMat");
+//		Material* saveMat = loadList->getMaterial("SaveBtnMat");
+//		Material* plusMat = loadList->getMaterial("PlusBtnMat");
+//
+//		SessionButtons->addItem(getPtr(new Button(plusMat, newSessionFunc)));
+//		SessionButtons->addItem(getPtr(new Button(openMat, loadSessionFunc)));
+//		SessionButtons->addItem(getPtr(new Button(saveMat, saveSessionFunc)));
+//
+//		SessionButtons->arrangeItems();
+//
+//		canvas.push_back(getPtr(SessionButtons));
+//
+//		isSetup = true;
+//	}
+//private:
+//	void save(UIItem* owner) {
+//		string saveLocation;
+//		saveLocation = winFile::SaveFileDialog();
+//		if (saveLocation == "fail") {
+//			return;
+//		}
+//		//session::get()->currentStudio.packWebcamSettings(webcamTexture::get()->webCam->rotationState, webcamTexture::get()->webCam->camIndex);
+//		//session::get()->currentStudio.webcamAspectRatio = webcamTexture::get()->webCam->sizeRatio;
+//		//session::get()->saveStudio(saveLocation);
+//	}
+//};
 
 class RenderMenu : public Widget {
 public:
@@ -2026,9 +2026,9 @@ public:
 		mouseManager.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		webcamTexture::get()->setup();
-		if (webcamTexture::get()->webCam != nullptr) {
-			webcamTexture::get()->webCam->loadFilter();
-		}
+		//if (webcamTexture::get()->webCam != nullptr) {
+		//	webcamTexture::get()->webCam->loadFilter();
+		//}
 		TextureElements.getPtr(webcamTexture::get(), "Webcam View");
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
 		std::function<void()> colourChange2 = bind(&Application::colourChangeTest2, this);
@@ -2681,7 +2681,7 @@ private:
 		objectMenu->clearObjects();
 
 		// Clear session data
-		session::get()->clearStudio();
+		//session::get()->clearStudio();
 	}
 
 	void createTexLoadMenu(std::function<void(UIItem*)> updateTexMenu) {
@@ -3182,7 +3182,7 @@ private:
 		if (staticObjects.size() == 1) {
 			resetCamera();
 		}
-		session::get()->currentStudio.modelPaths.push_back(modelPath);
+		//session::get()->currentStudio.modelPaths.push_back(modelPath);
 
 		updateVisibleObjects();
 	}
@@ -3423,7 +3423,7 @@ private:
 };
 
 Core* Core::coreinstance = nullptr;
-session* session::sessionInstance = nullptr;
+//session* session::sessionInstance = nullptr;
 webcamTexture* webcamTexture::winstance = nullptr;
 Engine* Engine::enginstance = nullptr;
 

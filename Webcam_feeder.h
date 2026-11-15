@@ -2,7 +2,7 @@
 #define WEBCAM
 #include<iostream>
 #include<opencv2/opencv.hpp>
-#include"StudioSession.h"
+//#include"StudioSession.h"
 
 class Webcam {
 public:
@@ -41,9 +41,8 @@ public:
 	cv::Point2f cropCorners[4];
 	cv::Point2f targetCorners[4];
 
-	void loadFilter();
-
-	void saveFilter();
+	//void loadFilter();
+	//void saveFilter();
 
 	void findWebcams();
 
