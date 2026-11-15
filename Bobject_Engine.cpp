@@ -2,16 +2,6 @@
 
 using namespace std;
 
-void Engine::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
-	VkBufferCopy copyRegion{};
-	copyRegion.size = size;
-	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-	endSingleTimeCommands(commandBuffer);
-}
-
 void Engine::createSwapChain() {
 	SwapChainSupportDetails swapChainSupport = Core::get()->getSwapChainSupport();
 
@@ -35,7 +25,7 @@ void Engine::createSwapChain() {
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-	QueueFamilyIndices indices = Core::get()->indices;// findQueueFamilies(Core::getPhysicalDevice());
+	QueueFamilyIndices indices = Core::get()->indices;
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 	if (indices.graphicsFamily != indices.presentFamily) {
@@ -818,22 +808,6 @@ void Engine::recreateDrawImage(drawImage* image) {
 	}
 }
 
-VkCommandBuffer Engine::beginSingleTimeCommands() const {
-	return VKCmd::allocateSingleTimeCommand(graphicsQueueObj->commandPool);
-}
-
-void Engine::endSingleTimeCommands(VkCommandBuffer commandBuffer) const {
-	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueueObj->commandPool, graphicsQueueObj->queue);
-}
-
-VkCommandBuffer Engine::beginSingleTimeComputeCommand() {
-	return VKCmd::allocateSingleTimeCommand(computeQueueObj->commandPool);
-}
-
-void Engine::endSingleTimeComputeCommand(VkCommandBuffer commandBuffer) const {
-	VKCmd::submitSingleTimeCommand(commandBuffer, computeQueueObj->commandPool, computeQueueObj->queue);
-}
-
 uint32_t Engine::getRenderTarget() {
 	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -1045,9 +1019,9 @@ void Engine::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage& image
 }
 
 void Engine::transitionImageLayout(VkImage& image, VkImageLayout oldLayout, VkImageLayout newLayout) {
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(graphicsQueueObj);
 	transitionImageLayout(commandBuffer, image, oldLayout, newLayout);
-	endSingleTimeCommands(commandBuffer);
+	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueueObj);
 }
 
 drawImage Engine::createDrawImage(uint32_t width, int32_t height, VkFormat format, VkImageUsageFlags flags, VkRenderPass boundRenderPass) {

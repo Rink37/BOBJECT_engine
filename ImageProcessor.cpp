@@ -258,19 +258,20 @@ void filter::createFilterTarget() {
 }
 
 void filter::filterImage() {
-	vkDeviceWaitIdle(Engine::get()->device);
+	vkDeviceWaitIdle(Core::getDevice());
 
 	for (Texture* tex : source) {
 		tex->transitionImageLayout(tex->textureLayout, VK_IMAGE_LAYOUT_GENERAL);
 	}
 
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeComputeCommand();
+	Queue* computeQueue = Core::getSupportedQueue(VK_QUEUE_COMPUTE_BIT);
+	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(computeQueue);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, filterPipelineLayout, 0, 1, &filterDescriptorSet, 0, 0);
 	vkCmdDispatch(commandBuffer, source[0]->texWidth / 16 + 1, source[0]->texHeight / 16 + 1, 1);
 
-	Engine::get()->endSingleTimeComputeCommand(commandBuffer);
+	VKCmd::submitSingleTimeCommand(commandBuffer, computeQueue);
 
 	for (Texture* tex : source) {
 		tex->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, tex->textureLayout);
@@ -743,9 +744,10 @@ void textureWriter::createTexWritePipeline() {
 }
 
 Texture* textureWriter::drawMap(std::vector<Mesh*> meshes) {
-	VkCommandBuffer commandBuffer = Engine::get()->beginSingleTimeCommands();
+	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
+	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(graphicsQueue);
 	drawMap(commandBuffer, meshes);
-	Engine::get()->endSingleTimeCommands(commandBuffer);
+	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueue);
 
 	Texture* resultImg = nullptr;
 

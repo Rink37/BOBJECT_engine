@@ -6,6 +6,8 @@
 #include"Materials.h"
 #include"Meshes.h"
 
+#include"Bobject_VKMem.h"
+
 class font {
 public:
 	font();

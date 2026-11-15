@@ -274,13 +274,6 @@ public:
 	void drawObject(VkCommandBuffer, VkBuffer, VkBuffer, VkPipelineLayout, VkDescriptorSet, std::uint32_t);
 	VkResult submitAndPresentFrame(std::uint32_t);
 
-	void copyBuffer(VkBuffer, VkBuffer, VkDeviceSize);
-	VkCommandBuffer beginSingleTimeCommands() const;
-	void endSingleTimeCommands(VkCommandBuffer) const;
-
-	VkCommandBuffer beginSingleTimeComputeCommand();
-	void endSingleTimeComputeCommand(VkCommandBuffer) const;
-
 	drawImage createDrawImage(uint32_t, int32_t, VkFormat, VkImageUsageFlags, VkRenderPass);
 	void recreateDrawImage(drawImage*);
 

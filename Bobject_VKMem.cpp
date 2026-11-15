@@ -52,3 +52,13 @@ void VKMem::copyDataToBuffer(VkBuffer buffer, VkDeviceMemory memory, void* buffe
 	vkUnmapMemory(Core::getDevice(), memory);
 	// Data cannot be deleted or freed because it will cause an RtlValidateHeap error
 }
+
+void VKMem::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize bufferSize, Queue* queue) {
+	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(queue);
+
+	VkBufferCopy copyRegion{};
+	copyRegion.size = bufferSize;
+	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+	VKCmd::submitSingleTimeCommand(commandBuffer, queue);
+}

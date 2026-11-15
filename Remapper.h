@@ -42,7 +42,9 @@ struct RemapParamObject {
 
 class RemapBackend {
 public:
-	RemapBackend() = default;
+	RemapBackend() {
+		graphicsQueue = Core::getSupportedQueue(VK_QUEUE_COMPUTE_BIT);
+	}
 
 	void setup() {
 		params.kuwaharaKernelRadius = 15;
@@ -135,7 +137,9 @@ public:
 
 	uint32_t method = ITERATIVE;
 
+	Queue* graphicsQueue = nullptr;
 private:
+
 	RemapParamObject params{};
 
 	VkBuffer paramBuffer = nullptr;

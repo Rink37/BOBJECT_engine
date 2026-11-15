@@ -71,19 +71,13 @@ void fontMesh::UpdateVertices(float xp, float yp, float xsc, float windowRatio, 
 }
 
 void fontMesh::createVertexBuffer() {
-
 	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 	VKMem::copyDataToBuffer(stagingBuffer, stagingBufferMemory, vertices.data(), bufferSize);
 	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBuffer, vertexBufferMemory);
-
-	Engine::get()->copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-	
 	vkMapMemory(Core::getDevice(), vertexBufferMemory, 0, bufferSize, 0, &vBuffer);
-
 	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
 }
 
