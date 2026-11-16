@@ -83,6 +83,7 @@ private:
 	}
 
 	void finishFunc(UIItem* owner) {
+		std::cout << "Finish func of Projector obj picker called" << std::endl;
 		if (objectName == "") {
 			if (errorFunc != nullptr) {
 				errorFunc("SELECT ERROR: ", "No base object has been selected!");
@@ -90,10 +91,13 @@ private:
 			return;
 		}
 		owner->Name = textureName;
+		std::cout << owner->Name << std::endl;
 		owner->text = objectName;
+		std::cout << owner->text << std::endl;
 		if (finishCallback != nullptr) {
 			finishCallback(owner);
 		}
+		selfDestruct(owner);
 	}
 };
 

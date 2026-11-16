@@ -66,8 +66,6 @@ struct UIImage {
 	
 	UIMesh mesh;
 
-	uint32_t mipLevels = 0;
-
 	bool isOpaque = true;
 
 	void UpdateVertices(float, float, float, float);
@@ -2087,7 +2085,7 @@ struct Widget {
 		}
 	}
 
-	void destruct() {
+	void destruct() const {
 		if (deleteSelf != nullptr) {
 			deleteSelf(mappedName);
 		}

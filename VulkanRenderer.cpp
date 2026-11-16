@@ -5,7 +5,6 @@
 #include"UIelements.h"
 #include"Webcam_feeder.h"
 #include"Materials.h"
-//#include"StudioSession.h"
 #include"Tomography.h"
 #include"LoadLists.h"
 #include"Remapper.h"
@@ -42,7 +41,7 @@ public:
 		this->zp = 0.0f;
 	}
 
-	void setup(std::string title, std::string message, std::function<void(UIItem*)> exitCallback) {
+	void setup(std::string title, std::string message) {
 		if (isSetup) {
 			return;
 		}
@@ -59,7 +58,7 @@ public:
 
 		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f);
 		finishArrangement->addItem(getPtr(new spacer));
-		finishArrangement->addItem(getPtr(new Button(loadList->getMaterial("FinishBtnMat"), exitCallback)));
+		finishArrangement->addItem(getPtr(new Button(loadList->getMaterial("FinishBtnMat"), std::bind(&ErrorDialog::selfDestruct, this, std::placeholders::_1))));
 
 		totalArrangement->addItem(getPtr(finishArrangement));
 
@@ -161,6 +160,7 @@ private:
 		if (continueCallback != nullptr) {
 			continueCallback(refName, targetName);
 		}
+		selfDestruct(owner);
 	}
 };
 
@@ -254,6 +254,7 @@ private:
 		if (continueCallback != nullptr) {
 			continueCallback(refName, targetName);
 		}
+		selfDestruct(owner);
 	}
 };
 
@@ -264,7 +265,7 @@ public:
 		textureLL = textureAssets;
 	}
 
-	void setup(std::string texName, std::function<void(UIItem*)> exitFnc, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc, std::function<void(UIItem*)> projectorFunc, std::function<void(UIItem*)> cancelProjectorFnc, std::function<void(UIItem*)> finishProjectorFnc, std::function<void(UIItem*)> bakeAlphaFunc, std::function<void(UIItem*)> alphaOverFunc, std::function<void(float)> updateProjectorAngleFunc, std::function<void(UIItem*)> extractAlphaMap) {
+	void setup(std::string texName, std::function<void(UIItem*)> remapFnc, std::function<void(UIItem*)> transitionTypeFnc, std::function<void(UIItem*)> mixNormalsFnc, std::function<void(UIItem*)> fixSeamsFnc, std::function<void(UIItem*)> projectorFunc, std::function<void(UIItem*)> cancelProjectorFnc, std::function<void(UIItem*)> finishProjectorFnc, std::function<void(UIItem*)> bakeAlphaFunc, std::function<void(UIItem*)> alphaOverFunc, std::function<void(float)> updateProjectorAngleFunc, std::function<void(UIItem*)> extractAlphaMap) {
 		if (isSetup) {
 			return;
 		}
@@ -293,7 +294,7 @@ public:
 		Arrangement* projectorFinishBtns = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_FILL, SCALE_BY_DIMENSIONS);
 		Arrangement* exitArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 		exitArrangement->addItem(getPtr(new spacer()));
-		exitArrangement->addItem(getPtr(new Button(closeMat, exitFnc)));
+		exitArrangement->addItem(getPtr(new Button(closeMat, std::bind(&TextureSettings::selfDestruct, this, std::placeholders::_1))));
 
 		std::vector<std::string> functionNames{};
 
@@ -378,6 +379,7 @@ private:
 		if (functions.count(owner->text) > 0 && functions.at(owner->text) != nullptr) {
 			functions.at(owner->text)(temp);
 		}
+		selfDestruct(temp);
 		temp->cleanup();
 		delete temp;
 	}
@@ -866,6 +868,7 @@ private:
 		if (finishedCallback != nullptr) {
 			finishedCallback(owner);
 		}
+		selfDestruct(owner);
 	}
 };
 
@@ -1401,6 +1404,7 @@ private:
 		if (exitCallback != nullptr) {
 			exitCallback(owner);
 		}
+		selfDestruct(owner);
 	}
 };
 
@@ -1485,6 +1489,7 @@ private:
 		if (exitCallback != nullptr) {
 			exitCallback(owner);
 		}
+		selfDestruct(owner);
 	}
 
 	void changeNormalMapType(UIItem* owner) {
@@ -1555,13 +1560,12 @@ public:
 		textureLL = texLL;
 	}
 
-	void setup(std::function<void(UIItem*)> update, std::function<void(UIItem*)> exit) {
+	void setup(std::function<void(UIItem*)> update) {
 		if (isSetup) {
 			return;
 		}
 
 		updateTextureMenu = update;
-		exitCallback = exit;
 
 		fileName = winFile::OpenFileDialog();
 		if (fileName == string("fail")) {
@@ -1644,7 +1648,6 @@ private:
 	bool normalType = false;
 
 	std::function<void(UIItem*)> updateTextureMenu = nullptr;
-	std::function<void(UIItem*)> exitCallback = nullptr; 
 
 	void setOptionCallback(UIItem* owner) {
 		if (owner->text == std::string("Colour")) {
@@ -1676,9 +1679,7 @@ private:
 			if (updateTextureMenu != nullptr) {
 				updateTextureMenu(owner);
 			}
-			if (exitCallback != nullptr) {
-				exitCallback(nullptr);
-			}
+			selfDestruct(owner);
 		}
 		catch (...) {
 			if (errorFunc != nullptr) {
@@ -1687,9 +1688,7 @@ private:
 				std::string extension = fileName.substr(pos + 1, fileName.size());
 				errorFunc("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for textures"));
 			}
-			if (exitCallback != nullptr) {
-				exitCallback(nullptr);
-			}
+			selfDestruct(owner);
 		}
 	}
 };
@@ -1946,6 +1945,7 @@ public:
 			}
 			prioritySortedWidgets.insert(prioritySortedWidgets.begin() + index, widget);
 		}
+		updateFlag = true;
 	}
 
 	Widget* getWidget(std::string widgetName) {
@@ -1967,12 +1967,25 @@ public:
 		}
 	}
 
-	void deleteWidget(std::string widgetName) {
-		vkDeviceWaitIdle(Core::getDevice());
+	void cleanup() {
+		for (std::pair<std::string, Widget*> widgetElem : widgets) {
+			widgetElem.second->cleanup();
+		}
+	}
 
+	bool showWidgets = true;
+	bool updateFlag = false; // A single condition which allows another class to check if it needs to update local pointers which are sources from the manager
+	MouseManager* mouseManager{};
+private:
+	std::map<std::string, Widget*> widgets{};
+	std::vector<Widget*> prioritySortedWidgets{};
+
+	void deleteWidget(std::string widgetName) { // Cleans and deletes the selected widget. Widgets are responsible for deleting themselves.
 		if (widgets.count(widgetName) == 0) {
 			return;
 		}
+
+		vkDeviceWaitIdle(Core::getDevice());
 
 		Widget* widget = widgets.at(widgetName);
 
@@ -2003,19 +2016,9 @@ public:
 		widgets.at(widgetName)->cleanup();
 		delete widgets.at(widgetName);
 		widgets.erase(widgetName);
+		
+		updateFlag = true;
 	}
-
-	void cleanup() {
-		for (std::pair<std::string, Widget*> widgetElem : widgets) {
-			widgetElem.second->cleanup();
-		}
-	}
-
-	bool showWidgets = true;
-	MouseManager* mouseManager{};
-private:
-	std::map<std::string, Widget*> widgets{};
-	std::vector<Widget*> prioritySortedWidgets{};
 };
 
 class Application {
@@ -2026,9 +2029,6 @@ public:
 		mouseManager.initCallbacks(engine->window);
 		glfwSetScrollCallback(engine->window, camera.scrollCallback);
 		webcamTexture::get()->setup();
-		//if (webcamTexture::get()->webCam != nullptr) {
-		//	webcamTexture::get()->webCam->loadFilter();
-		//}
 		TextureElements.getPtr(webcamTexture::get(), "Webcam View");
 		std::function<void()> colourChange = bind(&Application::colourChangeTest, this);
 		std::function<void()> colourChange2 = bind(&Application::colourChangeTest2, this);
@@ -2088,29 +2088,12 @@ private:
 	WidgetManager widgetManager = WidgetManager(&mouseManager);
 	ObjectMenu* objectMenu = nullptr;
 	TextureMenu* textureMenu = nullptr;
-
-	TomographyMenu tomogUI = TomographyMenu(&UIElements, &TextureElements);
-	TextureSettings textureSettings = TextureSettings(&UIElements, &TextureElements);
-	RemapUI remapMenu = RemapUI(&UIElements, &TextureElements);
-	WebcamSettings webSets = WebcamSettings(&UIElements, &TextureElements);
-	MaterialCreator mc = MaterialCreator(&UIElements, &TextureElements); 
-	RemapTexSelector rts = RemapTexSelector(&UIElements, &TextureElements);
-	TextureLoadMenu tlm = TextureLoadMenu(&UIElements, &TextureElements);
-	TomogRefPicker tomogPicker = TomogRefPicker(&UIElements, &TextureElements);
-	SpaceTransitionMenu stm = SpaceTransitionMenu(&UIElements, &TextureElements);
-	NormalMixer normalMixer = NormalMixer(&UIElements, &TextureElements);
-	SeamObjPicker sob = SeamObjPicker(&UIElements, &TextureElements);
-	SeamFixMenu seamFixer = SeamFixMenu(&UIElements, &TextureElements);
-	ErrorDialog errorDlg = ErrorDialog(&UIElements);
-	ProjectorObjPicker pob = ProjectorObjPicker(&UIElements, &TextureElements);
-
-	bool showWidgets = true;
+	RemapUI* remapMenu = nullptr;
+	TextureSettings* textureSettings = nullptr;
+	TomographyMenu* tomogUI = nullptr;
 
 	Material* webcamMat = nullptr;
 	Material* wireMat = nullptr;
-
-	vector<Widget*> widgets;
-	vector<Widget*> allWidgets = { &tomogUI, &textureSettings, &remapMenu, &webSets, &mc, &rts, &tlm, &tomogPicker, &stm, &normalMixer, &sob, &seamFixer, &errorDlg};
 
 	drawImage renderImage;
 	GraphicsPass renderGP;
@@ -2160,16 +2143,20 @@ private:
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
 
 	void createErrorDialog(std::string title = "ERROR", std::string message = "") {
-		errorDlg.setup(title, message, std::bind(&Application::destroyErrorDialog, this, std::placeholders::_1));
-		addWidget(&errorDlg);
-	}
-
-	void destroyErrorDialog(UIItem* owner) {
-		removeWidget(&errorDlg);
+		ErrorDialog* errorDlg = new ErrorDialog(&UIElements);
+		errorDlg->setup(title, message);
+		widgetManager.addWidget("ErrorDialog", errorDlg);
 	}
 
 	void toggleWidgets() {
-		showWidgets = !showWidgets;
+		widgetManager.showWidgets = !widgetManager.showWidgets;
+	}
+
+	void checkForWidgetChanges() {
+		remapMenu = (widgetManager.getWidget("remapMenu") != nullptr) ? static_cast<RemapUI*>(widgetManager.getWidget("remapMenu")) : nullptr;
+		textureSettings = (widgetManager.getWidget("textureSettings") != nullptr) ? static_cast<TextureSettings*>(widgetManager.getWidget("textureSettings")) : nullptr;;
+		tomogUI = (widgetManager.getWidget("tomogUI") != nullptr) ? static_cast<TomographyMenu*>(widgetManager.getWidget("tomogUI")) : nullptr;;
+		widgetManager.updateFlag = false;
 	}
 
 	void createWidgetMaterials() {
@@ -2222,61 +2209,6 @@ private:
 		UIElements.getPtr(&crs, "UIGray", "CrossBtn");
 	}
 
-	void addWidget(Widget* widget, bool hasClick = true, bool hasPos = false) {
-		// The widget must be set up beforehand since setup functions don't have consistent arguments
-		if (!widget->isSetup) {
-			return;
-		}
-
-		if (hasClick) {
-			widget->clickIndex = mouseManager.addClickListener(widget->getClickCallback());
-		}
-		else {
-			widget->clickIndex = INT_MAX;
-		}
-		if (hasPos) {
-			widget->posIndex = mouseManager.addPositionListener(widget->getPosCallback());
-		}
-		else {
-			widget->posIndex = INT_MAX;
-		}
-		widgets.push_back(widget);
-
-		sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
-	}
-
-	void removeWidget(Widget* widget) {
-		vkDeviceWaitIdle(Engine::get()->device);
-
-		if (widget->clickIndex != INT_MAX) {
-			uint32_t clickIndex = widget->clickIndex;
-			mouseManager.removeClickListener(widget->clickIndex);
-			for (Widget* wid : widgets) {
-				if (wid->clickIndex > clickIndex) {
-					wid->clickIndex -= 1;
-				}
-			}
-		}
-		if (widget->posIndex != INT_MAX) {
-			uint32_t posIndex = widget->posIndex;
-			mouseManager.removePositionListener(widget->posIndex);
-			for (Widget* wid : widgets) {
-				if (wid->posIndex > posIndex) {
-					wid->posIndex -= 1;
-				}
-			}
-		}
-		
-		widget->cleanup();
-
-		auto it = find(widgets.begin(), widgets.end(), widget);
-		if (it != widgets.end()) {
-			widgets.erase(it);
-
-			sort(widgets.begin(), widgets.end(), [](Widget* a, Widget* b) {return a->priorityLayer > b->priorityLayer; });
-		}
-	}
-
 	void createProjectorObjPicker(UIItem* owner) {
 		if (projector != nullptr) {
 			return;
@@ -2290,19 +2222,17 @@ private:
 
 		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::closeProjectorObjPicker, this, std::placeholders::_1);
 
-		if (pob.errorFunc == nullptr) {
-			pob.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
-		}
-		pob.setup(texName, objectNames, std::bind(&Application::openProjector, this, std::placeholders::_1), cancelFunc);
+		ProjectorObjPicker* pob = new ProjectorObjPicker(&UIElements, &TextureElements);
+		pob->setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		pob->setup(texName, objectNames, std::bind(&Application::openProjector, this, std::placeholders::_1), cancelFunc);
 
-		addWidget(&pob);
+		widgetManager.addWidget("pob", pob);
 	}
 
 	void closeProjectorObjPicker(UIItem* owner) {
 		spacer* temp = new spacer;
 		temp->Name = owner->Name;
 
-		removeWidget(&pob);
 		openTextureSettingsMenu(temp);
 
 		temp->cleanup();
@@ -2315,7 +2245,6 @@ private:
 		Mesh* selectedMesh = staticObjects[objectMenu->ObjectMap.at(objName)].mesh;
 
 		createProjector(texName, selectedMesh);
-		removeWidget(&pob);
 	}
 
 	void createProjector(std::string texName, Mesh* mesh) {
@@ -2374,23 +2303,20 @@ private:
 		for (std::pair<std::string, int> elem : objectMenu->ObjectMap) {
 			objectNames.push_back(elem.first);
 		}
-		closeTextureSettingsMenu(owner);
 
 		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::closeSeamObjPicker, this, std::placeholders::_1);
 
-		if (sob.errorFunc == nullptr) {
-			sob.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
-		}
-		sob.setup(texName, objectNames, std::bind(&Application::openSeamFixer ,this, std::placeholders::_1), cancelFunc);
+		SeamObjPicker* sob = new SeamObjPicker(&UIElements, &TextureElements);
+		sob->setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		sob->setup(texName, objectNames, std::bind(&Application::openSeamFixer ,this, std::placeholders::_1), cancelFunc);
 		
-		addWidget(&sob);
+		widgetManager.addWidget("sob", sob);
 	}
 
 	void closeSeamObjPicker(UIItem* owner) {
 		spacer* temp = new spacer;
 		temp->Name = owner->Name;
 
-		removeWidget(&sob);
 		openTextureSettingsMenu(temp);
 
 		temp->cleanup();
@@ -2402,16 +2328,13 @@ private:
 		std::string objName = owner->text;
 		Mesh* selectedMesh = staticObjects[objectMenu->ObjectMap.at(objName)].mesh;
 
-		removeWidget(&sob);
-
-		seamFixer.setup(selectedMesh, texName, std::bind(&Application::cancelSeamFixer, this, std::placeholders::_1), std::bind(&Application::finishSeamFixer, this, std::placeholders::_1));
-		addWidget(&seamFixer, true, true);
+		SeamFixMenu* seamFixer = new SeamFixMenu(&UIElements, &TextureElements);
+		seamFixer->setup(selectedMesh, texName, std::bind(&Application::cancelSeamFixer, this, std::placeholders::_1), std::bind(&Application::finishSeamFixer, this, std::placeholders::_1));
+		widgetManager.addWidget("seamFixer", seamFixer);
 	}
 
 	void cancelSeamFixer(UIItem* owner) {
 		std::string texName = owner->Name;
-		
-		removeWidget(&seamFixer);
 
 		UIItem* temp = new spacer;
 		temp->Name = texName;
@@ -2422,8 +2345,6 @@ private:
 
 	void finishSeamFixer(UIItem* owner) {
 		std::string texName = owner->Name;
-
-		removeWidget(&seamFixer);
 
 		UIItem* temp = new spacer;
 		temp->Name = texName;
@@ -2505,11 +2426,12 @@ private:
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishWebSettings, this, std::placeholders::_1);
 		std::function<void()> updateTexView = std::bind(&Application::updateTextureSettingsMenu, this);
 
-		webSets.setup(finishSelf, updateTexView);
-		if (!webSets.isSetup) {
+		WebcamSettings* webSets = new WebcamSettings(&UIElements, &TextureElements);
+		webSets->setup(finishSelf, updateTexView);
+		if (!webSets->isSetup) {
 			return;
 		}
-		addWidget(&webSets, true, true);
+		widgetManager.addWidget("webcamSettings", webSets);
 
 		inWebSettings = true;
 		webcamTexture::get()->interruptFrameUpdate();
@@ -2520,7 +2442,7 @@ private:
 	}
 
 	void finishWebSettings(UIItem* owner) {
-		removeWidget(&webSets);
+		widgetManager.getWidget("webcamSettings")->selfDestruct(owner);
 
 		webcamTexture::get()->startFrameUpdate();
 
@@ -2556,8 +2478,6 @@ private:
 		filter bakeAlpha{ std::vector<Texture*>{tex, alpha}, new BAKEALPHASHADER};
 		bakeAlpha.filterImage();
 		bakeAlpha.cleanup();
-
-		widgetManager.deleteWidget("amts");
 	}
 
 	void createAlphaOverTexSelector(UIItem* owner) {
@@ -2582,54 +2502,51 @@ private:
 		delete overlay;
 
 		TextureElements.replacePtr(tex, texName);
-
-		widgetManager.deleteWidget("aots");
 	}
 
 	void createRemapTexSelector(UIItem* owner) {
 		std::function<void(std::string, std::string)> continueCallback = std::bind(&Application::createRemapper, this, std::placeholders::_1, std::placeholders::_2);
-		std::function<void(UIItem*)> cancelCallback = std::bind(&Application::destroyRemapTexSelector, this, std::placeholders::_1);
 
-		if (rts.errorFunc == nullptr) {
-			rts.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
-		}
-		rts.setup(owner->Name, continueCallback, cancelCallback);
+		RemapTexSelector* rts = new RemapTexSelector(&UIElements, &TextureElements);
+		rts->setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		rts->setup(owner->Name, continueCallback);
 		
-		addWidget(&rts);
-	}
-
-	void destroyRemapTexSelector(UIItem* owner) {
-		removeWidget(&rts);
+		widgetManager.addWidget("rts", rts);
 	}
 
 	void createRemapper(std::string refTexture, std::string targetTexture) {
 		std::function<void(UIItem*)> destroySelf = std::bind(&Application::destroyRemapper, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishSelf = std::bind(&Application::finishRemapper, this, std::placeholders::_1);
 
-		removeWidget(&rts);
-		removeWidget(&textureSettings);
-
-		remapMenu.setup(refTexture, targetTexture, destroySelf, finishSelf); 
-		if (!remapMenu.isSetup) {
+		remapMenu = new RemapUI(&UIElements, &TextureElements);
+		remapMenu->setup(refTexture, targetTexture, destroySelf, finishSelf); 
+		if (!remapMenu->isSetup) {
 			return;
 		}
 
-		addWidget(&remapMenu, true, true);
+		widgetManager.addWidget("remapMenu", remapMenu);
 	}
 
 	void destroyRemapper(UIItem* owner) {
-		vkDeviceWaitIdle(Engine::get()->device);
+		//vkDeviceWaitIdle(Engine::get()->device);
 
-		remapMenu.remapper->baseTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		remapMenu.remapper->baseTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		RemapUI* remapMenu = static_cast<RemapUI*>(widgetManager.getWidget("remapMenu"));
+		if (remapMenu == nullptr) {
+			return;
+		}
+		remapMenu->remapper->baseTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		remapMenu->remapper->baseTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		
 		UIItem* temp = new UIItem();
 
-		std::string outName = remapMenu.targetTexName;
-		TextureElements.replacePtr(remapMenu.remapper->baseTarget->copyTexture(), outName);
+		std::string outName = remapMenu->targetTexName;
+		TextureElements.replacePtr(remapMenu->remapper->baseTarget->copyTexture(), outName);
 		temp->Name = outName;
 
-		removeWidget(&remapMenu);
+		remapMenu->selfDestruct(owner);
+
+		//widgetManager.deleteWidget("remapMenu");
+		remapMenu = nullptr;
 		
 		openTextureSettingsMenu(temp);
 
@@ -2641,11 +2558,15 @@ private:
 		vkDeviceWaitIdle(Engine::get()->device);
 		UIItem* temp = new UIItem();
 
-		std::string outName = remapMenu.targetTexName;
-		TextureElements.replacePtr(remapMenu.remapper->filteredTarget->copyTexture(), outName);
+		RemapUI* remapMenu = static_cast<RemapUI*>(widgetManager.getWidget("remapMenu"));
+		if (remapMenu == nullptr) {
+			return;
+		}
+		std::string outName = remapMenu->targetTexName;
+		TextureElements.replacePtr(remapMenu->remapper->filteredTarget->copyTexture(), outName);
 		temp->Name = outName;
 
-		removeWidget(&remapMenu);
+		remapMenu->selfDestruct(owner);
 
 		openTextureSettingsMenu(temp);
 
@@ -2684,21 +2605,14 @@ private:
 		//session::get()->clearStudio();
 	}
 
-	void createTexLoadMenu(std::function<void(UIItem*)> updateTexMenu) {
-		std::function<void(UIItem*)> exitCallback = std::bind(&Application::exitTexLoadMenu, this, std::placeholders::_1);
-		
-		if (tlm.errorFunc == nullptr) {
-			tlm.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
-		}
-		tlm.setup(updateTexMenu, exitCallback);
-		if (!tlm.isSetup) {
+	void createTexLoadMenu(std::function<void(UIItem*)> updateTexMenu) {		
+		TextureLoadMenu* tlm = new TextureLoadMenu(&UIElements, &TextureElements);
+		tlm->setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		tlm->setup(updateTexMenu);
+		if (!tlm->isSetup) {
 			return;
 		}
-		addWidget(&tlm);
-	}
-
-	void exitTexLoadMenu(UIItem* owner) {
-		removeWidget(&tlm);
+		widgetManager.addWidget("tlm", tlm);
 	}
 
 	void openTextureSettingsMenu(UIItem* owner) {
@@ -2711,24 +2625,18 @@ private:
 		std::function<void(UIItem*)> finishProjectorFunc = std::bind(&Application::finishProjector, this, std::placeholders::_1);
 		std::function<void(float)> updateProjectorAngle = std::bind(&Application::setProjectorAngle, this, std::placeholders::_1);
 
-		textureSettings.setup(owner->Name, std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc, cancelProjectorFunc, finishProjectorFunc, alphaBakeFunc, alphaOverFunc, updateProjectorAngle, alphaExtractFunc);
-
-		addWidget(&textureSettings, true, true);
+		textureSettings = new TextureSettings(&UIElements, &TextureElements);
+		textureSettings->setup(owner->Name, std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc, cancelProjectorFunc, finishProjectorFunc, alphaBakeFunc, alphaOverFunc, updateProjectorAngle, alphaExtractFunc);
+		
+		widgetManager.addWidget("textureSettings", textureSettings);
 	}
 
 	void updateTextureSettingsMenu() {
 		vkDeviceWaitIdle(Engine::get()->device);
 		TextureElements.getMaterial("Webcam Material")->cleanup();
 		TextureElements.getMaterial("Webcam Material")->init(webcamTexture::get());
-		textureSettings.updateWebcamTex();
-		textureSettings.update();
-	}
-
-	void closeTextureSettingsMenu(UIItem* owner) {
-		if (!textureSettings.isSetup){
-			return;
-		}
-		removeWidget(&textureSettings);
+		textureSettings->updateWebcamTex();
+		textureSettings->update();
 	}
 
 	void openObjectSettingsMenu(UIItem* owner) {
@@ -2742,24 +2650,23 @@ private:
 	void openSettingsMenu(std::function<void(UIItem*)> closeFnc) {
 		Widget* osm = widgetManager.getWidget("OSM");
 		osm->hide();
-		mc.setup("BF", currentPass, closeFnc);
-		addWidget(&mc);
+		MaterialCreator* mc = new MaterialCreator(&UIElements, &TextureElements);
+		mc->setup("BF", currentPass, closeFnc);
+		widgetManager.addWidget("mc", mc);
 	}
 
 	void openEditSettingsMenu(std::function<void(UIItem*)> closeFnc, std::string matName) {
 		Widget* osm = widgetManager.getWidget("OSM");
 		osm->hide();
-		mc.setupEditMode("BF", currentPass, closeFnc, matName);
-		addWidget(&mc);
+		MaterialCreator* mc = new MaterialCreator(&UIElements, &TextureElements);
+		mc->setupEditMode("BF", currentPass, closeFnc, matName);
+		widgetManager.addWidget("mc", mc);
 	}
 
 	void closeSettingsMenu(UIItem* owner) {
-		removeWidget(&mc);
-
 		Widget* osm = widgetManager.getWidget("OSM");
 		osm->show();
 		osm->update();
-
 		updateVisibleObjects();
 	}
 	
@@ -2886,22 +2793,19 @@ private:
 		}
 
 		std::string texName = owner->Name;
-		closeTextureSettingsMenu(owner);
-
 		std::function<Mesh* (std::string)> getMeshFnc = std::bind(&Application::getObj, this, std::placeholders::_1);
 
-		if (normalMixer.errorFunc == nullptr) {
-			normalMixer.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
-		}
-		normalMixer.setup(texName, objects, getMeshFnc, std::bind(&Application::exitNormalMixer, this, std::placeholders::_1), std::bind(&Application::cancelNormalMixer, this, std::placeholders::_1));
-		addWidget(&normalMixer);
+		NormalMixer* normalMixer = new NormalMixer(&UIElements, &TextureElements);
+		normalMixer->setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		normalMixer->setup(texName, objects, getMeshFnc, std::bind(&Application::exitNormalMixer, this, std::placeholders::_1), std::bind(&Application::cancelNormalMixer, this, std::placeholders::_1));
+		widgetManager.addWidget("normalMixer", normalMixer);
 	}
 
 	void cancelNormalMixer(UIItem* owner) {
 		spacer* temp = new spacer;
 		temp->Name = owner->Name;
 		
-		removeWidget(&normalMixer);
+		widgetManager.getWidget("normalMixer")->selfDestruct(owner);
 
 		openTextureSettingsMenu(temp);
 		temp->cleanup();
@@ -2913,7 +2817,6 @@ private:
 
 		UIItem* temp = new spacer;
 		temp->Name = owner->Name;
-		removeWidget(&normalMixer);
 
 		openTextureSettingsMenu(temp);
 		temp->cleanup();
@@ -2927,23 +2830,19 @@ private:
 		}
 
 		std::string texName = owner->Name;
-		closeTextureSettingsMenu(owner);
 
 		std::function<Mesh*(std::string)> getMeshFnc = std::bind(&Application::getObj, this, std::placeholders::_1);
 		std::function<void(UIItem*)> exitFnc = std::bind(&Application::exitSpaceTransitionMenu, this, std::placeholders::_1);
 
-		stm.setup(texName, objects, textureMenu->getAddTexCallback(), getMeshFnc, exitFnc);
+		SpaceTransitionMenu* stm = new SpaceTransitionMenu(&UIElements, &TextureElements);
+		stm->setup(texName, objects, textureMenu->getAddTexCallback(), getMeshFnc, exitFnc);
 
-		addWidget(&stm);
+		widgetManager.addWidget("stm", stm);
 	}
 
 	void exitSpaceTransitionMenu(UIItem* owner) {
-		vkDeviceWaitIdle(Engine::get()->device);
-		
 		UIItem* temp = new spacer;
 		temp->Name = owner->Name;
-
-		removeWidget(&stm);
 
 		openTextureSettingsMenu(temp);
 		temp->cleanup();
@@ -2954,17 +2853,16 @@ private:
 		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::exitTomogSelector, this, std::placeholders::_1);
 		std::function<void(UIItem*)> finishFunc = std::bind(&Application::openTomogMenu, this, std::placeholders::_1);
 		
-		if (tomogPicker.errorFunc == nullptr) {
-			tomogPicker.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
-		}
-		tomogPicker.setup(finishFunc, cancelFunc);
+		TomogRefPicker* tomogPicker = new TomogRefPicker(&UIElements, &TextureElements);
+		tomogPicker->setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		tomogPicker->setup(finishFunc, cancelFunc);
 
 		WebcamMenu* webcamMenu = static_cast<WebcamMenu*>(widgetManager.getWidget("WebcamMenu"));
 		webcamMenu->hide();
 		RenderMenu* renderMenu = static_cast<RenderMenu*>(widgetManager.getWidget("RenderMenu"));
 		renderMenu->hideViewButtons();
 
-		addWidget(&tomogPicker);
+		widgetManager.addWidget("tomogPicker", tomogPicker);
 	}
 
 	void exitTomogSelector(UIItem* owner) {
@@ -2972,18 +2870,15 @@ private:
 		webcamMenu->show();
 		RenderMenu* renderMenu = static_cast<RenderMenu*>(widgetManager.getWidget("RenderMenu"));
 		renderMenu->showViewButtons();
-		
-		removeWidget(&tomogPicker);
 	}
 
 	void openTomogMenu(UIItem* owner) {
 		std::function<void(UIItem*)> toggleFunct = std::bind(&Application::toggleTomogMeshes, this, std::placeholders::_1);
 		std::function<void(UIItem*)> tomogExit = std::bind(&Application::exitTomogMenu, this, std::placeholders::_1);
 
-		if (tomogUI.errorFunc == nullptr) {
-			tomogUI.setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
-		}
-		tomogUI.setup(owner->Name, toggleFunct, tomogExit, &mouseManager);
+		tomogUI = new TomographyMenu(&UIElements, &TextureElements);
+		tomogUI->setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
+		tomogUI->setup(owner->Name, toggleFunct, tomogExit, &mouseManager);
 
 		Texture* refTex = TextureElements.getTexture(owner->Name);
 
@@ -2996,7 +2891,7 @@ private:
 
 		exitTomogSelector(owner);
 
-		addWidget(&tomogUI);
+		widgetManager.addWidget("tomogUI", tomogUI);
 
 		tomogActive = true;
 	}
@@ -3044,7 +2939,8 @@ private:
 		}
 		updateVisibleObjects();
 
-		removeWidget(&tomogUI);
+		widgetManager.getWidget("tomogUI")->selfDestruct(owner);
+		tomogUI = nullptr;
 
 		WebcamMenu* webcamMenu = static_cast<WebcamMenu*>(widgetManager.getWidget("WebcamMenu"));
 		webcamMenu->show();
@@ -3114,30 +3010,34 @@ private:
 			objectMenu->hide();
 			textureMenu->hide();
 			
-			closeTextureSettingsMenu(owner);
+			widgetManager.getWidget("textureSettings")->destruct();
+			widgetManager.updateFlag = true;
 
 			std::function<void(UIItem*)> projectFunc = std::bind(&Application::createProjectorObjPicker, this, std::placeholders::_1);
 			std::function<void(UIItem*)> cancelProjectorFunc = std::bind(&Application::cancelProjector, this, std::placeholders::_1);
 			std::function<void(UIItem*)> finishProjectorFunc = std::bind(&Application::finishProjector, this, std::placeholders::_1);
 			std::function<void(float)> updateProjectorAngle = std::bind(&Application::setProjectorAngle, this, std::placeholders::_1);
 
-			textureSettings.setup("Webcam View", std::bind(&Application::closeTextureSettingsMenu, this, std::placeholders::_1), std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr, projectFunc, cancelProjectorFunc, finishProjectorFunc, nullptr, nullptr, updateProjectorAngle, nullptr);
+			textureSettings = new TextureSettings(&UIElements, &TextureElements);
+			textureSettings->setup("Webcam View", std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), nullptr, nullptr, nullptr, projectFunc, cancelProjectorFunc, finishProjectorFunc, nullptr, nullptr, updateProjectorAngle, nullptr);
 
-			addWidget(&textureSettings);
+			widgetManager.addWidget("textureSettings", textureSettings);
 		}
 		else if (owner->Name == string("SurfaceMat")) {
 			viewIndex = 1;
 			objectMenu->show();
 			textureMenu->show();
 
-			closeTextureSettingsMenu(owner);
+			widgetManager.getWidget("textureSettings")->destruct();
+			widgetManager.updateFlag = true;
 		}
 		else if (owner->Name == string("Wireframe")) {
 			viewIndex = 2;
 			objectMenu->show();
 			textureMenu->show();
 
-			closeTextureSettingsMenu(owner);
+			widgetManager.getWidget("textureSettings")->destruct();
+			widgetManager.updateFlag = true;
 		}
 	}
 
@@ -3182,7 +3082,6 @@ private:
 		if (staticObjects.size() == 1) {
 			resetCamera();
 		}
-		//session::get()->currentStudio.modelPaths.push_back(modelPath);
 
 		updateVisibleObjects();
 	}
@@ -3226,12 +3125,6 @@ private:
 		
 		widgetManager.cleanup();
 
-		for (size_t i = 0; i != allWidgets.size(); i++) {
-			if (allWidgets[i] != nullptr) {
-				allWidgets[i]->cleanup();
-			}
-		}
-
 		if (projector != nullptr) {
 			projector->cleanup();
 			delete projector;
@@ -3257,9 +3150,6 @@ private:
 
 			if (!glfwGetWindowAttrib(engine->window, GLFW_ICONIFIED)) {
 				widgetManager.updateWidgets();
-				for (size_t i = 0; i != widgets.size(); i++) {
-					widgets[i]->update();
-				}
 			}	
 
 			engine->recreateSwapChain();
@@ -3277,6 +3167,10 @@ private:
 	void updateUniformBuffer(uint32_t currentImage) {
 		// We probably don't need to do this for every frame
 
+		if (widgetManager.updateFlag) {
+			checkForWidgetChanges();
+		}
+
 		camera.updateCamera(engine->window);
 
 		UniformBufferObject ubo{};
@@ -3285,14 +3179,14 @@ private:
 		ubo.proj = glm::perspective(glm::radians(camera.fov), engine->swapChainExtent.width / (float)engine->swapChainExtent.height, 0.1f, 25.0f);
 		ubo.proj[1][1] *= -1;
 
-		if (remapMenu.isVisible && remapMenu.isSetup && (!debugView || projector == nullptr)) {
-			ubo.UVdistort[0] = 2 * remapMenu.outMap->extentx;
-			ubo.UVdistort[1] = (remapMenu.outMap->posx) - remapMenu.outMap->extentx;
-			ubo.UVdistort[2] = 2 * remapMenu.outMap->extenty;
-			ubo.UVdistort[3] = (remapMenu.outMap->posy) - remapMenu.outMap->extenty;
+		if (remapMenu != nullptr && remapMenu->isVisible && remapMenu->isSetup && (!debugView || projector == nullptr)) {
+			ubo.UVdistort[0] = 2 * remapMenu->outMap->extentx;
+			ubo.UVdistort[1] = (remapMenu->outMap->posx) - remapMenu->outMap->extentx;
+			ubo.UVdistort[2] = 2 * remapMenu->outMap->extenty;
+			ubo.UVdistort[3] = (remapMenu->outMap->posy) - remapMenu->outMap->extenty;
 		}
-		else if (textureSettings.isVisible && textureSettings.isSetup && (!debugView || projector == nullptr)) {
-			textureSettings.getUVPos(ubo.UVdistort);
+		else if (textureSettings != nullptr && textureSettings->isVisible && textureSettings->isSetup && (!debugView || projector == nullptr)) {
+			textureSettings->getUVPos(ubo.UVdistort);
 		}
 		else if (projector != nullptr && debugView) {
 			float projectedWidth = static_cast<float>(static_cast<float>(Core::get()->windowHeight) / static_cast<float>(projector->tex->texHeight) * projector->tex->texWidth) / static_cast<float>(Core::get()->windowWidth);
@@ -3329,7 +3223,7 @@ private:
 
 		engine->beginRenderPass(commandBuffer, currentPass, &renderImage, imageIndex, backgroundColour);
 
-		if (showWidgets) {
+		if (widgetManager.showWidgets) {
 			if (showWireframe) {
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UV")]);
 
@@ -3339,16 +3233,13 @@ private:
 					}
 				}
 			}
-			for (size_t i = 0; i != widgets.size(); i++) {
-				widgets[i]->drawAll(commandBuffer, currentFrame, currentPass);
-			}
 			widgetManager.drawWidgets(commandBuffer, currentFrame, currentPass);
 		}
 		
-		if (tomographyPlane != nullptr && tomographyPlane->isVisible) {
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(tomogUI.renderPipeline)]);
+		if (tomogUI != nullptr && tomographyPlane != nullptr && tomographyPlane->isVisible) {
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(tomogUI->renderPipeline)]);
 
-			engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI.scannedMaterial.pipelineLayout, tomogUI.scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));
+			engine->drawObject(commandBuffer, tomographyPlane->mesh->vertexBuffer, tomographyPlane->mesh->indexBuffer, tomogUI->scannedMaterial.pipelineLayout, tomogUI->scannedMaterial.descriptorSets[currentFrame], static_cast<uint32_t>(tomographyPlane->mesh->indices.size()));
 		}
 
 		if (projector != nullptr && projector->shellMesh != nullptr) {
@@ -3423,7 +3314,6 @@ private:
 };
 
 Core* Core::coreinstance = nullptr;
-//session* session::sessionInstance = nullptr;
 webcamTexture* webcamTexture::winstance = nullptr;
 Engine* Engine::enginstance = nullptr;
 

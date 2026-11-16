@@ -210,6 +210,7 @@ private:
 		if (finishCallback != nullptr) {
 			finishCallback(owner);
 		}
+		selfDestruct(owner);
 	}
 };
 
@@ -349,6 +350,7 @@ private:
 		if (finishFunc != nullptr) {
 			finishFunc(owner);
 		}
+		selfDestruct(owner);
 	}
 
 	void cancel(UIItem* owner) {
@@ -365,6 +367,7 @@ private:
 		if (cancelFunc != nullptr) {
 			cancelFunc(owner);
 		}
+		selfDestruct(owner);
 	}
 };
 

@@ -174,6 +174,7 @@ private:
 		if (doneCallback != nullptr) {
 			doneCallback(outMat, azimuth, polar);
 		}
+		selfDestruct(nothing);
 	}
 
 	void customUpdate() {

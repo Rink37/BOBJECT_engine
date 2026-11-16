@@ -168,7 +168,7 @@ public:
 		textureLL = texLL;
 	}
 
-	void setup(std::string targetTextureName, std::function<void(std::string, std::string)> callback, std::function<void(UIItem*)> cancel) {
+	void setup(std::string targetTextureName, std::function<void(std::string, std::string)> callback) {
 		if (isSetup) {
 			return;
 		}
@@ -209,7 +209,7 @@ public:
 		refDropdown->setSelectCallback(std::bind(&RemapTexSelector::setRefName, this, std::placeholders::_1));
 
 		Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 2.0f, 0.01f);
-		finishButtons->addItem(getPtr(new Button(cancelMat, cancel)));
+		finishButtons->addItem(getPtr(new Button(cancelMat, std::bind(&RemapTexSelector::selfDestruct, this, std::placeholders::_1))));
 		finishButtons->addItem(getPtr(new spacer()));
 		finishButtons->addItem(getPtr(new Button(finishedMat, finishFunct)));
 
@@ -252,6 +252,7 @@ private:
 		if (continueCallback != nullptr) {
 			continueCallback(refName, targetName);
 		}
+		selfDestruct(owner);
 	}
 };
 
