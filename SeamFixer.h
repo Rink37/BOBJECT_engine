@@ -221,7 +221,7 @@ public:
 		textureLL = texAssets;
 	}
 
-	void setup(Mesh* mesh, std::string texName, std::function<void(UIItem*)> cancelFunct, std::function<void(UIItem*)> finishFunct) {
+	void setup(Mesh* mesh, std::string texName, std::function<void(UIItem*)> exitFunct) {
 		fixer = new SeamFixer(mesh, textureLL, texName);
 		fixer->findAdjacentStrips();
 		//fixer->seamFixAll();
@@ -230,8 +230,7 @@ public:
 		fixer->updateSeamMeshes(0.01f);
 		fixer->seamFixAll();
 
-		cancelFunc = cancelFunct;
-		finishFunc = finishFunct;
+		exitFunc = exitFunct;
 
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
@@ -270,10 +269,7 @@ public:
 		Slider* sizeSlide = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 1.0f, 0.2f);
 		sizeSlide->setFloatCallback(std::bind(&SeamFixMenu::setSize, this, std::placeholders::_1), false);
 		sizeSlide->setSlideValues(0.005f, 0.05f, 0.01f);
-
 		column->addItem(getPtr(sizeSlide));
-
-		//column->addItem(getPtr(new Button(settingsMat, std::bind(&SeamFixMenu::createDemoMaps, this, std::placeholders::_1))));
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
@@ -312,8 +308,7 @@ private:
 	SeamFixer* fixer = nullptr;
 	bool currentDirection = true;
 
-	std::function<void(UIItem*)> cancelFunc = nullptr;
-	std::function<void(UIItem*)> finishFunc = nullptr;
+	std::function<void(UIItem*)> exitFunc = nullptr;
 
 	void activateRemapper(UIItem* owner) {
 		fixer->createRemapper();
@@ -337,9 +332,6 @@ private:
 
 	void finish(UIItem* owner) {
 		outMap->setVisibility(false);
-		//fixer->targetTex->cleanup();
-		//delete fixer->targetTex;
-
 		owner->Name = fixer->targetTexName;
 
 		textureLL->deleteMaterial("SeamFixMat");
@@ -347,8 +339,8 @@ private:
 		fixer->cleanup();
 		delete fixer;
 		fixer = nullptr;
-		if (finishFunc != nullptr) {
-			finishFunc(owner);
+		if (exitFunc != nullptr) {
+			exitFunc(owner);
 		}
 		selfDestruct(owner);
 	}
@@ -364,8 +356,8 @@ private:
 		fixer->cleanup();
 		delete fixer;
 		fixer = nullptr;
-		if (cancelFunc != nullptr) {
-			cancelFunc(owner);
+		if (exitFunc != nullptr) {
+			exitFunc(owner);
 		}
 		selfDestruct(owner);
 	}

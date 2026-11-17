@@ -536,47 +536,6 @@ private:
 	}
 };
 
-//class SaveMenu : public Widget {
-//public:
-//	SaveMenu(LoadList* assets) {
-//		loadList = assets;
-//	}
-//
-//	void setup(std::function<void(UIItem*)> loadSessionFunc, std::function<void(UIItem*)> newSessionFunc) {
-//		if (isSetup) {
-//			return;
-//		}
-//		Arrangement* SessionButtons = new Arrangement(ORIENT_HORIZONTAL, 1.0f, 1.0f, 0.15f, 0.05f, 0.01f, ARRANGE_END);
-//
-//		std::function<void(UIItem*)> saveSessionFunc = bind(&SaveMenu::save, this, placeholders::_1);
-//
-//		Material* openMat = loadList->getMaterial("OpenBtnMat");
-//		Material* saveMat = loadList->getMaterial("SaveBtnMat");
-//		Material* plusMat = loadList->getMaterial("PlusBtnMat");
-//
-//		SessionButtons->addItem(getPtr(new Button(plusMat, newSessionFunc)));
-//		SessionButtons->addItem(getPtr(new Button(openMat, loadSessionFunc)));
-//		SessionButtons->addItem(getPtr(new Button(saveMat, saveSessionFunc)));
-//
-//		SessionButtons->arrangeItems();
-//
-//		canvas.push_back(getPtr(SessionButtons));
-//
-//		isSetup = true;
-//	}
-//private:
-//	void save(UIItem* owner) {
-//		string saveLocation;
-//		saveLocation = winFile::SaveFileDialog();
-//		if (saveLocation == "fail") {
-//			return;
-//		}
-//		//session::get()->currentStudio.packWebcamSettings(webcamTexture::get()->webCam->rotationState, webcamTexture::get()->webCam->camIndex);
-//		//session::get()->currentStudio.webcamAspectRatio = webcamTexture::get()->webCam->sizeRatio;
-//		//session::get()->saveStudio(saveLocation);
-//	}
-//};
-
 class RenderMenu : public Widget {
 public:
 	RenderMenu(LoadList* assets) {
@@ -2303,13 +2262,7 @@ private:
 	}
 
 	void closeSeamObjPicker(UIItem* owner) {
-		spacer* temp = new spacer;
-		temp->Name = owner->Name;
-
-		openTextureSettingsMenu(temp);
-
-		temp->cleanup();
-		delete temp;
+		openTextureSettingsMenu(owner);
 	}
 
 	void openSeamFixer(UIItem* owner) {
@@ -2318,28 +2271,12 @@ private:
 		Mesh* selectedMesh = staticObjects[objectMenu->ObjectMap.at(objName)].mesh;
 
 		SeamFixMenu* seamFixer = new SeamFixMenu(&UIElements, &TextureElements);
-		seamFixer->setup(selectedMesh, texName, std::bind(&Application::cancelSeamFixer, this, std::placeholders::_1), std::bind(&Application::finishSeamFixer, this, std::placeholders::_1));
+		seamFixer->setup(selectedMesh, texName, std::bind(&Application::exitSeamFixer, this, std::placeholders::_1));
 		widgetManager.addWidget("seamFixer", seamFixer);
 	}
 
-	void cancelSeamFixer(UIItem* owner) {
-		std::string texName = owner->Name;
-
-		UIItem* temp = new spacer;
-		temp->Name = texName;
-		openTextureSettingsMenu(temp);
-		temp->cleanup();
-		delete temp;
-	}
-
-	void finishSeamFixer(UIItem* owner) {
-		std::string texName = owner->Name;
-
-		UIItem* temp = new spacer;
-		temp->Name = texName;
-		openTextureSettingsMenu(temp);
-		temp->cleanup();
-		delete temp;
+	void exitSeamFixer(UIItem* owner) {
+		openTextureSettingsMenu(owner);
 	}
 
 	void colourChangeTest() {
@@ -2432,9 +2369,7 @@ private:
 
 	void finishWebSettings(UIItem* owner) {
 		widgetManager.getWidget("webcamSettings")->selfDestruct(owner);
-
 		webcamTexture::get()->startFrameUpdate();
-
 		inWebSettings = false;
 	}
 
@@ -2517,50 +2452,32 @@ private:
 	}
 
 	void destroyRemapper(UIItem* owner) {
-		//vkDeviceWaitIdle(Engine::get()->device);
-
 		RemapUI* remapMenu = static_cast<RemapUI*>(widgetManager.getWidget("remapMenu"));
 		if (remapMenu == nullptr) {
 			return;
 		}
 		remapMenu->remapper->baseTarget->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		remapMenu->remapper->baseTarget->textureLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		
-		UIItem* temp = new UIItem();
 
 		std::string outName = remapMenu->targetTexName;
 		TextureElements.replacePtr(remapMenu->remapper->baseTarget->copyTexture(), outName);
-		temp->Name = outName;
+		owner->Name = outName;
 
 		remapMenu->selfDestruct(owner);
-
-		//widgetManager.deleteWidget("remapMenu");
-		//remapMenu = nullptr;
-		
-		openTextureSettingsMenu(temp);
-
-		temp->cleanup();
-		delete temp;
+		openTextureSettingsMenu(owner);
 	}
 
 	void finishRemapper(UIItem* owner) {
-		vkDeviceWaitIdle(Engine::get()->device);
-		UIItem* temp = new UIItem();
-
 		RemapUI* remapMenu = static_cast<RemapUI*>(widgetManager.getWidget("remapMenu"));
 		if (remapMenu == nullptr) {
 			return;
 		}
 		std::string outName = remapMenu->targetTexName;
 		TextureElements.replacePtr(remapMenu->remapper->filteredTarget->copyTexture(), outName);
-		temp->Name = outName;
+		owner->Name = outName;
 
 		remapMenu->selfDestruct(owner);
-
-		openTextureSettingsMenu(temp);
-
-		temp->cleanup();
-		delete temp;
+		openTextureSettingsMenu(owner);
 	}
 
 	void updateLightPolar(float angle) {
@@ -2575,23 +2492,6 @@ private:
 		lightPos.x = lightRadius * sin(polarAngle) * cos(azimuthAngle);
 		lightPos.y = lightRadius * sin(polarAngle) * sin(azimuthAngle);
 		lightPos.z = lightRadius * cos(polarAngle);
-	}
-
-	void newSession(UIItem* owner) {
-		// Remove all meshes
-		for (StaticObject obj : staticObjects) {
-			obj.mesh->cleanup();
-		}
-		staticObjects.clear();
-		scaleFactor = 1.0f;
-		defaultCameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
-
-		updateVisibleObjects();
-
-		objectMenu->clearObjects();
-
-		// Clear session data
-		//session::get()->clearStudio();
 	}
 
 	void createTexLoadMenu(std::function<void(UIItem*)> updateTexMenu) {		
@@ -2664,75 +2564,11 @@ private:
 		updateVisibleObjects();
 	}
 	
-	void loadSave(UIItem* owner) {
-
-		//string saveLocation;
-		//saveLocation = winFile::OpenFileDialog();
-		//if (saveLocation == "fail") {
-		//	return;
-		//}
-		//newSession(owner);
-		//session::get()->loadStudio(saveLocation);
-
-		//uint8_t webcamRot = 0;
-		//uint8_t webcamIndex = 0;
-
-		//session::get()->currentStudio.unpackWebcamSettings(webcamRot, webcamIndex);
-
-		//for (string path : session::get()->currentStudio.modelPaths) {
-		//	StaticObject newObject(path);
-		//	string objectName = path;
-		//	string del = "\\";
-		//	auto pos = objectName.find(del);
-		//	while (pos != string::npos) {
-		//		objectName.erase(0, pos + del.length());
-		//		pos = objectName.find(del);
-		//	}
-		//	del = ".";
-		//	pos = objectName.find(del);
-		//	objectName = objectName.substr(0, pos);
-		//	newObject.objectName = objectName;
-
-		//	std::function<void(UIItem*)> visibleFunction = std::bind(&Application::setObjectVisibility, this, placeholders::_1);
-		//	std::function<void(UIItem*)> wireFunction = std::bind(&Application::setObjectWireframe, this, placeholders::_1);
-		//	std::function<void(UIItem*)> optionsFunction = std::bind(&Application::openObjectSettingsMenu, this, placeholders::_1);
-
-		//	objectMenu.addObject(visibleFunction, wireFunction, optionsFunction, objectName);
-
-		//	newObject.isVisible = true;
-		//	newObject.setMat(TextureElements.getMaterial("Webcam Material"), "BF");
-
-			//staticObjects.push_back(newObject);
-		//}
-		//if (session::get()->currentStudio.diffusePath != "None") {
-		//	imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.diffusePath, VK_FORMAT_R8G8B8A8_SRGB);
-		//}
-		//if (session::get()->currentStudio.OSPath != "None") {
-		//	imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.OSPath, VK_FORMAT_R8G8B8A8_UNORM);
-		//}
-		//if (session::get()->currentStudio.TSPath != "None") {
-		//	imageTexture* loadedTexture = new imageTexture(session::get()->currentStudio.TSPath, VK_FORMAT_R8G8B8A8_UNORM);
-		//}
-		//if (webcamIndex != webcamTexture::get()->webCam->camIndex) {
-		//	webcamTexture::get()->webCam->switchWebcam(webcamIndex);
-		//}
-		//webcamTexture::get()->webCam->setRotation(webcamRot);
-		//webcamTexture::get()->webCam->updateAspectRatio(session::get()->currentStudio.webcamAspectRatio);
-		//webcamTexture::get()->recreateWebcamImage();
-		//webcamTexture::get()->interruptFrameUpdate();
-		//webcamTexture::get()->webCam->loadFilter();
-		//webcamTexture::get()->startFrameUpdate();
-
-		//updateVisibleObjects();
-	}
-	
 	void createCanvas() {
 
 		std::function<void(UIItem*)> pipelinefunction = std::bind(&Application::setPipelineIndex, this, placeholders::_1);
 		std::function<void(UIItem*)> lightingFunction = std::bind(&Application::toggleLighting, this, placeholders::_1);
 		std::function<void(UIItem*)> loadObjectFunct = std::bind(&Application::buttonLoadStaticObject, this, placeholders::_1);
-		std::function<void(UIItem*)> loadSessionFunc = std::bind(&Application::loadSave, this, placeholders::_1);
-		std::function<void(UIItem*)> newSessionFunc = std::bind(&Application::newSession, this, placeholders::_1);
 		std::function<void(UIItem*)> webcamSettings = std::bind(&Application::createWebSettings, this, placeholders::_1);
 		std::function<void(UIItem*)> texModify = std::bind(&Application::openTextureSettingsMenu, this, placeholders::_1);
 		std::function<void(UIItem*)> tomogCallback = std::bind(&Application::createTomogSelector, this, placeholders::_1);
@@ -2749,10 +2585,6 @@ private:
 		textureMenu = new TextureMenu(&UIElements, &TextureElements);
 		textureMenu->setup(texModify, openTexLoad, tomogCallback);
 		widgetManager.addWidget("TextureMenu", textureMenu);
-
-		//saveMenu.setup(loadSessionFunc, newSessionFunc);
-		//mouseManager.addClickListener(saveMenu.getClickCallback());
-		//widgets.push_back(&saveMenu);
 
 		WebcamMenu* webcamMenu = new WebcamMenu(&UIElements);
 		webcamMenu->setup(lightingFunction, webcamSettings);
@@ -2795,26 +2627,13 @@ private:
 		widgetManager.addWidget("normalMixer", normalMixer);
 	}
 
-	void cancelNormalMixer(UIItem* owner) {
-		spacer* temp = new spacer;
-		temp->Name = owner->Name;
-		
+	void cancelNormalMixer(UIItem* owner) {		
 		widgetManager.getWidget("normalMixer")->selfDestruct(owner);
-
-		openTextureSettingsMenu(temp);
-		temp->cleanup();
-		delete temp;
+		openTextureSettingsMenu(owner);
 	}
 
 	void exitNormalMixer(UIItem* owner) {
-		vkDeviceWaitIdle(Engine::get()->device);
-
-		UIItem* temp = new spacer;
-		temp->Name = owner->Name;
-
-		openTextureSettingsMenu(temp);
-		temp->cleanup();
-		delete temp;
+		openTextureSettingsMenu(owner);
 	}
 
 	void createSpaceTransitionMenu(UIItem* owner) {
@@ -2835,12 +2654,7 @@ private:
 	}
 
 	void exitSpaceTransitionMenu(UIItem* owner) {
-		UIItem* temp = new spacer;
-		temp->Name = owner->Name;
-
-		openTextureSettingsMenu(temp);
-		temp->cleanup();
-		delete temp;
+		openTextureSettingsMenu(owner);
 	}
 
 	void createTomogSelector(UIItem* owner) {
@@ -3116,7 +2930,6 @@ private:
 
 		UIElements.empty();
 		TextureElements.empty();
-		
 		widgetManager.cleanup();
 
 		if (projector != nullptr) {
