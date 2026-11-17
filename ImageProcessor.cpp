@@ -651,9 +651,10 @@ void textureWriter::createTexWritePipeline() {
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	if (map->drawMat != nullptr && map->drawMat->descriptorSetLayout != nullptr) {
+	VkDescriptorSetLayout descriptorSetLayout = map->drawMat->pass->descriptorSetLayouts[map->drawMat->pipelineLayoutIndex];
+	if (map->drawMat != nullptr && descriptorSetLayout != nullptr) {
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &map->drawMat->descriptorSetLayout;
+		pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 	}
 	else {
 		pipelineLayoutInfo.setLayoutCount = 0;

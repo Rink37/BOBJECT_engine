@@ -1893,7 +1893,7 @@ struct Widget {
 		if (imagePipelines.empty()) {
 			update();
 		}
-		for (auto elem : imagePipelines) {
+		for (std::pair<std::string, std::vector<UIImage*>> elem : imagePipelines) {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(elem.first)]);
 			for (UIImage* image : elem.second) {
 				image->draw(commandBuffer, currentFrame, image->mat[image->matidx]->pipelineLayoutIndex);
@@ -2091,8 +2091,6 @@ struct Widget {
 		}
 	}
 
-	std::function<void(std::string, std::string)> errorFunc = nullptr;
-
 	std::vector<UIItem*> canvas;
 	bool isSetup = false;
 
@@ -2116,6 +2114,7 @@ struct Widget {
 	bool markedForDestruction = false;
 	std::string mappedName = "";
 	std::function<void(std::string)> deleteSelf = nullptr;
+	std::function<void(std::string, std::string)> errorFunc = nullptr;
 private:
 	float windowPositions[4] = { 0.0f };
 	// Array of pointers which manages the actual structure of the UI

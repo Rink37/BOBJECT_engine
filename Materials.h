@@ -127,7 +127,6 @@ public:
 
 	std::string shaderName = "BF";
 
-	VkDescriptorSetLayout descriptorSetLayout = nullptr;
 	VkPipelineLayout pipelineLayout = nullptr;
 	uint32_t pipelineLayoutIndex = 0;
 	VkDescriptorPool descriptorPool = nullptr;

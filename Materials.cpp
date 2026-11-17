@@ -77,7 +77,7 @@ void Material::createDescriptorSets(shaderData* sD) {
 	}
 
 	pipelineLayoutIndex = pass->layoutMap.at(key);
-	descriptorSetLayout = pass->descriptorSetLayouts[pipelineLayoutIndex];
+	VkDescriptorSetLayout descriptorSetLayout = pass->descriptorSetLayouts[pipelineLayoutIndex];
 	pipelineLayout = pass->pipelineLayouts[pipelineLayoutIndex];
 
 	vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);

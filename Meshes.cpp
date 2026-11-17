@@ -171,8 +171,6 @@ bool StaticMesh::loadModel(string testMODEL_PATH, uint8_t swizzle) {
 				}
 
 				indices.push_back(uniqueVertices[vertex]);
-
-				uniqueTexindices.push_back(uniqueVertices[vertex]);
 			}
 		}
 		bbox.getPosition();

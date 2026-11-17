@@ -122,7 +122,7 @@ struct BoundingBox{
 		size.z = abs(z_range.second - z_range.first);
 	}
 
-	float getNormFactor() {
+	float getNormFactor() const {
 		float factor = 1.0f;
 		float maxSize = (size.x > size.y) ? size.x : size.y;
 		maxSize = (size.z > maxSize) ? size.z : maxSize;
@@ -143,8 +143,6 @@ struct Mesh {
 
 	VkBuffer indexBuffer{};
 	VkDeviceMemory indexBufferMemory{};
-
-	std::vector<uint32_t> uniqueTexindices{};
 
 	virtual void setup() {
 		if (!cleaned) {

@@ -374,14 +374,11 @@ public:
 
 private:
 	void functionMap(UIItem* owner) {
-		spacer* temp = new spacer;
-		temp->Name = imageName;
 		if (functions.count(owner->text) > 0 && functions.at(owner->text) != nullptr) {
-			functions.at(owner->text)(temp);
+			functions.at(owner->text)(owner);
 		}
-		selfDestruct(temp);
-		temp->cleanup();
-		delete temp;
+		std::cout << "Texture settings is self destructing" << std::endl;
+		selfDestruct(owner);
 	}
 
 	std::unordered_map<std::string, std::function<void(UIItem*)>> functions{};
@@ -678,7 +675,7 @@ public:
 
 		std::vector<std::string> materialOptions{};
 		std::vector<std::string> invalidMatOptions = {"UI", "UIGray", "UIText", "UV", "W", "UIRoundBox", "Projector_BF", "Projector_Flat", "Projector_Background"};
-		for (auto elem : boundPass->pipelineMap) {
+		for (std::pair<std::string, uint32_t> elem : boundPass->pipelineMap) {
 			if (find(invalidMatOptions.begin(), invalidMatOptions.end(), elem.first) != invalidMatOptions.end()) {
 				continue;
 			}
@@ -1786,7 +1783,6 @@ private:
 	}
 
 	void addTexture(UIItem* owner) {
-		std::cout << "Adding texture " << owner->Name << std::endl;
 		std::string textureName = owner->Name;
 
 		Arrangement* objButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.15f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
@@ -1827,7 +1823,7 @@ private:
 			if (saveName.size() > 1) {
 				char dot = '.';
 				for (uint32_t i = 0; i != saveName.size(); i++) {
-					uint32_t j = saveName.size() - (i + 1);
+					uint32_t j = saveName.size() - static_cast<uint32_t>(i + 1);
 					char c = saveName[j];
 					if (c == dot) {
 						lastDotIndex = i-1;
@@ -2230,21 +2226,14 @@ private:
 	}
 
 	void closeProjectorObjPicker(UIItem* owner) {
-		spacer* temp = new spacer;
-		temp->Name = owner->Name;
-
-		openTextureSettingsMenu(temp);
-
-		temp->cleanup();
-		delete temp;
+		openTextureSettingsMenu(owner);
+		widgetManager.getWidget("pob")->selfDestruct(owner);
 	}
 
 	void openProjector(UIItem* owner) {
-		std::string texName = owner->Name;
-		std::string objName = owner->text;
-		Mesh* selectedMesh = staticObjects[objectMenu->ObjectMap.at(objName)].mesh;
+		Mesh* selectedMesh = staticObjects[objectMenu->ObjectMap.at(owner->text)].mesh;
 
-		createProjector(texName, selectedMesh);
+		createProjector(owner->Name, selectedMesh);
 	}
 
 	void createProjector(std::string texName, Mesh* mesh) {
@@ -2546,7 +2535,7 @@ private:
 		remapMenu->selfDestruct(owner);
 
 		//widgetManager.deleteWidget("remapMenu");
-		remapMenu = nullptr;
+		//remapMenu = nullptr;
 		
 		openTextureSettingsMenu(temp);
 
@@ -2616,6 +2605,11 @@ private:
 	}
 
 	void openTextureSettingsMenu(UIItem* owner) {
+		if (textureSettings != nullptr) {
+			std::cout << "Texture settings already exists!" << std::endl;
+			return;
+		}
+
 		std::function<void(UIItem*)> seamFixFunc = std::bind(&Application::openSeamObjPicker, this, std::placeholders::_1);
 		std::function<void(UIItem*)> alphaBakeFunc = std::bind(&Application::createAlphaMixTexSelector, this, std::placeholders::_1);
 		std::function<void(UIItem*)> alphaExtractFunc = std::bind(&Application::alphaExtract, this, std::placeholders::_1);
