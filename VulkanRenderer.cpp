@@ -14,6 +14,8 @@
 #include"Projector.h"
 #include"Objects.h"
 
+#include"WidgetTemplates.h"
+
 #include<chrono>
 
 #include"include/BakedImages.h"
@@ -32,231 +34,6 @@ std::vector<TypeManager*> TypeManager::_instances;
 
 std::vector<MouseManager*> MouseManager::_instances;
 MouseManager mouseManager;
-
-class ErrorDialog : public Widget{
-public:
-	ErrorDialog(LoadList* assets) {
-		loadList = assets;
-		priorityLayer = 5000;
-		this->zp = 0.0f;
-	}
-
-	void setup(std::string title, std::string message) {
-		if (isSetup) {
-			return;
-		}
-
-		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-		
-		TextBox* titleBox = new TextBox(loadList->getFont(), 0.0f, 0.0f, 5.0f, 1.0f, 24, ARRANGE_START, ARRANGE_CENTER);
-		titleBox->addText(title);
-		TextBox* messageBox = new TextBox(loadList->getFont(), 0.0f, 0.0f, 5.0f, 2.0f, 18, ARRANGE_START, ARRANGE_START);
-		messageBox->addText(message);
-
-		totalArrangement->addItem(getPtr(titleBox));
-		totalArrangement->addItem(getPtr(messageBox));
-
-		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f);
-		finishArrangement->addItem(getPtr(new spacer));
-		finishArrangement->addItem(getPtr(new Button(loadList->getMaterial("FinishBtnMat"), std::bind(&ErrorDialog::selfDestruct, this, std::placeholders::_1))));
-
-		totalArrangement->addItem(getPtr(finishArrangement));
-
-		canvas.push_back(totalArrangement);
-
-		addBackground(loadList->getMaterial("UIRoundBox"));
-
-		isSetup = true;
-	}
-};
-
-class AlphaMixTexSelector : public Widget {
-public:
-	AlphaMixTexSelector(LoadList* assets, LoadList* texLL) {
-		loadList = assets;
-		textureLL = texLL;
-	}
-
-	void setup(std::string targetTextureName, std::function<void(std::string, std::string)> callback) {
-		if (isSetup) {
-			return;
-		}
-		targetName = targetTextureName;
-
-		continueCallback = callback;
-
-		std::vector<std::string> availableTextures{};
-		textureLL->listTextures(availableTextures);
-
-		if (std::find(availableTextures.begin(), availableTextures.end(), targetName) == availableTextures.end()) {
-			if (errorFunc != nullptr) {
-				errorFunc("FILE ERROR: ", "The target texture is not valid!");
-			}
-			return;
-		}
-
-		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
-		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-		Material* finishedMat = loadList->getMaterial("FinishBtnMat");
-		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
-
-		std::function<void(UIItem*)> finishFunct = std::bind(&AlphaMixTexSelector::finish, this, std::placeholders::_1);
-		
-		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-
-		font* newFont = textureLL->getFont();
-
-		TextBox* baseText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
-		baseText->addText(std::string("Baking Alpha ") + targetTextureName);
-
-		TextBox* targetText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
-		targetText->addText(std::string("Into texture:"));
-
-		DropdownMenu* refDropdown = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), newFont);
-		refDropdown->setBlankText("Select a texture");
-		refDropdown->addOptions(availableTextures);
-		refDropdown->setSelectCallback(std::bind(&AlphaMixTexSelector::setRefName, this, std::placeholders::_1));
-
-		Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 2.0f, 0.01f);
-		finishButtons->addItem(getPtr(new Button(cancelMat, std::bind(&AlphaMixTexSelector::selfDestruct, this, std::placeholders::_1))));
-		finishButtons->addItem(getPtr(new spacer()));
-		finishButtons->addItem(getPtr(new Button(finishedMat, finishFunct)));
-
-		mainArrangement->addItem(getPtr(baseText));
-		mainArrangement->addItem(getPtr(targetText));
-		mainArrangement->addItem(getPtr(refDropdown));
-		mainArrangement->addItem(getPtr(finishButtons));
-		mainArrangement->arrangeItems();
-
-		canvas.push_back(getPtr(mainArrangement));
-
-		addBackground(loadList->getMaterial("UIRoundBox"));
-
-		isSetup = true;
-	}
-
-	int clickIndex = 0;
-
-private:
-	LoadList* textureLL = nullptr;
-
-	std::string targetName = "";
-	std::string refName = "";
-
-	std::function<void(std::string, std::string)> continueCallback = nullptr;
-
-	void setRefName(UIItem* owner) {
-		refName = owner->text;
-	}
-
-	void finish(UIItem* owner) {
-		if (targetName.size() == 0 || refName.size() == 0) {
-			if (errorFunc != nullptr) {
-				errorFunc("SELECT ERROR: ", "No reference texture has been selected!");
-			}
-			return;
-		}
-
-		if (continueCallback != nullptr) {
-			continueCallback(refName, targetName);
-		}
-		selfDestruct(owner);
-	}
-};
-
-class AlphaOverTexSelector : public Widget {
-public:
-	AlphaOverTexSelector(LoadList* assets, LoadList* texLL) {
-		loadList = assets;
-		textureLL = texLL;
-	}
-
-	void setup(std::string targetTextureName, std::function<void(std::string, std::string)> callback) {
-		if (isSetup) {
-			return;
-		}
-		targetName = targetTextureName;
-
-		continueCallback = callback;
-
-		std::vector<std::string> availableTextures{};
-		textureLL->listTextures(availableTextures);
-
-		if (std::find(availableTextures.begin(), availableTextures.end(), targetName) == availableTextures.end()) {
-			if (errorFunc != nullptr) {
-				errorFunc("FILE ERROR: ", "The target texture is not valid!");
-			}
-			return;
-		}
-
-		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
-		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-		Material* finishedMat = loadList->getMaterial("FinishBtnMat");
-		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
-
-		std::function<void(UIItem*)> finishFunct = std::bind(&AlphaOverTexSelector::finish, this, std::placeholders::_1);
-
-		Arrangement* mainArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-
-		font* newFont = textureLL->getFont();
-
-		TextBox* baseText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
-		baseText->addText(std::string("Mixing ") + targetTextureName);
-
-		TextBox* targetText = new TextBox(newFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
-		targetText->addText(std::string("Into texture:"));
-
-		DropdownMenu* refDropdown = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), newFont);
-		refDropdown->setBlankText("Select a texture");
-		refDropdown->addOptions(availableTextures);
-		refDropdown->setSelectCallback(std::bind(&AlphaOverTexSelector::setRefName, this, std::placeholders::_1));
-
-		Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 2.0f, 0.01f);
-		finishButtons->addItem(getPtr(new Button(cancelMat, std::bind(&AlphaOverTexSelector::selfDestruct, this, std::placeholders::_1))));
-		finishButtons->addItem(getPtr(new spacer()));
-		finishButtons->addItem(getPtr(new Button(finishedMat, finishFunct)));
-
-		mainArrangement->addItem(getPtr(baseText));
-		mainArrangement->addItem(getPtr(targetText));
-		mainArrangement->addItem(getPtr(refDropdown));
-		mainArrangement->addItem(getPtr(finishButtons));
-		mainArrangement->arrangeItems();
-
-		canvas.push_back(getPtr(mainArrangement));
-
-		addBackground(loadList->getMaterial("UIRoundBox"));
-
-		isSetup = true;
-	}
-
-	int clickIndex = 0;
-
-private:
-	LoadList* textureLL = nullptr;
-
-	std::string targetName = "";
-	std::string refName = "";
-
-	std::function<void(std::string, std::string)> continueCallback = nullptr;
-
-	void setRefName(UIItem* owner) {
-		refName = owner->text;
-	}
-
-	void finish(UIItem* owner) {
-		if (targetName.size() == 0 || refName.size() == 0) {
-			if (errorFunc != nullptr) {
-				errorFunc("SELECT ERROR: ", "No reference texture has been selected!");
-			}
-			return;
-		}
-
-		if (continueCallback != nullptr) {
-			continueCallback(refName, targetName);
-		}
-		selfDestruct(owner);
-	}
-};
 
 class TextureSettings : public Widget {
 public: 
@@ -375,16 +152,15 @@ public:
 private:
 	void functionMap(UIItem* owner) {
 		if (functions.count(owner->text) > 0 && functions.at(owner->text) != nullptr) {
+			owner->Name = imageName;
 			functions.at(owner->text)(owner);
 		}
-		std::cout << "Texture settings is self destructing" << std::endl;
 		selfDestruct(owner);
 	}
 
 	std::unordered_map<std::string, std::function<void(UIItem*)>> functions{};
 
 	LoadList* textureLL = nullptr;
-
 	ImagePanel* imagePanel = nullptr;
 
 	std::string imageName = "";
@@ -2388,7 +2164,8 @@ private:
 	void createAlphaMixTexSelector(UIItem* owner) {
 		std::function<void(std::string, std::string)> continueCallback = std::bind(&Application::alphaMix, this, std::placeholders::_1, std::placeholders::_2);
 
-		AlphaMixTexSelector* amts = new AlphaMixTexSelector(&UIElements, &TextureElements);
+		TexSelector* amts = new TexSelector(&UIElements, &TextureElements);
+		amts->setText(std::string("Baking Alpha ") + owner->Name, std::string("Into texture:"));
 		amts->setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
 		amts->setup(owner->Name, continueCallback);
 
@@ -2407,7 +2184,8 @@ private:
 	void createAlphaOverTexSelector(UIItem* owner) {
 		std::function<void(std::string, std::string)> continueCallback = std::bind(&Application::alphaOver, this, std::placeholders::_1, std::placeholders::_2);
 		
-		AlphaOverTexSelector* aots = new AlphaOverTexSelector(&UIElements, &TextureElements);
+		TexSelector* aots = new TexSelector(&UIElements, &TextureElements);
+		aots->setText(std::string("Mixing ") + owner->Name, std::string("Into texture:"));
 		aots->setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
 		aots->setup(owner->Name, continueCallback);
 
@@ -2521,7 +2299,6 @@ private:
 
 		textureSettings = new TextureSettings(&UIElements, &TextureElements);
 		textureSettings->setup(owner->Name, std::bind(&Application::createRemapTexSelector, this, std::placeholders::_1), std::bind(&Application::createSpaceTransitionMenu, this, std::placeholders::_1), std::bind(&Application::createNormalMixer, this, std::placeholders::_1), seamFixFunc, projectFunc, cancelProjectorFunc, finishProjectorFunc, alphaBakeFunc, alphaOverFunc, updateProjectorAngle, alphaExtractFunc);
-		
 		widgetManager.addWidget("textureSettings", textureSettings);
 	}
 
