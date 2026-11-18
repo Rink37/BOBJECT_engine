@@ -1303,21 +1303,24 @@ public:
 		if (fileName == string("fail")) {
 			return; // We will need to check if this menu has been setup after the setup function is called otherwise we will have some draw errors
 		}
-		textureName = fileName;
-		string del = "\\";
-		auto pos = textureName.find(del);
-		while (pos != string::npos) {
-			textureName.erase(0, pos + del.length());
-			pos = textureName.find(del);
-		}
+		textureName = winFile::getBaseName(fileName);
+		textureExt = winFile::getExtension(textureName);
+		winFile::stripExtension(textureName);
+		//textureName = fileName;
+		//string del = "\\";
+		//auto pos = textureName.find(del);
+		//while (pos != string::npos) {
+		//	textureName.erase(0, pos + del.length());
+		//	pos = textureName.find(del);
+		//}
 		
 		if (errorFunc != nullptr) {
 			cv::Mat test = cv::imread(fileName, cv::IMREAD_UNCHANGED);
 			if (test.empty()){
-				del = ".";
-				pos = fileName.find(del);
-				std::string extension = fileName.substr(pos + 1, fileName.size());
-				errorFunc("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for textures"));
+				//del = ".";
+				//pos = fileName.find(del);
+				//std::string extension = fileName.substr(pos + 1, fileName.size());
+				errorFunc("FILE ERROR:", std::string("File extension \".") + textureExt + std::string("\" is not currently supported for textures"));
 				return;
 			}
 		}
@@ -1358,8 +1361,8 @@ public:
 
 		mainArrangement->arrangeItems();
 
-		pos = textureName.find(del);
-		textureName = textureName.substr(0, pos);
+		//pos = textureName.find(del);
+		//textureName = textureName.substr(0, pos);
 
 		canvas.push_back(getPtr(mainArrangement));
 
@@ -1372,6 +1375,7 @@ private:
 	LoadList* textureLL = nullptr;
 
 	std::string textureName = "";
+	std::string textureExt = "";
 	std::string fileName = "";
 
 	UIItem* normalTypeToggle = nullptr;
@@ -1408,6 +1412,7 @@ private:
 			}
 			textureLL->replacePtr(loadedTexture, textureName);
 			owner->Name = textureName;
+			owner->text = textureExt;
 			if (updateTextureMenu != nullptr) {
 				updateTextureMenu(owner);
 			}
@@ -1415,10 +1420,7 @@ private:
 		}
 		catch (...) {
 			if (errorFunc != nullptr) {
-				std::string del = ".";
-				auto pos = fileName.find(del);
-				std::string extension = fileName.substr(pos + 1, fileName.size());
-				errorFunc("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for textures"));
+				errorFunc("FILE ERROR:", std::string("File extension \".") + textureExt + std::string("\" is not currently supported for textures"));
 			}
 			selfDestruct(owner);
 		}
@@ -1558,7 +1560,7 @@ private:
 			if (saveName.size() > 1) {
 				char dot = '.';
 				for (uint32_t i = 0; i != saveName.size(); i++) {
-					uint32_t j = saveName.size() - static_cast<uint32_t>(i + 1);
+					uint32_t j = saveName.size() - i - 1;
 					char c = saveName[j];
 					if (c == dot) {
 						lastDotIndex = i-1;
@@ -2625,21 +2627,13 @@ private:
 		if (modelPath == "fail") {
 			return;
 		}
-		string objectName = modelPath;
-		string del = "\\";
-		auto pos = objectName.find(del);
-		while (pos != string::npos) {
-			objectName.erase(0, pos + del.length());
-			pos = objectName.find(del);
-		}
-		del = ".";
-		pos = objectName.find(del);
-		std::string extension = objectName.substr(pos+1, objectName.size());
+		std::string objectName = winFile::getBaseName(modelPath);
+		std::string extension = winFile::getExtension(objectName);
+		winFile::stripExtension(objectName);
 		if (extension != std::string("obj")) {
 			createErrorDialog("FILE ERROR:", std::string("File extension \".") + extension + std::string("\" is not currently supported for models"));
 			return;
 		}
-		objectName = objectName.substr(0, pos);
 		StaticObject newObject(modelPath, swizzle, scaleFactor);
 
 		newObject.objectName = objectName;
