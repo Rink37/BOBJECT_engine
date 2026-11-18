@@ -2,13 +2,6 @@
 #define BAKED_IMAGES
 
 #include "ImageDataType.h"
-extern const int LoadButtonWidth;
-extern const int LoadButtonHeight;
-extern const int LoadButtonChannels;
-extern unsigned char LoadButtonBytes[];
-
-#define LOADBUTTON imageData(LoadButtonWidth, LoadButtonHeight, LoadButtonChannels, LoadButtonBytes )
-
 extern const int WireframeButtonWidth;
 extern const int WireframeButtonHeight;
 extern const int WireframeButtonChannels;

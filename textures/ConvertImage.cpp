@@ -96,9 +96,9 @@ void writeSingle(string outhname, string outcppname, string name, string locatio
     outcpp.close();
 }
 
-void loadAndWriteFiles(string location, vector<string> fnames){
-    string outhname = location+string("\\headers\\BakedImages.h");
-    string outcppname = location+string("\\headers\\BakedImages.cpp");
+void loadAndWriteFiles(string location, string outloc, vector<string> fnames){
+    string outhname = outloc+string("BakedImages.h");
+    string outcppname = outloc+string("BakedImages.cpp");
     ofstream outh(outhname.c_str());
     ofstream outcpp(outcppname.c_str());
 
@@ -122,10 +122,9 @@ void loadAndWriteFiles(string location, vector<string> fnames){
 int main(int argc, char* argv[]){
     if (argc == 1){
         string base = string("C:\\Users\\robda\\Documents\\VulkanRenderer\\textures\\");
+        string outPath = string("C:\\Users\\robda\\Documents\\VulkanRenderer\\include\\");
         vector<string> fnames;
-        string fname = string("LoadButton.png");
-        fnames.push_back(fname);
-        fname = string("WireframeButton.png");
+        std::string fname = string("WireframeButton.png");
         fnames.push_back(fname);
         fname = string("PauseButton.png");
         fnames.push_back(fname);
@@ -145,12 +144,6 @@ int main(int argc, char* argv[]){
         fnames.push_back(fname);
         fname = string("UnrenderedButton.png");
         fnames.push_back(fname);
-        //fname = string("D2NButton.png");
-        //fnames.push_back(fname);
-        //fname = string("DiffuseText.png");
-        //fnames.push_back(fname);
-        //fname = string("NormalText.png");
-        //fnames.push_back(fname);
         fname = string("OpenButton.png");
         fnames.push_back(fname);
         fname = string("PlusButton.png");
@@ -171,23 +164,13 @@ int main(int argc, char* argv[]){
         fnames.push_back(fname);
         fname = string("FinishButton.png");
         fnames.push_back(fname);
-        //fname = string("EdgeSharpnessText.png");
-        //fnames.push_back(fname);
-        //fname = string("SearchSizeText.png");
-        //fnames.push_back(fname);
-        //fname = string("StrokeFlatnessText.png");
-        //fnames.push_back(fname);
-        //fname = string("FlattenThresholdText.png");
-        //fnames.push_back(fname);
-        //fname = string("NoiseRemovalText.png");
-        //fnames.push_back(fname);
         fname = string("UpdateButton.png");
         fnames.push_back(fname);
         fname = string("CloseButton.png");
         fnames.push_back(fname);
         fname = string("PlaneButton.png");
         fnames.push_back(fname);
-        loadAndWriteFiles(base, fnames);
+        loadAndWriteFiles(base, outPath, fnames);
         return 0;
     }
     loadAndWriteFile(string(argv[1]));
