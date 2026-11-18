@@ -46,7 +46,6 @@ public:
 		indices = { 0, 3, 2, 2, 1, 0 };
 		fontRef = meshFont;
 		unicodeCharacter = character;
-		sqAxisRatio = fontRef->getSqAxisRatio();
 		fontRef->getAdvanceWidth(unicodeCharacter, advanceWidth);
 	}
 
@@ -61,13 +60,8 @@ public:
 	void createVertexBuffer();
 	void updateVertexBuffer();
 
-	int unicodeCharacter = 0;
-	float sqAxisRatio = 0.0f;
+	uint8_t unicodeCharacter = 0;
 	float advanceWidth = 1.0f;
-
-	float xpos = 0.0f;
-
-	float characterHeight = 0.0f;
 
 	bool isVisible = true;
 

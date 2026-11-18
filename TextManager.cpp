@@ -45,8 +45,8 @@ void fontMesh::UpdateVertices(float xp, float yp, float xsc, float windowRatio, 
 	float left, right, top, bottom;
 	fontRef->getCorners(unicodeCharacter, left, right, top, bottom);
 
-	float ysc = xsc * sqAxisRatio * windowRatio;
-	characterHeight = ysc;
+	float ysc = xsc * fontRef->getSqAxisRatio() * windowRatio;
+	float characterHeight = ysc;
 
 	vertex.pos = { -xsc + xp, yp - ysc, zp };
 	vertex.normal = { 0.0f, 0.0f, 0.0f };
@@ -68,6 +68,8 @@ void fontMesh::UpdateVertices(float xp, float yp, float xsc, float windowRatio, 
 	else {
 		updateVertexBuffer();
 	}
+
+	vertices.clear();
 }
 
 void fontMesh::createVertexBuffer() {
