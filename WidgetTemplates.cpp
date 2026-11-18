@@ -103,3 +103,60 @@ void TexSelector::finish(UIItem* owner) {
 	}
 	selfDestruct(owner);
 }
+
+void ObjSelector::setup(std::string tName, std::vector<std::string> objects, std::function<void(UIItem*)> exitFunc, std::function<void(UIItem*)> cancelFunc) {
+	if (isSetup) {
+		return;
+	}
+
+	textureName = tName;
+	finishCallback = exitFunc;
+
+	std::vector<std::string> textures{};
+	textureLL->listTextures(textures);
+
+	if (headerText == "") {
+		std::cout << "Warning: text has not been set for the obj selector for " << tName << std::endl;
+	}
+
+	auto it = find(textures.begin(), textures.end(), textureName);
+	if (it != textures.end()) {
+		textures.erase(it);
+	}
+
+	Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
+	Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
+	Material* finishMat = loadList->getMaterial("FinishBtnMat");
+	Material* cancelMat = loadList->getMaterial("CancelBtnMat");
+
+	Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+
+	TextBox* topText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+	topText->addText(headerText);
+
+	totalArrangement->addItem(getPtr(topText));
+
+	DropdownMenu* objSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
+	objSelect->setBlankText("Select an object");
+	objSelect->addOptions(objects);
+	objSelect->setSelectCallback(std::bind(&ObjSelector::setObject, this, std::placeholders::_1));
+
+	totalArrangement->addItem(getPtr(objSelect));
+
+	Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
+	Button* cancelBtn = new Button(cancelMat, cancelFunc);
+	cancelBtn->Name = tName;
+
+	finishArrangement->addItem(getPtr(cancelBtn));
+	finishArrangement->addItem(getPtr(new spacer()));
+	finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&ObjSelector::finishFunc, this, std::placeholders::_1))));
+
+	totalArrangement->addItem(getPtr(finishArrangement));
+	totalArrangement->arrangeItems();
+
+	canvas.push_back(getPtr(totalArrangement));
+
+	addBackground(loadList->getMaterial("UIRoundBox"));
+
+	isSetup = true;
+}

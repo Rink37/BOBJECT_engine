@@ -49,4 +49,46 @@ private:
 	void finish(UIItem* owner);
 };
 
+class ObjSelector : public Widget {
+public:
+	ObjSelector(LoadList* assets, LoadList* texLL) {
+		loadList = assets;
+		textureLL = texLL;
+	}
+
+	void setText(std::string head) {
+		headerText = head;
+	}
+
+	void setup(std::string, std::vector<std::string>, std::function<void(UIItem*)>, std::function<void(UIItem*)>);
+private:
+	std::string headerText = "";
+
+	LoadList* textureLL = nullptr;
+	std::string objectName = "";
+
+	std::string textureName = "";
+	std::function<Mesh* (std::string)> getMesh = nullptr;
+	std::function<void(UIItem*)> finishCallback = nullptr;
+
+	void setObject(UIItem* owner) {
+		objectName = owner->text;
+	}
+
+	void finishFunc(UIItem* owner) {
+		if (objectName == "") {
+			if (errorFunc != nullptr) {
+				errorFunc("SELECT ERROR: ", "No base object has been selected!");
+			}
+			return;
+		}
+		owner->Name = textureName;
+		owner->text = objectName;
+		if (finishCallback != nullptr) {
+			finishCallback(owner);
+		}
+		selfDestruct(owner);
+	}
+};
+
 #endif

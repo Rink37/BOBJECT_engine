@@ -6,7 +6,7 @@
 #include"include/IPAlphaOver.h"
 #include"WindowsFileManager.h"
 
-void findLocalIndices(std::vector<uint32_t>& localIndices, std::vector<uint32_t> indices, uint32_t index) {
+static void findLocalIndices(std::vector<uint32_t>& localIndices, std::vector<uint32_t> indices, uint32_t index) {
 	auto it = find(indices.begin(), indices.end(), index);
 
 	std::vector<uint32_t> indexOccurrences{};
@@ -434,7 +434,7 @@ void SeamFixer::sortSeamIndices(SeamStrip& strip) {
 	//std::cout << strip.leftIndices.size() << " " << strip.rightIndices.size() << std::endl;
 }
 
-void findSeamMeshLocalIndices(std::set<std::pair<uint32_t, uint32_t>>& localIndices, std::vector<uint32_t> indices, uint32_t index) {
+static void findSeamMeshLocalIndices(std::set<std::pair<uint32_t, uint32_t>>& localIndices, std::vector<uint32_t> indices, uint32_t index) {
 	std::vector<uint32_t> Occurrences{};
 	
 	auto it = find(indices.begin(), indices.end(), index);
@@ -463,14 +463,12 @@ void findSeamMeshLocalIndices(std::set<std::pair<uint32_t, uint32_t>>& localIndi
 	}
 }
 
-void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<uint32_t> stripIndices, float distance, std::map<uint32_t, std::vector<glm::vec2>>& in, std::map<uint32_t, std::vector<glm::vec2>>& out, bool closed, cv::Mat& demoMatDupe) {
+static void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<uint32_t> stripIndices, float distance, std::map<uint32_t, std::vector<glm::vec2>>& in, std::map<uint32_t, std::vector<glm::vec2>>& out, bool closed, cv::Mat& demoMatDupe) {
 	
 	size_t size = stripIndices.size() - 1;
 
 	uint32_t width = demoMatDupe.size().width;
 	uint32_t height = demoMatDupe.size().height;
-
-	//std::cout << "Size: " << size+1 << std::endl;
 	
 	for (uint32_t i = 0; i != size; i++) {
 		uint32_t index_1 = stripIndices[i];
@@ -501,8 +499,6 @@ void getSeamIO(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std:
 		}
 
 		if (connectedIndices.size() == 0) {
-			//std::cout << connectedIndices_0.size() << " " << connectedIndices_1.size() << std::endl;
-			//glm::vec2 coord{ 0, 0 };
 			glm::vec2 coord = vertices[stripIndices[i]].texCoord;
 			if (out.count(index_1) == 0) {
 				out.insert({ index_1, std::vector<glm::vec2>{coord} });
@@ -988,13 +984,13 @@ void SeamFixer::updateSeamMeshes(float distance, bool updateColour, bool smoothO
 	//packSeamStrips();
 }
 
-void flipSeamIndices(SeamStrip& strip) {
+static void flipSeamIndices(SeamStrip& strip) {
 	std::vector<uint32_t> savedRightIndices = strip.rightIndices;
 	strip.rightIndices = strip.leftIndices;
 	strip.leftIndices = savedRightIndices;
 }
 
-void compareStrips(SeamStrip& a, SeamStrip& b, std::vector<Vertex> vertices) {
+static void compareStrips(SeamStrip& a, SeamStrip& b, std::vector<Vertex> vertices) {
 	// Checks if two strips have sides with matching UV coordinates, and updates them accordingly
 	// Pairs of strips which have a strip that shares UV coordinates should always place the matching strip on the left and then set the strips to locked
 
@@ -1054,8 +1050,6 @@ void compareStrips(SeamStrip& a, SeamStrip& b, std::vector<Vertex> vertices) {
 			return; // If we've checked more than one seam vertex and the directions don't match we assume there was some error and do nothing
 		}
 	}
-
-	//std::cout << "Match Direction: " << static_cast<int>(matchDirections) << std::endl;
 
 	if (matchDirections == 1) {
 		a.directionLocked = true;
@@ -1258,19 +1252,16 @@ void SeamFixer::findAdjacentStrips() {
 	packSeamStrips();
 }
 
-bool doLinesIntersect(glm::vec4 a, glm::vec4 b) {
+static bool doLinesIntersect(glm::vec4 a, glm::vec4 b) {
 	if (a == b) {
-		//std::cout << "Intersect : Lines are equal" << std::endl;
 		return true;
 	}
 
 	if (std::max(a[0], a[2]) < std::min(b[0], b[2]) || std::max(b[0], b[2]) < std::min(a[0], a[2])) {
-	//	std::cout << "No intersect: x intervals don't overlap" << std::endl;
 		return false;
 	}
 
 	if (std::max(a[1], a[3]) < std::min(b[1], b[3]) || std::max(b[1], b[3]) < std::min(a[1], a[3])) {
-	//	std::cout << "No intersect: y intervals don't overlap" << std::endl;
 		return false;
 	}
 
@@ -1278,7 +1269,6 @@ bool doLinesIntersect(glm::vec4 a, glm::vec4 b) {
 	float a_m = (a[0] - a[2] == 0.0f) ? 1000.0f : (a[1] - a[3]) / (a[0] - a[2]);
 	float b_m = (b[0] - b[2] == 0.0f) ? 1000.0f : (b[1] - b[3]) / (b[0] - b[2]);
 	if (a_m == b_m) {
-	//	std::cout << "No intersect: lines are parallel" << std::endl;
 		return false; // The lines are parallel
 	}
 	float a_c = a[1] - a_m * a[0];
@@ -1289,17 +1279,13 @@ bool doLinesIntersect(glm::vec4 a, glm::vec4 b) {
 
 	// Finally we check if this x coordinate is within the bounds of both lines
 	if (x_intersect < std::max(std::min(a[0], a[1]), std::min(b[0], b[1])) || x_intersect > std::min(std::max(a[0], a[1]), std::max(b[0], b[1]))) {
-	//	std::cout << "No intersect: intersection point outside of line bounds" << std::endl;
 		return false; // the intersection is outside the bounds of the lines
 	}
 
-	//std::cout << a[0] << " " << a[1] << " " << a[2] << " " << a[3] << std::endl;
-	//std::cout << b[0] << " " << b[1] << " " << b[2] << " " << b[3] << std::endl;
-	//std::cout << "Intersect" << std::endl;
 	return true;
 }
 
-bool doMeshesOverlap(Mesh* a, Mesh* b) {
+static bool doMeshesOverlap(Mesh* a, Mesh* b) {
 	float a_min_x = a->vertices[0].pos[0];
 	float a_max_x = a->vertices[0].pos[1];
 	float a_min_y = a->vertices[0].pos[0];
@@ -1379,13 +1365,8 @@ bool doMeshesOverlap(Mesh* a, Mesh* b) {
 	return false;
 }
 
-bool doStripsOverlap(SeamStrip* a, SeamStrip* b) {
-	if (doMeshesOverlap(&a->leftMesh, &b->leftMesh)) {
-		//std::cout << "Left meshes overlap" << std::endl;
-		return true;
-	}
-	if (doMeshesOverlap(&a->rightMesh, &b->rightMesh)) {
-		//std::cout << "Right meshes overlap" << std::endl;
+static bool doStripsOverlap(SeamStrip* a, SeamStrip* b) {
+	if (doMeshesOverlap(&a->leftMesh, &b->leftMesh) || doMeshesOverlap(&a->rightMesh, &b->rightMesh)) {
 		return true;
 	}
 	return false;
@@ -1492,7 +1473,7 @@ void SeamFixer::packSeamStrips() {
 	}
 }
 
-void SeamFixer::alphaOverMap(Texture* cMap, Texture* aMap, Texture* texInFlight) {
+void SeamFixer::alphaOverMap(Texture* cMap, Texture* aMap, Texture* texInFlight) const {
 	Texture* seamMap = cMap->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
 	Texture* seamAlpha = aMap->copyTexture(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, 1, width, height);
 

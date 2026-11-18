@@ -1951,18 +1951,14 @@ private:
 			objectNames.push_back(elem.first);
 		}
 
-		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::closeProjectorObjPicker, this, std::placeholders::_1);
+		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::openTextureSettingsMenu, this, std::placeholders::_1);
 
-		ProjectorObjPicker* pob = new ProjectorObjPicker(&UIElements, &TextureElements);
+		ObjSelector* pob = new ObjSelector(&UIElements, &TextureElements);
+		pob->setText("Projecting " + texName + " onto Object : ");
 		pob->setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
 		pob->setup(texName, objectNames, std::bind(&Application::openProjector, this, std::placeholders::_1), cancelFunc);
 
 		widgetManager.addWidget("pob", pob);
-	}
-
-	void closeProjectorObjPicker(UIItem* owner) {
-		openTextureSettingsMenu(owner);
-		widgetManager.getWidget("pob")->selfDestruct(owner);
 	}
 
 	void openProjector(UIItem* owner) {
@@ -2028,17 +2024,14 @@ private:
 			objectNames.push_back(elem.first);
 		}
 
-		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::closeSeamObjPicker, this, std::placeholders::_1);
+		std::function<void(UIItem*)> cancelFunc = std::bind(&Application::openTextureSettingsMenu, this, std::placeholders::_1);
 
-		SeamObjPicker* sob = new SeamObjPicker(&UIElements, &TextureElements);
+		ObjSelector* sob = new ObjSelector(&UIElements, &TextureElements);
+		sob->setText("Seam-fixing " + texName + " based on Object:");
 		sob->setErrorFunc(std::bind(&Application::createErrorDialog, this, std::placeholders::_1, std::placeholders::_2));
 		sob->setup(texName, objectNames, std::bind(&Application::openSeamFixer ,this, std::placeholders::_1), cancelFunc);
 		
 		widgetManager.addWidget("sob", sob);
-	}
-
-	void closeSeamObjPicker(UIItem* owner) {
-		openTextureSettingsMenu(owner);
 	}
 
 	void openSeamFixer(UIItem* owner) {
@@ -2047,12 +2040,8 @@ private:
 		Mesh* selectedMesh = staticObjects[objectMenu->ObjectMap.at(objName)].mesh;
 
 		SeamFixMenu* seamFixer = new SeamFixMenu(&UIElements, &TextureElements);
-		seamFixer->setup(selectedMesh, texName, std::bind(&Application::exitSeamFixer, this, std::placeholders::_1));
+		seamFixer->setup(selectedMesh, texName, std::bind(&Application::openTextureSettingsMenu, this, std::placeholders::_1));
 		widgetManager.addWidget("seamFixer", seamFixer);
-	}
-
-	void exitSeamFixer(UIItem* owner) {
-		openTextureSettingsMenu(owner);
 	}
 
 	void colourChangeTest() {

@@ -37,7 +37,6 @@ public:
 
 		colourWriter = new textureWriter(targetTex, new SEAMFIX_COLOURSHADER, true);
 		alphaWriter = new textureWriter(targetTex, new SEAMFIX_ALPHASHADER, true, false);
-		//targetTex->transitionImageLayout(VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
 	void updateSeamMeshes(float distance = 0.01f, bool updateColour = false, bool smoothOutside = false);
@@ -124,94 +123,7 @@ private:
 
 	void sortSeamIndices(SeamStrip&);
 	
-	void alphaOverMap(Texture*, Texture*, Texture*);
-};
-
-class SeamObjPicker : public Widget {
-public:
-	SeamObjPicker(LoadList* assets, LoadList* texLL) {
-		loadList = assets;
-		textureLL = texLL;
-	}
-
-	void setup(std::string tName, std::vector<std::string> objects, std::function<void(UIItem*)> exitFunc, std::function<void(UIItem*)> cancelFunc) {
-		if (isSetup) {
-			return;
-		}
-
-		textureName = tName;
-		finishCallback = exitFunc;
-
-		std::vector<std::string> textures{};
-		textureLL->listTextures(textures);
-
-		auto it = find(textures.begin(), textures.end(), textureName);
-		if (it != textures.end()) {
-			textures.erase(it);
-		}
-
-		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
-		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-		Material* finishMat = loadList->getMaterial("FinishBtnMat");
-		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
-
-		Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-
-		TextBox* topText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
-		topText->addText("Seam-fixing " + textureName + " based on Object:");
-
-		totalArrangement->addItem(getPtr(topText));
-
-		DropdownMenu* objSelect = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
-		objSelect->setBlankText("Select an object");
-		objSelect->addOptions(objects);
-		objSelect->setSelectCallback(std::bind(&SeamObjPicker::setObject, this, std::placeholders::_1));
-
-		totalArrangement->addItem(getPtr(objSelect));
-
-		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-		Button* cancelBtn = new Button(cancelMat, cancelFunc);
-		cancelBtn->Name = tName;
-		
-		finishArrangement->addItem(getPtr(cancelBtn));
-		finishArrangement->addItem(getPtr(new spacer()));
-		finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&SeamObjPicker::finishFunc, this, std::placeholders::_1))));
-
-		totalArrangement->addItem(getPtr(finishArrangement));
-		totalArrangement->arrangeItems();
-
-		canvas.push_back(getPtr(totalArrangement));
-
-		addBackground(loadList->getMaterial("UIRoundBox"));
-
-		isSetup = true;
-	}
-private:
-	LoadList* textureLL = nullptr;
-	std::string objectName = "";
-
-	std::string textureName = "";
-	std::function<Mesh* (std::string)> getMesh = nullptr;
-	std::function<void(UIItem*)> finishCallback = nullptr;
-
-	void setObject(UIItem* owner) {
-		objectName = owner->text;
-	}
-
-	void finishFunc(UIItem* owner) {
-		if (objectName == "") {
-			if (errorFunc != nullptr) {
-				errorFunc("SELECT ERROR: ", "No base object has been selected!");
-			}
-			return;
-		}
-		owner->Name = textureName;
-		owner->text = objectName;
-		if (finishCallback != nullptr) {
-			finishCallback(owner);
-		}
-		selfDestruct(owner);
-	}
+	void alphaOverMap(Texture*, Texture*, Texture*) const;
 };
 
 class SeamFixMenu : public Widget {
