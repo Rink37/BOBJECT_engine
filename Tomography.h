@@ -386,7 +386,7 @@ public:
 		if (tomogLoadMenu != nullptr) {
 			tomogLoadMenu->drawAll(commandBuffer, currentFrame, currentPass);
 		}
-		for (auto elem : imagePipelines) {
+		for (std::pair<std::string, std::vector<UIImage*>> elem : imagePipelines) {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(elem.first)]);
 			for (UIImage* image : elem.second) {
 				image->draw(commandBuffer, currentFrame, image->mat[image->matidx]->pipelineLayoutIndex);

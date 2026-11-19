@@ -5,7 +5,6 @@
 #include"Bobject_Core.h"
 
 #include<array>
-//#include"Materials.h"
 
 #define NORM_SIZE 1.5f
 

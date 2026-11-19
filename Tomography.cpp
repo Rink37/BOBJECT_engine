@@ -691,10 +691,9 @@ static Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the no
 	}
 
 	int matrixCount = 0;
-	for (auto elem : tomogMatrices) {
+	for (std::pair<std::string, std::vector<std::vector<float>>> elem : tomogMatrices) {
 		matrixCount++;
 	}
-	//std::cout << matrixCount << std::endl;
 
 	cvtColor(normal, normal, COLOR_RGB2BGR);
 

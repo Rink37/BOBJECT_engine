@@ -37,14 +37,9 @@ struct Texture {
 	bool isNormal = false;
 	bool normalType = false; // false represents an OS normal, true represents a TS normal
 
-	bool hasStencilComponent(VkFormat);
 	void createImage(VkSampleCountFlagBits, VkMemoryPropertyFlags);
 	
-	void transitionImageLayout(VkCommandBuffer, VkImage, VkFormat, VkImageLayout, VkImageLayout, uint32_t);
-	void transitionImageLayout(VkImage, VkFormat, VkImageLayout, VkImageLayout, uint32_t);
-	void transitionImageLayout(VkCommandBuffer, VkFormat, VkImageLayout, VkImageLayout, uint32_t);
-	void transitionImageLayout(VkFormat, VkImageLayout, VkImageLayout, uint32_t);
-	void transitionImageLayout(VkCommandBuffer, VkImageLayout, VkImageLayout);
+	void transitionImageLayout(VkCommandBuffer, VkImageLayout, VkImageLayout) const;
 	void transitionImageLayout(VkImageLayout, VkImageLayout);
 	
 	void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
@@ -75,11 +70,11 @@ struct Texture {
 		}
 		createImage(textureSamples, textureMemFlags);
 		if (mipLevels != 1) {
-			transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+			transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 			generateMipmaps();
 		}
 		else {
-			transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, textureLayout, 1);
+			transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, textureLayout);
 		}	
 		createImageView(textureAspectFlags);
 		cleaned = false;
@@ -219,7 +214,7 @@ public:
 		frameUpdate = std::async(std::launch::async, &webcamTexture::fetchFrame, this);
 	}
 
-	void interruptFrameUpdate() {
+	void interruptFrameUpdate() const {
 		if (frameUpdate.valid()) {
 			frameUpdate.wait();
 		}

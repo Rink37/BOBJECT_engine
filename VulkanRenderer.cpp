@@ -2655,7 +2655,7 @@ private:
 	}
 
 	void updateCentralLocation() {
-		uint32_t objectCount = staticObjects.size();
+		uint32_t objectCount = static_cast<uint32_t>(staticObjects.size());
 		glm::vec3 avgPos{ 0.0f, 0.0f, 0.0f };
 		for (uint32_t i = 0; i != objectCount; i++) {
 			avgPos += staticObjects[i].mesh->bbox.position;

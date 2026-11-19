@@ -80,7 +80,7 @@ struct LoadList {
 			delete tex;
 			return materials.at(materialMap.at(name)).get();
 		}
-		for (auto elem : textureMap) {
+		for (std::pair<std::string, int> elem : textureMap) {
 			auto it = find(tex->textures.begin(), tex->textures.end(), textures[elem.second].get());
 			if (it != tex->textures.end()) {
 				if (textureAssociator.count(elem.first) == 0) {
@@ -209,7 +209,7 @@ struct LoadList {
 	}
 
 	void listTextures(std::vector<std::string>& list) {
-		for (auto elem : textureMap) {
+		for (std::pair<std::string, int> elem : textureMap) {
 			list.push_back(elem.first);
 		}
 	}
@@ -220,7 +220,7 @@ struct LoadList {
 		for (uint32_t i = 0; i != mTextures.size(); i++) {
 			list.push_back("");
 		}
-		for (auto elem : textureMap) {
+		for (std::pair<std::string, int> elem : textureMap) {
 			Texture* tex = textures[elem.second].get();
 			auto it = find(mTextures.begin(), mTextures.end(), tex);
 			if (it != mTextures.end()) {
@@ -234,7 +234,7 @@ struct LoadList {
 	}
 
 	void listMaterials(std::vector <std::string>& list) {
-		for (auto elem : materialMap) {
+		for (std::pair<std::string, int> elem : materialMap) {
 			list.push_back(elem.first);
 		}
 	}

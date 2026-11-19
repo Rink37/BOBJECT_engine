@@ -82,6 +82,8 @@ void UIMesh::UpdateVertices(float xp, float yp, float xsc, float ysc, float zp) 
 	else {
 		updateVertexBuffer();
 	}
+
+	vertices.clear();
 }
 
 void UIMesh::createVertexBuffer() {

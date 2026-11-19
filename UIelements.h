@@ -15,7 +15,6 @@
 
 #include"LoadLists.h"
 #include"include/ImageDataType.h"
-#include"InputManager.h"
 
 #define ARRANGE_FILL 0
 #define ARRANGE_START 1
@@ -144,13 +143,6 @@ struct UIItem {
 		}
 	}
 
-	//virtual float getHeight() {
-	//	if (image != nullptr) {
-	//		return image->zp;
-	//	}
-	//	return 0.0f;
-	//}
-
 	virtual void addText(std::string text) {
 		return;
 	}
@@ -249,24 +241,6 @@ struct UIItem {
 		isEnabled = enabled;
 	}
 
-	//virtual void drawUI(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
-	//	std::vector<UIImage*> images;
-	//	getImages(images);
-
-	//	for (UIImage* image : images) {
-	//		image->draw(commandBuffer, currentFrame, pipelineIndex);
-	//	}
-	//}
-
-	//virtual void drawImages(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
-	//	std::vector<UIImage*> images;
-	//	getImages(images);
-
-	//	for (UIImage* image : images) {
-	//		image->draw(commandBuffer, currentFrame, pipelineIndex);
-	//	}
-	//}
-
 	virtual void cleanup() {
 		std::vector<UIImage*> images;
 		getImages(images);
@@ -319,7 +293,6 @@ public:
 	}
 
 	void updateText(char c) {
-		//std::cout << static_cast<int>(c) << std::endl;
 		if (c == 3) {
 			removeLastChar();
 		}

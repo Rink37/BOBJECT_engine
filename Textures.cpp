@@ -3,7 +3,7 @@
 using namespace std;
 using namespace cv;
 
-bool Texture::hasStencilComponent(VkFormat format) {
+static bool hasStencilComponent(VkFormat format) {
 	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
@@ -68,10 +68,9 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
 
 	copy->createImage(VK_SAMPLE_COUNT_1_BIT, memFlags);
+	copy->transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-
-	transitionImageLayout(textureImage, textureFormat, textureLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
+	transitionImageLayout(textureLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	VkDevice device = Core::getDevice();
 
@@ -117,7 +116,7 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 		VKCmd::submitSingleTimeCommand(resolveCmd, graphicsQueue);
 
-		transitionImageLayout(resolvedTexture->textureImage, resolvedTexture->textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this->mipLevels);
+		resolvedTexture->transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	}
 
 	VkCommandBuffer copyCmd;
@@ -234,9 +233,9 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 	vkDestroyFence(device, copyFence, nullptr);
 
 	if (mipLevels == 1) {
-		transitionImageLayout(copy->textureImage, copy->textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout, mipLevels);
+		copy->transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy->textureLayout);
 	}
-	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout, this->mipLevels);
+	transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureLayout);
 
 	if (resolvedTexture != nullptr) {
 		resolvedTexture->cleanup();
@@ -296,7 +295,7 @@ void imageTexture::createTextureImage(imageData* imgData) {
 		texChannels = 4;
 	}
 
-	VkDeviceSize imageSize = texWidth * texHeight * texChannels;
+	VkDeviceSize imageSize = static_cast<VkDeviceSize>(texWidth * texHeight * texChannels);
 
 	if (!imgData->Bytes) {
 		throw runtime_error("failed to load texture image!");
@@ -313,7 +312,7 @@ void imageTexture::createTextureImage(imageData* imgData) {
 
 	createImage(VK_SAMPLE_COUNT_1_BIT, textureMemFlags);
 
-	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+	transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
@@ -386,34 +385,47 @@ void Texture::createImage(VkSampleCountFlagBits numSamples, VkMemoryPropertyFlag
 	cleaned = false;
 }
 
-void Texture::transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout) {
-	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
-	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(graphicsQueue);
-	transitionImageLayout(commandBuffer, oldLayout, newLayout);
-	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueue);
+static void getFlags(VkImageLayout layout, VkAccessFlags& accessFlags, VkPipelineStageFlags& stageFlags) {
+	switch (layout) {
+	case (VK_IMAGE_LAYOUT_UNDEFINED):
+		accessFlags = 0;
+		stageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		break;
+	case (VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL):
+		accessFlags = VK_ACCESS_TRANSFER_WRITE_BIT;
+		stageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		break;
+	case (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL):
+		accessFlags = VK_ACCESS_TRANSFER_WRITE_BIT;
+		stageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		break;
+	case (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL):
+		accessFlags = VK_ACCESS_SHADER_READ_BIT;
+		stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		break;
+	case (VK_IMAGE_LAYOUT_GENERAL):
+		accessFlags = VK_ACCESS_MEMORY_WRITE_BIT;
+		stageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+		break;
+	case (VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL):
+		accessFlags = VK_ACCESS_SHADER_READ_BIT;
+		stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		break;
+	case (VK_IMAGE_LAYOUT_PRESENT_SRC_KHR):
+		accessFlags = 0;
+		stageFlags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		break;
+	case (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL):
+		accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		break;
+	default:
+		throw std::invalid_argument("Layout not recognised!");
+		break;
+	}
 }
 
-void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) {
-	transitionImageLayout(commandBuffer, this->textureFormat, oldLayout, newLayout, this->mipLevels);
-}
-
-void Texture::transitionImageLayout(VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
-	// Used to simplify layout transitions which are performed internally
-	transitionImageLayout(this->textureImage, format, oldLayout, newLayout, mipLevels);
-}
-
-void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
-	transitionImageLayout(commandBuffer, this->textureImage, format, oldLayout, newLayout, mipLevels);
-}
-
-void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
-	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
-	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(graphicsQueue);
-	transitionImageLayout(commandBuffer, image, format, oldLayout, newLayout, mipLevels);
-	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueue);
-}
-
-void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
+void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) const {
 	if (oldLayout == newLayout) {
 		return;
 	}
@@ -426,9 +438,9 @@ void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
-	barrier.image = image;
+	barrier.image = textureImage;
 	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-		if (hasStencilComponent(format)) {
+		if (hasStencilComponent(textureFormat)) {
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
 		}
 	}
@@ -443,73 +455,8 @@ void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image
 	VkPipelineStageFlags sourceStage;
 	VkPipelineStageFlags destinationStage;
 
-	switch (oldLayout) {
-	case (VK_IMAGE_LAYOUT_UNDEFINED):
-		barrier.srcAccessMask = 0;
-		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL):
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL):
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL):
-		barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_GENERAL):
-		barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
-		sourceStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL):
-		barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_PRESENT_SRC_KHR):
-		barrier.srcAccessMask = 0;
-		sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		break;
-	default:
-		throw invalid_argument("Old layout not recognised");
-		break;
-	}
-
-	switch (newLayout) {
-	case (VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL):
-		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL):
-		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_GENERAL):
-		barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL):
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL):
-		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-		destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL):
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		break;
-	case (VK_IMAGE_LAYOUT_PRESENT_SRC_KHR):
-		barrier.dstAccessMask = 0;
-		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		break;
-	default:
-		throw invalid_argument("New layout not recognised");
-		break;
-	}
+	getFlags(oldLayout, barrier.srcAccessMask, sourceStage);
+	getFlags(newLayout, barrier.dstAccessMask, destinationStage);
 
 	vkCmdPipelineBarrier(
 		commandBuffer,
@@ -519,6 +466,14 @@ void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image
 		0, nullptr,
 		1, &barrier
 	);
+}
+
+void Texture::transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout) {
+	// Used to simplify layout transitions which are performed internally
+	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
+	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(graphicsQueue);
+	transitionImageLayout(commandBuffer, oldLayout, newLayout);
+	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueue);
 }
 
 void Texture::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
@@ -731,7 +686,7 @@ void Texture::transitionMatToImg() {
 
 	createImage(VK_SAMPLE_COUNT_1_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+	transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 	
 	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
@@ -740,7 +695,7 @@ void Texture::transitionMatToImg() {
 		generateMipmaps();
 	}
 	else {
-		transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureLayout, mipLevels);
+		transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureLayout);
 	}
 
 	cleaned = false;
@@ -752,7 +707,6 @@ void webcamTexture::createWebcamImage() {
 	}
 	webCam->getFrame();
 	if (webCam->webcamFrame.empty()) {
-		//std::cout << "We cannot create a webcam image if there is no frame" << std::endl;
 		return;
 	}
 	cv::cvtColor(webCam->webcamFrame, webCam->webcamFrame, cv::COLOR_BGR2RGBA, 4);
@@ -817,7 +771,6 @@ void webcamTexture::updateWebcam() {
 	webCam->getFrame();
 
 	if (webCam->webcamFrame.empty()) {
-		//std::cout << "The webcam frame is empty" << std::endl;
 		return;
 	}
 	
@@ -829,9 +782,7 @@ void webcamTexture::updateWebcam() {
 } 
 
 void webcamTexture::updateWebcamImage() {
-
-	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+	transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	copyBufferToImage(textureBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	transitionImageLayout(textureImage, textureFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureLayout, mipLevels);
-
+	transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureLayout);
 }
