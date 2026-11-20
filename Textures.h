@@ -40,7 +40,7 @@ struct Texture {
 	void createImage(VkSampleCountFlagBits, VkMemoryPropertyFlags);
 	
 	void transitionImageLayout(VkCommandBuffer, VkImageLayout, VkImageLayout) const;
-	void transitionImageLayout(VkImageLayout, VkImageLayout);
+	void transitionImageLayout(VkImageLayout, VkImageLayout) const;
 	
 	void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
 	void generateMipmaps() const;

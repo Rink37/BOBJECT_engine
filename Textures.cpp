@@ -468,7 +468,7 @@ void Texture::transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout
 	);
 }
 
-void Texture::transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout) {
+void Texture::transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout) const {
 	// Used to simplify layout transitions which are performed internally
 	Queue* graphicsQueue = Core::getSupportedQueue(VK_QUEUE_GRAPHICS_BIT);
 	VkCommandBuffer commandBuffer = VKCmd::allocateSingleTimeCommand(graphicsQueue);

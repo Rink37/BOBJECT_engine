@@ -928,7 +928,7 @@ void Widget::sortImages() {
 	float separation = 0.001f;
 
 	float pos = zp;
-	for (auto elem : imageHeights) {
+	for (std::pair<float, std::vector<UIImage*>> elem : imageHeights) {
 		for (UIImage* image : elem.second) {
 			image->zp = pos;
 		}

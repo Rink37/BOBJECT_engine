@@ -39,7 +39,7 @@ public:
 
 		targetFormat = outFormat;
 
-		for (auto IOval : sd->IO) {
+		for (shaderIOValue IOval : sd->IO) {
 			if (IOval.type == 0) {
 				createFilterTarget();
 			}
@@ -63,7 +63,7 @@ public:
 
 		filterShaderModule = Engine::get()->createShaderModule(*(sd->compData));
 
-		for (auto IOval : sd->IO) {
+		for (shaderIOValue IOval : sd->IO) {
 			if (IOval.type == 0) {
 				createFilterTarget();
 			}
@@ -89,7 +89,7 @@ public:
 
 		targetFormat = outFormat;
 
-		for (auto IOval : sd->IO) {
+		for (shaderIOValue IOval : sd->IO) {
 			if (IOval.type == 0) {
 				createFilterTarget();
 			}
