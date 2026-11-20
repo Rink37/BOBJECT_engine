@@ -63,7 +63,7 @@ void UIMesh::UpdateVertices(float xp, float yp, float xsc, float ysc, float zp) 
 	Vertex vertex{};
 
 	vertex.pos = { -xsc + xp, yp - ysc, zp };
-	vertex.normal = { 0.0f, 0.0f, 0.0f };
+	vertex.normal = { xsc, ysc, xsc/ysc };
 	vertex.texCoord = { 0.0f, 0.0f };
 	vertices.push_back(vertex);
 	vertex.pos = { xsc + xp, yp - ysc, zp };

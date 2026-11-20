@@ -542,6 +542,12 @@ void Engine::createColourBuffer() {
 	vkMapMemory(device,	colourBufferMemory, 0, bufferSize, 0, &colourBufferMapped);
 }
 
+void Engine::createWindowSizeBuffer() {
+	VkDeviceSize bufferSize = sizeof(WindowSizeObject);
+	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, windowSizeBuffer, windowSizeBufferMemory);
+	vkMapMemory(device, windowSizeBufferMemory, 0, bufferSize, 0, &windowSizeBufferMapped);
+}
+
 void Engine::createCommandBuffers() {
 	commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 	VkCommandBufferAllocateInfo allocInfo{};
@@ -599,6 +605,7 @@ void Engine::initEngine(std::string appName) {
 	createTextureSampler();
 	createUniformBuffers();
 	createColourBuffer();
+	createWindowSizeBuffer();
 	createSyncObjects();
 }
 
@@ -616,6 +623,9 @@ void Engine::cleanup() {
 
 	vkDestroyBuffer(device, colourBuffer, nullptr);
 	vkFreeMemory(device, colourBufferMemory, nullptr);
+
+	vkDestroyBuffer(device, windowSizeBuffer, nullptr);
+	vkFreeMemory(device, windowSizeBufferMemory, nullptr);
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);

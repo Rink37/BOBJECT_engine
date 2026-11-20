@@ -132,6 +132,10 @@ struct ColourSchemeObject {
 	alignas(16) glm::vec3 Tertiary;
 };
 
+struct WindowSizeObject {
+	alignas(8) glm::vec2 WindowSize;
+};
+
 class Engine {
 public:
 	static Engine* get(){
@@ -174,6 +178,9 @@ public:
 	VkBuffer colourBuffer = nullptr;
 	void* colourBufferMapped = nullptr;
 
+	VkBuffer windowSizeBuffer = nullptr;
+	void* windowSizeBufferMapped = nullptr;
+
 	bool framebufferResized = false;
 
 	void initEngine(std::string);
@@ -214,6 +221,7 @@ private:
 
 	std::vector<VkDeviceMemory> uniformBuffersMemory = {};
 	VkDeviceMemory colourBufferMemory = nullptr;
+	VkDeviceMemory windowSizeBufferMemory = nullptr;
 	Texture* depthTex = nullptr;
 
 	void createSwapChain();
@@ -222,6 +230,7 @@ private:
 	void createTextureSampler();
 	void createUniformBuffers();
 	void createColourBuffer();
+	void createWindowSizeBuffer();
 	void createCommandBuffers();
 	void createSyncObjects();
 

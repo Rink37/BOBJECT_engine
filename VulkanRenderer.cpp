@@ -193,6 +193,8 @@ public:
 		webcamMenu->canvas[0]->Items[1]->image->matidx = 1;
 
 		updateColourScheme();
+		updateWindowSize();
+
 		updateLightAzimuth(0.0f);
 		updateLightPolar(0.0f);
 		mainLoop();
@@ -284,7 +286,7 @@ private:
 	}
 
 	void createWidgetMaterials() {
-		UIElements.getPtr(new Material(std::vector<Texture*>{}, "UIRoundBox", currentPass, true), "UIRoundBox");
+		UIElements.getPtr(new Material(std::vector<Texture*>{}, std::vector <std::pair<std::vector<VkBuffer>, uint32_t>>{std::pair<std::vector<VkBuffer>, uint32_t>{std::vector<VkBuffer>{Engine::get()->colourBuffer}, sizeof(ColourSchemeObject)}, std::pair<std::vector<VkBuffer>, uint32_t>{std::vector<VkBuffer>{Engine::get()->windowSizeBuffer}, sizeof(WindowSizeObject)}}, "UIRoundBox", currentPass), "UIRoundBox");
 		imageData cb = CLOSEBUTTON;
 		UIElements.getPtr(&cb, "UIGray", "CloseBtn");
 		imageData sb = SETTINGSBUTTON;
@@ -764,6 +766,14 @@ private:
 		memcpy(engine->colourBufferMapped, &cso, sizeof(cso));
 	}
 
+	void updateWindowSize() {
+
+		WindowSizeObject wso{};
+		wso.WindowSize = glm::vec2(Core::get()->windowWidth, Core::get()->windowHeight);
+
+		memcpy(engine->windowSizeBufferMapped, &wso, sizeof(wso));
+	}
+
 	Mesh* getObj(std::string objName) {
 		if (objectMenu->ObjectMap.count(objName) == 0) {
 			return nullptr;
@@ -1113,6 +1123,8 @@ private:
 			engine->recreateSwapChain();
 			engine->recreateDrawImage(&renderImage);
 			
+			updateWindowSize();
+
 			return;
 		}
 		else if (result != VK_SUCCESS) {
