@@ -243,15 +243,13 @@ void TextBox::updateDisplay() {
 				hideCharacters = true;
 			}
 
-			if (c || isBlank) {
+			if (c == NEWLINE_CHAR || isBlank) {
 				xps.push_back(pos_x);
 				yis.push_back(lineIndex);
 				visibilities.push_back(false);
-				//mesh->setVisibility(false);
 			}
 			else {
 				for (uint32_t meshRef : wordIndices) {
-					//characters[meshRef]->setVisibility(!hideCharacters);
 					visibilities[meshRef] = !hideCharacters;
 					float charAdvanceWidth;
 					textFont->getAdvanceWidth(characters[meshRef], charAdvanceWidth);
@@ -262,7 +260,6 @@ void TextBox::updateDisplay() {
 				}
 				wordIndices.push_back(index);
 				visibilities.push_back(!hideCharacters);
-				//mesh->setVisibility(!hideCharacters);
 				pos_x += characterWidth * advanceWidth * 1.2f;
 				xps.push_back(pos_x);
 				yis.push_back(lineIndex);
@@ -279,7 +276,6 @@ void TextBox::updateDisplay() {
 				spaceIndices.push_back(index);
 				lineIndices.push_back(index);
 				visibilities.push_back(false);
-				//mesh->setVisibility(false);
 				pos_x += characterWidth * advanceWidth * 1.2f;
 				xps.push_back(pos_x);
 				yis.push_back(lineIndex);
@@ -288,7 +284,6 @@ void TextBox::updateDisplay() {
 			else {
 				wordIndices.push_back(index);
 				visibilities.push_back(!hideCharacters);
-				//mesh->setVisibility(!hideCharacters);
 				pos_x += characterWidth * advanceWidth * 1.2f;
 				xps.push_back(pos_x);
 				yis.push_back(lineIndex);
