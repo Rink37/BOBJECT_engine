@@ -103,6 +103,24 @@ void UIMesh::updateVertexBuffer() {
 	memcpy(vBuffer, vertices.data(), (size_t)bufferSize);
 }
 
+void UIMesh::cleanup() {
+	if (cleaned) {
+		return;
+	}
+
+	VkDevice device = Core::getDevice();
+
+	vkDeviceWaitIdle(device);
+
+	VKMem::freeBuffer(indexBuffer, indexBufferMemory);
+	VKMem::freeBuffer(vertexBuffer, vertexBufferMemory);
+
+	delete vBuffer;
+	vBuffer = nullptr;
+
+	cleaned = true;
+}
+
 StaticMesh::StaticMesh(string modelPath, uint8_t swizzle) {
 	loadModel(modelPath, swizzle);
 	setup();

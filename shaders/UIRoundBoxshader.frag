@@ -27,7 +27,7 @@ void main(){
 	if (rad > outerDistance){
 		discard;
 	} 
-	if (rad > innerDistance * 0.8f){
+	if (rad > innerDistance){
 		secondaryBlend = 0.0f;
 	}
 	vec3 mixColour = primaryColour*(1.0-secondaryBlend) + secondaryBlend*secondaryColour;

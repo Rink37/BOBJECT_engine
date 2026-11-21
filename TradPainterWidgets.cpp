@@ -620,15 +620,16 @@ void ObjectSettingsMenu::exitMaterialMenu(UIItem* owner) {
 	obj->shaderName = owner->text;
 	obj->materialName = owner->Name;
 
-	std::vector<std::string> options = static_cast<DropdownMenu*>(matSelPtr)->options;
+	DropdownMenu* ddMenu = static_cast<DropdownMenu*>(matSelPtr);
+	std::vector<std::string> options = ddMenu->options;
 	if (find(options.begin(), options.end(), obj->materialName) == options.end()) {
-		matSelPtr->addOption(obj->materialName);
+		ddMenu->addOption(obj->materialName);
 		options = static_cast<DropdownMenu*>(matSelPtr)->options;
 	}
 
 	auto it = find(options.begin(), options.end(), obj->materialName);
 	if (it != options.end()) {
-		matSelPtr->setOptionIndex(it - options.begin());
+		ddMenu->setOptionIndex(it - options.begin());
 	}
 
 	settingsButton->Name = obj->materialName;

@@ -398,8 +398,8 @@ public:
 				transparentImages[i]->draw(commandBuffer, currentFrame, transparentImages[i]->mat[transparentImages[i]->matidx]->pipelineLayoutIndex);
 			}
 		}
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIText")]);
-		drawText(commandBuffer, currentFrame);
+		//vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIText")]);
+		//drawText(commandBuffer, currentFrame);
 	}
 
 private:

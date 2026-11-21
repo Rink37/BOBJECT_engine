@@ -154,7 +154,7 @@ struct Mesh {
 
 	virtual void createVertexBuffer();
 	virtual void computeTangents() {};
-	void createIndexBuffer();
+	virtual void createIndexBuffer();
 
 	void updateSwizzle();
 
@@ -167,6 +167,8 @@ public:
 	UIMesh() {
 		indices = { 0, 3, 2, 2, 1, 0 };
 	}
+
+	void cleanup();
 
 	void* vBuffer = nullptr;
 

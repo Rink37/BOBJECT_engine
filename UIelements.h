@@ -31,10 +31,6 @@
 #define SLIDER_CONTINUOUS 0
 #define SLIDER_DISCRETE 1
 
-#define SPACE_CHAR 32
-#define TAB_CHAR 9
-#define NEWLINE_CHAR 10
-
 #define PI 3.14159265f
 #define OPF_PI 4.71238898f 
 #define HALF_PI 1.57079632f
@@ -63,14 +59,18 @@ struct UIImage {
 	std::vector<Material*> mat;
 	uint32_t matidx = 0;
 	
-	UIMesh mesh;
+	Mesh* mesh = nullptr;
 
 	bool isOpaque = true;
 
 	void UpdateVertices(float, float, float, float);
 
 	void cleanup() {
-		mesh.cleanup();
+		if (mesh != nullptr) {
+			mesh->cleanup();
+			delete mesh;
+			mesh = nullptr;
+		}
 	}
 
 	VkCommandBuffer draw(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t pipelineIndex) {
@@ -78,7 +78,7 @@ struct UIImage {
 			return commandBuffer;
 		}
 
-		Engine::get()->drawObject(commandBuffer, mesh.vertexBuffer, mesh.indexBuffer, Engine::get()->defaultPass.pipelineLayouts[mat[matidx]->pipelineLayoutIndex], mat[matidx]->descriptorSets[currentFrame], static_cast<uint32_t>(mesh.indices.size()));
+		Engine::get()->drawObject(commandBuffer, mesh->vertexBuffer, mesh->indexBuffer, Engine::get()->defaultPass.pipelineLayouts[mat[matidx]->pipelineLayoutIndex], mat[matidx]->descriptorSets[currentFrame], static_cast<uint32_t>(mesh->indices.size()));
 
 		return commandBuffer;
 	}
@@ -104,7 +104,7 @@ struct UIItem {
 	std::string Name = "Unlabelled";
 	std::string text = "";
 
-	std::shared_ptr<UIImage> image = nullptr; // new UIImage;
+	std::shared_ptr<UIImage> image = nullptr;
 
 	std::vector<UIItem*> Items; // These items are managed by owning widgets, pointers reference a vector of objects
 	std::vector<Texture*> textures; // These items are stored in load lists, so this is just a vector of pointers
@@ -190,12 +190,6 @@ struct UIItem {
 		}
 	};
 
-	virtual void getText(std::vector<UIItem*>& textboxes) {
-		if (isText()) {
-			textboxes.push_back(this);
-		}
-	}
-
 	virtual bool isInArea(double x, double y) {
 		bool result = false;
 		if (x >= windowPositions[0] && x <= windowPositions[1] && y >= windowPositions[2] && y <= windowPositions[3]) {
@@ -226,10 +220,6 @@ struct UIItem {
 		return false;
 	}
 
-	virtual bool isText() {
-		return false;
-	}
-
 	virtual void setVisibility(bool vis) {
 		if (image != nullptr) {
 			image->isVisible = vis;
@@ -245,24 +235,10 @@ struct UIItem {
 		std::vector<UIImage*> images;
 		getImages(images);
 
-		std::vector<UIItem*> textboxes;
-		getText(textboxes);
-
 		for (UIImage* image : images) {
 			image->cleanup();
 			image = nullptr;
 		}
-		for (UIItem* textbox : textboxes) {
-			textbox->cleanup();
-		}
-	}
-
-	virtual void addOption(std::string) {
-		return;
-	}
-
-	virtual void setOptionIndex(int) {
-		return;
 	}
 };
 
@@ -283,7 +259,10 @@ public:
 		}
 
 		image = std::make_shared<UIImage>(new UIImage);
-		image->isVisible = false;
+
+		image->mesh = new fontMesh;
+		image->mat.emplace_back(inFont->fontMat);
+		image->isVisible = true;
 		image->texWidth = 2;
 		image->texHeight = 2;
 		image->isOpaque = false;
@@ -312,62 +291,25 @@ public:
 
 	void calculateScreenPosition();
 
-	bool isArrangement() {
-		return true;
-	}
-
-	bool isText() {
-		return true;
-	}
+	void getVertices(char, std::vector<Vertex>&, float xp, float yp, float xsc, float windowRatio, float zp) const;
 
 	void createCharacter(int unicodeCharacter) {
-		fontMesh* newMesh = nullptr;
-		switch (unicodeCharacter) {
-		case (SPACE_CHAR):
-			newMesh = new fontMesh(33, textFont);
-			newMesh->isVisible = false;
-			newMesh->unicodeCharacter = SPACE_CHAR;
-			characters.push_back(newMesh);
-			break;
-		case (TAB_CHAR):
-			newMesh = new fontMesh(33, textFont);
-			newMesh->isVisible = false;
-			newMesh->unicodeCharacter = TAB_CHAR;
-			newMesh->advanceWidth *= 6.0f;
-			characters.push_back(newMesh);
-			break;
-		case (NEWLINE_CHAR):
-			newMesh = new fontMesh(33, textFont);
-			newMesh->isVisible = false;
-			newMesh->unicodeCharacter = NEWLINE_CHAR;
-			newMesh->advanceWidth = 0.0f;
-			characters.push_back(newMesh);
-			break;
-		default:
-			fontMesh* newMesh = new fontMesh(unicodeCharacter, textFont);
-			characters.push_back(newMesh);
-			break;
-		}
-		text += static_cast<char>(unicodeCharacter);
+		characters.push_back(unicodeCharacter);
+		text += unicodeCharacter;
 	}
 
 	void removeLastChar() {
 		vkDeviceWaitIdle(Engine::get()->device);
 		uint32_t index = static_cast<uint32_t>(characters.size()) - 1;
-		characters[index]->cleanup();
-		delete characters[index];
 		characters.erase(characters.begin() + index);
 		text.erase(text.begin() + index);
 	}
 
 	void clearText() {
 		vkDeviceWaitIdle(Engine::get()->device);
-		for (fontMesh* mesh : characters) {
-			mesh->cleanup();
-			delete mesh;
-		}
 		characters.clear();
 		text = "";
+		updateDisplay();
 	}
 
 	void addText(std::string text) {
@@ -377,24 +319,8 @@ public:
 		updateDisplay();
 	}
 
-	VkCommandBuffer draw(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
-		if (!isVisible) {
-			return commandBuffer;
-		}
-
-		for (fontMesh* mesh : characters) {
-			if (mesh->isVisible) {
-				Engine::get()->drawObject(commandBuffer, mesh->vertexBuffer, mesh->indexBuffer, Engine::get()->defaultPass.pipelineLayouts[Engine::get()->defaultPass.layoutMap.at("1_0_")], textFont->fontMat->descriptorSets[currentFrame], static_cast<uint32_t>(mesh->indices.size()));
-			}
-		}
-
-		return commandBuffer;
-	}
-
 	void setVisibility(bool vis) {
-		for (fontMesh* mesh : characters) {
-			mesh->isVisible = vis;
-		}
+		setVisibility(vis);
 		setIsEnabled(vis);
 	}
 
@@ -402,15 +328,18 @@ public:
 		if (typeManager != nullptr) {
 			typeManager->~TypeManager();
 		}
-		for (fontMesh* mesh : characters) {
-			mesh->cleanup();
+		std::vector<UIImage*> images;
+		getImages(images);
+		for (UIImage* image : images) {
+			image->cleanup();
+			image = nullptr;
 		}
 		characters.clear();
 	}
 
 	bool isVisible = true;
 
-	std::vector<fontMesh*> characters;
+	std::vector<char> characters{};
 	font* textFont;
 
 	uint32_t characterSize = 24; // Size in pixels
@@ -458,6 +387,7 @@ public:
 		setDims(0.0f, 0.0f, 1.0f, 1.0f);
 
 		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.emplace_back(surf);
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -480,6 +410,7 @@ public:
 		setDims(x, y, xsize, ysize);
 
 		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.emplace_back(surf);
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -559,6 +490,7 @@ public:
 	Button(Material* mat, std::function<void(UIItem*)> func) {
 
 		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.push_back(mat);
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -580,6 +512,7 @@ public:
 	Button(Material* mat, std::function<void(UIItem*)> func, int code) {
 
 		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.push_back(mat);
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -602,6 +535,7 @@ public:
 	Button(Material* mat) {
 
 		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.push_back(mat);
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -654,6 +588,7 @@ public:
 	Checkbox(Material* onMat, Material* offMat) {
 
 		image = std::unique_ptr<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.push_back(onMat);
 		image->mat.push_back(offMat);
 		image->matidx = 0;
@@ -676,6 +611,7 @@ public:
 	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func, bool state = true) {
 		
 		image = std::unique_ptr<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.push_back(onMat);
 		image->mat.push_back(offMat);
 		if (state) {
@@ -705,6 +641,7 @@ public:
 	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func, int code) {
 
 		image = std::unique_ptr<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.push_back(onMat);
 		image->mat.push_back(offMat);
 		image->matidx = 0;
@@ -867,16 +804,6 @@ public:
 		}
 	};
 
-	void getText(std::vector<UIItem*>& textboxes) {
-		for (size_t i = 0; i != Items.size(); i++) {
-			std::vector<UIItem*> subitems;
-			Items[i]->getText(subitems);
-			for (size_t j = 0; j != subitems.size(); j++) {
-				textboxes.push_back(subitems[j]);
-			}
-		}
-	}
-
 	void setVisibility(bool vis) {
 		for (UIItem* item : Items) {
 			item->setVisibility(vis);
@@ -982,16 +909,6 @@ public:
 		}
 	};
 
-	void getText(std::vector<UIItem*>& textboxes) {
-		for (size_t i = 0; i != Items.size(); i++) {
-			std::vector<UIItem*> subitems;
-			Items[i]->getText(subitems);
-			for (size_t j = 0; j != subitems.size(); j++) {
-				textboxes.push_back(subitems[j]);
-			}
-		}
-	}
-
 	void setHeight(float z) {
 		for (UIItem* item : Items) {
 			item->setHeight(z);
@@ -1074,9 +991,11 @@ public:
 		setDims(xp, yp, xs, ys);
 		
 		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.emplace_back(mat);
 
 		backgroundImage = std::make_shared<UIImage>(new UIImage);
+		backgroundImage->mesh = new UIMesh;
 		backgroundImage->mat.emplace_back(mat);
 
 		if (mat->textures.size() > 0) {
@@ -1102,9 +1021,11 @@ public:
 		setDims(xp, yp, xs, ys);
 
 		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.emplace_back(mat);
 
 		backgroundImage = std::make_shared<UIImage>(new UIImage);
+		backgroundImage->mesh = new UIMesh;
 		backgroundImage->mat.emplace_back(mat);
 
 		if (mat->textures.size() > 0) {
@@ -1315,6 +1236,7 @@ public:
 		setDims(xp, yp, xs, ys);
 
 		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.emplace_back(mat);
 
 		image->texWidth = image->mat[0]->textures[0]->texWidth;
@@ -1522,6 +1444,7 @@ public:
 		setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
 
 		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.emplace_back(mat);
 
 		image->texHeight = 100;
@@ -1532,6 +1455,7 @@ public:
 
 	Background(Material* mat) {
 		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->mat.emplace_back(mat);
 
 		image->texHeight = 100;
@@ -1563,7 +1487,6 @@ public:
 	}
 private:
 	UIItem* parent = nullptr;
-
 	bool isParentWidget = false;
 };
 
@@ -1587,6 +1510,7 @@ public:
 		textFont = inFont;
 
 		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
 		image->isVisible = false;
 		image->texWidth = 2;
 		image->texHeight = 2;
@@ -1695,16 +1619,6 @@ public:
 	}
 
 	void calculateScreenPosition();
-
-	void drawText(VkCommandBuffer commandbuffer, uint32_t currentFrame) {
-		selectedTextBox->draw(commandbuffer, currentFrame);
-		if (optionsArrangement != nullptr) {
-			for (UIItem* item : optionsArrangement->Items) {
-				TextBox* itemText = static_cast<TextBox*>(item);
-				itemText->draw(commandbuffer, currentFrame);
-			}
-		}
-	}
 
 	bool isArranger() {
 		return true;
@@ -1877,17 +1791,6 @@ struct Widget {
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at(transparentImagePipelines[i])]);
 				transparentImages[i]->draw(commandBuffer, currentFrame, transparentImages[i]->mat[transparentImages[i]->matidx]->pipelineLayoutIndex);
 			}
-		}
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPass->GraphicsPipelines[currentPass->pipelineMap.at("UIText")]);
-		drawText(commandBuffer, currentFrame);
-	}
-
-	virtual void drawText(VkCommandBuffer commandBuffer, uint32_t currentFrame) {
-		for (size_t i = 0; i != DropdownMenus.size(); i++) {
-			DropdownMenus[i]->drawText(commandBuffer, currentFrame);
-		}
-		for (size_t i = 0; i != TextBoxes.size(); i++) {
-			TextBoxes[i]->draw(commandBuffer, currentFrame);
 		}
 	}
 

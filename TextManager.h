@@ -8,6 +8,10 @@
 
 #include"Bobject_VKMem.h"
 
+#define SPACE_CHAR 32
+#define TAB_CHAR 9
+#define NEWLINE_CHAR 10
+
 class font {
 public:
 	font();
@@ -42,30 +46,60 @@ private:
 
 class fontMesh : public Mesh {
 public:
-	fontMesh(int character, font* meshFont) {
-		indices = { 0, 3, 2, 2, 1, 0 };
-		fontRef = meshFont;
-		unicodeCharacter = character;
-		fontRef->getAdvanceWidth(unicodeCharacter, advanceWidth);
-	}
+	//fontMesh(int character, font* meshFont) {
+	//	indices = { 0, 3, 2, 2, 1, 0 };
+	//	fontRef = meshFont;
+	//	unicodeCharacter = character;
+	//	fontRef->getAdvanceWidth(unicodeCharacter, advanceWidth);
+	//}
 
 	void setVisibility(bool state) {
 		isVisible = state;
 	}
 
-	void* vBuffer = nullptr;
+	void cleanup() {
+		if (cleaned) {
+			return;
+		}
 
-	void UpdateVertices(float, float, float, float, float zp = 0.0f);
+		VkDevice device = Core::getDevice();
+
+		vkDeviceWaitIdle(device);
+
+		VKMem::freeBuffer(indexBuffer, indexBufferMemory);
+		VKMem::freeBuffer(vertexBuffer, vertexBufferMemory);
+
+		delete vBuffer;
+		vBuffer = nullptr;
+
+		delete iBuffer;
+		iBuffer = nullptr;
+
+		cleaned = true;
+	}
+
+	void* vBuffer = nullptr;
+	void* iBuffer = nullptr;
+	VkDeviceSize vBuffSize = 0;
+	VkDeviceSize iBuffSize = 0;
+
+	//void UpdateVertices(float, float, float, float, float zp = 0.0f);
+	//void getVertices(std::vector<Vertex>&, float xp, float yp, float xsc, float windowRatio, float zp) const;
 
 	void createVertexBuffer();
 	void updateVertexBuffer();
 
-	uint8_t unicodeCharacter = 0;
-	float advanceWidth = 1.0f;
+	void createIndexBuffer();
+	void updateIndexBuffer();
+
+	//uint8_t unicodeCharacter = 0;
+	//float advanceWidth = 1.0f;
 
 	bool isVisible = true;
 
-	font* fontRef;
+	uint8_t charCount = 0; // Defines the number of non-blank chars; used to allocate the correct max buffer size.
+
+	//font* fontRef;
 };
 
 #endif

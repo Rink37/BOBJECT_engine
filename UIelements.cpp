@@ -3,7 +3,7 @@
 using namespace std;
 
 void UIImage::UpdateVertices(float xp, float yp, float xsc, float ysc) {
-	mesh.UpdateVertices(xp, yp, xsc, ysc, this->zp);
+	static_cast<UIMesh*>(mesh)->UpdateVertices(xp, yp, xsc, ysc, this->zp);
 }
 
 static void bufferPosition(float &extentx, float &extenty, float &posx, float &posy, float brx, float bry, float ax, float ay) {
@@ -95,7 +95,39 @@ void UIItem::addItem(UIItem *item) {
 	Items.push_back(item);
 }
 
+void TextBox::getVertices(char unicodeCharacter, std::vector<Vertex>& verts, float xp, float yp, float xsc, float windowRatio, float zp) const {
+	Vertex vertex{};
+
+	float left, right, top, bottom;
+	textFont->getCorners(unicodeCharacter, left, right, top, bottom);
+
+	float ysc = xsc * textFont->getSqAxisRatio() * windowRatio;
+	float characterHeight = ysc;
+
+	vertex.pos = { -xsc + xp, yp - ysc, zp };
+	vertex.normal = { 0.0f, 0.0f, 0.0f };
+	vertex.texCoord = { left, top };
+	verts.push_back(vertex);
+	vertex.pos = { xsc + xp, yp - ysc, zp };
+	vertex.texCoord = { right, top };
+	verts.push_back(vertex);
+	vertex.pos = { xsc + xp, yp + ysc, zp };
+	vertex.texCoord = { right, bottom };
+	verts.push_back(vertex);
+	vertex.pos = { -xsc + xp, yp + ysc, zp };
+	vertex.texCoord = { left, bottom };
+	verts.push_back(vertex);
+}
+
 void TextBox::updateDisplay() {
+	UIImage* textImage = this->image.get();
+	if (characters.size() == 0) {
+		textImage->isVisible = false;
+		isVisible = false;
+		return;
+	}
+	textImage->isVisible = true;
+	isVisible = true;
 	this->calculateScreenPosition();
 	//this->setHeight(this->image->zp);
 	
@@ -123,26 +155,34 @@ void TextBox::updateDisplay() {
 	std::vector<uint32_t> lineIndices{};
 	std::vector<float> positions{};
 
+	std::vector<bool> visibilities{};
 	std::vector<float> xps{};
 	std::vector<int> yis{};
 	std::vector<float> lineps = {pos_y};
 	uint32_t index = 0;
 	uint32_t lineIndex = 0;
-	for (fontMesh* mesh : characters) {
+
+	fontMesh* fMesh = static_cast<fontMesh*>(textImage->mesh);
+	fMesh->charCount = 0;
+	fMesh->indices.clear();
+
+	for (char c : characters) {
+		bool isBlank = (c == SPACE_CHAR || c == TAB_CHAR || c == NEWLINE_CHAR); // We will want to ignore cases where a spacebar causes an overlap at the edge
+		fMesh->charCount += static_cast<uint32_t>(!isBlank); // Count the maximum number of non-blank chars
+
 		if (hideCharacters || lineIndex >= maxLines) {
-			mesh->setVisibility(false);
 			continue;
 		}
 
-		lineWidth += characterWidth * mesh->advanceWidth * 2.4f;
+		float advanceWidth;
+		textFont->getAdvanceWidth(c, advanceWidth);
+		lineWidth += characterWidth * advanceWidth * 2.4f;
 
-		bool isBlank = (mesh->unicodeCharacter == SPACE_CHAR || mesh->unicodeCharacter == TAB_CHAR); // We will want to ignore cases where a spacebar causes an overlap at the edge
-
-		if (lineWidth >= maxLineWidth || mesh->unicodeCharacter == NEWLINE_CHAR) {
+		if (lineWidth >= maxLineWidth || c == NEWLINE_CHAR) {
 			// New line handling
 			float leftSpacing = 0.0f;
 
-			if (isBlank || mesh->unicodeCharacter == NEWLINE_CHAR || lineIndex + 1 == maxLines) {
+			if (isBlank || lineIndex + 1 == maxLines) {
 				for (uint32_t wIndex : wordIndices) {
 					lineIndices.push_back(wIndex);
 				}
@@ -151,7 +191,9 @@ void TextBox::updateDisplay() {
 
 			if (lineIndices.size() > 0) {
 				uint32_t lastCharacterIndex = lineIndices[lineIndices.size() - 1];
-				lineWidth = xps[lastCharacterIndex] + characterWidth * characters[lastCharacterIndex]->advanceWidth * 1.2f;
+				float lastAdvanceWidth;
+				textFont->getAdvanceWidth(characters[lastCharacterIndex], lastAdvanceWidth);
+				lineWidth = xps[lastCharacterIndex] + characterWidth * lastAdvanceWidth * 1.2f;
 
 				switch (horizontalArrange) {
 				case(ARRANGE_CENTER):
@@ -196,34 +238,37 @@ void TextBox::updateDisplay() {
 			lineIndices.clear();
 			spaceIndices.clear();
 			lineWidth = 0.0f;
+			
 			if (pos_y > maxPos_y) {
 				hideCharacters = true;
 			}
 
-			//std::cout << "Updating last word" << std::endl;
-
-			if (mesh->unicodeCharacter == NEWLINE_CHAR || isBlank) {
+			if (c || isBlank) {
 				xps.push_back(pos_x);
 				yis.push_back(lineIndex);
-				mesh->setVisibility(false);
+				visibilities.push_back(false);
+				//mesh->setVisibility(false);
 			}
 			else {
 				for (uint32_t meshRef : wordIndices) {
-					characters[meshRef]->setVisibility(!hideCharacters);
-					pos_x += characterWidth * characters[meshRef]->advanceWidth * 1.2f;
+					//characters[meshRef]->setVisibility(!hideCharacters);
+					visibilities[meshRef] = !hideCharacters;
+					float charAdvanceWidth;
+					textFont->getAdvanceWidth(characters[meshRef], charAdvanceWidth);
+					pos_x += characterWidth * charAdvanceWidth * 1.2f;
 					xps[meshRef] = pos_x;
 					yis[meshRef] = lineIndex;
-					pos_x += characterWidth * characters[meshRef]->advanceWidth * 1.2f;
+					pos_x += characterWidth * charAdvanceWidth * 1.2f;
 				}
 				wordIndices.push_back(index);
-				mesh->setVisibility(!hideCharacters);
-				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
+				visibilities.push_back(!hideCharacters);
+				//mesh->setVisibility(!hideCharacters);
+				pos_x += characterWidth * advanceWidth * 1.2f;
 				xps.push_back(pos_x);
 				yis.push_back(lineIndex);
-				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
+				pos_x += characterWidth * advanceWidth * 1.2f;
 				lineWidth = pos_x - (posx - extentx);
 			}
-			//std::cout << "Successfully updated word" << std::endl;
 		}
 		else {
 			if (isBlank) {
@@ -233,19 +278,21 @@ void TextBox::updateDisplay() {
 				wordIndices.clear();
 				spaceIndices.push_back(index);
 				lineIndices.push_back(index);
-				mesh->setVisibility(false);
-				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
+				visibilities.push_back(false);
+				//mesh->setVisibility(false);
+				pos_x += characterWidth * advanceWidth * 1.2f;
 				xps.push_back(pos_x);
 				yis.push_back(lineIndex);
-				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
+				pos_x += characterWidth * advanceWidth * 1.2f;
 			}
 			else {
 				wordIndices.push_back(index);
-				mesh->setVisibility(!hideCharacters);
-				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
+				visibilities.push_back(!hideCharacters);
+				//mesh->setVisibility(!hideCharacters);
+				pos_x += characterWidth * advanceWidth * 1.2f;
 				xps.push_back(pos_x);
 				yis.push_back(lineIndex);
-				pos_x += characterWidth * mesh->advanceWidth * 1.2f;
+				pos_x += characterWidth * advanceWidth * 1.2f;
 			}
 		}
 		index++;
@@ -279,10 +326,25 @@ void TextBox::updateDisplay() {
 		break;
 	}
 	float factor = W / H;
-	//std::cout << image->zp << std::endl;
+	std::vector<uint32_t> indices = { 0, 3, 2, 2, 1, 0 };
 	for (uint32_t i = 0; i != xps.size(); i++) {
-		characters[i]->UpdateVertices(xps[i], lineps[yis[i]], characterWidth, factor, image->zp);
+		if (!visibilities[i]) {
+			continue;
+		}
+		getVertices(characters[i], textImage->mesh->vertices, xps[i], lineps[yis[i]], characterWidth, factor, image->zp);
+		for (uint8_t j = 0; j != indices.size(); j++) {
+			textImage->mesh->indices.push_back(indices[j]);
+			indices[j] += 4;
+		}
 	}
+
+	if (sizeof(fMesh->vertices[0]) * fMesh->charCount * 4 > fMesh->vBuffSize) {
+		fMesh->setup();
+	}
+	fMesh->updateVertexBuffer();
+	fMesh->updateIndexBuffer();
+	
+	fMesh->vertices.clear();
 }
 
 void TextBox::calculateScreenPosition() {
@@ -847,7 +909,7 @@ void Widget::measureWindowPositions() {
 		std::vector<UIItem*> scs;
 		item->getSubclasses(scs);
 		for (UIItem* sitem : scs) {
-			if (sitem->isSpacer() || (sitem->isArrangement() && !sitem->isText()) || sitem == thisBG) {
+			if (sitem->isSpacer() || sitem->isArrangement() || sitem == thisBG) {
 				continue;
 			}
 			sitem->calculateScreenPosition();

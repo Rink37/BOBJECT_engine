@@ -33,57 +33,49 @@ void font::getCorners(int character, float& left, float& right, float& top, floa
 }
 
 void font::getAdvanceWidth(int character, float& width) {
-	character -= 33;
-	width = coolvetica_sdfAdvances[character];
-}
-
-void fontMesh::UpdateVertices(float xp, float yp, float xsc, float windowRatio, float zp) {
-	vertices.clear();
-
-	Vertex vertex{};
-
-	float left, right, top, bottom;
-	fontRef->getCorners(unicodeCharacter, left, right, top, bottom);
-
-	float ysc = xsc * fontRef->getSqAxisRatio() * windowRatio;
-	float characterHeight = ysc;
-
-	vertex.pos = { -xsc + xp, yp - ysc, zp };
-	vertex.normal = { 0.0f, 0.0f, 0.0f };
-	vertex.texCoord = { left, top };
-	vertices.push_back(vertex);
-	vertex.pos = { xsc + xp, yp - ysc, zp };
-	vertex.texCoord = { right, top };
-	vertices.push_back(vertex);
-	vertex.pos = { xsc + xp, yp + ysc, zp };
-	vertex.texCoord = { right, bottom };
-	vertices.push_back(vertex);
-	vertex.pos = { -xsc + xp, yp + ysc, zp };
-	vertex.texCoord = { left, bottom };
-	vertices.push_back(vertex);
-
-	if (vBuffer == nullptr) {
-		setup();
+	switch (character) {
+	case (TAB_CHAR):
+		width = coolvetica_sdfAdvances[0] * 6.0f;
+		break;
+	case (SPACE_CHAR):
+		width = coolvetica_sdfAdvances[0];
+		break;
+	case (NEWLINE_CHAR):
+		width = 0.0f;
+		break;
+	default:
+		character -= 33;
+		width = coolvetica_sdfAdvances[character];
+		break;
 	}
-	else {
-		updateVertexBuffer();
-	}
-
-	vertices.clear();
 }
 
 void fontMesh::createVertexBuffer() {
-	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+	vBuffSize = sizeof(vertices[0]) * charCount * 4;
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
-	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-	VKMem::copyDataToBuffer(stagingBuffer, stagingBufferMemory, vertices.data(), bufferSize);
-	VKMem::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBuffer, vertexBufferMemory);
-	vkMapMemory(Core::getDevice(), vertexBufferMemory, 0, bufferSize, 0, &vBuffer);
+	VKMem::createBuffer(vBuffSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+	VKMem::copyDataToBuffer(stagingBuffer, stagingBufferMemory, vertices.data(), vBuffSize);
+	VKMem::createBuffer(vBuffSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBuffer, vertexBufferMemory);
+	vkMapMemory(Core::getDevice(), vertexBufferMemory, 0, vBuffSize, 0, &vBuffer);
 	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
 }
 
 void fontMesh::updateVertexBuffer() {
-	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-	memcpy(vBuffer, vertices.data(), (size_t)bufferSize);
+	memcpy(vBuffer, vertices.data(), (size_t)vBuffSize);
+}
+
+void fontMesh::createIndexBuffer() {
+	iBuffSize = sizeof(indices[0]) * charCount * 6;
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	VKMem::createBuffer(iBuffSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+	VKMem::copyDataToBuffer(stagingBuffer, stagingBufferMemory, indices.data(), iBuffSize);
+	VKMem::createBuffer(iBuffSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, indexBuffer, indexBufferMemory);
+	vkMapMemory(Core::getDevice(), indexBufferMemory, 0, iBuffSize, 0, &iBuffer);
+	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
+}
+
+void fontMesh::updateIndexBuffer() {
+	memcpy(iBuffer, indices.data(), (size_t)iBuffSize);
 }
