@@ -1,5 +1,7 @@
 #include "UIelements.h"
 
+const float buffer = 50.0f;
+
 using namespace std;
 
 void UIImage::UpdateVertices(float xp, float yp, float xsc, float ysc) {
@@ -123,11 +125,9 @@ void TextBox::updateDisplay() {
 	UIImage* textImage = this->image;
 	if (characters.size() == 0) {
 		textImage->isVisible = false;
-		isVisible = false;
 		return;
 	}
 	textImage->isVisible = true;
-	isVisible = true;
 	this->calculateScreenPosition();
 	
 	float W = static_cast<float>(Core::get()->windowWidth);

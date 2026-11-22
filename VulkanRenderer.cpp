@@ -230,43 +230,39 @@ private:
 	bool tomogActive = false;
 	bool showWireframe = true;
 	bool inWebSettings = false;
+	bool lit = true;
+	bool isTrackingFPS = false;
+	uint8_t viewIndex = 1;
 
 	vector<StaticObject> staticObjects = {};
 	PlaneObject* tomographyPlane = nullptr;
 	std::map<VkPipeline*, std::vector<uint32_t>> objectPipelines{};
 	vector<uint32_t> visibleObjects = {};
 
-	bool lit = true;
-
-	uint8_t viewIndex = 1;
-
-	bool isTrackingFPS = false;
 	uint32_t frameCount = 0;
-	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
-	// World settings
-
-	glm::vec3 defaultCameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
-	float scaleFactor = 1.0f;
-	uint8_t swizzle = 0;
-
-	// Projector
-	Projector* projector = nullptr;
-	bool debugView = false;
-	bool inProjectorView = false;
-
-	// Light position
-
-	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f);
+	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f); // Light position
 	float polarAngle = 0.0f;
 	float azimuthAngle = 0.0f;
 	float lightRadius = 10.0f;
-	
+
 	// colours in sRGB format (for krita users these colours match the sRGB-elle-V2-g10.icc profile)
 	glm::vec3 primaryColour = glm::vec3(0.42f, 0.06f, 0.11f);
 	glm::vec3 secondaryColour = glm::vec3(0.82f, 0.55f, 0.36f);
 	glm::vec3 tertiaryColour = glm::vec3(0.812f, 0.2f, 0.2f);
 	glm::vec3 backgroundColour = glm::vec3(0.812f, 0.2f, 0.2f);
+
+	// World settings
+	glm::vec3 defaultCameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
+	float scaleFactor = 1.0f;
+	uint8_t swizzle = 0;
+	
+	// Projector
+	bool debugView = false;
+	bool inProjectorView = false;
+	Projector* projector = nullptr;
+
+	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
 	void createErrorDialog(std::string title = "ERROR", std::string message = "") {
 		ErrorDialog* errorDlg = new ErrorDialog(&UIElements);

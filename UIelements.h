@@ -59,19 +59,16 @@ enum UIItemType {
 #define HALF_PI 1.57079632f
 
 struct UIImage {
-	bool isVisible = true;
-
-	uint16_t texHeight = 0;
-	uint16_t texWidth = 0;
-
 	float zp = 0.0f;
 	float zp_default = 0.0f;
 
 	std::vector<Material*> mat;
-	uint8_t matidx = 0;
-	
 	Mesh* mesh = nullptr;
 
+	uint16_t texHeight = 0;
+	uint16_t texWidth = 0;
+	uint8_t matidx = 0;
+	bool isVisible = true;
 	bool isOpaque = true;
 
 	void UpdateVertices(float, float, float, float);
@@ -100,8 +97,6 @@ struct UIImage {
 };
 
 struct UIItem {
-	float buffer = 50.0;
-	
 	float posx, posy = 0.0f;
 	float extentx, extenty = 1.0f;
 	float anchorx, anchory = 0.0f;
@@ -314,7 +309,6 @@ public:
 	}
 private:
 	UIItem* parent = nullptr;
-	bool isParentWidget = false;
 };
 
 class TextBox : public UIItem {
@@ -344,6 +338,10 @@ public:
 		image->zp_default = 0.05f;
 
 		itemType = TEXTBOX;
+	}
+
+	bool isModifiable() {
+		return modifiable;
 	}
 
 	void updateText(char c) {
@@ -412,12 +410,8 @@ public:
 		characters.clear();
 	}
 
-	bool isVisible = true;
-
 	std::vector<char> characters{};
 	font* textFont;
-
-	uint32_t characterSize = 24; // Size in pixels
 
 	bool checkForClickEvent(double mousex, double mousey, int clicktype) {
 		if (!isEnabled) {
@@ -439,17 +433,19 @@ public:
 		return false;
 	};
 
-	bool modifiable = false;
 private:
 	TypeManager* typeManager = nullptr;
 
 	ArrangeType horizontalArrange = ARRANGE_START;
 	ArrangeType verticalArrange = ARRANGE_START;
+	
+	uint8_t characterSize = 24; // Size in pixels
+	bool modifiable = false;
 };
 
 class ImagePanel : public UIItem {
-// Represents only a webcam view
 public:
+	float UVextentx = 0.0f;
 	bool isWebcam;
 
 	ImagePanel(Material* surf, bool iW) {
@@ -543,8 +539,6 @@ public:
 		baseExtenty = extenty;
 		baseSqAxisRatio = sqAxisRatio;
 	}
-
-	float UVextentx = 0.0f;
 };
 
 class Button : public UIItem // Here a button is just a rectangle area in screen space which can be queried with coordinates to check if it has been pressed
@@ -965,7 +959,7 @@ public:
 		image->mesh = new UIMesh;
 		image->mat.emplace_back(mat);
 
-		backgroundImage = std::make_shared<UIImage>(new UIImage);
+		backgroundImage = new UIImage;
 		backgroundImage->mesh = new UIMesh;
 		backgroundImage->mat.emplace_back(mat);
 
@@ -1123,7 +1117,7 @@ public:
 			images.push_back(image);
 		}
 		if (backgroundImage != nullptr && backgroundImage->texHeight > 1) {
-			images.push_back(backgroundImage.get());
+			images.push_back(backgroundImage);
 		}
 	};
 
@@ -1147,10 +1141,8 @@ private:
 	float maxValue = 1.0f;
 
 	double valuePositions[2] = {};
-	
-	float slideValue = 0.0f; 
 
-	std::shared_ptr<UIImage> backgroundImage;
+	UIImage* backgroundImage = nullptr;
 
 	Orientation orientation = ORIENT_HORIZONTAL;
 	SliderType valueType = SLIDER_CONTINUOUS;
@@ -1158,11 +1150,11 @@ private:
 	float sliderWidth = 0.5f;
 	float baseHeight = 0.2f;
 
-	bool isHeld = false;
-
 	std::function<void(int)> intCallback = nullptr;
 	std::function<void(float)> floatCallback = nullptr;
 
+	float slideValue = 0.0f;
+	bool isHeld = false;
 	bool hasCallback = false;
 	bool updateOnMove = false; // If false we only perform callbacks on release, if true we perform callbacks on every movement
 };
@@ -1345,14 +1337,13 @@ public:
 	};
 
 private:
-	float minValue = 0.0f;
-	float maxValue = 1.0f;
-
-	float slideValue = 0.0f;
+	std::function<void(int)> intCallback = nullptr;
+	std::function<void(float)> floatCallback = nullptr;
 
 	float centroid[2] = {};
-
-	SliderType valueType = SLIDER_CONTINUOUS;
+	float minValue = 0.0f;
+	float maxValue = 1.0f;
+	float slideValue = 0.0f;
 
 	float sliderWidth = 0.05f;
 	float radius = 100.0f;
@@ -1362,6 +1353,8 @@ private:
 	float W = static_cast<float>(Core::get()->windowWidth);
 	float H = static_cast<float>(Core::get()->windowHeight);
 
+	SliderType valueType = SLIDER_CONTINUOUS;
+
 	void calculateRadius() {
 		float theta = 0.0f; // Theta is measured from the major axis, not the vertical, whereas slideValue is measured from the vertical
 		theta = (a == extenty) ? 2 * PI * slideValue : HALF_PI - 2 * PI * slideValue;
@@ -1370,10 +1363,6 @@ private:
 	}
 
 	bool isHeld = false;
-
-	std::function<void(int)> intCallback = nullptr;
-	std::function<void(float)> floatCallback = nullptr;
-
 	bool hasCallback = false;
 	bool updateOnMove = false; // If false we only perform callbacks on release, if true we perform callbacks on every movement
 };
@@ -1383,7 +1372,7 @@ public:
 	DropdownMenu(float x, float y, float xsize, float ysize, Material* dropButtonMat, Material* raiseButtonMat, Material* bg,  font* inFont) {
 		setDims(x, y, xsize, ysize);
 		Arrangement* mainArranger = new Arrangement(ORIENT_HORIZONTAL, x, y, xsize, ysize, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-		selectedTextBox = new TextBox(inFont, 0.0f, 0.0f, (xsize * 0.8f) / ysize, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
+		selectedTextBox = new TextBox(inFont, 0.0f, 0.0f, (xsize * 0.8f) / ysize, 1.0f, characterSize, ARRANGE_START, ARRANGE_CENTER);
 		mainArranger->addItem(selectedTextBox);
 		
 		bgMat = bg;
@@ -1480,7 +1469,7 @@ public:
 			float W = static_cast<float>(Core::get()->windowWidth);
 			float H = static_cast<float>(Core::get()->windowHeight);
 
-			float boxHeight = options.size() * (selectedTextBox->characterSize) / H;
+			float boxHeight = options.size() * (characterSize) / H;
 
 			optionsArrangement->updateArrangedPosition(posx - 0.2f * extentx, posy + boxHeight + extenty, extentx * 0.8f, boxHeight);
 		}
@@ -1539,6 +1528,7 @@ public:
 	std::vector<std::string> options{};
 
 private:
+	uint8_t characterSize = 18;
 
 	TextBox* selectedTextBox = nullptr;
 
@@ -1575,14 +1565,14 @@ private:
 		float W = static_cast<float>(Core::get()->windowWidth);
 		float H = static_cast<float>(Core::get()->windowHeight);
 
-		float boxHeight = options.size() * (selectedTextBox->characterSize) / H; // The box size in pixels
+		float boxHeight = options.size() * (characterSize) / H; // The box size in pixels
 		optionsArrangement = new Arrangement(ORIENT_VERTICAL, posx - 0.2f * extentx, -(posy + boxHeight + extenty), extentx * 0.8f, boxHeight, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
 		std::function<void(UIItem*)> optionSelectFunct = std::bind(&DropdownMenu::optionSelect, this, std::placeholders::_1);
 
 		uint32_t optionIndex = 0;
 		for (std::string option : options) {
-			TextBox* optionText = new TextBox(textFont, 0.0f, 0.0f, (extentx * 0.8f), selectedTextBox->characterSize / H, selectedTextBox->characterSize, ARRANGE_START, ARRANGE_START);
+			TextBox* optionText = new TextBox(textFont, 0.0f, 0.0f, (extentx * 0.8f), characterSize / H, characterSize, ARRANGE_START, ARRANGE_START);
 			optionText->setHeight(image->zp_default + 0.021f);
 			optionText->addText(option);
 			optionText->Name = std::to_string(optionIndex);
@@ -1819,7 +1809,7 @@ struct Widget {
 	}
 
 	UIItem* getPtr(TextBox* textBox) {
-		if (textBox->modifiable) {
+		if (textBox->isModifiable()) {
 			hasClickEvents = true;
 		}
 		TextBoxes.emplace_back(textBox);
@@ -1854,18 +1844,19 @@ struct Widget {
 	}
 
 	std::vector<UIItem*> canvas;
-	bool isSetup = false;
 
 	LoadList* loadList = nullptr;
 
-	int priorityLayer = 0; // Widgets are sorted in descending order, so smaller numbers will be checked later than higher ones
+	uint8_t priorityLayer = 0; // Widgets are sorted in descending order, so smaller numbers will be checked later than higher ones
 						   // A widget can be placed above another simply by setting the priority of the "on-top" layer higher than the below one
 	bool isVisible = true;
-
 	bool hasClickEvents = false;
 	bool hasPosEvents = false;
-	size_t clickIndex = 0;
-	size_t posIndex = 0;
+	bool isSetup = false;
+
+	uint8_t clickIndex = 0;
+	uint8_t posIndex = 0;
+	bool markedForDestruction = false;
 
 	std::map<std::string, std::vector<UIImage*>> imagePipelines{};
 	std::vector<UIImage*> transparentImages{};
@@ -1873,7 +1864,6 @@ struct Widget {
 
 	float posx = 0.0f, posy = 0.0f, extentx = 0.0f, extenty = 0.0f, zp = 0.003f;
 
-	bool markedForDestruction = false;
 	std::string mappedName = "";
 	std::function<void(std::string)> deleteSelf = nullptr;
 	std::function<void(std::string, std::string)> errorFunc = nullptr;
