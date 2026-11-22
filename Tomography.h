@@ -87,7 +87,7 @@ public:
 		Arrangement* imageArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.4f, 0.01f, ARRANGE_CENTER);
 		Arrangement* buttons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f);
 
-		Slider* polarSlider = new Slider(ORIENT_VERTICAL, visibleMat, 0.0f, 0.0f, 0.1f, 1.0f);
+		Slider* polarSlider = new Slider(visibleMat, 0.0f, 0.0f, 0.1f, 1.0f, ORIENT_VERTICAL);
 		polarSlider->setSlideValues(0.0f, 90.0f, polar);
 		polarSlider->setFloatCallback(std::bind(&TomographyLoad::setPolar, this, std::placeholders::_1), false);
 
@@ -492,7 +492,6 @@ private:
 		}
 		for (size_t i = 2; i != canvas.size(); i++) {
 			int currentIndex = std::stoi(canvas[i]->Name);
-			//std::cout << currentIndex << std::endl;
 			UIItem* ref = grid->Items[currentIndex];
 			canvas[i]->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extentx * 0.2f);
 			canvas[i]->updateDisplay();

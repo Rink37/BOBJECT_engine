@@ -136,7 +136,6 @@ public:
 	void setup(Mesh* mesh, std::string texName, std::function<void(UIItem*)> exitFunct) {
 		fixer = new SeamFixer(mesh, textureLL, texName);
 		fixer->findAdjacentStrips();
-		//fixer->seamFixAll();
 
 		fixer->updateSeamMeshes(0.025f, true);
 		fixer->updateSeamMeshes(0.01f);
@@ -159,7 +158,6 @@ public:
 		directionTB->addText("Seam direction:");
 		
 		directionButtons->addItem(getPtr(directionTB));
-
 		directionButtons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, std::bind(&SeamFixMenu::swapDirection, this, std::placeholders::_1), false)));
 
 		Arrangement* useRemapperButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
@@ -178,7 +176,7 @@ public:
 
 		column->addItem(getPtr(sizeText));
 
-		Slider* sizeSlide = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 1.0f, 0.2f);
+		Slider* sizeSlide = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.2f, ORIENT_HORIZONTAL);
 		sizeSlide->setFloatCallback(std::bind(&SeamFixMenu::setSize, this, std::placeholders::_1), false);
 		sizeSlide->setSlideValues(0.005f, 0.05f, 0.01f);
 		column->addItem(getPtr(sizeSlide));

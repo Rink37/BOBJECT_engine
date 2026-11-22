@@ -16,36 +16,47 @@
 #include"LoadLists.h"
 #include"include/ImageDataType.h"
 
-#define ARRANGE_FILL 0
-#define ARRANGE_START 1
-#define ARRANGE_CENTER 2
-#define ARRANGE_END 3
+enum ArrangeType {
+	ARRANGE_FILL = 0,
+	ARRANGE_START = 1,
+	ARRANGE_CENTER = 2,
+	ARRANGE_END = 3
+};
 
-#define SCALE_BY_CONTAINER 0
-#define SCALE_BY_DIMENSIONS 1
-#define SCALE_BY_IMAGES 2
+enum SizeType {
+	SCALE_BY_CONTAINER = 0,
+	SCALE_BY_DIMENSIONS = 1,
+	SCALE_BY_IMAGES  = 2
+};
 
-#define ORIENT_VERTICAL 0
-#define ORIENT_HORIZONTAL 1
+enum Orientation {
+	ORIENT_VERTICAL = 0,
+	ORIENT_HORIZONTAL = 1
+};
 
-#define SLIDER_CONTINUOUS 0
-#define SLIDER_DISCRETE 1
+enum SliderType {
+	SLIDER_CONTINUOUS = 0,
+	SLIDER_DISCRETE = 1
+};
+
+enum UIItemType {
+	UNDEFINED = 0,
+	IMAGEPANEL = 1,
+	BUTTON = 2,
+	CHECKBOX = 3,
+	SPACER = 4,
+	ARRANGEMENT = 5,
+	GRID = 6,
+	SLIDER = 7,
+	ROTATOR = 8,
+	TEXTBOX = 9,
+	DROPDOWN = 10,
+	BACKGROUND = 11
+};
 
 #define PI 3.14159265f
 #define OPF_PI 4.71238898f 
 #define HALF_PI 1.57079632f
-
-#define IMAGEPANEL 1
-#define BUTTON 2
-#define CHECKBOX 3
-#define SPACER 4
-#define ARRANGEMENT 5
-#define GRID 6
-#define SLIDER 7
-#define ROTATOR 8
-#define TEXTBOX 9
-#define DROPDOWN 10
-#define BACKGROUND 11
 
 struct UIImage {
 	bool isVisible = true;
@@ -117,7 +128,7 @@ struct UIItem {
 	int clickType = LMB_PRESS;
 	int posType = MOUSE_HOVER;
 
-	uint32_t itemType = 0;
+	UIItemType itemType = UNDEFINED;
 
 	virtual void update(float x, float y, float xsize, float ysize) {
 		this->posx = x;
@@ -254,21 +265,12 @@ struct UIItem {
 
 class Background : public UIItem {
 public:
-	Background(Material* mat, UIItem* par) {
+	Background(Material* mat, UIItem* par = nullptr) {
 		parent = par;
-		setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
+		if (parent != nullptr) {
+			setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
+		}
 
-		image = std::make_shared<UIImage>(new UIImage);
-		image->mesh = new UIMesh;
-		image->mat.emplace_back(mat);
-
-		image->texHeight = 100;
-		image->texWidth = 100;
-
-		itemType = BACKGROUND;
-	}
-
-	Background(Material* mat) {
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mesh = new UIMesh;
 		image->mat.emplace_back(mat);
@@ -307,7 +309,7 @@ private:
 
 class TextBox : public UIItem {
 public:
-	TextBox(font* inFont, float px, float py, float ex, float ey, uint32_t fSize = 24, int hArrange = ARRANGE_START, int vArrange = ARRANGE_START, bool isModifiable = false) {
+	TextBox(font* inFont, float px, float py, float ex, float ey, uint32_t fSize = 24, ArrangeType hArrange = ARRANGE_START, ArrangeType vArrange = ARRANGE_START, bool isModifiable = false) {
 		setDims(px, py, ex, ey);
 		textFont = inFont;
 		characterSize = fSize;
@@ -435,8 +437,8 @@ public:
 private:
 	TypeManager* typeManager = nullptr;
 
-	int horizontalArrange = ARRANGE_START;
-	int verticalArrange = ARRANGE_START;
+	ArrangeType horizontalArrange = ARRANGE_START;
+	ArrangeType verticalArrange = ARRANGE_START;
 
 	std::function<void(UIItem*)> clickFunct = nullptr;
 };
@@ -550,7 +552,7 @@ public:
 		itemType = BUTTON;
 	}
 
-	Button(Material* mat, std::function<void(UIItem*)> func) {
+	Button(Material* mat, std::function<void(UIItem*)> func = nullptr) {
 
 		image = std::make_shared<UIImage>(new UIImage);
 		image->mesh = new UIMesh;
@@ -584,49 +586,6 @@ public:
 		setDims(0.0f, 0.0f, 5.0f, 1.0f);
 
 		this->sqAxisRatio = 0.2f;
-
-		baseExtentx = extentx;
-		baseExtenty = extenty;
-		baseSqAxisRatio = sqAxisRatio;
-
-		itemType = BUTTON;
-	}
-
-	Button(Material* mat, std::function<void(UIItem*)> func, int code) {
-
-		image = std::make_shared<UIImage>(new UIImage);
-		image->mesh = new UIMesh;
-		image->mat.push_back(mat);
-
-		image->texWidth = image->mat[0]->textures[0]->texWidth;
-		image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
-
-		clickFunction = func;
-		clickType = code;
-
-		setDims(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
-
-		baseExtentx = extentx;
-		baseExtenty = extenty;
-		baseSqAxisRatio = sqAxisRatio;
-
-		itemType = BUTTON;
-	}
-
-	Button(Material* mat) {
-
-		image = std::make_shared<UIImage>(new UIImage);
-		image->mesh = new UIMesh;
-		image->mat.push_back(mat);
-
-		image->texWidth = image->mat[0]->textures[0]->texWidth;
-		image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
-
-		setDims(0.0f, 0.0f, 1.0f, 1.0f * this->sqAxisRatio);
 
 		baseExtentx = extentx;
 		baseExtenty = extenty;
@@ -683,30 +642,7 @@ public:
 		itemType = CHECKBOX;
 	}
 
-	Checkbox(Material* onMat, Material* offMat) {
-
-		image = std::unique_ptr<UIImage>(new UIImage);
-		image->mesh = new UIMesh;
-		image->mat.push_back(onMat);
-		image->mat.push_back(offMat);
-		image->matidx = 0;
-		this->activestate = true;
-
-		image->texWidth = image->mat[0]->textures[0]->texWidth;
-		image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
-
-		update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
-
-		baseExtentx = extentx;
-		baseExtenty = extenty;
-		baseSqAxisRatio = sqAxisRatio;
-
-		itemType = CHECKBOX;
-	}
-
-	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func, bool state = true) {
+	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func = nullptr, bool state = true) {
 		
 		image = std::unique_ptr<UIImage>(new UIImage);
 		image->mesh = new UIMesh;
@@ -736,31 +672,31 @@ public:
 		itemType = CHECKBOX;
 	}
 
-	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func, int code) {
+	//Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func, int code) {
 
-		image = std::unique_ptr<UIImage>(new UIImage);
-		image->mesh = new UIMesh;
-		image->mat.push_back(onMat);
-		image->mat.push_back(offMat);
-		image->matidx = 0;
-		this->activestate = true;
+	//	image = std::unique_ptr<UIImage>(new UIImage);
+	//	image->mesh = new UIMesh;
+	//	image->mat.push_back(onMat);
+	//	image->mat.push_back(offMat);
+	//	image->matidx = 0;
+	//	this->activestate = true;
 
-		image->texWidth = image->mat[0]->textures[0]->texWidth;
-		image->texHeight = image->mat[0]->textures[0]->texHeight;
+	//	image->texWidth = image->mat[0]->textures[0]->texWidth;
+	//	image->texHeight = image->mat[0]->textures[0]->texHeight;
 
-		this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
+	//	this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
 
-		update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
+	//	update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
 
-		clickFunction = func;
-		clickType = code;
+	//	clickFunction = func;
+	//	clickType = code;
 
-		baseExtentx = extentx;
-		baseExtenty = extenty;
-		baseSqAxisRatio = sqAxisRatio;
+	//	baseExtentx = extentx;
+	//	baseExtenty = extenty;
+	//	baseSqAxisRatio = sqAxisRatio;
 
-		itemType = CHECKBOX;
-	}
+	//	itemType = CHECKBOX;
+	//}
 
 	void setClickFunction(std::function<void(UIItem*)> func) {
 		clickFunction = func;
@@ -823,38 +759,19 @@ class Arrangement : public UIItem {
 public:
 	float spacing;
 
-	Arrangement(int orient, float px, float py, float ex, float ey, float spc) {
+	Arrangement(Orientation orient, float px, float py, float ex, float ey, float spc, ArrangeType arrangeMethod = ARRANGE_START, SizeType sizeMethod = SCALE_BY_DIMENSIONS) {
 		setDims(px, py, ex, ey, spc);
-		this->orientation = orient;
-		itemType = ARRANGEMENT;
-	}
-
-	Arrangement(int orient, float px, float py, float ex, float ey, float spc, int arrangeMethod) {
-		setDims(px, py, ex, ey, spc);
-
-		this->method = arrangeMethod;
-
-		this->orientation = orient;
-
-		itemType = ARRANGEMENT;
-	}
-
-	Arrangement(int orient, float px, float py, float ex, float ey, float spc, int arrangeMethod, int sizeMethod) {
-		setDims(px, py, ex, ey, spc);
-
 		this->sizing = sizeMethod;
 		this->method = arrangeMethod;
-
 		this->orientation = orient;
-
 		itemType = ARRANGEMENT;
 	}
 
-	void setSizeMethod(int sizeMethod) {
+	void setSizeMethod(SizeType sizeMethod) {
 		this->sizing = sizeMethod;
 	}
 
-	void setArrangeMethod(int arrangeMethod) {
+	void setArrangeMethod(ArrangeType arrangeMethod) {
 		this->method = arrangeMethod;
 	}
 
@@ -953,9 +870,9 @@ private:
 	void calculateHSpacing(float&, int, float&, float&, float&);
 	void calculateHPositions(float, float, float, std::vector<float>, float);
 
-	int method = ARRANGE_FILL;
-	int sizing = SCALE_BY_CONTAINER;
-	int orientation = ORIENT_HORIZONTAL;
+	ArrangeType method = ARRANGE_FILL;
+	SizeType sizing = SCALE_BY_CONTAINER;
+	Orientation orientation = ORIENT_HORIZONTAL;
 };
 
 class Grid : public UIItem {
@@ -964,7 +881,7 @@ public:
 		itemType = GRID;
 	}
 
-	Grid(int orient, float px, float py, float ex, float ey, float spc) {
+	Grid(Orientation orient, float px, float py, float ex, float ey, float spc) {
 		setDims(px, py, ex, ey, spc);
 		this->orientation = orient;
 
@@ -1076,7 +993,7 @@ private:
 	Arrangement* mainArrangement = nullptr;
 
 	float spacing = 0.01f;
-	int orientation = ORIENT_HORIZONTAL;
+	Orientation orientation = ORIENT_HORIZONTAL;
 };
 
 class Slider : public UIItem {
@@ -1084,38 +1001,8 @@ public:
 	Slider() {
 		itemType = SLIDER;
 	}
-	
-	Slider(Material* mat, float xp, float yp, float xs, float ys) {
-		setDims(xp, yp, xs, ys);
-		
-		image = std::make_shared<UIImage>(new UIImage);
-		image->mesh = new UIMesh;
-		image->mat.emplace_back(mat);
 
-		backgroundImage = std::make_shared<UIImage>(new UIImage);
-		backgroundImage->mesh = new UIMesh;
-		backgroundImage->mat.emplace_back(mat);
-
-		if (mat->textures.size() > 0) {
-			image->texWidth = image->mat[0]->textures[0]->texWidth;
-			image->texHeight = image->mat[0]->textures[0]->texHeight;
-			backgroundImage->texWidth = backgroundImage->mat[0]->textures[0]->texWidth;
-			backgroundImage->texHeight = backgroundImage->mat[0]->textures[0]->texHeight;
-		} else {
-			image->texWidth = 256;
-			image->texHeight = 256;
-			backgroundImage->texWidth = 256;
-			backgroundImage->texHeight = 256;
-		}
-
-		baseExtentx = extentx;
-		baseExtenty = extenty;
-		baseSqAxisRatio = sqAxisRatio;
-
-		itemType = SLIDER;
-	}
-
-	Slider(int orient, Material* mat, float xp, float yp, float xs, float ys) {
+	Slider(Material* mat, float xp, float yp, float xs, float ys, Orientation orient = ORIENT_HORIZONTAL) {
 		setDims(xp, yp, xs, ys);
 
 		image = std::make_shared<UIImage>(new UIImage);
@@ -1309,8 +1196,8 @@ private:
 
 	std::shared_ptr<UIImage> backgroundImage;
 
-	int orientation = ORIENT_HORIZONTAL;
-	int valueType = SLIDER_CONTINUOUS;
+	Orientation orientation = ORIENT_HORIZONTAL;
+	SliderType valueType = SLIDER_CONTINUOUS;
 
 	float sliderWidth = 0.5f;
 	float baseHeight = 0.2f;
@@ -1509,7 +1396,7 @@ private:
 
 	float centroid[2] = {};
 
-	int valueType = SLIDER_CONTINUOUS;
+	SliderType valueType = SLIDER_CONTINUOUS;
 
 	float sliderWidth = 0.05f;
 	float radius = 100.0f;
@@ -1707,8 +1594,6 @@ private:
 	Material* bgMat = nullptr;
 
 	int optionIndex = -1;
-
-	//bool optionsVisible = false;
 
 	std::function<void(UIItem*)> selectCallback = nullptr;
 

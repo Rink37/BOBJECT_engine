@@ -66,7 +66,7 @@ void TextureSettings::setup(std::string texName, std::function<void(UIItem*)> re
 	projectorArrangement->addItem(getPtr(projectorLabel));
 	projectorArrangement->addItem(getPtr(projector));
 
-	Slider* angleSlider = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 4.0f, 1.0f);
+	Slider* angleSlider = new Slider(visibleMat, 0.0f, 0.0f, 4.0f, 1.0f, ORIENT_HORIZONTAL);
 	angleSlider->setFloatCallback(updateProjectorAngleFunc, true);
 	angleSlider->setSlideValues(0.0f, glm::pi<float>(), glm::pi<float>() / 2.0f);
 
@@ -160,7 +160,7 @@ void WebcamSettings::setup(std::function<void(UIItem*)> finishCallback, std::fun
 	endButtons->addItem(getPtr(new spacer));
 	endButtons->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", finishCallback)));
 
-	ratioSlider = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 1.0f, 0.1f);
+	ratioSlider = new Slider(visibleMat, 0.0f, 0.0f, 1.0f, 0.1f, ORIENT_HORIZONTAL);
 	ratioSlider->setFloatCallback(std::bind(&WebcamSettings::updateAspectRatio, this, std::placeholders::_1), true);
 	ratioSlider->setSlideValues(0.5f, 2.0f, webcamTexture::get()->webCam->sizeRatio);
 

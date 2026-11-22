@@ -295,10 +295,6 @@ private:
 		UIElements.getPtr(&tsb, "UIGray", "TSBtn");
 		imageData osb = OSBUTTON;
 		UIElements.getPtr(&osb, "UIGray", "OSBtn");
-		//imageData finishBtnImage = FINISHBUTTON;
-		//UIElements.getPtr(&finishBtnImage, "UIGray", "FinishBtn");
-		//imageData cancelBtnImage = CANCELBUTTON;
-		//UIElements.getPtr(&cancelBtnImage, "UIGray", "CancelBtn");
 		imageData pb = PLAYBUTTON;
 		UIElements.getPtr(&pb, "UIGray", "PlayBtn");
 		imageData psb = PAUSEBUTTON;
@@ -327,8 +323,6 @@ private:
 		UIElements.getPtr(&urb, "UIGray", "UnrenderedBtn");
 		imageData webcamOn = WEBCAMONBUTTON;
 		UIElements.getPtr(&webcamOn, "UIGray", "WebcamOnBtn");
-		//imageData update = UPDATEBUTTON;
-		//UIElements.getPtr(&update, "UIGray", "UpdateBtn");
 		imageData plb = PLANEBUTTON;
 		UIElements.getPtr(&plb, "UIGray", "PlaneBtn");
 		imageData crs = CLOSEBUTTON;
