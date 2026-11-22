@@ -624,7 +624,7 @@ static Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the no
 
 	vector<vector<float>> tomogMatrix;
 
-	Mat normal = images[0]->texMat.clone();
+	cv::Mat normal(cv::Size(images[0]->texWidth, images[0]->texHeight), CV_8UC3);
 	normal = Scalar(0, 0, 0);
 
 	unordered_map <string, vector<vector<float>>> tomogMatrices;
@@ -633,7 +633,7 @@ static Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the no
 
 	for (int i = 0; i != images.size(); i++) {
 		Mat gray;
-		cvtColor(images[i]->texMat, gray, COLOR_RGB2GRAY);
+		cvtColor(images[i]->getCVMat(), gray, COLOR_RGB2GRAY);
 		grayImages.push_back(gray);
 	}
 
@@ -712,13 +712,16 @@ static Mat calculateDiffuse(std::vector<TomogItem*> items, Mat normal) {
 		}
 	}
 
-	Mat diffuse = images[0]->texMat.clone();
+	cv::Mat diffuse(cv::Size(images[0]->texWidth, images[0]->texHeight), CV_8UC3);
 	diffuse = Scalar(0, 0, 0);
+
+	std::vector<cv::Mat> imageMats{};
 
 	vector<Mat> grayImages;
 	for (int k = 0; k != images.size(); k++) {
 		Mat grayImg;
-		cvtColor(images[k]->texMat, grayImg, COLOR_RGB2GRAY);
+		imageMats.push_back(images[k]->getCVMat());
+		cvtColor(imageMats[k], grayImg, COLOR_RGB2GRAY);
 		grayImages.push_back(grayImg);
 	}
 
@@ -735,7 +738,7 @@ static Mat calculateDiffuse(std::vector<TomogItem*> items, Mat normal) {
 			Vec2f xyNormal = Vec2f(normalVector[0], normalVector[1]);
 			float normalLength = sqrt(normalVector[0] * normalVector[0] + normalVector[1] * normalVector[1]);
 			if (normalLength == 0) {
-				diffuse.at<Vec3b>(x, y) = images[0]->texMat.at<Vec3b>(x, y);
+				diffuse.at<Vec3b>(x, y) = imageMats[0].at<Vec3b>(x, y);
 				continue;
 			}
 			xyNormal[0] /= normalLength;
@@ -763,7 +766,7 @@ static Mat calculateDiffuse(std::vector<TomogItem*> items, Mat normal) {
 			Vec3f floatPixel = Vec3f(0.0f, 0.0f, 0.0f);
 
 			for (int k = 0; k != images.size(); k++) {
-				Vec3f pixel = static_cast<Vec3f>(images[k]->texMat.at<Vec3b>(x, y));
+				Vec3f pixel = static_cast<Vec3f>(imageMats[k].at<Vec3b>(x, y));
 				floatPixel[0] += pixel[0] * weights[k] / total;
 				floatPixel[1] += pixel[1] * weights[k] / total;
 				floatPixel[2] += pixel[2] * weights[k] / total;
@@ -796,19 +799,21 @@ static std::vector<Mat> calculate_norm_diff(std::vector<TomogItem*> items) {
 
 	vector<vector<float>> tomogMatrix;
 
-	Mat normal = images[0]->texMat.clone();
-	normal = Scalar(0, 0, 0);
-
-	Mat diffuse = images[0]->texMat.clone();
+	cv::Mat diffuse(cv::Size(images[0]->texWidth, images[0]->texHeight), CV_8UC3);
 	diffuse = Scalar(0, 0, 0);
+
+	cv::Mat normal = diffuse.clone();
 
 	map <string, vector<vector<float>>> tomogMatrices;
 
 	vector<Mat> grayImages;
 
+	std::vector<cv::Mat> imageMats{};
+
 	for (int i = 0; i != images.size(); i++) {
-		Mat gray;
-		cvtColor(images[i]->texMat, gray, COLOR_RGB2GRAY);
+		cv::Mat gray;
+		imageMats.push_back(images[i]->getCVMat());
+		cvtColor(imageMats[i], gray, COLOR_RGB2GRAY);
 		grayImages.push_back(gray);
 	}
 
@@ -827,7 +832,7 @@ static std::vector<Mat> calculate_norm_diff(std::vector<TomogItem*> items) {
 			}
 			if (validIndexes.size() == 0) {
 				normal.at<Vec3b>(x, y) = Vec3b(127, 127, 255);
-				diffuse.at<Vec3b>(x, y) = images[0]->texMat.at<Vec3b>(x, y);
+				diffuse.at<Vec3b>(x, y) = imageMats[0].at<Vec3b>(x, y);
 				continue;
 			}
 
@@ -892,7 +897,7 @@ static std::vector<Mat> calculate_norm_diff(std::vector<TomogItem*> items) {
 			Vec3f floatPixel = Vec3f(0.0f, 0.0f, 0.0f);
 
 			for (int k = 0; k != images.size(); k++) {
-				Vec3f pixel = static_cast<Vec3f>(images[k]->texMat.at<Vec3b>(x, y));
+				Vec3f pixel = static_cast<Vec3f>(imageMats[k].at<Vec3b>(x, y));
 				floatPixel[0] += pixel[0] * weights[k] / total;
 				floatPixel[1] += pixel[1] * weights[k] / total;
 				floatPixel[2] += pixel[2] * weights[k] / total;
@@ -913,14 +918,13 @@ void Tomographer::add_image(string filename, string name) {
 
 	Mat image = imread(filename);
 	newItem->baseImage = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), name);
-	newItem->baseImage->getCVMat();
 
 	items.push_back(newItem);
 }
 
 void Tomographer::align(int index) {
 	TomogItem* item = items[index];
-	cv::Mat image = item->baseImage->texMat.clone();
+	cv::Mat image = item->baseImage->getCVMat();
 
 	Mat scaledAlign = alignTemplate.clone();
 	Size dims = scaledAlign.size();
@@ -933,7 +937,6 @@ void Tomographer::align(int index) {
 	match_template(scaledAlign, &image, dims, item->rotation);
 
 	item->correctedImage = loadList->replacePtr(new imageTexture(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, 1), item->name + "Matched");
-	item->correctedImage->getCVMat();
 }
 
 void Tomographer::remove_element(int index) {

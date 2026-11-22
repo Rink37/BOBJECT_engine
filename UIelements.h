@@ -709,7 +709,7 @@ class Arrangement : public UIItem {
 public:
 	float spacing;
 
-	Arrangement(Orientation orient, float px, float py, float ex, float ey, float spc, ArrangeType arrangeMethod = ARRANGE_START, SizeType sizeMethod = SCALE_BY_DIMENSIONS) {
+	Arrangement(Orientation orient, float px, float py, float ex, float ey, float spc, ArrangeType arrangeMethod = ARRANGE_START, SizeType sizeMethod = SCALE_BY_CONTAINER) {
 		setDims(px, py, ex, ey, spc);
 		this->sizing = sizeMethod;
 		this->method = arrangeMethod;

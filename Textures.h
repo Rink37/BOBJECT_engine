@@ -15,7 +15,7 @@ struct Texture {
 	// Structure describing an arbitrary image in the application
 	// I use a mix of OpenCV images and Vulkan images for various reasons, so it makes sense to have a structure which manages conversions
 
-	cv::Mat texMat; // The OpenCV matrix image
+	//cv::Mat texMat; // The OpenCV matrix image
 	VkImage textureImage = nullptr; 
 	VkDeviceMemory textureImageMemory = nullptr;
 	VkImageView textureImageView = nullptr;
@@ -46,9 +46,9 @@ struct Texture {
 	void generateMipmaps() const;
 	void createImageView(VkImageAspectFlags);
 	
-	void getCVMat();
-	void destroyCVMat();
-	void transitionMatToImg();
+	cv::Mat getCVMat();
+	//void destroyCVMat();
+	void transitionMatToImg(cv::Mat);
 
 	Texture* copyImage(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, VkMemoryPropertyFlags, uint32_t, uint32_t, uint32_t);
 	Texture* copyImage(VkFormat, VkImageLayout, VkImageUsageFlags, VkImageTiling, VkMemoryPropertyFlags, uint32_t);
@@ -99,7 +99,7 @@ struct Texture {
 		textureImage = nullptr;
 		textureImageMemory = nullptr;
 		textureImageView = nullptr;
-		destroyCVMat();
+		//destroyCVMat();
 		cleaned = true;
 	}
 
@@ -124,32 +124,32 @@ public:
 
 	imageTexture(cv::Mat initMat) {
 		// Image texture which is created using a given openCV image
-		texMat = initMat.clone();
-		transitionMatToImg();
+		//texMat = initMat.clone();
+		transitionMatToImg(initMat);
 		createTextureImageView();
-		destroyCVMat();
+		//destroyCVMat();
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t ml) {
 		// Image texture created from an openCV image with non-standard properties
-		texMat = initMat;
+		//texMat = initMat;
 		textureFormat = format;
 		textureLayout = layout;
 		textureUsage = usage;
 		textureTiling = tiling;
 		mipLevels = ml;
-		transitionMatToImg();
+		transitionMatToImg(initMat);
 		createTextureImageView();
-		destroyCVMat();
+		//destroyCVMat();
 	}
 
 	imageTexture(cv::Mat initMat, VkFormat format) {
 		// Image texture which is loaded from file
-		texMat = initMat.clone();
+		//texMat = initMat.clone();
 		textureFormat = format;
-		transitionMatToImg();
+		transitionMatToImg(initMat);
 		createTextureImageView();
-		destroyCVMat();
+		//destroyCVMat();
 	}
 
 	imageTexture(imageData* imageBytes) {
@@ -200,9 +200,9 @@ public:
 	void setup() {
 		webCam = new Webcam(0);
 		if (!webCam->isValid) {
-			texMat = cv::Mat(96, 128, CV_8UC3);
+			cv::Mat texMat = cv::Mat(96, 128, CV_8UC3);
 			texMat = cv::Scalar(255, 0, 255);
-			transitionMatToImg();
+			transitionMatToImg(texMat);
 			createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 			return;
 		}
@@ -249,8 +249,8 @@ public:
 		cleaned = true;
 	}
 
-	void getCVMat() {
-		texMat = webCam->webcamFrame;
+	cv::Mat getCVMat() {
+		return webCam->webcamFrame;
 	}
 
 	void changeFormat(VkFormat newFormat) {

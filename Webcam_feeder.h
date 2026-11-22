@@ -2,7 +2,6 @@
 #define WEBCAM
 #include<iostream>
 #include<opencv2/opencv.hpp>
-//#include"StudioSession.h"
 
 class Webcam {
 public:
@@ -41,9 +40,6 @@ public:
 	cv::Point2f cropCorners[4];
 	cv::Point2f targetCorners[4];
 
-	//void loadFilter();
-	//void saveFilter();
-
 	void findWebcams();
 
 	void switchWebcam(bool);
@@ -71,11 +67,11 @@ private:
 
 	uint8_t filter[6] = { 0, 0, 0, 255, 255, 255 };
 
-	uint32_t baseWidth, baseHeight = 0;
+	uint16_t baseWidth, baseHeight = 0;
 
-	uint32_t targetWidth = 0;
-	uint32_t targetHeight = 0;
-	uint32_t targetDim = 0;
+	uint16_t targetWidth = 0;
+	uint16_t targetHeight = 0;
+	uint16_t targetDim = 0;
 	cv::Point topCorner = cv::Point(0, 0);
 	
 	cv::Mat RotationMatrix;

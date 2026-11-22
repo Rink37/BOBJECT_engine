@@ -1166,15 +1166,14 @@ void TextureLoadMenu::setOptionCallback(UIItem* owner) {
 void TextureLoadMenu::finishCallback(UIItem* owner) {
 	imageTexture* loadedTexture = nullptr;
 	try {
+		cv::Mat initMat = cv::imread(fileName, cv::IMREAD_UNCHANGED);
 		if (isNormalized) {
-			cv::Mat initMat = cv::imread(fileName, cv::IMREAD_UNCHANGED);
 			loadedTexture = new imageTexture(initMat, VK_FORMAT_R8G8B8A8_UNORM);
 			loadedTexture->isNormal = true;
 			normalType = !normalTypeToggle->activestate;
 			loadedTexture->normalType = normalType;
 		}
 		else {
-			cv::Mat initMat = cv::imread(fileName, cv::IMREAD_UNCHANGED);
 			loadedTexture = new imageTexture(initMat, VK_FORMAT_R8G8B8A8_SRGB);
 		}
 		textureLL->replacePtr(loadedTexture, textureName);
@@ -1183,6 +1182,7 @@ void TextureLoadMenu::finishCallback(UIItem* owner) {
 		if (updateTextureMenu != nullptr) {
 			updateTextureMenu(owner);
 		}
+		initMat.release();
 		selfDestruct(owner);
 	}
 	catch (...) {
@@ -1327,14 +1327,11 @@ void TextureMenu::saveTexture(UIItem* owner) {
 			saveName += ".png";
 		}
 		if (sRGBTex == nullptr) {
-			texToSave->getCVMat();
-			imwrite(saveName, texToSave->texMat);
+			imwrite(saveName, texToSave->getCVMat());
 		}
 		else {
-			sRGBTex->getCVMat();
-			imwrite(saveName, sRGBTex->texMat);
+			imwrite(saveName, sRGBTex->getCVMat());
 		}
-		texToSave->destroyCVMat();
 		if (sRGBTex != nullptr) {
 			sRGBTex->cleanup();
 			delete sRGBTex;

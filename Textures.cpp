@@ -57,11 +57,12 @@ Texture* Texture::copyImage(VkFormat format, VkImageLayout layout, VkImageUsageF
 
 	if (!supportsBlit && (width != texWidth || height != texHeight)) {
 		// Not ideal - a GPU implementation of changing image size without blit functionality would be better
-		getCVMat();
-		cv::resize(texMat, copy->texMat, Size(width, height));
-		copy->transitionMatToImg();
-		copy->destroyCVMat();
-		destroyCVMat();
+		cv::Mat texMat = getCVMat();
+		cv::resize(texMat, texMat, Size(width, height));
+		copy->transitionMatToImg(texMat);
+		texMat.release();
+		//copy->destroyCVMat();
+		//destroyCVMat();
 		return copy;
 	}
 
@@ -592,14 +593,16 @@ void Texture::generateMipmaps() const {
 	VKCmd::submitSingleTimeCommand(commandBuffer, graphicsQueue);
 }
 
-void Texture::destroyCVMat() {
-	// Free the memory of the openCV matrix if it isn't needed later - saves memory by avoiding duplication
-	texMat.release();
-}
+//void Texture::destroyCVMat() {
+//	// Free the memory of the openCV matrix if it isn't needed later - saves memory by avoiding duplication
+//	texMat.release();
+//}
 
-void Texture::getCVMat() { 
+cv::Mat Texture::getCVMat() { 
 	// Retrieves an openCV Mat type image from the vulkan image of this texture struct
 	// see https://github.com/SaschaWillems/Vulkan/blob/master/examples/screenshot/screenshot.cpp 
+
+	std::cout << "Getting a CV mat" << std::endl;
 
 	VkDevice device = Core::getDevice();
 	VkPhysicalDevice physicalDevice = Core::getPhysicalDevice();
@@ -638,7 +641,7 @@ void Texture::getCVMat() {
 		colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), textureFormat) != formatsBGR.end());
 	}
 
-	texMat.create(texHeight, texWidth, CV_8UC4);
+	cv::Mat texMat(texHeight, texWidth, CV_8UC4);
 
 	for (uint32_t y = 0; y < texHeight; y++)
 	{
@@ -660,13 +663,14 @@ void Texture::getCVMat() {
 
 	dst->cleanup();
 	delete dst;
+
+	return texMat;
 }
 
-void Texture::transitionMatToImg() {
+void Texture::transitionMatToImg(cv::Mat texMat) {
 	// Creates a Vulkan image using an opencv Matrix
 
-	uchar* matData = new uchar[texMat.total() * 4];
-	cv::Mat continuousRGBA(texMat.size(), CV_8UC4, matData);
+	cv::Mat continuousRGBA(texMat.size(), CV_8UC4);
 	cv::cvtColor(texMat, continuousRGBA, cv::COLOR_BGRA2RGBA, 4);
 
 	texWidth = continuousRGBA.size().width;
@@ -688,7 +692,7 @@ void Texture::transitionMatToImg() {
 
 	transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	
+
 	VKMem::freeBuffer(stagingBuffer, stagingBufferMemory);
 
 	if (mipLevels != 1) {
@@ -699,6 +703,8 @@ void Texture::transitionMatToImg() {
 	}
 
 	cleaned = false;
+
+	std::cout << "Transitioned a CV mat to a texture" << std::endl;
 }
 
 void webcamTexture::createWebcamImage() {

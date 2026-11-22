@@ -47,13 +47,13 @@ public:
 			widget->clickIndex = mouseManager->addClickListener(widget->getClickCallback());
 		}
 		else {
-			widget->clickIndex = INT_MAX;
+			widget->clickIndex = 255;
 		}
 		if (widget->hasPosEvents) {
 			widget->posIndex = mouseManager->addPositionListener(widget->getPosCallback());
 		}
 		else {
-			widget->posIndex = INT_MAX;
+			widget->posIndex = 255;
 		}
 		std::function<void(std::string)> delFunc = std::bind(&WidgetManager::deleteWidget, this, std::placeholders::_1);
 		widget->deleteSelf = delFunc;
@@ -118,7 +118,7 @@ private:
 			prioritySortedWidgets.erase(it);
 		}
 
-		if (widget->clickIndex != INT_MAX) {
+		if (widget->clickIndex != 255) {
 			uint32_t clickIndex = widget->clickIndex;
 			mouseManager->removeClickListener(widget->clickIndex);
 			for (std::pair<std::string, Widget*> widgetElem : widgets) {
@@ -127,7 +127,7 @@ private:
 				}
 			}
 		}
-		if (widget->posIndex != INT_MAX) {
+		if (widget->posIndex != 255) {
 			uint32_t posIndex = widget->posIndex;
 			mouseManager->removePositionListener(widget->posIndex);
 			for (std::pair<std::string, Widget*> widgetElem : widgets) {

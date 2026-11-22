@@ -679,7 +679,7 @@ void SeamFixer::createSeamMeshes(SeamStrip& strip, float distance = 0.025f, bool
 	strip.rightAlphaMesh.vertices.clear();
 	strip.rightAlphaMesh.indices.clear();
 
-	cv::Mat demoMatDupe = targetTex->texMat.clone();
+	cv::Mat demoMatDupe = targetTex->getCVMat();
 	resize(demoMatDupe, demoMatDupe, cv::Size(), 0.2f, 0.2f);
 	uint32_t width = demoMatDupe.size().width;
 	uint32_t height = demoMatDupe.size().height;
@@ -1562,8 +1562,8 @@ void SeamFixer::createDemoImages(std::string baseName) {
 	rightCol->getCVMat();
 	rightAlpha->getCVMat();
 
-	cv::Mat rC = rightCol->texMat.clone();
-	cv::Mat rA = rightAlpha->texMat.clone();
+	cv::Mat rC = rightCol->getCVMat();
+	cv::Mat rA = rightAlpha->getCVMat();
 
 	cv::Mat rThresh;
 	cv::cvtColor(rC, rThresh, cv::COLOR_BGR2GRAY);
@@ -1594,14 +1594,12 @@ void SeamFixer::createDemoImages(std::string baseName) {
 		smallAlphaMap->cleanup();
 		delete smallAlphaMap;
 
-		remapper->filteredTarget->getCVMat();
+		cv::Mat texMat = remapper->filteredTarget->getCVMat();
 
-		cv::resize(remapper->filteredTarget->texMat, remapper->filteredTarget->texMat, cv::Size(colour->texWidth, colour->texHeight), 0.0f, 0.0f, cv::INTER_NEAREST);
+		cv::resize(texMat, texMat, cv::Size(colour->texWidth, colour->texHeight), 0.0f, 0.0f, cv::INTER_NEAREST);
 
-		Texture* hiResAlpha = new imageTexture(remapper->filteredTarget->texMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+		Texture* hiResAlpha = new imageTexture(texMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
 		alphaOverMap(alpha, alpha, hiResAlpha);
-
-		remapper->filteredTarget->destroyCVMat();
 
 		remapper->cleanup();
 
@@ -1620,9 +1618,8 @@ void SeamFixer::createDemoImages(std::string baseName) {
 		remapper->createReferenceMaps(colour, alpha);
 	}
 
-	remapper->filteredTarget->getCVMat();
-	cv::imwrite(baseName + std::string("_R_RemapAlpha.jpg"), remapper->filteredTarget->texMat);
-	remapper->filteredTarget->destroyCVMat();
+	cv::Mat texMat = remapper->filteredTarget->getCVMat();
+	cv::imwrite(baseName + std::string("_R_RemapAlpha.jpg"), texMat);
 
 	rightCol->cleanup();
 	delete rightCol;
@@ -1638,8 +1635,8 @@ void SeamFixer::createDemoImages(std::string baseName) {
 	leftCol->getCVMat();
 	leftAlpha->getCVMat();
 
-	cv::Mat lC = leftCol->texMat.clone();
-	cv::Mat lA = leftAlpha->texMat.clone();
+	cv::Mat lC = leftCol->getCVMat();
+	cv::Mat lA = leftAlpha->getCVMat();
 
 	cv::Mat lThresh;
 	cv::cvtColor(lC, lThresh, cv::COLOR_BGR2GRAY);
@@ -1666,13 +1663,12 @@ void SeamFixer::createDemoImages(std::string baseName) {
 		delete smallAlphaMap;
 
 		remapper->filteredTarget->getCVMat();
+		
+		texMat = remapper->filteredTarget->getCVMat();
+		cv::resize(texMat, texMat, cv::Size(colour->texWidth, colour->texHeight), 0.0f, 0.0f, cv::INTER_NEAREST);
 
-		cv::resize(remapper->filteredTarget->texMat, remapper->filteredTarget->texMat, cv::Size(colour->texWidth, colour->texHeight), 0.0f, 0.0f, cv::INTER_NEAREST);
-
-		Texture* hiResAlpha = new imageTexture(remapper->filteredTarget->texMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+		Texture* hiResAlpha = new imageTexture(texMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
 		alphaOverMap(alpha, alpha, hiResAlpha);
-
-		remapper->filteredTarget->destroyCVMat();
 
 		remapper->cleanup();
 
@@ -1691,10 +1687,8 @@ void SeamFixer::createDemoImages(std::string baseName) {
 		remapper->createReferenceMaps(colour, alpha);
 	}
 
-	remapper->filteredTarget->getCVMat();
-	cv::imwrite(baseName + std::string("_L_RemapAlpha.jpg"), remapper->filteredTarget->texMat);
-
-	remapper->filteredTarget->destroyCVMat();
+	texMat = remapper->filteredTarget->getCVMat();
+	cv::imwrite(baseName + std::string("_L_RemapAlpha.jpg"), texMat);
 
 	leftCol->cleanup();
 	delete leftCol;
@@ -1704,10 +1698,9 @@ void SeamFixer::createDemoImages(std::string baseName) {
 	alpha = alphaWriter->drawMap(outsideMeshes);
 
 	Texture* outsideAlpha = alpha->copyTexture();
-	outsideAlpha->getCVMat();
 
 	cv::Mat outsideThresh;
-	cv::cvtColor(outsideAlpha->texMat, outsideThresh, cv::COLOR_BGR2GRAY);
+	cv::cvtColor(outsideAlpha->getCVMat(), outsideThresh, cv::COLOR_BGR2GRAY);
 	cv::threshold(outsideThresh, outsideThresh, 1, 255, cv::THRESH_BINARY);
 
 	cv::imwrite(baseName + std::string("_OutsideAlpha.jpg"), outsideThresh);
@@ -1715,10 +1708,9 @@ void SeamFixer::createDemoImages(std::string baseName) {
 	alpha = alphaWriter->drawMap(insideMeshes);
 
 	Texture* insideAlpha = alpha->copyTexture();
-	insideAlpha->getCVMat();
 
 	cv::Mat insideThresh;
-	cv::cvtColor(insideAlpha->texMat, insideThresh, cv::COLOR_BGR2GRAY);
+	cv::cvtColor(insideAlpha->getCVMat(), insideThresh, cv::COLOR_BGR2GRAY);
 	cv::threshold(insideThresh, insideThresh, 1, 255, cv::THRESH_BINARY);
 
 	cv::imwrite(baseName + std::string("_InsideAlpha.jpg"), insideThresh);
@@ -1761,14 +1753,11 @@ void SeamFixer::seamFixAll() {
 				smallAlphaMap->cleanup();
 				delete smallAlphaMap;
 
-				remapper->filteredTarget->getCVMat();
-				
-				cv::resize(remapper->filteredTarget->texMat, remapper->filteredTarget->texMat, cv::Size(colour->texWidth, colour->texHeight), 0.0f, 0.0f, cv::INTER_NEAREST);
+				cv::Mat texMat = remapper->filteredTarget->getCVMat();
+				cv::resize(texMat, texMat, cv::Size(colour->texWidth, colour->texHeight), 0.0f, 0.0f, cv::INTER_NEAREST);
 
-				Texture* hiResAlpha = new imageTexture(remapper->filteredTarget->texMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
+				Texture* hiResAlpha = new imageTexture(texMat, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TILING_OPTIMAL, 1);
 				alphaOverMap(alpha, alpha, hiResAlpha);
-
-				remapper->filteredTarget->destroyCVMat();
 
 				remapper->cleanup();
 
