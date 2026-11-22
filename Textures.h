@@ -15,10 +15,6 @@ struct Texture {
 	// Structure describing an arbitrary image in the application
 	// I use a mix of OpenCV images and Vulkan images for various reasons, so it makes sense to have a structure which manages conversions
 
-	uint32_t texWidth = 0;
-	uint32_t texHeight = 0; 
-	uint32_t texChannels = 0; 
-
 	cv::Mat texMat; // The OpenCV matrix image
 	VkImage textureImage = nullptr; 
 	VkDeviceMemory textureImageMemory = nullptr;
@@ -32,10 +28,14 @@ struct Texture {
 	VkSampleCountFlagBits textureSamples = VK_SAMPLE_COUNT_1_BIT;
 	VkImageAspectFlags textureAspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
 
-	uint32_t mipLevels = 0;
+	uint8_t mipLevels = 0;
 
 	bool isNormal = false;
 	bool normalType = false; // false represents an OS normal, true represents a TS normal
+
+	uint8_t texChannels = 0;
+	uint16_t texWidth = 0;
+	uint16_t texHeight = 0;
 
 	void createImage(VkSampleCountFlagBits, VkMemoryPropertyFlags);
 	

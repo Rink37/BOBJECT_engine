@@ -13,7 +13,7 @@ struct TomogItem {
 	Texture* baseImage = nullptr;
 	Texture* correctedImage = nullptr;
 	float rotation = 0.0f;
-	std::vector<float> lightDirection = {0.0f, 0.0f, 0.0f};
+	glm::vec3 lightDirection = {0.0f, 0.0f, 0.0f};
 	std::string name = "";
 };
 
@@ -23,7 +23,6 @@ public:
 	// This class acts to modify a pre-existing surface Normal
 	cv::Mat computedNormal;
 	cv::Mat computedDiffuse;
-	bool alignRequired = true;
 	cv::Mat alignTemplate;
 
 	cv::Size outdims;
@@ -56,6 +55,8 @@ public:
 	LoadList* loadList = nullptr;
 
 	std::vector<TomogItem*> items = {};
+
+	bool alignRequired = true;
 private:
 	bool normalExists = false;
 
@@ -357,15 +358,15 @@ public:
 
 	bool generateDiffuse = true;
 	bool generateNormal = true;
+	bool normalAvailable = false;
+
+	uint8_t imageCount = 0;
+	uint8_t activeImageCount = 0;
 
 	std::string renderPipeline = std::string("BF");
 	Texture* baseDiffuse = nullptr;
 
 	Material scannedMaterial;
-	bool normalAvailable = false;
-
-	int imageCount = 0;
-	int activeImageCount = 0;
 
 	void drawAll(VkCommandBuffer commandBuffer, uint32_t currentFrame, GraphicsPass* currentPass) {
 		if (!isVisible) {

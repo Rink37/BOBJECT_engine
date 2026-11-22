@@ -209,7 +209,6 @@ private:
 	Engine* engine = Engine::get();
 
 	Camera camera;
-	Tomographer tomographer;
 
 	WidgetManager widgetManager = WidgetManager(&mouseManager);
 	ObjectMenu* objectMenu = nullptr;

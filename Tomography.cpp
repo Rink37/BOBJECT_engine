@@ -407,7 +407,7 @@ static bool match_template(Mat src, Mat* target, Size outdims, float& rotation) 
 	return false;
 }
 
-static void calculateVector(vector<float>& lightVec, float phi, float theta) {
+static void calculateVector(glm::vec3& lightVec, float phi, float theta) {
 	// phi is the rotation around z, theta is the angle above the surface
 	// We assume theta is given from the plane not from the plane normal
 	// We assume that phi is given from the positive horizontal
@@ -422,9 +422,9 @@ static void calculateVector(vector<float>& lightVec, float phi, float theta) {
 	float y = sin(theta) * sin(phi);
 	float z = cos(theta);
 
-	lightVec.push_back(x * -1);
-	lightVec.push_back(y * -1);
-	lightVec.push_back(z * -1);
+	lightVec.x = x * -1;
+	lightVec.y = y * -1;
+	lightVec.z = z * -1;
 }
 
 static void matrixTranspose(vector<vector<float>> src, vector<vector<float>>& out) {
@@ -614,9 +614,9 @@ static Mat calculateNormal(std::vector<TomogItem*> items) { // Calculates the no
 	std::vector<std::vector<float>> D{};
 
 	for (size_t i = 0; i != items.size(); i++) {
-		if (items[i]->correctedImage != nullptr && items[i]->lightDirection != std::vector<float>{0.0f, 0.0f, 0.0f}) {
+		if (items[i]->correctedImage != nullptr && items[i]->lightDirection != glm::vec3({0.0f, 0.0f, 0.0f})) {
 			images.push_back(items[i]->correctedImage);
-			D.push_back(items[i]->lightDirection);
+			D.push_back(std::vector<float>{items[i]->lightDirection.x, items[i]->lightDirection.y, items[i]->lightDirection.z});
 		}
 	}
 
@@ -706,9 +706,9 @@ static Mat calculateDiffuse(std::vector<TomogItem*> items, Mat normal) {
 	std::vector<std::vector<float>> D = {};
 
 	for (size_t i = 0; i != items.size(); i++) {
-		if (items[i]->correctedImage != nullptr && items[i]->lightDirection != std::vector<float>{0.0f, 0.0f, 0.0f}) {
+		if (items[i]->correctedImage != nullptr && items[i]->lightDirection != glm::vec3({0.0f, 0.0f, 0.0f})) {
 			images.push_back(items[i]->correctedImage);
-			D.push_back(items[i]->lightDirection);
+			D.push_back(std::vector<float>{items[i]->lightDirection.x, items[i]->lightDirection.y, items[i]->lightDirection.z});
 		}
 	}
 
@@ -785,10 +785,10 @@ static std::vector<Mat> calculate_norm_diff(std::vector<TomogItem*> items) {
 	std::vector<std::vector<float>> D = {};
 
 	for (size_t i = 0; i != items.size(); i++) {
-		if (items[i]->correctedImage != nullptr && items[i]->lightDirection != std::vector<float>{0.0f, 0.0f, 0.0f}) {
+		if (items[i]->correctedImage != nullptr && items[i]->lightDirection != glm::vec3({0.0f, 0.0f, 0.0f})) {
 			images.push_back(items[i]->correctedImage);
 			//std::cout << items[i]->lightDirection[0] << " " << items[i]->lightDirection[1] << " " << items[i]->lightDirection[0] << std::endl;
-			D.push_back(items[i]->lightDirection);
+			D.push_back(std::vector<float>{items[i]->lightDirection.x, items[i]->lightDirection.y, items[i]->lightDirection.z});
 		}
 	}
 
@@ -941,7 +941,7 @@ void Tomographer::remove_element(int index) {
 }
 
 void Tomographer::add_lightVector(float phi, float theta, int index) {
-	vector<float> lightVec;
+	glm::vec3 lightVec;
 	calculateVector(lightVec, phi, theta);
 	items[index]->lightDirection = lightVec;
 }
