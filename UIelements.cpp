@@ -120,7 +120,7 @@ void TextBox::getVertices(char unicodeCharacter, std::vector<Vertex>& verts, flo
 }
 
 void TextBox::updateDisplay() {
-	UIImage* textImage = this->image.get();
+	UIImage* textImage = this->image;
 	if (characters.size() == 0) {
 		textImage->isVisible = false;
 		isVisible = false;

@@ -61,14 +61,14 @@ enum UIItemType {
 struct UIImage {
 	bool isVisible = true;
 
-	int texHeight = 0;
-	int texWidth = 0;
+	uint16_t texHeight = 0;
+	uint16_t texWidth = 0;
 
 	float zp = 0.0f;
 	float zp_default = 0.0f;
 
 	std::vector<Material*> mat;
-	uint32_t matidx = 0;
+	uint8_t matidx = 0;
 	
 	Mesh* mesh = nullptr;
 
@@ -115,20 +115,26 @@ struct UIItem {
 	std::string Name = "Unlabelled";
 	std::string text = "";
 
-	std::shared_ptr<UIImage> image = nullptr;
+	UIImage* image = nullptr;
 
 	std::vector<UIItem*> Items; // These items are managed by owning widgets, pointers reference a vector of objects
-	std::vector<Texture*> textures; // These items are stored in load lists, so this is just a vector of pointers
 
 	virtual void addItem(UIItem*);
 
 	bool isEnabled = true;
 	bool activestate = false;
 
-	int clickType = LMB_PRESS;
-	int posType = MOUSE_HOVER;
+	uint8_t clickType = LMB_PRESS;
+	uint8_t posType = MOUSE_HOVER;
 
 	UIItemType itemType = UNDEFINED;
+
+	std::function<void(UIItem*)> clickFunction = nullptr;
+
+	void setClickFunction(std::function<void(UIItem*)> func, uint8_t code = LMB_PRESS) {
+		clickFunction = func;
+		clickType = code;
+	}
 
 	virtual void update(float x, float y, float xsize, float ysize) {
 		this->posx = x;
@@ -200,7 +206,7 @@ struct UIItem {
 
 	virtual void getImages(std::vector<UIImage*>& images) {
 		if (image != nullptr && image->texHeight > 1) {
-			images.push_back(image.get());
+			images.push_back(image);
 		}
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIImage*> subimages;
@@ -261,6 +267,10 @@ struct UIItem {
 			image = nullptr;
 		}
 	}
+
+	~UIItem() {
+		cleanup();
+	}
 };
 
 class Background : public UIItem {
@@ -271,7 +281,7 @@ public:
 			setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
 		}
 
-		image = std::make_shared<UIImage>(new UIImage);
+		image = new UIImage;
 		image->mesh = new UIMesh;
 		image->mat.emplace_back(mat);
 
@@ -323,7 +333,7 @@ public:
 			typeManager->setTypeCallback(std::bind(&TextBox::updateText, this, std::placeholders::_1));
 		}
 
-		image = std::make_shared<UIImage>(new UIImage);
+		image = new UIImage;
 
 		image->mesh = new fontMesh;
 		image->mat.emplace_back(inFont->fontMat);
@@ -342,8 +352,8 @@ public:
 		}
 		else if (c == 1) {
 			typeManager->stopListening();
-			if (clickFunct != nullptr) {
-				clickFunct(this);
+			if (clickFunction != nullptr) {
+				clickFunction(this);
 			}
 		}
 		else {
@@ -409,17 +419,13 @@ public:
 
 	uint32_t characterSize = 24; // Size in pixels
 
-	void setClickFunction(std::function<void(UIItem*)> func) {
-		clickFunct = func;
-	}
-
 	bool checkForClickEvent(double mousex, double mousey, int clicktype) {
 		if (!isEnabled) {
 			return false;
 		}
 		if (!modifiable) {
-			if (clickFunct != nullptr && clicktype == LMB_PRESS && isInArea(mousex, mousey)) {
-				clickFunct(this);
+			if (clickFunction != nullptr && clicktype == LMB_PRESS && isInArea(mousex, mousey)) {
+				clickFunction(this);
 				return true;
 			}
 			return false;
@@ -439,8 +445,6 @@ private:
 
 	ArrangeType horizontalArrange = ARRANGE_START;
 	ArrangeType verticalArrange = ARRANGE_START;
-
-	std::function<void(UIItem*)> clickFunct = nullptr;
 };
 
 class ImagePanel : public UIItem {
@@ -451,7 +455,7 @@ public:
 	ImagePanel(Material* surf, bool iW) {
 		setDims(0.0f, 0.0f, 1.0f, 1.0f);
 
-		image = std::make_shared<UIImage>(new UIImage);
+		image = new UIImage;
 		image->mesh = new UIMesh;
 		image->mat.emplace_back(surf);
 
@@ -474,7 +478,7 @@ public:
 	ImagePanel(float x, float y, float xsize, float ysize, Material* surf, bool iW) {
 		setDims(x, y, xsize, ysize);
 
-		image = std::make_shared<UIImage>(new UIImage);
+		image = new UIImage;
 		image->mesh = new UIMesh;
 		image->mat.emplace_back(surf);
 
@@ -546,15 +550,13 @@ public:
 class Button : public UIItem // Here a button is just a rectangle area in screen space which can be queried with coordinates to check if it has been pressed
 {
 public:
-	std::function<void(UIItem*)> clickFunction = nullptr;
-
 	Button() {
 		itemType = BUTTON;
 	}
 
 	Button(Material* mat, std::function<void(UIItem*)> func = nullptr) {
 
-		image = std::make_shared<UIImage>(new UIImage);
+		image = new UIImage;
 		image->mesh = new UIMesh;
 		image->mat.push_back(mat);
 
@@ -609,15 +611,6 @@ public:
 		this->addItem(new Background(mat, this));
 	}
 
-	void setClickFunction(std::function<void(UIItem*)> func) {
-		clickFunction = func;
-	}
-
-	void setClickFunction(std::function<void(UIItem*)> func, int code) {
-		clickFunction = func;
-		clickType = code;
-	}
-
 	bool checkForClickEvent(double mousex, double mousey, int eventType) {
 		if (!isEnabled) {
 			return false;
@@ -636,15 +629,13 @@ public:
 class Checkbox : public UIItem
 {
 public:
-	std::function<void(UIItem*)> clickFunction = nullptr;
-
 	Checkbox() {
 		itemType = CHECKBOX;
 	}
 
 	Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func = nullptr, bool state = true) {
 		
-		image = std::unique_ptr<UIImage>(new UIImage);
+		image = new UIImage;
 		image->mesh = new UIMesh;
 		image->mat.push_back(onMat);
 		image->mat.push_back(offMat);
@@ -670,41 +661,6 @@ public:
 		baseSqAxisRatio = sqAxisRatio;
 
 		itemType = CHECKBOX;
-	}
-
-	//Checkbox(Material* onMat, Material* offMat, std::function<void(UIItem*)> func, int code) {
-
-	//	image = std::unique_ptr<UIImage>(new UIImage);
-	//	image->mesh = new UIMesh;
-	//	image->mat.push_back(onMat);
-	//	image->mat.push_back(offMat);
-	//	image->matidx = 0;
-	//	this->activestate = true;
-
-	//	image->texWidth = image->mat[0]->textures[0]->texWidth;
-	//	image->texHeight = image->mat[0]->textures[0]->texHeight;
-
-	//	this->sqAxisRatio = static_cast<float>(image->texHeight) / static_cast<float>(image->texWidth);
-
-	//	update(0.0f, 0.0f, 1.0f, 1.0f * sqAxisRatio);
-
-	//	clickFunction = func;
-	//	clickType = code;
-
-	//	baseExtentx = extentx;
-	//	baseExtenty = extenty;
-	//	baseSqAxisRatio = sqAxisRatio;
-
-	//	itemType = CHECKBOX;
-	//}
-
-	void setClickFunction(std::function<void(UIItem*)> func) {
-		clickFunction = func;
-	}
-
-	void setClickFunction(std::function<void(UIItem*)> func, int code) {
-		clickFunction = func;
-		clickType = code;
 	}
 
 	bool checkForClickEvent(double mousex, double mousey, int eventType) {
@@ -1005,7 +961,7 @@ public:
 	Slider(Material* mat, float xp, float yp, float xs, float ys, Orientation orient = ORIENT_HORIZONTAL) {
 		setDims(xp, yp, xs, ys);
 
-		image = std::make_shared<UIImage>(new UIImage);
+		image = new UIImage;
 		image->mesh = new UIMesh;
 		image->mat.emplace_back(mat);
 
@@ -1164,7 +1120,7 @@ public:
 
 	void getImages(std::vector<UIImage*>& images) {
 		if (image != nullptr && image->texHeight > 1) {
-			images.push_back(image.get());
+			images.push_back(image);
 		}
 		if (backgroundImage != nullptr && backgroundImage->texHeight > 1) {
 			images.push_back(backgroundImage.get());
@@ -1220,7 +1176,7 @@ public:
 	Rotator(Material* mat, float xp, float yp, float xs, float ys) {
 		setDims(xp, yp, xs, ys);
 
-		image = std::make_shared<UIImage>(new UIImage);
+		image = new UIImage;
 		image->mesh = new UIMesh;
 		image->mat.emplace_back(mat);
 
@@ -1441,7 +1397,7 @@ public:
 		addItem(mainArranger);
 		textFont = inFont;
 
-		image = std::make_shared<UIImage>(new UIImage);
+		image = new UIImage;
 		image->mesh = new UIMesh;
 		image->isVisible = false;
 		image->texWidth = 2;
@@ -1505,7 +1461,7 @@ public:
 	}
 
 	void getImages(std::vector<UIImage*>& images) {
-		images.push_back(image.get());
+		images.push_back(image);
 		for (size_t i = 0; i != Items.size(); i++) {
 			std::vector<UIImage*> subimages;
 			Items[i]->getImages(subimages);
