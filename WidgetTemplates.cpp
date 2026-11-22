@@ -17,7 +17,7 @@ void ErrorDialog::setup(std::string title, std::string message) {
 
 	Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f);
 	finishArrangement->addItem(getPtr(new spacer));
-	finishArrangement->addItem(getPtr(new Button(loadList->getMaterial("FinishBtnMat"), std::bind(&ErrorDialog::selfDestruct, this, std::placeholders::_1))));
+	finishArrangement->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", std::bind(&ErrorDialog::selfDestruct, this, std::placeholders::_1))));
 
 	totalArrangement->addItem(getPtr(finishArrangement));
 
@@ -52,8 +52,6 @@ void TexSelector::setup(std::string targetTextureName, std::function<void(std::s
 
 	Material* renderedMat = loadList->getMaterial("RenderBtnMat");
 	Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-	Material* finishedMat = loadList->getMaterial("FinishBtnMat");
-	Material* cancelMat = loadList->getMaterial("CancelBtnMat");
 
 	std::function<void(UIItem*)> finishFunct = std::bind(&TexSelector::finish, this, std::placeholders::_1);
 
@@ -73,9 +71,9 @@ void TexSelector::setup(std::string targetTextureName, std::function<void(std::s
 	refDropdown->setSelectCallback(std::bind(&TexSelector::setRefName, this, std::placeholders::_1));
 
 	Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 2.0f, 0.01f);
-	finishButtons->addItem(getPtr(new Button(cancelMat, std::bind(&TexSelector::selfDestruct, this, std::placeholders::_1))));
+	finishButtons->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "CANCEL", std::bind(&TexSelector::selfDestruct, this, std::placeholders::_1))));
 	finishButtons->addItem(getPtr(new spacer()));
-	finishButtons->addItem(getPtr(new Button(finishedMat, finishFunct)));
+	finishButtons->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", finishFunct)));
 
 	mainArrangement->addItem(getPtr(baseText));
 	mainArrangement->addItem(getPtr(targetText));
@@ -126,8 +124,6 @@ void ObjSelector::setup(std::string tName, std::vector<std::string> objects, std
 
 	Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
 	Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-	Material* finishMat = loadList->getMaterial("FinishBtnMat");
-	Material* cancelMat = loadList->getMaterial("CancelBtnMat");
 
 	Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -144,12 +140,12 @@ void ObjSelector::setup(std::string tName, std::vector<std::string> objects, std
 	totalArrangement->addItem(getPtr(objSelect));
 
 	Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-	Button* cancelBtn = new Button(cancelMat, cancelFunc);
+	Button* cancelBtn = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "CANCEL", cancelFunc);
 	cancelBtn->Name = tName;
 
 	finishArrangement->addItem(getPtr(cancelBtn));
 	finishArrangement->addItem(getPtr(new spacer()));
-	finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&ObjSelector::finishFunc, this, std::placeholders::_1))));
+	finishArrangement->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", std::bind(&ObjSelector::finishFunc, this, std::placeholders::_1))));
 
 	totalArrangement->addItem(getPtr(finishArrangement));
 	totalArrangement->arrangeItems();

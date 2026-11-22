@@ -46,13 +46,6 @@ private:
 
 class fontMesh : public Mesh {
 public:
-	//fontMesh(int character, font* meshFont) {
-	//	indices = { 0, 3, 2, 2, 1, 0 };
-	//	fontRef = meshFont;
-	//	unicodeCharacter = character;
-	//	fontRef->getAdvanceWidth(unicodeCharacter, advanceWidth);
-	//}
-
 	void setVisibility(bool state) {
 		isVisible = state;
 	}
@@ -83,23 +76,15 @@ public:
 	VkDeviceSize vBuffSize = 0;
 	VkDeviceSize iBuffSize = 0;
 
-	//void UpdateVertices(float, float, float, float, float zp = 0.0f);
-	//void getVertices(std::vector<Vertex>&, float xp, float yp, float xsc, float windowRatio, float zp) const;
-
 	void createVertexBuffer();
 	void updateVertexBuffer();
 
 	void createIndexBuffer();
 	void updateIndexBuffer();
 
-	//uint8_t unicodeCharacter = 0;
-	//float advanceWidth = 1.0f;
-
 	bool isVisible = true;
 
 	uint8_t charCount = 0; // Defines the number of non-blank chars; used to allocate the correct max buffer size.
-
-	//font* fontRef;
 };
 
 #endif

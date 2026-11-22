@@ -154,7 +154,7 @@ struct LoadList {
 		if (checkForMaterial(name)) {
 			return materials.at(materialMap.at(name)).get();
 		}
-		//std::cout << "Material " << name << " not found" << std::endl;
+		std::cout << "Material " << name << " not found!" << std::endl;
 		return nullptr;
 	}
 

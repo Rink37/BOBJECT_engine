@@ -70,8 +70,8 @@ void TextureSettings::setup(std::string texName, std::function<void(UIItem*)> re
 	angleSlider->setFloatCallback(updateProjectorAngleFunc, true);
 	angleSlider->setSlideValues(0.0f, glm::pi<float>(), glm::pi<float>() / 2.0f);
 
-	Button* cancelProjector = new Button(loadList->getMaterial("CancelBtnMat"), cancelProjectorFnc);
-	Button* finishProjector = new Button(loadList->getMaterial("FinishBtnMat"), finishProjectorFnc);
+	Button* cancelProjector = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "CANCEL", cancelProjectorFnc);
+	Button* finishProjector = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", finishProjectorFnc);
 
 	projectorFinishBtns->addItem(getPtr(cancelProjector));
 	projectorFinishBtns->addItem(getPtr(finishProjector));
@@ -142,7 +142,6 @@ void WebcamSettings::setup(std::function<void(UIItem*)> finishCallback, std::fun
 	webcamView = new ImagePanel(loadList->getPtr(new Material(webcamTexture::get(), "UI"), "Webcam View Mat"), true);
 
 	Material* settingsMat = loadList->getMaterial("SettingsBtnMat");
-	Material* finishmat = loadList->getMaterial("FinishBtnMat");
 	Material* forwardMat = loadList->getMaterial("PlayBtnMat");
 	Material* backMat = loadList->getMaterial("BackBtnMat");
 	Material* rotForward = loadList->getMaterial("RotateFWBtnMat");
@@ -159,7 +158,7 @@ void WebcamSettings::setup(std::function<void(UIItem*)> finishCallback, std::fun
 
 	endButtons->addItem(getPtr(new Button(settingsMat, webcamCalib)));
 	endButtons->addItem(getPtr(new spacer));
-	endButtons->addItem(getPtr(new Button(finishmat, finishCallback)));
+	endButtons->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", finishCallback)));
 
 	ratioSlider = new Slider(ORIENT_HORIZONTAL, visibleMat, 0.0f, 0.0f, 1.0f, 0.1f);
 	ratioSlider->setFloatCallback(std::bind(&WebcamSettings::updateAspectRatio, this, std::placeholders::_1), true);
@@ -448,7 +447,6 @@ void MaterialCreator::createMatOptionsMenu(UIItem* owner) {
 
 	Material* renderedMat = loadList->getMaterial("RenderBtnMat");
 	Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-	Material* finishedMat = loadList->getMaterial("FinishBtnMat");
 
 	std::function<void(UIItem*)> updateMatTemplate = std::bind(&MaterialCreator::setTexCallback, this, std::placeholders::_1);
 	std::function<void(UIItem*)> exitCallback = std::bind(&MaterialCreator::exit, this, std::placeholders::_1);
@@ -477,7 +475,7 @@ void MaterialCreator::createMatOptionsMenu(UIItem* owner) {
 		canvas[0]->addItem(getPtr(materialSelect));
 		i++;
 	}
-	canvas[0]->addItem(getPtr(new Button(finishedMat, exitCallback)));
+	canvas[0]->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", exitCallback)));
 	canvas[0]->arrangeItems();
 }
 
@@ -541,7 +539,6 @@ void ObjectSettingsMenu::setup(StaticObject* object, std::function<void(UIItem*)
 
 	Material* renderedMat = loadList->getMaterial("RenderBtnMat");
 	Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-	Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 	int index = 0;
 	int optionIndex = -1;
@@ -587,11 +584,11 @@ void ObjectSettingsMenu::setup(StaticObject* object, std::function<void(UIItem*)
 
 	totalArrangement->addItem(getPtr(genNormArrangement));
 
-	totalArrangement->addItem(getPtr(new Button(finishMat, std::bind(&ObjectSettingsMenu::selfDestruct, this, std::placeholders::_1))));
+	totalArrangement->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", std::bind(&ObjectSettingsMenu::selfDestruct, this, std::placeholders::_1))));
 	totalArrangement->arrangeItems();
 
 	canvas.push_back(getPtr(totalArrangement));
-
+	
 	addBackground(loadList->getMaterial("UIRoundBox"));
 
 	isSetup = true;
@@ -774,8 +771,6 @@ void NormalMixer::setup(std::string tName, std::vector<std::string> objects, std
 
 	Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
 	Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-	Material* finishMat = loadList->getMaterial("FinishBtnMat");
-	Material* cancelMat = loadList->getMaterial("CancelBtnMat");
 
 	Arrangement* totalArrangement = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.25f, 0.8f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 
@@ -804,12 +799,12 @@ void NormalMixer::setup(std::string tName, std::vector<std::string> objects, std
 	totalArrangement->addItem(getPtr(objSelect));
 
 	Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-	Button* cancelBtn = new Button(cancelMat, cancel);
+	Button* cancelBtn = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "CANCEL", cancel);
 	cancelBtn->Name = tName;
 
 	finishArrangement->addItem(getPtr(cancelBtn));
 	finishArrangement->addItem(getPtr(new spacer()));
-	finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&NormalMixer::mixNorms, this, std::placeholders::_1))));
+	finishArrangement->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", std::bind(&NormalMixer::mixNorms, this, std::placeholders::_1))));
 
 	totalArrangement->addItem(getPtr(finishArrangement));
 	totalArrangement->arrangeItems();
@@ -988,7 +983,6 @@ void SpaceTransitionMenu::setup(std::string tName, std::vector<std::string> obje
 	Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
 	Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 	Material* renderedMat = loadList->getMaterial("RenderBtnMat");
-	Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 	DropdownMenu* objectSelector = new DropdownMenu(0.0f, 0.0f, 5.0f, 1.0f, invisibleMat, visibleMat, loadList->getMaterial("UIRoundBox"), loadList->getFont());
 	objectSelector->addOptions(objects);
@@ -1007,7 +1001,7 @@ void SpaceTransitionMenu::setup(std::string tName, std::vector<std::string> obje
 
 	Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 	finishArrangement->addItem(getPtr(new spacer));
-	finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&SpaceTransitionMenu::exit, this, std::placeholders::_1))));
+	finishArrangement->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", std::bind(&SpaceTransitionMenu::exit, this, std::placeholders::_1))));
 
 	totalArrangement->addItem(getPtr(objectSelector));
 	totalArrangement->addItem(getPtr(replaceArrangement));
@@ -1128,7 +1122,6 @@ void TextureLoadMenu::setup(std::function<void(UIItem*)> update) {
 
 	Material* renderedMat = loadList->getMaterial("RenderBtnMat");
 	Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-	Material* finishedMat = loadList->getMaterial("FinishBtnMat");
 	Material* osMat = loadList->getMaterial("OSBtnMat");
 	Material* tsMat = loadList->getMaterial("TSBtnMat");
 
@@ -1146,7 +1139,7 @@ void TextureLoadMenu::setup(std::function<void(UIItem*)> update) {
 	Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 1.0f, 0.0f, ARRANGE_START, SCALE_BY_DIMENSIONS);
 	finishButtons->addItem(getPtr(new spacer()));
 	finishButtons->addItem(normalTypeToggle);
-	finishButtons->addItem(getPtr(new Button(finishedMat, std::bind(&TextureLoadMenu::finishCallback, this, std::placeholders::_1))));
+	finishButtons->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", std::bind(&TextureLoadMenu::finishCallback, this, std::placeholders::_1))));
 
 	mainArrangement->addItem(getPtr(finishButtons));
 

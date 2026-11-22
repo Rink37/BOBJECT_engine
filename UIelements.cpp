@@ -129,7 +129,6 @@ void TextBox::updateDisplay() {
 	textImage->isVisible = true;
 	isVisible = true;
 	this->calculateScreenPosition();
-	//this->setHeight(this->image->zp);
 	
 	float W = static_cast<float>(Core::get()->windowWidth);
 	float H = static_cast<float>(Core::get()->windowHeight);
@@ -291,6 +290,51 @@ void TextBox::updateDisplay() {
 			}
 		}
 		index++;
+	}
+
+	for (uint32_t wIndex : wordIndices) {
+		lineIndices.push_back(wIndex);
+	}
+
+	uint32_t lastCharacterIndex = lineIndices[lineIndices.size() - 1];
+	float lastAdvanceWidth;
+	textFont->getAdvanceWidth(characters[lastCharacterIndex], lastAdvanceWidth);
+	lineWidth = xps[lastCharacterIndex] + characterWidth * lastAdvanceWidth * 1.2f;
+
+	float leftSpacing = 0.0f;
+	switch (horizontalArrange) {
+	case(ARRANGE_CENTER):
+		leftSpacing = (maxPos_x - lineWidth) / 2.0f;
+		for (uint32_t index : lineIndices) {
+			xps[index] += leftSpacing;
+		}
+		break;
+	case (ARRANGE_END):
+		leftSpacing = (maxPos_x - lineWidth);
+		for (uint32_t index : lineIndices) {
+			xps[index] += leftSpacing;
+		}
+		break;
+	case (ARRANGE_FILL):
+		if (spaceIndices.size() > 0) {
+			leftSpacing = (maxPos_x - lineWidth) / spaceIndices.size();
+			for (uint32_t spaceIndex : spaceIndices) {
+				for (uint32_t i = spaceIndex; i != lineIndices[lineIndices.size() - 1] + 1; i++) {
+					xps[i] += leftSpacing;
+				}
+			}
+		}
+		else {
+			leftSpacing = (maxPos_x - lineWidth) / (lineIndices.size() - 1);
+			float totalSpacing = 0.0f;
+			for (uint32_t index : lineIndices) {
+				xps[index] += totalSpacing;
+				totalSpacing += leftSpacing;
+			}
+		}
+		break;
+	default:
+		break;
 	}
 
 	lineIndex++;

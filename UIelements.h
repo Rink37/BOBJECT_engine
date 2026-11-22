@@ -178,6 +178,9 @@ struct UIItem {
 		if (image != nullptr) {
 			image->UpdateVertices(posx, posy, extentx, extenty);
 		}
+		for (size_t i = 0; i != Items.size(); i++) {
+			Items[i]->updateDisplay();
+		}
 	}
 
 	virtual void getSubclasses(std::vector<UIItem*> &scs) {
@@ -187,6 +190,13 @@ struct UIItem {
 	virtual void getImages(std::vector<UIImage*>& images) {
 		if (image != nullptr && image->texHeight > 1) {
 			images.push_back(image.get());
+		}
+		for (size_t i = 0; i != Items.size(); i++) {
+			std::vector<UIImage*> subimages;
+			Items[i]->getImages(subimages);
+			for (size_t j = 0; j != subimages.size(); j++) {
+				images.push_back(subimages[j]);
+			}
 		}
 	};
 
@@ -240,6 +250,59 @@ struct UIItem {
 			image = nullptr;
 		}
 	}
+};
+
+class Background : public UIItem {
+public:
+	Background(Material* mat, UIItem* par) {
+		parent = par;
+		setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
+
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
+		image->mat.emplace_back(mat);
+
+		image->texHeight = 100;
+		image->texWidth = 100;
+
+		itemType = BACKGROUND;
+	}
+
+	Background(Material* mat) {
+		image = std::make_shared<UIImage>(new UIImage);
+		image->mesh = new UIMesh;
+		image->mat.emplace_back(mat);
+
+		image->texHeight = 100;
+		image->texWidth = 100;
+
+		itemType = BACKGROUND;
+	}
+
+	void updateDisplay() {
+		if (parent != nullptr) {
+			setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
+			if (image != nullptr && parent->image != nullptr) {
+				image->zp_default = parent->image->zp_default + 0.01f;
+			}
+		}
+		if (image != nullptr) {
+			image->UpdateVertices(posx, posy, extentx, extenty);
+		}
+	}
+
+	void calculateScreenPosition() {
+		float W = static_cast<float>(Core::get()->windowWidth);
+		float H = static_cast<float>(Core::get()->windowHeight);
+
+		this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // left position
+		this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // right position
+		this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H; // top position
+		this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom position
+	}
+private:
+	UIItem* parent = nullptr;
+	bool isParentWidget = false;
 };
 
 class TextBox : public UIItem {
@@ -509,6 +572,26 @@ public:
 		itemType = BUTTON;
 	}
 
+	Button(font* inFont, Material* bgMat, std::string text, std::function<void(UIItem*)> func) {
+		addBackground(bgMat);
+		
+		TextBox* tb = new TextBox(inFont, 0.0f, 0.0f, 5.0f, 1.0f, 18, ARRANGE_CENTER, ARRANGE_CENTER);
+		tb->addText(text);
+		addItem(tb);
+
+		clickFunction = func;
+
+		setDims(0.0f, 0.0f, 5.0f, 1.0f);
+
+		this->sqAxisRatio = 0.2f;
+
+		baseExtentx = extentx;
+		baseExtenty = extenty;
+		baseSqAxisRatio = sqAxisRatio;
+
+		itemType = BUTTON;
+	}
+
 	Button(Material* mat, std::function<void(UIItem*)> func, int code) {
 
 		image = std::make_shared<UIImage>(new UIImage);
@@ -550,6 +633,21 @@ public:
 		baseSqAxisRatio = sqAxisRatio;
 
 		itemType = BUTTON;
+	}
+
+	void updateDisplay() {
+		this->calculateScreenPosition();
+		if (image != nullptr) {
+			image->UpdateVertices(posx, posy, extentx, extenty);
+		}
+		for (size_t i = 0; i != Items.size(); i++) {
+			Items[i]->updateArrangedPosition(posx, posy, extentx, extenty);
+			Items[i]->updateDisplay();
+		}
+	}
+
+	void addBackground(Material* mat) {
+		this->addItem(new Background(mat, this));
 	}
 
 	void setClickFunction(std::function<void(UIItem*)> func) {
@@ -1435,59 +1533,6 @@ private:
 
 	bool hasCallback = false;
 	bool updateOnMove = false; // If false we only perform callbacks on release, if true we perform callbacks on every movement
-};
-
-class Background : public UIItem {
-public:
-	Background(Material* mat, UIItem* par) {
-		parent = par;
-		setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
-
-		image = std::make_shared<UIImage>(new UIImage);
-		image->mesh = new UIMesh;
-		image->mat.emplace_back(mat);
-
-		image->texHeight = 100;
-		image->texWidth = 100;
-
-		itemType = BACKGROUND;
-	}
-
-	Background(Material* mat) {
-		image = std::make_shared<UIImage>(new UIImage);
-		image->mesh = new UIMesh;
-		image->mat.emplace_back(mat);
-
-		image->texHeight = 100;
-		image->texWidth = 100;
-
-		itemType = BACKGROUND;
-	}
-
-	void updateDisplay() {
-		if (parent != nullptr) {
-			setDims(parent->posx, parent->posy * -1.0f, parent->extentx, parent->extenty);
-			if (image != nullptr && parent->image != nullptr) {
-				image->zp_default = parent->image->zp_default + 0.01f;
-			}
-		}
-		if (image != nullptr) {
-			image->UpdateVertices(posx, posy, extentx, extenty);
-		}
-	}
-
-	void calculateScreenPosition() {
-		float W = static_cast<float>(Core::get()->windowWidth);
-		float H = static_cast<float>(Core::get()->windowHeight);
-
-		this->windowPositions[0] = (((posx - extentx) / 2.0f) + 0.5f) * W; // left position
-		this->windowPositions[1] = (((posx + extentx) / 2.0f) + 0.5f) * W; // right position
-		this->windowPositions[2] = (((posy - extenty) / 2.0f) + 0.5f) * H; // top position
-		this->windowPositions[3] = (((posy + extenty) / 2.0f) + 0.5f) * H; // bottom position
-	}
-private:
-	UIItem* parent = nullptr;
-	bool isParentWidget = false;
 };
 
 class DropdownMenu : public UIItem {

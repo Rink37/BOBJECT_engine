@@ -188,8 +188,6 @@ public:
 
 		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-		Material* finishedMat = loadList->getMaterial("FinishBtnMat");
-		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
 
 		std::function<void(UIItem*)> finishFunct = std::bind(&RemapTexSelector::finish, this, std::placeholders::_1);
 		
@@ -209,9 +207,9 @@ public:
 		refDropdown->setSelectCallback(std::bind(&RemapTexSelector::setRefName, this, std::placeholders::_1));
 
 		Arrangement* finishButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 5.0f, 2.0f, 0.01f);
-		finishButtons->addItem(getPtr(new Button(cancelMat, std::bind(&RemapTexSelector::selfDestruct, this, std::placeholders::_1))));
+		finishButtons->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "CANCEL", std::bind(&RemapTexSelector::selfDestruct, this, std::placeholders::_1))));
 		finishButtons->addItem(getPtr(new spacer()));
-		finishButtons->addItem(getPtr(new Button(finishedMat, finishFunct)));
+		finishButtons->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", finishFunct)));
 
 		mainArrangement->addItem(getPtr(targetText));
 		mainArrangement->addItem(getPtr(setRefText));
@@ -315,11 +313,8 @@ public:
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
-		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
-		Material* finishMat = loadList->getMaterial("FinishBtnMat");
-
-		Button* finishButton = new Button(finishMat, finishFunct);
-		Button* cancelButton = new Button(cancelMat, cancelFunct);
+		Button* finishButton = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", finishFunct);
+		Button* cancelButton = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "CANCEL", cancelFunct);
 
 		endButtons->addItem(getPtr(cancelButton));
 		endButtons->addItem(getPtr(finishButton));
@@ -412,9 +407,6 @@ private:
 			gradientThreshSlider->updateDisplay();
 			gradientThreshSlider->setSlideValues(remapper->minGradientThreshold, remapper->maxGradientThreshold, 0.06f);
 			gradientThreshSlider->setFloatCallback(gradientSliderFunction, false);
-
-			Material* cancelMat = loadList->getMaterial("CancelBtnMat");
-			Material* finishMat = loadList->getMaterial("FinishBtnMat");
 
 			TextBox* noiseText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.25f, 18, ARRANGE_START, ARRANGE_CENTER);
 			noiseText->addText("Noise removal:");

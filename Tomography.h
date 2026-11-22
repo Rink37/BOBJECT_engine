@@ -82,8 +82,6 @@ public:
 		loadedUI->updateDisplay();
 
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
-		Material* updateMat = loadList->getMaterial("UpdateBtnMat");
 
 		Arrangement* column = new Arrangement(ORIENT_VERTICAL, 0.0f, 0.0f, 0.4f, 0.6f, 0.01f);
 		Arrangement* imageArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.4f, 0.01f, ARRANGE_CENTER);
@@ -93,8 +91,8 @@ public:
 		polarSlider->setSlideValues(0.0f, 90.0f, polar);
 		polarSlider->setFloatCallback(std::bind(&TomographyLoad::setPolar, this, std::placeholders::_1), false);
 
-		Button* cancelButton = new Button(cancelMat, cancelCallback);
-		Button* updateButton = new Button(updateMat, updateCallback);
+		Button* cancelButton = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "CANCEL", cancelCallback);
+		Button* updateButton = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "UPDATE", updateCallback);
 
 		buttons->addItem(getPtr(cancelButton));
 		buttons->addItem(getPtr(updateButton));
@@ -138,11 +136,9 @@ public:
 		canvas[0]->Items[0]->arrangeItems();
 		canvas[0]->Items[1]->Items[1]->cleanup();
 		canvas[0]->Items[1]->Items.erase(canvas[0]->Items[1]->Items.begin() + 1);
-		
-		Material* finishMat = loadList->getMaterial("FinishBtnMat");
-		
+				
 		std::function<void(UIItem*)> finishFunct = std::bind(&TomographyLoad::finish, this, std::placeholders::_1);
-		Button* finishButton = new Button(finishMat, finishFunct);
+		Button* finishButton = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", finishFunct);
 		canvas[0]->Items[1]->addItem(getPtr(finishButton));
 
 		update();
@@ -223,13 +219,10 @@ public:
 		totalArrangement->addItem(getPtr(mainText));
 		totalArrangement->addItem(getPtr(texSelect));
 
-		Material* finishMat = loadList->getMaterial("FinishBtnMat");
-		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
-
 		Arrangement* finishArrangement = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 1.0f / 9.0f, 0.01f, ARRANGE_START, SCALE_BY_DIMENSIONS);
-		finishArrangement->addItem(getPtr(new Button(cancelMat, std::bind(&TomogRefPicker::cancel, this, std::placeholders::_1))));
+		finishArrangement->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "CANCEL", std::bind(&TomogRefPicker::cancel, this, std::placeholders::_1))));
 		finishArrangement->addItem(getPtr(new spacer()));
-		finishArrangement->addItem(getPtr(new Button(finishMat, std::bind(&TomogRefPicker::finish, this, std::placeholders::_1))));
+		finishArrangement->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", std::bind(&TomogRefPicker::finish, this, std::placeholders::_1))));
 
 		totalArrangement->addItem(getPtr(finishArrangement));
 		totalArrangement->arrangeItems();
@@ -292,8 +285,6 @@ public:
 		Material* invisibleMat = loadList->getMaterial("UnrenderedBtnMat");
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
 		Material* planeMat = loadList->getMaterial("PlaneBtnMat");
-		Material* updateMat = loadList->getMaterial("UpdateBtnMat");
-		Material* finishMat = loadList->getMaterial("FinishBtnMat");
 		Material* crossMat = loadList->getMaterial("CrossBtnMat");
 		Material* renderedMat = loadList->getMaterial("RenderBtnMat");
 
@@ -330,8 +321,8 @@ public:
 		buttons->addItem(getPtr(normText));
 		buttons->addItem(getPtr(new Checkbox(visibleMat, invisibleMat, toggleNormal)));
 		buttons->addItem(getPtr(new spacer));
-		buttons->addItem(getPtr(new Button(updateMat, performTomog)));
-		buttons->addItem(getPtr(new Button(finishMat, finishTomog)));
+		buttons->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "UPDATE", performTomog)));
+		buttons->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", finishTomog)));
 		buttons->updateDisplay();
 
 		column->addItem(getPtr(buttons));

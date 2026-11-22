@@ -185,11 +185,8 @@ public:
 
 		Arrangement* endButtons = new Arrangement(ORIENT_HORIZONTAL, 0.0f, 0.0f, 1.0f, 0.2f, 0.01f, ARRANGE_END);
 
-		Material* cancelMat = loadList->getMaterial("CancelBtnMat");
-		Material* finishMat = loadList->getMaterial("FinishBtnMat");
-
-		Button* finishButton = new Button(finishMat, std::bind(&SeamFixMenu::finish, this, std::placeholders::_1));
-		Button* cancelButton = new Button(cancelMat, std::bind(&SeamFixMenu::cancel, this, std::placeholders::_1));
+		Button* finishButton = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", std::bind(&SeamFixMenu::finish, this, std::placeholders::_1));
+		Button* cancelButton = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "CANCEL", std::bind(&SeamFixMenu::cancel, this, std::placeholders::_1));
 
 		endButtons->addItem(getPtr(cancelButton));
 		endButtons->addItem(getPtr(finishButton));

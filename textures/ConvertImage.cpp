@@ -160,12 +160,6 @@ int main(int argc, char* argv[]){
         fnames.push_back(fname);
         fname = string("WebcamViewButton.png");
         fnames.push_back(fname);
-        fname = string("CancelButton.png");
-        fnames.push_back(fname);
-        fname = string("FinishButton.png");
-        fnames.push_back(fname);
-        fname = string("UpdateButton.png");
-        fnames.push_back(fname);
         fname = string("CloseButton.png");
         fnames.push_back(fname);
         fname = string("PlaneButton.png");
