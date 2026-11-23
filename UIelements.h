@@ -26,7 +26,7 @@ enum ArrangeType {
 enum SizeType {
 	SCALE_BY_CONTAINER = 0,
 	SCALE_BY_DIMENSIONS = 1,
-	SCALE_BY_IMAGES  = 2
+	SCALE_BY_IMAGES = 2
 };
 
 enum Orientation {
@@ -708,6 +708,7 @@ public:
 class Arrangement : public UIItem {
 public:
 	float spacing;
+	bool expanding = true;
 
 	Arrangement(Orientation orient, float px, float py, float ex, float ey, float spc, ArrangeType arrangeMethod = ARRANGE_START, SizeType sizeMethod = SCALE_BY_CONTAINER) {
 		setDims(px, py, ex, ey, spc);

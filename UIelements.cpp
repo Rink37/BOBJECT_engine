@@ -432,7 +432,7 @@ void Arrangement::getItemProperties(float& totalArea, int& numSpacers, float& bu
 	float H = static_cast<float>(Core::get()->windowHeight);
 
 	for (size_t i = 0; i != Items.size(); i++) {
-		if (Items[i]->isSpacer()) {
+		if (Items[i]->isSpacer() || (Items[i]->isArrangement() && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->orientation == orientation)) {
 			numSpacers++;
 		}
 	}
@@ -453,7 +453,7 @@ void Arrangement::getItemProperties(float& totalArea, int& numSpacers, float& bu
 	case SCALE_BY_DIMENSIONS:
 		if (orientation == ORIENT_HORIZONTAL) {
 			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
+				if (!Items[i]->isSpacer() || (Items[i]->isArrangement() && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->orientation == orientation)) {
 					if (Items[i]->baseExtenty * 2 > maxSize) {
 						maxSize = Items[i]->baseExtenty * 2;
 					}
@@ -461,7 +461,7 @@ void Arrangement::getItemProperties(float& totalArea, int& numSpacers, float& bu
 			}
 			rescale = (this->extenty * 2 - this->spacing) / maxSize;
 			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
+				if (!Items[i]->isSpacer() || (Items[i]->isArrangement() && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->orientation == orientation)) {
 					if (!Items[i]->isArrangement() || numSpacers != 0) {
 						extents.push_back((Items[i]->baseExtenty * rescale / (Items[i]->baseSqAxisRatio * W / H)));
 					}
@@ -479,7 +479,7 @@ void Arrangement::getItemProperties(float& totalArea, int& numSpacers, float& bu
 		}
 		else if (orientation == ORIENT_VERTICAL) {
 			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
+				if (!Items[i]->isSpacer()|| (Items[i]->isArrangement() && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->orientation == orientation)) {
 					if (Items[i]->baseExtentx * 2 > maxSize) {
 						maxSize = Items[i]->baseExtentx * 2;
 					}
@@ -487,7 +487,7 @@ void Arrangement::getItemProperties(float& totalArea, int& numSpacers, float& bu
 			}
 			rescale = (this->extentx * 2 - this->spacing) / maxSize;
 			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
+				if (!Items[i]->isSpacer() || (Items[i]->isArrangement() && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->orientation == orientation)) {
 					if (!Items[i]->isArrangement() || numSpacers != 0) {
 						extents.push_back(Items[i]->baseExtentx * rescale * Items[i]->baseSqAxisRatio);
 						totalArea += extents[i] * 2 * W / H;
@@ -506,7 +506,7 @@ void Arrangement::getItemProperties(float& totalArea, int& numSpacers, float& bu
 	default:
 		if (orientation == ORIENT_HORIZONTAL) {
 			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
+				if (!Items[i]->isSpacer() || (Items[i]->isArrangement() && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->orientation == orientation)) {
 					if (!Items[i]->isArrangement() || numSpacers != 0) {
 						extents.push_back((this->extenty * (1.0f - this->spacing) / (Items[i]->baseSqAxisRatio * W / H)));
 					}
@@ -522,7 +522,7 @@ void Arrangement::getItemProperties(float& totalArea, int& numSpacers, float& bu
 		}
 		else if (orientation == ORIENT_VERTICAL) {
 			for (size_t i = 0; i != Items.size(); i++) {
-				if (!Items[i]->isSpacer()) {
+				if (!Items[i]->isSpacer() || (Items[i]->isArrangement() && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->orientation == orientation)) {
 					if (!Items[i]->isArrangement() || numSpacers != 0) {
 						extents.push_back(this->extentx * (1.0f - this->spacing) * Items[i]->baseSqAxisRatio);
 						totalArea += extents[i] * 2 * W / H;
@@ -624,6 +624,18 @@ void Arrangement::calculateVPositions(float ybuffer, float spacerSize, float sca
 		if (Items[i]->isSpacer()) {
 			currentPosition += spacerSize;
 		}
+		else if (Items[i]->isArrangement() && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->orientation == orientation) {
+			ysc = spacerSize / 2.0f;
+			yp = this->posy - this->extenty + currentPosition + ysc;
+			xsc = this->extentx * (1.0f - this->spacing);
+			xp = this->posx;
+
+			Items[i]->updateArrangedPosition(xp, yp, xsc, ysc);
+			Items[i]->updateDisplay();
+			Items[i]->arrangeItems();
+
+			currentPosition += ysc * 2;
+		}
 		else {
 			ysc = extents[i] * scaleFactor;
 			xsc = ysc / Items[i]->baseSqAxisRatio;
@@ -687,6 +699,17 @@ void Arrangement::calculateHPositions(float xbuffer, float spacerSize, float sca
 		currentPosition += xbuffer / 2;
 		if (Items[i]->isSpacer()) {
 			currentPosition += spacerSize;
+		}
+		else if (Items[i]->isArrangement() && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->expanding && static_cast<Arrangement*>(Items[i])->orientation == orientation) {
+			xsc = spacerSize / 2.0f;
+			ysc = this->extenty * (1.0f - this->spacing);
+			yp = this->posy;
+			xp = this->posx - this->extentx + currentPosition + xsc;
+			Items[i]->updateArrangedPosition(xp, yp, xsc, ysc);
+			Items[i]->updateDisplay();
+			Items[i]->arrangeItems();
+
+			currentPosition += xsc * 2;
 		}
 		else {
 			xsc = extents[i] * scaleFactor;
