@@ -73,11 +73,17 @@ void DropdownMenu::calculateScreenPosition() {
 
 	bufferPosition(extentx, extenty, posx, posy, bufferRatioX, bufferRatioY, anchorx, anchory);
 
+	renderArea[0] = 10000.0f;
+	renderArea[1] = 0.0f;
+	renderArea[2] = 10000.0f;
+	renderArea[3] = 0.0f;
+
 	windowPositions[0] = 10000.0f;
 	windowPositions[1] = 0.0f;
 	windowPositions[2] = 10000.0f;
 	windowPositions[3] = 0.0f;
-	for (UIItem* item : Items) {
+	for (uint32_t i = 0; i != Items.size(); i++) {
+		UIItem* item = Items[i];
 		std::vector<UIItem*> scs;
 		item->getSubclasses(scs);
 		for (UIItem* sitem : scs) {
@@ -89,6 +95,12 @@ void DropdownMenu::calculateScreenPosition() {
 			windowPositions[1] = (sitem->windowPositions[1] > windowPositions[1]) ? sitem->windowPositions[1] : windowPositions[1];
 			windowPositions[2] = (sitem->windowPositions[2] < windowPositions[2]) ? sitem->windowPositions[2] : windowPositions[2];
 			windowPositions[3] = (sitem->windowPositions[3] > windowPositions[3]) ? sitem->windowPositions[3] : windowPositions[3];
+		}
+		if (i == 0) {
+			renderArea[0] = windowPositions[0];
+			renderArea[1] = windowPositions[1];
+			renderArea[2] = windowPositions[2];
+			renderArea[3] = windowPositions[3];
 		}
 	}
 }
@@ -965,6 +977,10 @@ void Widget::measureWindowPositions() {
 	windowPositions[1] = 0.0f;
 	windowPositions[2] = 10000.0f;
 	windowPositions[3] = 0.0f;
+	backgroundArea[0] = 10000.0f;
+	backgroundArea[1] = 0.0f;
+	backgroundArea[2] = 10000.0f;
+	backgroundArea[3] = 0.0f;
 	std::vector<UIItem*> scs;
 	canvas->getSubclasses(scs);
 	for (UIItem* sitem : scs) {
@@ -976,6 +992,19 @@ void Widget::measureWindowPositions() {
 		windowPositions[1] = (sitem->windowPositions[1] > windowPositions[1]) ? sitem->windowPositions[1] : windowPositions[1];
 		windowPositions[2] = (sitem->windowPositions[2] < windowPositions[2]) ? sitem->windowPositions[2] : windowPositions[2];
 		windowPositions[3] = (sitem->windowPositions[3] > windowPositions[3]) ? sitem->windowPositions[3] : windowPositions[3];
+		if (sitem->itemType == DROPDOWN) {
+			DropdownMenu* dd = static_cast<DropdownMenu*>(sitem);
+			backgroundArea[0] = (dd->renderArea[0] < backgroundArea[0]) ? dd->renderArea[0] : backgroundArea[0];
+			backgroundArea[1] = (dd->renderArea[1] > backgroundArea[1]) ? dd->renderArea[1] : backgroundArea[1];
+			backgroundArea[2] = (dd->renderArea[2] < backgroundArea[2]) ? dd->renderArea[2] : backgroundArea[2];
+			backgroundArea[3] = (dd->renderArea[3] > backgroundArea[3]) ? dd->renderArea[3] : backgroundArea[3];
+		}
+		else {
+			backgroundArea[0] = (sitem->windowPositions[0] < backgroundArea[0]) ? sitem->windowPositions[0] : backgroundArea[0];
+			backgroundArea[1] = (sitem->windowPositions[1] > backgroundArea[1]) ? sitem->windowPositions[1] : backgroundArea[1];
+			backgroundArea[2] = (sitem->windowPositions[2] < backgroundArea[2]) ? sitem->windowPositions[2] : backgroundArea[2];
+			backgroundArea[3] = (sitem->windowPositions[3] > backgroundArea[3]) ? sitem->windowPositions[3] : backgroundArea[3];
+		}
 	}
 }
 

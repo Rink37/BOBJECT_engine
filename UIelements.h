@@ -1589,6 +1589,7 @@ public:
 	}
 
 	std::vector<std::string> options{};
+	float renderArea[4] = { 0.0f };
 
 private:
 	uint8_t characterSize = 18;
@@ -1708,7 +1709,7 @@ struct Widget {
 		bg->setHeight(this->zp - 0.01f);
 		thisBG = getPtr(bg);
 		measureWindowPositions();
-		thisBG->updateDisplay();
+		update();
 	}
 
 	virtual void drawAll(VkCommandBuffer commandBuffer, uint32_t currentFrame, GraphicsPass* currentPass) {
@@ -1750,10 +1751,10 @@ struct Widget {
 				float W = static_cast<float>(Core::get()->windowWidth);
 				float H = static_cast<float>(Core::get()->windowHeight);
 				
-				float posx = (windowPositions[1] / W + windowPositions[0] / W) - 1.0f;
-				float extentx = (windowPositions[1] / W - 0.5f) * 2.0f - posx + 0.02f;
-				float posy = (windowPositions[3] / H + windowPositions[2] / H) - 1.0f;
-				float extenty = (windowPositions[3] / H - 0.5f) * 2.0f - posy + 0.02f;
+				float posx = (backgroundArea[1] / W + backgroundArea[0] / W) - 1.0f;
+				float extentx = (backgroundArea[1] / W - 0.5f) * 2.0f - posx + 0.02f;
+				float posy = (backgroundArea[3] / H + backgroundArea[2] / H) - 1.0f;
+				float extenty = (backgroundArea[3] / H - 0.5f) * 2.0f - posy + 0.02f;
 
 				thisBG->updateArrangedPosition(posx, posy, extentx, extenty);
 				thisBG->updateDisplay();
@@ -1940,6 +1941,7 @@ struct Widget {
 	std::function<void(std::string, std::string)> errorFunc = nullptr;
 private:
 	float windowPositions[4] = { 0.0f };
+	float backgroundArea[4] = { 0.0f };
 	// Array of pointers which manages the actual structure of the UI
 
 	// Widgets own all UI classes which appear in the UI, although widget functions use only pointers
