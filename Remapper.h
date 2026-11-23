@@ -217,7 +217,7 @@ public:
 		mainArrangement->addItem(getPtr(finishButtons));
 		mainArrangement->arrangeItems();
 
-		canvas.push_back(getPtr(mainArrangement));
+		canvas = getPtr(mainArrangement);
 
 		addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -319,12 +319,12 @@ public:
 		endButtons->addItem(getPtr(cancelButton));
 		endButtons->addItem(getPtr(finishButton));
 
-		canvas.push_back(getPtr(column));
+		canvas = getPtr(column);
 
 		createUI();
 
-		canvas[0]->addItem(getPtr(endButtons));
-		canvas[0]->updateDisplay();
+		canvas->addItem(getPtr(endButtons));
+		canvas->updateDisplay();
 		
 		textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
 
@@ -372,8 +372,6 @@ private:
 
 	void createUI() {
 		Material* visibleMat = loadList->getMaterial("TestCheckBtnMat");
-
-		UIItem* column = canvas[0];
 
 		if (remapper->method == KUWAHARA) {
 			std::function<void(int)> kuwaharaSliderFunction = std::bind(&RemapUI::kuwaharaCallback, this, std::placeholders::_1);
@@ -423,16 +421,16 @@ private:
 			TextBox* gradientText = new TextBox(loadList->getFont(), 0.0f, 0.0f, 1.0f, 0.25f, 18, ARRANGE_START, ARRANGE_CENTER);
 			gradientText->addText("Flatten threshold:");
 
-			column->addItem(getPtr(kuwaharaText));
-			column->addItem(getPtr(kuwaharaKernSlider));
-			column->addItem(getPtr(noiseText));
-			column->addItem(getPtr(zeroCrossSlider));
-			column->addItem(getPtr(sharpnessText));
-			column->addItem(getPtr(sharpnessSlider));
-			column->addItem(getPtr(flatnessText));
-			column->addItem(getPtr(averagerKernSlider));
-			column->addItem(getPtr(gradientText));
-			column->addItem(getPtr(gradientThreshSlider));
+			canvas->addItem(getPtr(kuwaharaText));
+			canvas->addItem(getPtr(kuwaharaKernSlider));
+			canvas->addItem(getPtr(noiseText));
+			canvas->addItem(getPtr(zeroCrossSlider));
+			canvas->addItem(getPtr(sharpnessText));
+			canvas->addItem(getPtr(sharpnessSlider));
+			canvas->addItem(getPtr(flatnessText));
+			canvas->addItem(getPtr(averagerKernSlider));
+			canvas->addItem(getPtr(gradientText));
+			canvas->addItem(getPtr(gradientThreshSlider));
 		}
 		else {
 			std::function<void(int)> kuwaharaSliderFunction = std::bind(&RemapUI::kuwaharaCallback, this, std::placeholders::_1);
@@ -466,15 +464,15 @@ private:
 			gradientThreshSlider->setSlideValues(remapper->minGradientThreshold, remapper->maxGradientThreshold, 0.05f);
 			gradientThreshSlider->setFloatCallback(gradientSliderFunction, false);
 
-			column->addItem(getPtr(searchText));
-			column->addItem(getPtr(kuwaharaKernSlider));
-			column->addItem(getPtr(flatnessText));
-			column->addItem(getPtr(averagerKernSlider));
-			column->addItem(getPtr(sharpnessText));
-			column->addItem(getPtr(gradientThreshSlider));
+			canvas->addItem(getPtr(searchText));
+			canvas->addItem(getPtr(kuwaharaKernSlider));
+			canvas->addItem(getPtr(flatnessText));
+			canvas->addItem(getPtr(averagerKernSlider));
+			canvas->addItem(getPtr(sharpnessText));
+			canvas->addItem(getPtr(gradientThreshSlider));
 		}
 
-		column->updateDisplay();
+		canvas->updateDisplay();
 	}
 };
 

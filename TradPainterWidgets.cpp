@@ -87,7 +87,7 @@ void TextureSettings::setup(std::string texName, std::function<void(UIItem*)> re
 	mainArrangement->addItem(getPtr(new spacer()));
 	mainArrangement->arrangeItems();
 
-	canvas.push_back(getPtr(mainArrangement));
+	canvas = getPtr(mainArrangement);
 
 	addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -175,8 +175,8 @@ void WebcamSettings::setup(std::function<void(UIItem*)> finishCallback, std::fun
 	mainArrangement->addItem(getPtr(rotationButtons));
 	mainArrangement->addItem(getPtr(endButtons));
 	mainArrangement->arrangeItems();
-
-	canvas.push_back(getPtr(mainArrangement));
+ 
+	canvas = getPtr(mainArrangement);
 
 	if (webcamTexture::get()->webCam != nullptr) {
 		webcamTexture::get()->webCam->shouldUpdate = true;
@@ -287,20 +287,20 @@ void RenderMenu::setup(std::function<void(UIItem*)> loadObjectFunct, std::functi
 
 	buttons->arrangeItems();
 
-	canvas.push_back(getPtr(buttons));
+	canvas = getPtr(buttons);
 
 	isSetup = true;
 }
 
 void RenderMenu::hideViewButtons() {
-	canvas[0]->Items[0]->setVisibility(false);
-	canvas[0]->Items[0]->setIsEnabled(false);
+	canvas->Items[0]->setVisibility(false);
+	canvas->Items[0]->setIsEnabled(false);
 	update();
 }
 
 void RenderMenu::showViewButtons() {
-	canvas[0]->Items[0]->setVisibility(true);
-	canvas[0]->Items[0]->setIsEnabled(true);
+	canvas->Items[0]->setVisibility(true);
+	canvas->Items[0]->setIsEnabled(true);
 	update();
 }
 
@@ -353,7 +353,7 @@ void MaterialCreator::setup(std::string sName, GraphicsPass* bPass, std::functio
 	totalArrangement->addItem(getPtr(materialSelect));
 	totalArrangement->arrangeItems();
 
-	canvas.push_back(getPtr(totalArrangement));
+	canvas = getPtr(totalArrangement);
 
 	addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -386,7 +386,7 @@ void MaterialCreator::setupEditMode(std::string sName, GraphicsPass* bPass, std:
 
 	totalArrangement->arrangeItems();
 
-	canvas.push_back(getPtr(totalArrangement));
+	canvas = getPtr(totalArrangement);
 
 	std::vector<std::string> textureNames{};
 	textureLL->listTexturesInMat(newMaterialName, textureNames);
@@ -416,12 +416,12 @@ void MaterialCreator::setupEditMode(std::string sName, GraphicsPass* bPass, std:
 }
 
 void MaterialCreator::createMatOptionsMenu(UIItem* owner) {
-	if (canvas[0]->Items.size() > 1) {
-		for (int i = 1; i != canvas[0]->Items.size(); i++) {
-			canvas[0]->Items[i]->cleanup();
+	if (canvas->Items.size() > 1) {
+		for (int i = 1; i != canvas->Items.size(); i++) {
+			canvas->Items[i]->cleanup();
 		}
-		if (canvas[0]->Items.size() > 1) {
-			canvas[0]->Items.erase(canvas[0]->Items.begin() + 1, canvas[0]->Items.end());
+		if (canvas->Items.size() > 1) {
+			canvas->Items.erase(canvas->Items.begin() + 1, canvas->Items.end());
 		}
 	}
 
@@ -463,7 +463,7 @@ void MaterialCreator::createMatOptionsMenu(UIItem* owner) {
 
 		TextBox* channelTextBox = new TextBox(inFont, 0.0f, 0.0f, 4.0f, 1.0f, 18, ARRANGE_START, ARRANGE_CENTER);
 		channelTextBox->addText(channel);
-		canvas[0]->addItem(getPtr(channelTextBox));
+		canvas->addItem(getPtr(channelTextBox));
 
 		DropdownMenu* materialSelect = new DropdownMenu(0.0f, 0.0f, 4.0f, 1.0f, renderedMat, visibleMat, loadList->getMaterial("UIRoundBox"), inFont);
 		materialSelect->addOptions(availableTextures);
@@ -472,11 +472,11 @@ void MaterialCreator::createMatOptionsMenu(UIItem* owner) {
 		materialSelect->Name = channel;
 		materialSelect->execCallback();
 
-		canvas[0]->addItem(getPtr(materialSelect));
+		canvas->addItem(getPtr(materialSelect));
 		i++;
 	}
-	canvas[0]->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", exitCallback)));
-	canvas[0]->arrangeItems();
+	canvas->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", exitCallback)));
+	canvas->arrangeItems();
 }
 
 void MaterialCreator::setTexCallback(UIItem* owner) {
@@ -587,7 +587,7 @@ void ObjectSettingsMenu::setup(StaticObject* object, std::function<void(UIItem*)
 	totalArrangement->addItem(getPtr(new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", std::bind(&ObjectSettingsMenu::selfDestruct, this, std::placeholders::_1))));
 	totalArrangement->arrangeItems();
 
-	canvas.push_back(getPtr(totalArrangement));
+	canvas = getPtr(totalArrangement);
 	
 	addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -695,7 +695,7 @@ void ObjectMenu::setup(std::function<void(UIItem*)> loadObjectFunct) {
 	ObjectButtons->addItem(getPtr(textArrangement));
 	ObjectButtons->arrangeItems();
 
-	canvas.push_back(ObjectButtons);
+	canvas = ObjectButtons;
 
 	addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -809,7 +809,7 @@ void NormalMixer::setup(std::string tName, std::vector<std::string> objects, std
 	totalArrangement->addItem(getPtr(finishArrangement));
 	totalArrangement->arrangeItems();
 
-	canvas.push_back(getPtr(totalArrangement));
+	canvas = getPtr(totalArrangement);
 
 	addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -1009,7 +1009,7 @@ void SpaceTransitionMenu::setup(std::string tName, std::vector<std::string> obje
 
 	totalArrangement->arrangeItems();
 
-	canvas.push_back(getPtr(totalArrangement));
+	canvas = getPtr(totalArrangement);
 
 	addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -1145,7 +1145,7 @@ void TextureLoadMenu::setup(std::function<void(UIItem*)> update) {
 
 	mainArrangement->arrangeItems();
 
-	canvas.push_back(getPtr(mainArrangement));
+	canvas = getPtr(mainArrangement);
 
 	addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -1258,7 +1258,7 @@ void TextureMenu::setup(std::function<void(UIItem*)> modCallback, std::function<
 
 	TextureButtons->arrangeItems();
 
-	canvas.push_back(TextureButtons);
+	canvas = TextureButtons;
 
 	addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -1361,7 +1361,7 @@ void WebcamMenu::setup(std::function<void(UIItem*)> lightingFunction, std::funct
 
 	Videobuttons->arrangeItems();
 
-	canvas.push_back(getPtr(Videobuttons));
+	canvas = getPtr(Videobuttons);
 
 	isSetup = true;
 }

@@ -21,7 +21,7 @@ void ErrorDialog::setup(std::string title, std::string message) {
 
 	totalArrangement->addItem(getPtr(finishArrangement));
 
-	canvas.push_back(totalArrangement);
+	canvas = getPtr(totalArrangement);
 
 	addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -81,7 +81,7 @@ void TexSelector::setup(std::string targetTextureName, std::function<void(std::s
 	mainArrangement->addItem(getPtr(finishButtons));
 	mainArrangement->arrangeItems();
 
-	canvas.push_back(getPtr(mainArrangement));
+	canvas = getPtr(mainArrangement);
 
 	addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -150,7 +150,7 @@ void ObjSelector::setup(std::string tName, std::vector<std::string> objects, std
 	totalArrangement->addItem(getPtr(finishArrangement));
 	totalArrangement->arrangeItems();
 
-	canvas.push_back(getPtr(totalArrangement));
+	canvas = getPtr(totalArrangement);
 
 	addBackground(loadList->getMaterial("UIRoundBox"));
 

@@ -192,7 +192,7 @@ public:
 		column->addItem(getPtr(endButtons));
 		column->updateDisplay();
 
-		canvas.push_back(getPtr(column));
+		canvas = getPtr(column);
 
 		addBackground(loadList->getMaterial("UIRoundBox"));
 

@@ -43,6 +43,11 @@ public:
 		if (widgets.count(widgetName) != 0) {
 			return;
 		}
+		for (std::pair<std::string, Widget*> elem : widgets) {
+			if (elem.second == widget) {
+				return;
+			}
+		}
 		if (widget->hasClickEvents) {
 			widget->clickIndex = mouseManager->addClickListener(widget->getClickCallback());
 		}
@@ -189,8 +194,8 @@ public:
 		createCanvas();
 		
 		WebcamMenu* webcamMenu = static_cast<WebcamMenu*>(widgetManager.getWidget("WebcamMenu"));
-		webcamMenu->canvas[0]->Items[1]->activestate = false;
-		webcamMenu->canvas[0]->Items[1]->image->matidx = 1;
+		webcamMenu->canvas->Items[1]->activestate = false;
+		webcamMenu->canvas->Items[1]->image->matidx = 1;
 
 		updateColourScheme();
 		updateWindowSize();
@@ -512,8 +517,8 @@ private:
 		webcamTexture::get()->interruptFrameUpdate();
 		
 		WebcamMenu* webcamMenu = static_cast<WebcamMenu*>(widgetManager.getWidget("WebcamMenu"));
-		webcamMenu->canvas[0]->Items[1]->image->matidx = 0;
-		webcamMenu->canvas[0]->Items[1]->activestate = true;
+		webcamMenu->canvas->Items[1]->image->matidx = 0;
+		webcamMenu->canvas->Items[1]->activestate = true;
 	}
 
 	void finishWebSettings(UIItem* owner) {
@@ -836,6 +841,8 @@ private:
 		webcamMenu->show();
 		RenderMenu* renderMenu = static_cast<RenderMenu*>(widgetManager.getWidget("RenderMenu"));
 		renderMenu->showViewButtons();
+
+		widgetManager.getWidget("tomogPicker")->selfDestruct(owner);
 	}
 
 	void openTomogMenu(UIItem* owner) {

@@ -442,14 +442,14 @@ void RemapUI::incrementMethod(UIItem*) {
 	fullRemap(refTex, targetTex);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	UIItem* endButtons = canvas[0]->Items[canvas[0]->Items.size() - 1];
-	for (int i = 2; i != canvas[0]->Items.size()-1; i++) {
-		canvas[0]->Items[i]->cleanup();
+	UIItem* endButtons = canvas->Items[canvas->Items.size() - 1];
+	for (int i = 2; i != canvas->Items.size()-1; i++) {
+		canvas->Items[i]->cleanup();
 	}
-	canvas[0]->Items.erase(canvas[0]->Items.begin()+2, canvas[0]->Items.end());
+	canvas->Items.erase(canvas->Items.begin()+2, canvas->Items.end());
 	createUI();
-	canvas[0]->addItem(endButtons);
-	canvas[0]->updateDisplay();
+	canvas->addItem(endButtons);
+	canvas->updateDisplay();
 };
 
 void RemapUI::reduceMethod(UIItem*) {
@@ -474,12 +474,12 @@ void RemapUI::reduceMethod(UIItem*) {
 	fullRemap(refTex, targetTex);
 	outMap->image->mat[0] = loadList->replacePtr(new Material(remapper->filteredTarget, "UI"), "RemapOSMat");
 	textureLL->replacePtr(remapper->filteredTarget->copyTexture(), targetTexName);
-	UIItem* endButtons = canvas[0]->Items[canvas[0]->Items.size() - 1];
-	for (int i = 2; i != canvas[0]->Items.size() - 1; i++) {
-		canvas[0]->Items[i]->cleanup();
+	UIItem* endButtons = canvas->Items[canvas->Items.size() - 1];
+	for (int i = 2; i != canvas->Items.size() - 1; i++) {
+		canvas->Items[i]->cleanup();
 	}
-	canvas[0]->Items.erase(canvas[0]->Items.begin() + 2, canvas[0]->Items.end());
+	canvas->Items.erase(canvas->Items.begin() + 2, canvas->Items.end());
 	createUI();
-	canvas[0]->addItem(endButtons);
-	canvas[0]->updateDisplay();
+	canvas->addItem(endButtons);
+	canvas->updateDisplay();
 };

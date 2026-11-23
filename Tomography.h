@@ -106,13 +106,15 @@ public:
 		column->addItem(getPtr(buttons));
 		column->updateDisplay();
 
-		canvas.push_back(getPtr(column));
+		canvas = getPtr(new FreeArrangement());
+
+		canvas->addItem(getPtr(column));
 
 		lightDirection = new Rotator(visibleMat, loadedUI->posx, loadedUI->posy, loadedUI->extentx, loadedUI->extentx * loadedUI->sqAxisRatio);
-		canvas.push_back(getPtr(lightDirection));
+		canvas->addItem(getPtr(lightDirection));
 
 		lightDirection->setFloatCallback(std::bind(&TomographyLoad::setAzimuth, this, std::placeholders::_1), false);
-		lightDirection->updateArrangedPosition(canvas[0]->Items[0]->Items[0]->posx, canvas[0]->Items[0]->Items[0]->posy, canvas[0]->Items[0]->Items[0]->extentx, canvas[0]->Items[0]->Items[0]->extentx * canvas[0]->Items[0]->Items[0]->sqAxisRatio);
+		lightDirection->updateArrangedPosition(canvas->Items[0]->Items[0]->posx, canvas->Items[0]->Items[0]->posy, canvas->Items[0]->Items[0]->extentx, canvas->Items[0]->Items[0]->extentx * canvas->Items[0]->Items[0]->sqAxisRatio);
 		lightDirection->setHeight(this->zp + 0.01f);
 		lightDirection->setSlideValues(0.0f, 360.0f, 180.0f);
 		lightDirection->updateDisplay();
@@ -130,17 +132,17 @@ public:
 			return;
 		}
 		outMat = loadedMat;
-		canvas[0]->Items[0]->Items[0]->cleanup();
-		canvas[0]->Items[0]->Items[0] = getPtr(new ImagePanel(loadedMat, false));
-		canvas[0]->Items[0]->Items[0]->update(0.0f, 0.0f, 0.4f, 0.4f);
-		canvas[0]->Items[0]->Items[0]->updateDisplay();
-		canvas[0]->Items[0]->arrangeItems();
-		canvas[0]->Items[1]->Items[1]->cleanup();
-		canvas[0]->Items[1]->Items.erase(canvas[0]->Items[1]->Items.begin() + 1);
+		canvas->Items[0]->Items[0]->cleanup();
+		canvas->Items[0]->Items[0] = getPtr(new ImagePanel(loadedMat, false));
+		canvas->Items[0]->Items[0]->update(0.0f, 0.0f, 0.4f, 0.4f);
+		canvas->Items[0]->Items[0]->updateDisplay();
+		canvas->Items[0]->arrangeItems();
+		canvas->Items[1]->Items[1]->cleanup();
+		canvas->Items[1]->Items.erase(canvas->Items[1]->Items.begin() + 1);
 				
 		std::function<void(UIItem*)> finishFunct = std::bind(&TomographyLoad::finish, this, std::placeholders::_1);
 		Button* finishButton = new Button(loadList->getFont(), loadList->getMaterial("UIRoundBox"), "FINISH", finishFunct);
-		canvas[0]->Items[1]->addItem(getPtr(finishButton));
+		canvas->Items[1]->addItem(getPtr(finishButton));
 
 		update();
 
@@ -175,8 +177,8 @@ private:
 	}
 
 	void customUpdate() {
-		canvas[0]->Items[0]->Items[1]->extenty = canvas[0]->Items[0]->Items[0]->extenty;
-		canvas[0]->Items[0]->Items[1]->updateDisplay();
+		canvas->Items[0]->Items[1]->extenty = canvas->Items[0]->Items[0]->extenty;
+		canvas->Items[0]->Items[1]->updateDisplay();
 	}
 };
 
@@ -228,7 +230,7 @@ public:
 		totalArrangement->addItem(getPtr(finishArrangement));
 		totalArrangement->arrangeItems();
 
-		canvas.push_back(getPtr(totalArrangement));
+		canvas = getPtr(totalArrangement);
 
 		addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -336,7 +338,7 @@ public:
 		tomographer.alignTemplate = baseDiffuse->getCVMat();
 		tomographer.outdims = tomographer.alignTemplate.size();
 
-		canvas.push_back(getPtr(column));
+		canvas = getPtr(column);
 
 		addBackground(loadList->getMaterial("UIRoundBox"));
 
@@ -451,7 +453,7 @@ private:
 		UIItem* ref = grid->Items[grid->Items.size() - 1];
 		deleteButton->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extentx * 0.2f);
 		deleteButton->setHeight(this->zp + 0.01f);
-		canvas.push_back(getPtr(deleteButton));
+		canvas->addItem(getPtr(deleteButton));
 		tomographer.add_lightVector(azimuth, polar, activeImageCount-1);
 		
 		mouseManager->removeClickListener(tomogLoadMenu->clickIndex);
@@ -464,37 +466,39 @@ private:
 	}
 
 	void removeItem(UIItem* owner) {
+		std::cout << "Removing item from menu" << std::endl;
 		int index = std::stoi(owner->Name);
 		vkQueueWaitIdle(Engine::get()->graphicsQueueObj->queue);
 		tomographer.remove_element(index);
 		grid->Items.erase(grid->Items.begin() + index);
 		grid->updateDisplay();
-		for (size_t i = 2; i != canvas.size(); i++) {
-			int currentIndex = std::stoi(canvas[i]->Name);
+		for (size_t i = 2; i != canvas->Items.size(); i++) {
+			int currentIndex = std::stoi(canvas->Items[i]->Name);
 			if (currentIndex > index) {
 				UIItem* ref = grid->Items[currentIndex-1];
-				canvas[i]->update(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extentx * 0.2f);
-				canvas[i]->updateDisplay();
-				canvas[i]->Name = std::to_string(currentIndex - 1);
+				canvas->Items[i]->update(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extentx * 0.2f);
+				canvas->Items[i]->updateDisplay();
+				canvas->Items[i]->Name = std::to_string(currentIndex - 1);
 			}
 		}
 		activeImageCount--;
 		owner->cleanup();
-		canvas.erase(find(canvas.begin(), canvas.end(), owner));
+		canvas->Items.erase(find(canvas->Items.begin(), canvas->Items.end(), owner));
 	}
 
 	void updateDeleteButtons() {
-		if (canvas.size() > 0) {
-			for (size_t i = 0; i != canvas.size(); i++) {
-				canvas[i]->updateDisplay();
+		std::cout << "Updating Delete Buttons" << std::endl;
+		if (canvas->Items.size() > 0) {
+			for (size_t i = 0; i != canvas->Items.size(); i++) {
+				canvas->Items[i]->updateDisplay();
 			}
 			measureWindowPositions();
 		}
-		for (size_t i = 2; i != canvas.size(); i++) {
-			int currentIndex = std::stoi(canvas[i]->Name);
+		for (size_t i = 2; i != canvas->Items.size(); i++) {
+			int currentIndex = std::stoi(canvas->Items[i]->Name);
 			UIItem* ref = grid->Items[currentIndex];
-			canvas[i]->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extentx * 0.2f);
-			canvas[i]->updateDisplay();
+			canvas->Items[i]->updateArrangedPosition(ref->posx + ref->extentx * 0.75f, ref->posy - ref->extenty * 0.75f, ref->extentx * 0.2f, ref->extentx * 0.2f);
+			canvas->Items[i]->updateDisplay();
 		}
 	}
 

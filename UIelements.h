@@ -340,7 +340,7 @@ public:
 		itemType = TEXTBOX;
 	}
 
-	bool isModifiable() {
+	bool isModifiable() const {
 		return modifiable;
 	}
 
@@ -698,11 +698,73 @@ public:
 
 	void arrangeItems() {};
 
-	void checkForEvent(double, double, int) {};
+	bool checkForClickEvent(double, double, int) {
+		return false;
+	};
+
+	bool checkForPosEvent(double, double, int) {
+		return false;
+	};
 
 	void calculateScreenPosition() {};
 
 	void setVisibility(bool) {};
+};
+
+class FreeArrangement : public UIItem {
+public:
+	bool isArrangement() {
+		return true;
+	}
+
+	void calculateScreenPosition() {};
+
+	void getSubclasses(std::vector<UIItem*>& scs) {
+		scs.push_back(this);
+		for (size_t i = 0; i != Items.size(); i++) {
+			std::vector<UIItem*> sscs;
+			Items[i]->getSubclasses(sscs);
+			for (size_t j = 0; j != sscs.size(); j++) {
+				scs.push_back(sscs[j]);
+			}
+		}
+	};
+
+	void getImages(std::vector<UIImage*>& images) {
+		for (size_t i = 0; i != Items.size(); i++) {
+			std::vector<UIImage*> subimages;
+			Items[i]->getImages(subimages);
+			for (size_t j = 0; j != subimages.size(); j++) {
+				images.push_back(subimages[j]);
+			}
+		}
+	};
+
+	void setVisibility(bool vis) {
+		for (UIItem* item : Items) {
+			item->setVisibility(vis);
+		}
+	}
+
+	void setIsEnabled(bool enabled) {
+		for (UIItem* item : Items) {
+			item->setIsEnabled(enabled);
+		}
+	}
+
+	bool checkForClickEvent(double mouseX, double mouseY, int eventType) {
+		if (!isEnabled) {
+			return false;
+		}
+		bool found = false;
+		for (UIItem* sitem : Items) {
+			if (sitem->checkForClickEvent(mouseX, mouseY, eventType)) {
+				found = true;
+				break;
+			};
+		}
+		return found;
+	}
 };
 
 class Arrangement : public UIItem {
@@ -1644,8 +1706,7 @@ struct Widget {
 	void addBackground(Material* mat) {
 		Background* bg = new Background(mat);
 		bg->setHeight(this->zp - 0.01f);
-		canvas.push_back(getPtr(bg));
-		thisBG = canvas[canvas.size() - 1];
+		thisBG = getPtr(bg);
 		measureWindowPositions();
 		thisBG->updateDisplay();
 	}
@@ -1683,12 +1744,8 @@ struct Widget {
 		}
 		if (isVisible && isSetup) {
 			sortImages();
-			if (canvas.size() > 0) {
-				for (size_t i = 0; i != canvas.size(); i++) {
-					canvas[i]->updateDisplay();
-				}
-				measureWindowPositions();
-			}
+			canvas->updateDisplay();
+			measureWindowPositions();
 			if (thisBG != nullptr) {
 				float W = static_cast<float>(Core::get()->windowWidth);
 				float H = static_cast<float>(Core::get()->windowHeight);
@@ -1713,7 +1770,7 @@ struct Widget {
 
 	void cleanup() {
 		cleanupSubClasses();
-		canvas.clear();
+		//canvas.clear();
 		imagePipelines.clear();
 		thisBG = nullptr;
 		for (size_t i = 0; i != imagePanels.size(); i++) {
@@ -1754,7 +1811,13 @@ struct Widget {
 			Backgrounds[i]->cleanup();
 		}
 		Backgrounds.clear();
+		for (size_t i = 0; i != freeArrangements.size(); i++) {
+			freeArrangements[i]->cleanup();
+		}
+		freeArrangements.clear();
 		isSetup = false;
+		//canvas->cleanup();
+		//delete canvas;
 	}
 
 	void hide() {
@@ -1763,6 +1826,11 @@ struct Widget {
 
 	void show() {
 		isVisible = true;
+	}
+
+	UIItem* getPtr(FreeArrangement* fa) {
+		freeArrangements.emplace_back(fa);
+		return freeArrangements[freeArrangements.size() - 1].get();
 	}
 
 	UIItem* getPtr(ImagePanel* ip) {
@@ -1844,7 +1912,7 @@ struct Widget {
 		}
 	}
 
-	std::vector<UIItem*> canvas;
+	UIItem* canvas = nullptr; // Canvas must now be a single arrangement
 
 	LoadList* loadList = nullptr;
 
@@ -1858,6 +1926,8 @@ struct Widget {
 	uint8_t clickIndex = 0;
 	uint8_t posIndex = 0;
 	bool markedForDestruction = false;
+
+	// UIItem* mainArrangement = nullptr;
 
 	std::map<std::string, std::vector<UIImage*>> imagePipelines{};
 	std::vector<UIImage*> transparentImages{};
@@ -1884,6 +1954,7 @@ private:
 	std::vector<std::shared_ptr<TextBox>> TextBoxes;
 	std::vector<std::shared_ptr<DropdownMenu>> DropdownMenus;
 	std::vector<std::shared_ptr<Background>> Backgrounds;
+	std::vector<std::shared_ptr<FreeArrangement>> freeArrangements;
 
 	UIItem* thisBG = nullptr;
 

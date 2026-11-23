@@ -965,19 +965,17 @@ void Widget::measureWindowPositions() {
 	windowPositions[1] = 0.0f;
 	windowPositions[2] = 10000.0f;
 	windowPositions[3] = 0.0f;
-	for (UIItem* item : canvas) {
-		std::vector<UIItem*> scs;
-		item->getSubclasses(scs);
-		for (UIItem* sitem : scs) {
-			if (sitem->isSpacer() || sitem->isArrangement() || sitem == thisBG) {
-				continue;
-			}
-			sitem->calculateScreenPosition();
-			windowPositions[0] = (sitem->windowPositions[0] < windowPositions[0]) ? sitem->windowPositions[0] : windowPositions[0];
-			windowPositions[1] = (sitem->windowPositions[1] > windowPositions[1]) ? sitem->windowPositions[1] : windowPositions[1];
-			windowPositions[2] = (sitem->windowPositions[2] < windowPositions[2]) ? sitem->windowPositions[2] : windowPositions[2];
-			windowPositions[3] = (sitem->windowPositions[3] > windowPositions[3]) ? sitem->windowPositions[3] : windowPositions[3];
+	std::vector<UIItem*> scs;
+	canvas->getSubclasses(scs);
+	for (UIItem* sitem : scs) {
+		if (sitem->isSpacer() || sitem->isArrangement() || sitem == thisBG) {
+			continue;
 		}
+		sitem->calculateScreenPosition();
+		windowPositions[0] = (sitem->windowPositions[0] < windowPositions[0]) ? sitem->windowPositions[0] : windowPositions[0];
+		windowPositions[1] = (sitem->windowPositions[1] > windowPositions[1]) ? sitem->windowPositions[1] : windowPositions[1];
+		windowPositions[2] = (sitem->windowPositions[2] < windowPositions[2]) ? sitem->windowPositions[2] : windowPositions[2];
+		windowPositions[3] = (sitem->windowPositions[3] > windowPositions[3]) ? sitem->windowPositions[3] : windowPositions[3];
 	}
 }
 
@@ -988,12 +986,10 @@ bool Widget::checkForClickEvent(double mouseX, double mouseY, int eventType) {
 	if (!isInArea(mouseX, mouseY) && Sliders.size() == 0 && Rotators.size() == 0) {
 		return false;
 	}
-	for (UIItem* item : canvas) {
-		if (item->checkForClickEvent(mouseX, mouseY, eventType)) {
-			update();
-			return true;
-		};
-	}
+	if (canvas->checkForClickEvent(mouseX, mouseY, eventType)) {
+		update();
+		return true;
+	};
 	return false;
 }
 
@@ -1001,14 +997,12 @@ bool Widget::checkForPosEvent(double mouseX, double mouseY, int eventType) {
 	if (!isVisible) {
 		return false;
 	}
-	for (UIItem* item : canvas) {
-		std::vector<UIItem*> scs;
-		item->getSubclasses(scs);
-		for (UIItem* sitem : scs) {
-			if (sitem->checkForPosEvent(mouseX, mouseY, eventType)) {
-				return true;
-			};
-		}
+	std::vector<UIItem*> scs;
+	canvas->getSubclasses(scs);
+	for (UIItem* sitem : scs) {
+		if (sitem->checkForPosEvent(mouseX, mouseY, eventType)) {
+			return true;
+		};
 	}
 	return false;
 }
@@ -1019,10 +1013,9 @@ void Widget::sortImages() {
 	transparentImagePipelines.clear();
 	std::map<float, std::vector<UIImage*>, std::greater<float>> imageHeights{};
 	std::vector<UIImage*> allImages{};
-	for (size_t i = 0; i != canvas.size(); i++) {
-		std::vector<UIImage*> images{};
-		canvas[i]->getImages(images);
-		allImages.insert(allImages.end(), images.begin(), images.end());
+	canvas->getImages(allImages);
+	if (thisBG != nullptr) {
+		thisBG->getImages(allImages);
 	}
 	for (UIImage* image : allImages) {
 		if (image->isVisible && image->isOpaque) {
